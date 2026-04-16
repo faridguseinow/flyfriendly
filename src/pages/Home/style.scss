@@ -1,0 +1,527 @@
+.hero {
+  width: min(1160px, calc(100% - 48px));
+  padding-top: 118px;
+
+  p {
+    max-width: 720px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+}
+
+.hero__inner {
+  padding: 44px 48px 38px;
+  border-radius: 34px;
+  background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+}
+
+.benefit-grid,
+.step-grid,
+.article-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.mini-card,
+.step-card,
+.article-card,
+.testimonial-card,
+.issue-card,
+.membership-card,
+.wide-cta,
+.faq-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 36px rgba(31, 42, 60, 0.04);
+}
+
+.mini-card {
+  padding: 34px 30px 28px;
+
+  .icon {
+    margin: 0 auto 22px;
+  }
+
+  h3 {
+    margin-bottom: 12px;
+    font-size: 21px;
+  }
+}
+
+.mini-card p,
+.issue-card p,
+.membership-card p,
+.article-card p,
+.testimonial-card p,
+.newsletter-form p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.big-panel {
+  padding: 42px 68px 60px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.disruption-grid {
+  display: grid;
+  grid-template-columns: 0.85fr 2.05fr;
+  gap: 20px;
+  text-align: left;
+}
+
+.issue-card,
+.wide-cta {
+  padding: 28px;
+}
+
+.issue-card-wide {
+  position: relative;
+  overflow: hidden;
+  min-height: 290px;
+
+  &::after {
+    content: "";
+    position: absolute;
+    right: 24px;
+    bottom: -48px;
+    width: 410px;
+    height: 210px;
+    background: radial-gradient(circle at 70% 100%, #e4f6ff 0 55%, transparent 56%),
+      url("data:image/svg+xml,%3Csvg width='400' height='180' viewBox='0 0 400 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 132 322 84c31-5 61 0 70 12 4 5 0 10-9 12L91 158 21 175c-18 4-27-12-12-24l46-38z' fill='%23b9d9ff' stroke='%231d2836' stroke-width='3'/%3E%3Cpath d='M147 93 75 29l48 77M194 129l-33 49 92-64' fill='%238bc7ff' stroke='%231d2836' stroke-width='3'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+}
+
+.issue-card ul,
+.membership-card ul {
+  padding: 0;
+  margin: 22px 0 0;
+  display: grid;
+  gap: 14px;
+  color: var(--muted);
+  list-style: none;
+
+  li::before {
+    content: "✓";
+    margin-right: 10px;
+    color: #18b454;
+  }
+}
+
+.wide-cta {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  background: linear-gradient(90deg, #fff 0 60%, #eef9ff 60%);
+
+  .section-label {
+    margin-left: 0;
+  }
+
+  h3 {
+    font-size: clamp(34px, 4vw, 48px);
+  }
+}
+
+.photo-cta,
+.membership-photo,
+.newsletter-photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  color: #fff;
+  background: #141922;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(8, 13, 20, 0.72), rgba(8, 13, 20, 0.16));
+  }
+}
+
+.photo-cta {
+  min-height: 300px;
+
+  > div {
+    position: absolute;
+    inset: 28px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  h3,
+  p {
+    color: #fff;
+  }
+
+  p {
+    margin-top: auto;
+    max-width: 280px;
+    line-height: 1.45;
+  }
+}
+
+.membership {
+  padding: 92px max(24px, calc((100% - 1160px) / 2));
+}
+
+.membership-grid,
+.newsletter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.membership-grid {
+  margin-top: 36px;
+}
+
+.membership-card {
+  padding: 34px;
+
+  .btn {
+    width: 100%;
+    margin-top: 30px;
+  }
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+
+  strong {
+    font-size: 32px;
+    font-weight: 400;
+  }
+
+  span {
+    font-size: 18px;
+  }
+}
+
+.membership-photo,
+.newsletter-photo {
+  min-height: 470px;
+  border: 7px solid #fff;
+
+  h3,
+  span,
+  p {
+    position: absolute;
+    z-index: 1;
+    color: #fff;
+  }
+}
+
+.membership-photo {
+  h3 {
+    top: 36px;
+    left: 32px;
+    right: 32px;
+    max-width: 560px;
+    font-size: 31px;
+  }
+
+  span {
+    left: 34px;
+    bottom: 36px;
+    font-size: 20px;
+  }
+}
+
+.step-card {
+  min-height: 270px;
+  padding: 30px;
+
+  small {
+    color: var(--muted);
+  }
+}
+
+.step-icons {
+  margin-top: 42px;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+
+.document-icon {
+  width: 230px;
+  height: 78px;
+  margin: 42px auto 0;
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 22px 54px rgba(5, 164, 255, 0.16);
+
+  span {
+    display: block;
+    height: 12px;
+    border-radius: 8px;
+    background: #d3d9e1;
+  }
+}
+
+.testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  text-align: left;
+}
+
+.testimonial-card {
+  padding: 30px;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  img {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  h3 {
+    margin-bottom: 4px;
+    font-size: 21px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+  }
+}
+
+.stars {
+  color: var(--primary);
+  letter-spacing: 0;
+}
+
+.article-card {
+  padding: 22px;
+  text-align: left;
+
+  img {
+    width: 100%;
+    aspect-ratio: 16 / 8.5;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 22px;
+  }
+
+  time {
+    color: var(--muted);
+  }
+
+  h3 {
+    margin: 10px 0 12px;
+    font-size: 25px;
+  }
+}
+
+.newsletter {
+  padding: 86px max(24px, calc((100% - 1160px) / 2));
+}
+
+.newsletter-photo {
+  min-height: 300px;
+
+  p {
+    top: 28px;
+    left: 28px;
+    max-width: 360px;
+    font-size: 20px;
+  }
+
+  span {
+    left: 34px;
+    bottom: 36px;
+    font-size: 22px;
+  }
+}
+
+.newsletter-form {
+  align-self: center;
+
+  .section-label {
+    margin-left: 0;
+  }
+
+  h2 {
+    max-width: 570px;
+  }
+
+  form {
+    display: grid;
+    grid-template-columns: 1fr 60px;
+    gap: 12px;
+    max-width: 520px;
+  }
+
+  label {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: var(--ink);
+    background: transparent;
+  }
+
+  .btn {
+    width: 60px;
+    min-height: 58px;
+    padding: 0;
+    font-size: 28px;
+  }
+}
+
+.faq-panel {
+  padding: 34px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 22px;
+  text-align: left;
+}
+
+details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+summary {
+  min-height: 64px;
+  padding: 0 56px 0 22px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  font-size: 18px;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::after {
+    content: "+";
+    position: absolute;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+  }
+}
+
+details[open] summary::after {
+  content: "-";
+}
+
+details p {
+  margin: 0;
+  padding: 0 22px 22px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+@media (max-width: 980px) {
+  .hero {
+    width: min(100% - 28px, 1160px);
+    padding-top: 126px;
+  }
+
+  .hero__inner {
+    padding: 34px 18px;
+    border-radius: 22px;
+  }
+
+  .benefit-grid,
+  .step-grid,
+  .testimonial-grid,
+  .article-grid,
+  .disruption-grid,
+  .membership-grid,
+  .newsletter,
+  .faq-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .big-panel {
+    padding: 32px 18px 26px;
+  }
+
+  .issue-card-wide::after {
+    opacity: 0.45;
+  }
+
+  .membership,
+  .newsletter {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .membership-photo,
+  .newsletter-photo {
+    min-height: 330px;
+  }
+}
+
+@media (max-width: 620px) {
+  .wide-cta,
+  .issue-card {
+    padding: 22px;
+  }
+
+  .newsletter-form {
+    form {
+      grid-template-columns: 1fr;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+}

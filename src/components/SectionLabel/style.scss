@@ -1,0 +1,20 @@
+.section-label {
+  width: fit-content;
+  margin: 0 auto 16px;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #445064;
+  background: #fff;
+  font-size: 13px;
+  line-height: 1;
+
+  &.is-primary {
+    color: #fff;
+    border-color: var(--primary);
+    background: var(--primary);
+  }
+}
