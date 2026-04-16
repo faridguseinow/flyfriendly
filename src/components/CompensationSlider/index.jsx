@@ -5,6 +5,17 @@ import "./style.scss";
 const MIN_DISTANCE = 0;
 const MAX_DISTANCE = 4500;
 const INITIAL_DISTANCE = 1500;
+const PLANE_START_DISTANCE = 500;
+
+const PLANE_WIDTH = 344.79;
+const PLANE_HEIGHT = 256.16;
+
+const ROUTE_START = { x: 50, y: 360 };
+const ROUTE_CONTROL = { x: 545, y: 70 };
+const ROUTE_END = { x: 1050, y: 170 };
+
+const PLANE_OFFSET_X = -12;
+const PLANE_OFFSET_Y = -18;
 
 function getCompensation(distance) {
   if (distance >= 3500) {
@@ -53,21 +64,24 @@ function CompensationSlider() {
 
   const slider = useMemo(() => {
     const progress = ((distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE)) * 100;
-    const t = progress / 100;
 
-    const p0 = { x: 50, y: 360 };
-    const p1 = { x: 545, y: 70 };
-    const p2 = { x: 1050, y: 170 };
+    const startT = PLANE_START_DISTANCE / MAX_DISTANCE;
+    const moveProgress =
+      distance <= PLANE_START_DISTANCE
+        ? 0
+        : (distance - PLANE_START_DISTANCE) / (MAX_DISTANCE - PLANE_START_DISTANCE);
 
-    const point = getQuadraticBezierPoint(t, p0, p1, p2);
-    const angle = getQuadraticBezierAngle(t, p0, p1, p2);
+    const t = startT + (1 - startT) * Math.min(1, Math.max(0, moveProgress));
+
+    const point = getQuadraticBezierPoint(t, ROUTE_START, ROUTE_CONTROL, ROUTE_END);
+    const angle = getQuadraticBezierAngle(t, ROUTE_START, ROUTE_CONTROL, ROUTE_END);
 
     return {
       compensation: getCompensation(distance),
       progress,
       labelProgress: Math.min(92, Math.max(8, progress)),
-      planeX: point.x,
-      planeY: point.y,
+      planeX: point.x - PLANE_WIDTH / 2 + PLANE_OFFSET_X,
+      planeY: point.y - PLANE_HEIGHT / 2 + PLANE_OFFSET_Y,
       planeRotation: angle,
     };
   }, [distance]);
@@ -96,10 +110,10 @@ function CompensationSlider() {
           />
           <image
             href={planeSvg}
-            x={slider.planeX - 105}
-            y={slider.planeY - 78}
-            width="210"
-            height="156"
+            x={slider.planeX}
+            y={slider.planeY}
+            width={PLANE_WIDTH}
+            height={PLANE_HEIGHT}
             preserveAspectRatio="xMidYMid meet"
             style={{
               transformBox: "fill-box",
