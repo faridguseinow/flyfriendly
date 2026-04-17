@@ -1,11 +1,12 @@
 import SectionLabel from "../../components/SectionLabel/index.jsx";
+import { Scale } from "lucide-react";
 import "../Legal/style.scss";
 
 function PrivacyPolicy() {
   return (
     <main className="legal-page">
       <header className="legal-hero">
-        <SectionLabel>Legal</SectionLabel>
+        <SectionLabel icon={Scale}>Legal</SectionLabel>
         <h1>Privacy Policy</h1>
         <p>
           This policy explains how Fly Friendly collects, uses, stores, and protects information

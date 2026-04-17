@@ -24,17 +24,14 @@ export const benefits = [
   {
     title: "Fast & Affordable Service",
     text: "We handle your claim quickly and efficiently with no hidden costs or unnecessary delays.",
-    mark: "⌁",
   },
   {
     title: "No Win, No fee",
     text: "You pay nothing unless we succeed in getting your compensation. Zero risk, total fairness.",
-    mark: "◌",
   },
   {
     title: "Unmatched Claim Success",
     text: "We win compensation even when airlines or agencies say it is impossible.",
-    mark: "↗",
   },
 ];
 

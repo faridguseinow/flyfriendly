@@ -1,11 +1,12 @@
 import SectionLabel from "../../components/SectionLabel/index.jsx";
+import { Scale } from "lucide-react";
 import "../Legal/style.scss";
 
 function TermsOfUse() {
   return (
     <main className="legal-page">
       <header className="legal-hero">
-        <SectionLabel>Legal</SectionLabel>
+        <SectionLabel icon={Scale}>Legal</SectionLabel>
         <h1>Terms of Use</h1>
         <p>
           These terms govern your use of the Fly Friendly website, claim submission tools,

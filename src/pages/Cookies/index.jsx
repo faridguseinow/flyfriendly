@@ -1,11 +1,12 @@
 import SectionLabel from "../../components/SectionLabel/index.jsx";
+import { Scale } from "lucide-react";
 import "../Legal/style.scss";
 
 function Cookies() {
   return (
     <main className="legal-page">
       <header className="legal-hero">
-        <SectionLabel>Legal</SectionLabel>
+        <SectionLabel icon={Scale}>Legal</SectionLabel>
         <h1>Cookies Policy</h1>
         <p>
           This policy explains how Fly Friendly may use cookies and similar technologies

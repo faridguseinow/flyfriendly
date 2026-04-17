@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
-import { languages, navLinks } from "../../constants/site.js";
+import { languages, navLinks, socialLinks } from "../../constants/site.js";
 import "./style.scss";
 
 function Flag({ code }) {
@@ -85,10 +86,31 @@ function Flag({ code }) {
 }
 
 function Navbar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle("mobile-menu-open", isMenuOpen);
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.classList.remove("mobile-menu-open");
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isMenuOpen]);
+
+  const closeMenu = () => setIsMenuOpen(false);
+
   return (
-    <header className="site-header">
+    <header className={`site-header${isMenuOpen ? " is-menu-open" : ""}`}>
       <nav className="navbar" aria-label="Main navigation">
-        <Link to="/" className="brand" aria-label="Fly Friendly home">
+        <Link to="/" className="brand" aria-label="Fly Friendly home" onClick={closeMenu}>
           <img className="brand__icon" src={logoImage} alt="" />
           <img className="brand__text" src={logoText} alt="Fly Friendly" />
         </Link>
@@ -113,7 +135,50 @@ function Navbar() {
           </div>
           <a className="btn btn-primary" href="#">Start Your Claim</a>
         </div>
+        <button
+          className="menu-toggle"
+          type="button"
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen((current) => !current)}
+        >
+          <span />
+          <span />
+        </button>
       </nav>
+      <div className="mobile-menu" aria-hidden={!isMenuOpen}>
+        <div className="mobile-menu__content">
+          <h2>
+            We fight for your right<br />
+            to <span>compensation</span>.
+          </h2>
+
+          <div className="mobile-menu__links">
+            {navLinks.map((item) => (
+              <NavLink key={item.path} to={item.path} onClick={closeMenu}>
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
+
+          <a className="mobile-menu__claim" href="#" onClick={closeMenu}>
+            Start Your Claim
+          </a>
+
+          <div className="mobile-menu__language">
+            <Flag code="en" />
+            <span>Eng</span>
+          </div>
+
+          <div className="mobile-menu__socials" aria-label="Social links">
+            {socialLinks.map((item) => (
+              <a key={item.label} href={item.href} aria-label={item.label}>
+                {item.text}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
     </header>
   );
 }

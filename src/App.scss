@@ -1,15 +1,18 @@
 .btn {
-  min-height: 42px;
-  padding: 0 24px;
+  min-height: 56px;
+  padding: 0 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 400;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 
   &:hover {
     transform: translateY(-1px);
@@ -19,7 +22,8 @@
 .btn-primary {
   color: #fff;
   background: var(--primary);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25), 0 12px 26px rgba(5, 164, 255, 0.25);
+  border-color: #c9e7fb;
+  box-shadow: 0 0 0 4px #e0f3ff, 0 2px 4px 1px rgba(0, 0, 0, 0.05);
 
   &:hover {
     background: var(--primary-dark);
@@ -27,18 +31,19 @@
 }
 
 .btn-small {
-  min-height: 28px;
+  min-height: 32px;
   width: fit-content;
   padding: 0 14px;
-  color: #243040;
+  color: var(--grey-500);
   background: #fff;
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 20px;
 }
 
 .section {
   width: min(1160px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 112px 0;
+  padding: 120px 0 60px;
   text-align: center;
 }
 
@@ -50,10 +55,10 @@ p {
 }
 
 h1 {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   color: var(--ink);
-  font-size: clamp(44px, 6.7vw, 82px);
-  line-height: 1.18;
+  font-size: 60px;
+  line-height: 92px;
   font-weight: 400;
   letter-spacing: 0;
 
@@ -64,41 +69,48 @@ h1 {
 }
 
 h2 {
-  margin-bottom: 14px;
+  margin-bottom: 4px;
   color: var(--ink);
-  font-size: clamp(34px, 4.4vw, 52px);
-  line-height: 1.15;
+  font-size: 48px;
+  line-height: 64px;
   font-weight: 400;
   letter-spacing: 0;
 }
 
 h3 {
   color: var(--ink);
-  font-size: 24px;
-  line-height: 1.22;
+  font-size: 28px;
+  line-height: 36px;
   font-weight: 400;
   letter-spacing: 0;
 }
 
 .section-copy {
-  max-width: 720px;
-  margin: 0 auto 42px;
+  max-width: 900px;
+  margin: 0 auto 40px;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.6;
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: 0.5px;
 }
 
 .icon {
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
   color: var(--primary);
   background: #fff;
   font-weight: 600;
+
+  svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
 }
 
 .band {
@@ -123,16 +135,43 @@ h3 {
 @media (max-width: 980px) {
   .section {
     width: min(100% - 28px, 1160px);
-    padding: 74px 0;
+    padding: 64px 0;
+  }
+
+  h1 {
+    font-size: 48px;
+    line-height: 64px;
+  }
+
+  h2 {
+    font-size: 36px;
+    line-height: 52px;
+  }
+
+  h3 {
+    font-size: 24px;
+    line-height: 34px;
   }
 }
 
 @media (max-width: 620px) {
   h1 {
-    font-size: 42px;
+    font-size: 36px;
+    line-height: 50px;
   }
 
   h2 {
-    font-size: 34px;
+    font-size: 30px;
+    line-height: 42px;
+  }
+
+  h3 {
+    font-size: 20px;
+    line-height: 32px;
+  }
+
+  .section-copy {
+    font-size: 16px;
+    line-height: 26px;
   }
 }

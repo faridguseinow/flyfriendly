@@ -1,15 +1,18 @@
 .claim-box {
-  width: min(920px, 100%);
-  margin: 34px auto 0;
-  padding: 36px;
+  width: min(1028px, 100%);
+  margin: 28px auto 0;
+  padding: 24px 20px;
   border: 1px solid var(--line);
-  border-radius: 26px;
+  border-radius: 40px;
   background: #fff;
-  box-shadow: 0 8px 0 rgba(224, 234, 243, 0.25), 0 24px 70px rgba(31, 42, 60, 0.07);
+  box-shadow: 0 2px 16px 1px rgba(0, 0, 0, 0.05);
 
   h2 {
-    margin-bottom: 20px;
-    font-size: clamp(28px, 3vw, 36px);
+    margin-bottom: 12px;
+    color: #2c313b;
+    font-size: 36px;
+    line-height: 48px;
+    font-weight: 400;
   }
 }
 
@@ -20,9 +23,9 @@
 
   img,
   span {
-    width: 36px;
-    height: 36px;
-    margin-left: -8px;
+    width: 44px;
+    height: 44px;
+    margin-left: -14px;
     border: 2px solid #fff;
     border-radius: 50%;
     object-fit: cover;
@@ -43,14 +46,17 @@
   gap: 8px;
 
   label {
-    min-height: 58px;
+    min-height: 64px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 0 18px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fff;
+    gap: 18px;
+    padding: 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    background: var(--soft);
+    color: var(--grey-400);
+    font-size: 20px;
+    line-height: 28px;
   }
 
   input {
@@ -64,17 +70,19 @@
 }
 
 .claim-box__meta {
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   align-items: center;
   gap: 10px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 20px;
 
   span {
-    padding: 5px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    background: #fff;
   }
 
   span:last-child {
@@ -86,6 +94,12 @@
 @media (max-width: 980px) {
   .claim-box {
     padding: 22px;
+    border-radius: 28px;
+
+    h2 {
+      font-size: 30px;
+      line-height: 40px;
+    }
   }
 
   .claim-box__fields {
@@ -103,6 +117,10 @@
 }
 
 @media (max-width: 620px) {
+  .claim-box {
+    padding: 18px;
+  }
+
   .claim-box__fields .btn {
     width: 100%;
   }

@@ -1,11 +1,12 @@
 import SectionLabel from "../../components/SectionLabel/index.jsx";
+import { Headphones, Mail, MessageSquare } from "lucide-react";
 import "./style.scss";
 
 function Contact() {
   return (
     <>
       <section className="contact-hero section">
-        <SectionLabel>Contact</SectionLabel>
+        <SectionLabel icon={Mail}>Contact</SectionLabel>
         <h1>Contact us</h1>
         <p>
           Have a question about a delayed, canceled, or overbooked flight?
@@ -16,7 +17,7 @@ function Contact() {
       <section className="contact-main section">
         <div className="contact-grid">
           <article className="contact-support">
-            <SectionLabel>Support</SectionLabel>
+            <SectionLabel icon={Headphones}>Support</SectionLabel>
             <h2>We are here to help</h2>
             <p>
               Tell us what happened with your flight, what documents you have,
@@ -36,7 +37,7 @@ function Contact() {
             method="post"
             encType="text/plain"
           >
-            <SectionLabel>Send a message</SectionLabel>
+            <SectionLabel icon={MessageSquare}>Send a message</SectionLabel>
             <h2>Write to us by email</h2>
             <label>
               <span>Name</span>

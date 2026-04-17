@@ -1,4 +1,5 @@
 import SectionLabel from "../../components/SectionLabel/index.jsx";
+import { BadgeCheck, ClipboardCheck, FileText, HeartHandshake, Route, ShieldCheck, Sparkles } from "lucide-react";
 import "./style.scss";
 
 const values = [
@@ -15,11 +16,13 @@ const steps = [
   ["4", "Track status", "Follow updates until the case is resolved or closed."],
 ];
 
+const featureIcons = [ClipboardCheck, FileText, Route];
+
 function About() {
   return (
     <>
       <section className="about-hero section">
-        <SectionLabel>About Fly Friendly</SectionLabel>
+        <SectionLabel icon={HeartHandshake}>About Fly Friendly</SectionLabel>
         <h1>A simpler way to manage flight disruption claims</h1>
         <p>
           Fly Friendly helps travelers organize claim information, upload required documents,
@@ -34,7 +37,7 @@ function About() {
       <section className="about-mission band">
         <div className="about-mission__inner">
           <article>
-            <SectionLabel>Our Mission</SectionLabel>
+            <SectionLabel icon={BadgeCheck}>Our Mission</SectionLabel>
             <h2>Make passenger rights easier to use</h2>
             <p>
               We turn a complex compensation process into a guided experience. From eligibility checks
@@ -50,17 +53,28 @@ function About() {
       </section>
 
       <section className="about-section section">
-        <SectionLabel>What We Do</SectionLabel>
+        <SectionLabel icon={ClipboardCheck}>What We Do</SectionLabel>
         <h2>Practical support from first check to final update</h2>
         <div className="about-feature-grid">
-          <article><span>⌁</span><h3>Eligibility Check</h3><p>We help passengers understand whether a delay, cancellation, denied boarding, or missed connection may qualify.</p></article>
-          <article><span>▱</span><h3>Document Flow</h3><p>Travelers can prepare the details and documents needed to support a compensation case.</p></article>
-          <article><span>▦</span><h3>Case Handling</h3><p>Fly Friendly can manage airline communication and keep the claim process organized.</p></article>
+          {[
+            ["Eligibility Check", "We help passengers understand whether a delay, cancellation, denied boarding, or missed connection may qualify."],
+            ["Document Flow", "Travelers can prepare the details and documents needed to support a compensation case."],
+            ["Case Handling", "Fly Friendly can manage airline communication and keep the claim process organized."],
+          ].map(([title, text], index) => {
+            const FeatureIcon = featureIcons[index];
+            return (
+              <article key={title}>
+                <span><FeatureIcon size={24} strokeWidth={2} aria-hidden="true" /></span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            );
+          })}
         </div>
       </section>
 
       <section className="about-section section">
-        <SectionLabel>Our Values</SectionLabel>
+        <SectionLabel icon={ShieldCheck}>Our Values</SectionLabel>
         <h2>Built around trust, clarity, and action</h2>
         <div className="about-value-grid">
           {values.map(([title, text]) => (
@@ -74,7 +88,7 @@ function About() {
 
       <section className="about-process band">
         <div className="about-process__inner">
-          <SectionLabel>How It Works</SectionLabel>
+          <SectionLabel icon={Sparkles}>How It Works</SectionLabel>
           <h2>Four clear stages</h2>
           <div className="about-step-grid">
             {steps.map(([number, title, text]) => (

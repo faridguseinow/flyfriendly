@@ -1,3 +1,4 @@
+
 .compensation-slider {
   margin-top: 34px;
   text-align: left;
@@ -57,17 +58,48 @@
     position: absolute;
     left: 36px;
     right: 36px;
-    top: 12px;
+    top: 0;
     width: calc(100% - 72px);
-    height: 40px;
+    height: 44px;
     margin: 0;
-    opacity: 0;
+    background: transparent;
+    opacity: 0.01;
     cursor: grab;
     z-index: 3;
-    touch-action: pan-x;
+    touch-action: none;
 
     &:active {
       cursor: grabbing;
+    }
+
+    &::-webkit-slider-runnable-track {
+      height: 44px;
+      background: transparent;
+    }
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 32px;
+      height: 32px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: transparent;
+      border: 0;
+    }
+
+    &::-moz-range-track {
+      height: 44px;
+      background: transparent;
+      border: 0;
+    }
+
+    &::-moz-range-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: transparent;
+      border: 0;
     }
   }
 }
@@ -170,7 +202,8 @@
       left: 12px;
       right: 12px;
       width: calc(100% - 24px);
-      height: 44px;
+      height: 48px;
+      top: -2px;
     }
   }
 

@@ -1,5 +1,20 @@
 import SectionLabel from "../../components/SectionLabel/index.jsx";
 import { faqs } from "../../constants/site.js";
+import {
+  BadgeCheck,
+  BookOpen,
+  ChartBar,
+  CircleDollarSign,
+  CircleHelp,
+  Globe2,
+  Handshake,
+  Image,
+  Megaphone,
+  Settings,
+  Sparkles,
+  Trophy,
+  Users,
+} from "lucide-react";
 import "./style.scss";
 
 const partnerImage = "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80";
@@ -14,17 +29,17 @@ const avatars = [
 ];
 
 const accessItems = [
-  ["▣", "Compete and win travel vouchers.", "Earn up to 20% on every successful referral."],
-  ["⌁", "Featured Partner Spotlights", "Get promoted on our channels."],
-  ["✣", "Custom Collab Opportunities", "Co-create campaigns with our design team."],
-  ["▱", "Creator Resource Hub", "Tutorials, tips, and analytics insights."],
+  [Trophy, "Compete and win travel vouchers.", "Earn up to 20% on every successful referral."],
+  [Megaphone, "Featured Partner Spotlights", "Get promoted on our channels."],
+  [Handshake, "Custom Collab Opportunities", "Co-create campaigns with our design team."],
+  [BookOpen, "Creator Resource Hub", "Tutorials, tips, and analytics insights."],
 ];
 
 const benefits = [
-  ["▣", "Generous Commissions", "Earn up to 20% on every successful referral."],
-  ["▥", "Instant Tracking Dashboard", "View clicks, signups, and earnings in real time."],
-  ["▰", "Creative Assets Provided", "Ready-made visuals, brand kits, and caption templates."],
-  ["◉", "Global Recognition", "Be part of a network that's changing flight experiences worldwide."],
+  [CircleDollarSign, "Generous Commissions", "Earn up to 20% on every successful referral."],
+  [ChartBar, "Instant Tracking Dashboard", "View clicks, signups, and earnings in real time."],
+  [Image, "Creative Assets Provided", "Ready-made visuals, brand kits, and caption templates."],
+  [Globe2, "Global Recognition", "Be part of a network that's changing flight experiences worldwide."],
 ];
 
 const steps = [
@@ -106,14 +121,14 @@ function Referral() {
       </section>
 
       <section className="ref-section section">
-        <SectionLabel>▱ Exclusive Access</SectionLabel>
+        <SectionLabel icon={Sparkles}>Exclusive Access</SectionLabel>
         <h2>More than earnings, it's partnership</h2>
         <p className="section-copy">Fly Friendly supports every creator with the tools and visibility they deserve.</p>
         <div className="ref-partnership-grid">
           <article className="ref-access-card">
-            {accessItems.map(([icon, title, text]) => (
+            {accessItems.map(([Icon, title, text]) => (
               <div className="ref-access-item" key={title}>
-                <span>{icon}</span>
+                <span><Icon size={24} strokeWidth={2} aria-hidden="true" /></span>
                 <div>
                   <h3>{title}</h3>
                   <p>{text}</p>
@@ -129,13 +144,13 @@ function Referral() {
       </section>
 
       <section className="ref-section ref-benefits section">
-        <SectionLabel>▦ Program Benefits</SectionLabel>
+        <SectionLabel icon={BadgeCheck}>Program Benefits</SectionLabel>
         <h2>A trusted partner worldwide</h2>
         <p className="section-copy">Serving millions of passengers in all countries, speaking all languages.</p>
         <div className="ref-benefit-grid">
-          {benefits.map(([icon, title, text]) => (
+          {benefits.map(([Icon, title, text]) => (
             <article className="ref-benefit-card" key={title}>
-              <span>{icon}</span>
+              <span><Icon size={24} strokeWidth={2} aria-hidden="true" /></span>
               <h3>{title}</h3>
               <p>{text}</p>
             </article>
@@ -145,7 +160,7 @@ function Referral() {
 
       <section className="ref-process band">
         <div className="ref-process__inner">
-          <SectionLabel>⚙ Simple 3-Step Process</SectionLabel>
+          <SectionLabel icon={Settings}>Simple 3-Step Process</SectionLabel>
           <h2>Your path to effortless earnings</h2>
           <p>It's quick, transparent, and built for creators who want to make an impact.</p>
           <div className="ref-step-grid">
@@ -167,7 +182,7 @@ function Referral() {
       </section>
 
       <section className="ref-section ref-voices section">
-        <SectionLabel>☻ Community Voices</SectionLabel>
+        <SectionLabel icon={Users}>Community Voices</SectionLabel>
         <h2>Creators who grew with Fly Friendly</h2>
         <p className="section-copy">
           Many influencers have earned money simply by sharing and educating their followers about their flight rights through our program.
@@ -207,7 +222,7 @@ function Referral() {
       </section>
 
       <section className="section faq ref-faq">
-        <SectionLabel>ⓘ FAQ</SectionLabel>
+        <SectionLabel icon={CircleHelp}>FAQ</SectionLabel>
         <h2>Frequently Asked Questions</h2>
         <p className="section-copy">Everything you need to know about claiming compensation.</p>
         <div className="faq-panel">
