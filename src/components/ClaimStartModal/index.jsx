@@ -6,9 +6,9 @@ import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { signInCustomer, signUpCustomer } from "../../services/authService.js";
 import "./style.scss";
 
-function ClaimStartModal({ isOpen, onClose }) {
+function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo = "/referralProgram", purpose = "partner" }) {
   const navigate = useNavigate();
-  const [mode, setMode] = useState("signup");
+  const [mode, setMode] = useState(initialMode);
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -37,6 +37,14 @@ function ClaimStartModal({ isOpen, onClose }) {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setError("");
+      setNotice("");
+    }
+  }, [initialMode, isOpen]);
 
   if (!isOpen) {
     return null;
@@ -70,7 +78,7 @@ function ClaimStartModal({ isOpen, onClose }) {
       }
 
       onClose();
-      navigate("/claim/eligibility");
+      navigate(redirectTo);
     } catch (authError) {
       setError(authError.message || "Could not authenticate. Please try again.");
     } finally {
@@ -97,21 +105,25 @@ function ClaimStartModal({ isOpen, onClose }) {
           <img src={logoImage} alt="" />
         </div>
 
-        <h2 id="claim-modal-title">{isSignup ? "Get started today" : "Welcome Back"}</h2>
+        <h2 id="claim-modal-title">{isSignup ? "Create partner account" : "Welcome Back"}</h2>
         <p>
           {isSignup
-            ? "Create your account to check your ticket and start your compensation claim."
-            : "Please enter your full name and email to access your account."}
+            ? purpose === "partner"
+              ? "Apply for partner access and manage referral activity from your Fly Friendly account."
+              : "Create your account to continue."
+            : "Enter your email and password to access your account."}
         </p>
 
         <form className="claim-modal__form" onSubmit={submitForm}>
-          <label>
-            <span>Full Name</span>
-            <div>
-              <User size={18} strokeWidth={1.8} aria-hidden="true" />
-              <input name="fullName" value={form.fullName} onChange={updateField} type="text" placeholder="Enter Your Full Name" required />
-            </div>
-          </label>
+          {isSignup && (
+            <label>
+              <span>Full Name</span>
+              <div>
+                <User size={18} strokeWidth={1.8} aria-hidden="true" />
+                <input name="fullName" value={form.fullName} onChange={updateField} type="text" placeholder="Enter Your Full Name" required />
+              </div>
+            </label>
+          )}
 
           <label>
             <span>Email</span>

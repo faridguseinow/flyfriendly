@@ -82,6 +82,9 @@ export async function saveEligibilityCheck(claimId, data) {
   const client = requireSupabase();
   const payload = {
     claim_id: claimId,
+    departure_airport_id: data.departureAirportId || null,
+    arrival_airport_id: data.destinationAirportId || null,
+    airline_id: data.airlineId || null,
     departure_airport: data.departure || null,
     arrival_airport: data.destination || null,
     airline_code: data.airline || null,
@@ -122,6 +125,18 @@ export async function saveEligibilityCheck(claimId, data) {
 
   if (error) {
     throw error;
+  }
+
+  if (data.departureAirportId || data.destinationAirportId || data.airlineId) {
+    await client
+      .from("claims")
+      .update({
+        departure_airport_id: data.departureAirportId || null,
+        arrival_airport_id: data.destinationAirportId || null,
+        airline_id: data.airlineId || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", claimId);
   }
 
   await updateClaimStep(claimId, "contact");

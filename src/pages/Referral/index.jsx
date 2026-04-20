@@ -1,5 +1,7 @@
 import SectionLabel from "../../components/SectionLabel/index.jsx";
+import ClaimStartModal from "../../components/ClaimStartModal/index.jsx";
 import { faqs } from "../../constants/site.js";
+import { useState } from "react";
 import {
   BadgeCheck,
   BookOpen,
@@ -102,6 +104,15 @@ function AvatarStack() {
 }
 
 function Referral() {
+  const [authMode, setAuthMode] = useState("signup");
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const openPartnerAuth = (mode) => (event) => {
+    event.preventDefault();
+    setAuthMode(mode);
+    setIsAuthOpen(true);
+  };
+
   return (
     <>
       <section className="ref-hero section">
@@ -114,8 +125,8 @@ function Referral() {
             and get rewarded for every claim we win together.
           </p>
           <div className="ref-hero__actions">
-            <a href="#" className="btn btn-primary">Join as a Partner</a>
-            <a href="#" className="btn ref-btn-secondary">Log in</a>
+            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>Join as a Partner</a>
+            <a href="#partner-login" className="btn ref-btn-secondary" onClick={openPartnerAuth("login")}>Log in</a>
           </div>
         </div>
       </section>
@@ -216,7 +227,7 @@ function Referral() {
             <span># StartEarningToday</span>
             <h2>Become a Fly Friendly Partner</h2>
             <p>Join a network of creators helping travelers worldwide. It takes less than 5 minutes to get started.</p>
-            <a href="#" className="btn btn-primary">Apply Now <span>›</span></a>
+            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>Apply Now <span>›</span></a>
           </article>
         </div>
       </section>
@@ -234,6 +245,14 @@ function Referral() {
           ))}
         </div>
       </section>
+
+      <ClaimStartModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        initialMode={authMode}
+        redirectTo="/referralProgram"
+        purpose="partner"
+      />
     </>
   );
 }

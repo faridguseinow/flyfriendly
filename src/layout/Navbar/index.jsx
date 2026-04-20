@@ -106,10 +106,8 @@ function Navbar() {
   }, [isMenuOpen]);
 
   const closeMenu = () => setIsMenuOpen(false);
-  const openClaimModal = (event) => {
-    event.preventDefault();
+  const startClaim = () => {
     setIsMenuOpen(false);
-    window.dispatchEvent(new Event("fly-friendly:start-claim"));
   };
 
   return (
@@ -138,7 +136,7 @@ function Navbar() {
               ))}
             </div>
           </div>
-          <a className="btn btn-primary" href="#start-claim" onClick={openClaimModal}>Start Your Claim</a>
+          <Link className="btn btn-primary" to="/claim/eligibility">Start Your Claim</Link>
         </div>
         <button
           className="menu-toggle"
@@ -166,9 +164,9 @@ function Navbar() {
             ))}
           </div>
 
-          <a className="mobile-menu__claim" href="#start-claim" onClick={openClaimModal}>
+          <Link className="mobile-menu__claim" to="/claim/eligibility" onClick={startClaim}>
             Start Your Claim
-          </a>
+          </Link>
 
           <div className="mobile-menu__language">
             <Flag code="en" />

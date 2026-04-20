@@ -8,11 +8,14 @@ import {
   fetchAdminOverview,
   getAdminContext,
   updateClaimStatus,
+  updateLeadStatus,
   updateProfileRole,
 } from "../../services/adminService.js";
+import { signInCustomer } from "../../services/authService.js";
 import "./style.scss";
 
 const claimStatuses = ["new", "paid", "rejected"];
+const leadStatuses = ["new", "submitted", "not_eligible", "converted", "archived"];
 const profileRoles = ["customer", "admin", "manager", "support"];
 
 function AdminMetric({ icon: Icon, label, value }) {
@@ -44,16 +47,19 @@ function AdminTable({ title, description, children }) {
 function Admin() {
   const [context, setContext] = useState({ user: null, profile: null, isAdmin: false });
   const [overview, setOverview] = useState(null);
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const metrics = useMemo(() => {
     const claims = overview?.claims || [];
+    const leads = overview?.leads || [];
     return {
+      leads: leads.length,
       claims: claims.length,
       users: overview?.profiles?.length || 0,
       documents: overview?.documents?.length || 0,
-      open: claims.filter((claim) => claim.status === "new").length,
+      open: leads.filter((lead) => lead.status === "new").length + claims.filter((claim) => claim.status === "new").length,
     };
   }, [overview]);
 
@@ -90,9 +96,26 @@ function Admin() {
     await loadAdmin();
   };
 
+  const changeLeadStatus = async (leadId, status) => {
+    await updateLeadStatus(leadId, status);
+    await loadAdmin();
+  };
+
   const changeRole = async (profileId, role) => {
     await updateProfileRole(profileId, role);
     await loadAdmin();
+  };
+
+  const submitLogin = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    try {
+      await signInCustomer(loginForm);
+      await loadAdmin();
+    } catch (loginError) {
+      setError(loginError.message || "Could not sign in.");
+    }
   };
 
   return (
@@ -116,9 +139,23 @@ function Admin() {
         <section className="admin-empty">
           <h2>Admin login required</h2>
           <p>Sign in with an account that has `profiles.role = admin`.</p>
-          <button className="btn btn-primary" type="button" onClick={() => window.dispatchEvent(new Event("fly-friendly:start-claim"))}>
-            Log in
-          </button>
+          <form className="admin-login-form" onSubmit={submitLogin}>
+            <input
+              type="email"
+              placeholder="Admin email"
+              value={loginForm.email}
+              onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={loginForm.password}
+              onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
+              required
+            />
+            <button className="btn btn-primary" type="submit">Log in</button>
+          </form>
         </section>
       )}
 
@@ -132,11 +169,43 @@ function Admin() {
       {context.isAdmin && overview && (
         <>
           <section className="admin-metrics">
-            <AdminMetric icon={BadgeCheck} label="Claims loaded" value={metrics.claims} />
+            <AdminMetric icon={BadgeCheck} label="Leads loaded" value={metrics.leads} />
+            <AdminMetric icon={ShieldCheck} label="Claims loaded" value={metrics.claims} />
             <AdminMetric icon={Users} label="Users loaded" value={metrics.users} />
             <AdminMetric icon={FileText} label="Documents loaded" value={metrics.documents} />
-            <AdminMetric icon={ShieldCheck} label="Open work" value={metrics.open} />
+            <AdminMetric icon={BadgeCheck} label="Open work" value={metrics.open} />
           </section>
+
+          <AdminTable title="Leads" description="Public compensation requests from Start Your Claim and Check Compensation.">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Status</th>
+                  <th>Stage</th>
+                  <th>Route</th>
+                  <th>Contact</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overview.leads.map((lead) => (
+                  <tr key={lead.id}>
+                    <td>{lead.lead_code || lead.id.slice(0, 8)}</td>
+                    <td>
+                      <select value={lead.status || "new"} onChange={(event) => changeLeadStatus(lead.id, event.target.value)}>
+                        {leadStatuses.map((status) => <option value={status} key={status}>{status}</option>)}
+                      </select>
+                    </td>
+                    <td>{lead.stage || "-"}</td>
+                    <td>{lead.departure_airport || "-"} → {lead.arrival_airport || "-"}</td>
+                    <td>{lead.full_name || lead.email || lead.phone || "-"}</td>
+                    <td>{lead.created_at ? new Date(lead.created_at).toLocaleDateString() : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </AdminTable>
 
           <AdminTable title="Claims" description="Review customer requests and move them through the workflow.">
             <table>

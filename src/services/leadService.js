@@ -1,0 +1,139 @@
+import { requireSupabase } from "../lib/supabase.js";
+
+const LEAD_DOCUMENT_BUCKET = "claim-lead-documents";
+
+function leadCode() {
+  return `FL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+function parseFlightDate(value) {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return value;
+
+  const [, day, month, year] = match;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function baseLeadPayload(data = {}) {
+  return {
+    departure_airport_id: data.departureAirportId || null,
+    arrival_airport_id: data.destinationAirportId || null,
+    departure_airport: data.departure || null,
+    arrival_airport: data.destination || null,
+    airline_id: data.airlineId || null,
+    airline: data.airline || null,
+    flight_number: data.flightNumber || null,
+    scheduled_departure_date: parseFlightDate(data.date),
+    delay_duration: data.delayDuration || null,
+    disruption_type: data.delayDuration === "cancelled" ? "cancellation" : "delay",
+    is_direct: data.direct ? data.direct === "yes" : null,
+    full_name: data.fullName || null,
+    email: data.email || null,
+    phone: data.phone || null,
+    city: data.city || null,
+    has_whatsapp: Boolean(data.whatsapp),
+    reason: data.reason || null,
+    payload: data,
+  };
+}
+
+export async function createLead(data = {}, source = "claim_flow") {
+  const client = requireSupabase();
+  const payload = {
+    lead_code: leadCode(),
+    source,
+    status: "new",
+    stage: "eligibility",
+    ...baseLeadPayload(data),
+  };
+
+  const { data: lead, error } = await client
+    .from("leads")
+    .insert(payload)
+    .select("id, lead_code")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return lead;
+}
+
+export async function saveLeadStep(leadId, stage, data = {}) {
+  const client = requireSupabase();
+  const { error } = await client
+    .from("leads")
+    .update({
+      stage,
+      updated_at: new Date().toISOString(),
+      ...baseLeadPayload(data),
+    })
+    .eq("id", leadId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function submitLead(leadId, data = {}, eligibilityStatus = "eligible") {
+  const client = requireSupabase();
+  const { error } = await client
+    .from("leads")
+    .update({
+      status: eligibilityStatus === "not_eligible" ? "not_eligible" : "submitted",
+      stage: eligibilityStatus === "not_eligible" ? "denied" : "approved",
+      eligibility_status: eligibilityStatus,
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...baseLeadPayload(data),
+    })
+    .eq("id", leadId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function uploadLeadDocument(leadId, documentType, file) {
+  const client = requireSupabase();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+  const path = `leads/${leadId}/${documentType}/${crypto.randomUUID()}-${safeName}`;
+
+  const { error: uploadError } = await client.storage
+    .from(LEAD_DOCUMENT_BUCKET)
+    .upload(path, file, { upsert: false });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { error: metadataError } = await client.from("lead_documents").insert({
+    lead_id: leadId,
+    document_type: documentType,
+    file_path: path,
+    file_name: file.name,
+    mime_type: file.type,
+    file_size: file.size,
+    status: "uploaded",
+  });
+
+  if (metadataError) {
+    throw metadataError;
+  }
+
+  return path;
+}
+
+export async function saveLeadDocuments(leadId, data, files) {
+  for (const [documentType, file] of Object.entries(files)) {
+    if (file) {
+      await uploadLeadDocument(leadId, documentType, file);
+    }
+  }
+
+  await saveLeadStep(leadId, "finish", data);
+}

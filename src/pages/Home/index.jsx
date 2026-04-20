@@ -30,6 +30,7 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { articles, benefits, faqs, testimonials } from "../../constants/site.js";
 import deniedBoardingImage from "../../assets/media/Image-4.png";
 import missedConnectionPlane from "../../assets/media/hand-drawn-airplane-outline-illustration.png";
@@ -55,11 +56,6 @@ function FeatureItem({ icon: Icon, children }) {
 }
 
 function Home() {
-  const openClaimModal = (event) => {
-    event.preventDefault();
-    window.dispatchEvent(new Event("fly-friendly:start-claim"));
-  };
-
   return (
     <>
       <section className="hero section">
@@ -126,7 +122,7 @@ function Home() {
             <SectionLabel icon={BadgeAlert}>Flight Issues</SectionLabel>
             <h3>Your airline's fault?<br />You can still get paid.</h3>
             <p>Arrived 3+ hours late? You are eligible.</p>
-            <a href="#start-claim" className="btn btn-primary" onClick={openClaimModal}>Check Compensation</a>
+            <Link to="/claim/eligibility" className="btn btn-primary">Check Compensation</Link>
           </article>
           <article className="photo-cta">
             <img src={deniedBoardingImage} alt="Traveler holding a passport and luggage" />
@@ -134,8 +130,8 @@ function Home() {
               <IconBadge icon={BadgeAlert} />
               <h3>Denied Boarding</h3>
               <p>Overbooked flight? Demand your full compensation now. We fight for your rights.</p>
-              <a href="#start-claim" className="btn btn-small" onClick={openClaimModal}><Search size={16} strokeWidth={2} aria-hidden="true" /> Check Your Eligibility</a>
-              <a href="#start-claim" className="btn btn-small" onClick={openClaimModal}><FileText size={16} strokeWidth={2} aria-hidden="true" /> Start Your Claim</a>
+              <Link to="/claim/eligibility" className="btn btn-small"><Search size={16} strokeWidth={2} aria-hidden="true" /> Check Your Eligibility</Link>
+              <Link to="/claim/eligibility" className="btn btn-small"><FileText size={16} strokeWidth={2} aria-hidden="true" /> Start Your Claim</Link>
             </div>
           </article>
         </div>

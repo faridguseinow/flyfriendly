@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   BadgeCheck,
   Calendar,
@@ -23,14 +23,18 @@ import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import claimImage from "../../assets/media/Image-4.png";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
-import { getCurrentSession } from "../../services/authService.js";
 import {
-  createDraftClaim,
-  saveContactInformation,
-  saveDocumentStep,
-  saveEligibilityCheck,
-  submitClaim,
-} from "../../services/claimService.js";
+  formatAirlineOption,
+  formatAirportOption,
+  searchAirlines,
+  searchAirports,
+} from "../../services/catalogService.js";
+import {
+  createLead,
+  saveLeadDocuments,
+  saveLeadStep,
+  submitLead,
+} from "../../services/leadService.js";
 import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
@@ -124,11 +128,11 @@ function Stepper({ activeIndex, completed = false }) {
   );
 }
 
-function Field({ icon: Icon, placeholder, type = "text", name, value, onChange, list, required = false }) {
+function Field({ icon: Icon, placeholder, type = "text", name, value, onChange, list, required = false, onBlur }) {
   return (
     <label className="claim-field">
       <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
-      <input name={name} value={value || ""} onChange={onChange} readOnly={!onChange} type={type} placeholder={placeholder} list={list} required={required} />
+      <input name={name} value={value || ""} onChange={onChange} onBlur={onBlur} readOnly={!onChange} type={type} placeholder={placeholder} list={list} required={required} />
     </label>
   );
 }
@@ -212,14 +216,14 @@ function FileRow({ done }) {
   );
 }
 
-function EligibilityStep({ data, onChange, onNext }) {
+function EligibilityStep({ data, onChange, onNext, airportOptions, airlineOptions }) {
   return (
     <form className="claim-form" onSubmit={onNext}>
       <datalist id="claim-airports">
-        {airportOptions.map((item) => <option value={item} key={item} />)}
+        {airportOptions.map((item) => <option value={item.label || item} key={item.id || item} />)}
       </datalist>
       <datalist id="claim-airlines">
-        {airlineOptions.map((item) => <option value={item} key={item} />)}
+        {airlineOptions.map((item) => <option value={item.label || item} key={item.id || item} />)}
       </datalist>
       <section className="claim-question">
         <h3>Where did you fly?</h3>
@@ -422,7 +426,7 @@ function ApprovedResult({ data }) {
           <Field icon={Plane} value={data.departure || "Baku (BAK)"} placeholder="Baku (BAK)" />
           <Field icon={Plane} value={data.destination || "Washington (DCA)"} placeholder="Washington (DCA)" />
         </div>
-        <strong className="claim-id">Claim ID: #FF743621</strong>
+        <strong className="claim-id">Lead ID: #{data.leadCode || "Pending"}</strong>
       </section>
       <section className="claim-question claim-next">
         <h3>What happens next</h3>
@@ -448,8 +452,15 @@ function ApprovedResult({ data }) {
 function ClaimFlow() {
   const navigate = useNavigate();
   const { stage = "eligibility" } = useParams();
-  const [data, setData] = useState(() => JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}"));
+  const [searchParams] = useSearchParams();
+  const [data, setData] = useState(() => ({
+    ...JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}"),
+    departure: searchParams.get("departure") || JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}").departure,
+    destination: searchParams.get("destination") || JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}").destination,
+  }));
   const [files, setFiles] = useState({});
+  const [airportMatches, setAirportMatches] = useState([]);
+  const [airlineMatches, setAirlineMatches] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [syncError, setSyncError] = useState("");
   const [syncNotice, setSyncNotice] = useState("");
@@ -459,32 +470,83 @@ function ClaimFlow() {
     localStorage.setItem("flyFriendlyClaim", JSON.stringify(data));
   }, [data]);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || stage !== "eligibility") {
+      return;
+    }
+
+    const query = [data.departure, data.destination]
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length)[0];
+
+    if (!query || query.length < 2) {
+      setAirportMatches([]);
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      try {
+        const airports = await searchAirports(query);
+        setAirportMatches(airports.map((airport) => ({ ...airport, label: formatAirportOption(airport) })));
+      } catch {
+        setAirportMatches([]);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [data.departure, data.destination, stage]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || stage !== "eligibility" || !data.airline || data.airline.length < 2) {
+      setAirlineMatches([]);
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      try {
+        const airlines = await searchAirlines(data.airline);
+        setAirlineMatches(airlines.map((airline) => ({ ...airline, label: formatAirlineOption(airline) })));
+      } catch {
+        setAirlineMatches([]);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [data.airline, stage]);
+
   const onChange = (event) => {
     const { name, type, checked, value } = event.target;
-    setData({ ...data, [name]: type === "checkbox" ? checked : value });
+    const nextData = { ...data, [name]: type === "checkbox" ? checked : value };
+    const selectedAirport = airportMatches.find((airport) => airport.label === value);
+    const selectedAirline = airlineMatches.find((airline) => airline.label === value);
+
+    if (name === "departure") {
+      nextData.departureAirportId = selectedAirport?.id || null;
+    }
+
+    if (name === "destination") {
+      nextData.destinationAirportId = selectedAirport?.id || null;
+    }
+
+    if (name === "airline") {
+      nextData.airlineId = selectedAirline?.id || null;
+    }
+
+    setData(nextData);
   };
 
   const onFile = (documentType, file) => {
     setFiles((current) => ({ ...current, [documentType]: file }));
   };
 
-  const ensureSession = async () => {
-    const session = await getCurrentSession();
-
-    if (!session) {
-      window.dispatchEvent(new Event("fly-friendly:start-claim"));
-      throw new Error("Please sign in before saving a claim.");
-    }
-  };
-
-  const ensureClaim = async () => {
-    if (data.claimId) {
-      return data.claimId;
+  const ensureLead = async () => {
+    if (data.leadId) {
+      return data.leadId;
     }
 
-    const claimId = await createDraftClaim();
-    setData((current) => ({ ...current, claimId }));
-    return claimId;
+    const lead = await createLead(data);
+    setData((current) => ({ ...current, leadId: lead.id, leadCode: lead.lead_code }));
+    return lead.id;
   };
 
   const go = (nextStage) => navigate(`/claim/${nextStage}`);
@@ -495,6 +557,16 @@ function ClaimFlow() {
     setSyncNotice("");
 
     if (stage === "eligibility" && data.delayDuration === "less_than_3") {
+      if (isSupabaseConfigured) {
+        try {
+          const leadId = await ensureLead();
+          await submitLead(leadId, data, "not_eligible");
+        } catch (error) {
+          setSyncError(error.message || "Could not save lead data.");
+          return;
+        }
+      }
+
       setSyncNotice("Based on the delay duration, this flight is not eligible for compensation.");
       go("denied");
       return;
@@ -509,23 +581,22 @@ function ClaimFlow() {
     setIsSaving(true);
 
     try {
-      await ensureSession();
-      const claimId = await ensureClaim();
+      const leadId = await ensureLead();
 
       if (stage === "eligibility") {
-        await saveEligibilityCheck(claimId, data);
+        await saveLeadStep(leadId, "contact", data);
       }
 
       if (stage === "contact") {
-        await saveContactInformation(claimId, data);
+        await saveLeadStep(leadId, "documents", data);
       }
 
       if (stage === "documents") {
-        await saveDocumentStep(claimId, data, files);
+        await saveLeadDocuments(leadId, data, files);
       }
 
       if (stage === "finish") {
-        await submitClaim(claimId, true);
+        await submitLead(leadId, data, "eligible");
       }
 
       setSyncNotice("Saved in Supabase.");
@@ -543,7 +614,15 @@ function ClaimFlow() {
     if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} />;
     if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
     if (stage === "finish") return <FinishStep data={data} onChange={onChange} onNext={(event) => submit("approved", event)} onBack={() => go("documents")} />;
-    return <EligibilityStep data={data} onChange={onChange} onNext={(event) => submit("contact", event)} />;
+    return (
+      <EligibilityStep
+        data={data}
+        onChange={onChange}
+        onNext={(event) => submit("contact", event)}
+        airportOptions={airportMatches.length ? airportMatches : airportOptions}
+        airlineOptions={airlineMatches.length ? airlineMatches : airlineOptions}
+      />
+    );
   };
 
   return (
