@@ -12,7 +12,7 @@ import {
 } from "../../services/adminService.js";
 import "./style.scss";
 
-const claimStatuses = ["draft", "submitted", "in_review", "approved", "not_eligible", "paid", "rejected"];
+const claimStatuses = ["new", "paid", "rejected"];
 const profileRoles = ["customer", "admin", "manager", "support"];
 
 function AdminMetric({ icon: Icon, label, value }) {
@@ -53,7 +53,7 @@ function Admin() {
       claims: claims.length,
       users: overview?.profiles?.length || 0,
       documents: overview?.documents?.length || 0,
-      open: claims.filter((claim) => ["draft", "submitted", "in_review"].includes(claim.status)).length,
+      open: claims.filter((claim) => claim.status === "new").length,
     };
   }, [overview]);
 
@@ -154,7 +154,7 @@ function Admin() {
                   <tr key={claim.id}>
                     <td>{claim.claim_code || claim.id.slice(0, 8)}</td>
                     <td>
-                      <select value={claim.status || "draft"} onChange={(event) => changeClaimStatus(claim.id, event.target.value)}>
+                      <select value={claim.status || "new"} onChange={(event) => changeClaimStatus(claim.id, event.target.value)}>
                         {claimStatuses.map((status) => <option value={status} key={status}>{status}</option>)}
                       </select>
                     </td>

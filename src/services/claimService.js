@@ -41,7 +41,7 @@ export async function createDraftClaim() {
     .insert({
       user_id: user.id,
       claim_code: `FF-${Date.now().toString(36).toUpperCase()}`,
-      status: "draft",
+      status: "new",
       eligibility_status: "pending",
       currency: "EUR",
     })
@@ -57,14 +57,20 @@ export async function createDraftClaim() {
   return data.id;
 }
 
-export async function updateClaimStep(claimId, step, status = "draft") {
+export async function updateClaimStep(claimId, step, status = "new", eligibilityStatus) {
   const client = requireSupabase();
+  const payload = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (eligibilityStatus) {
+    payload.eligibility_status = eligibilityStatus;
+  }
+
   const { error } = await client
     .from("claims")
-    .update({
-      status,
-      updated_at: new Date().toISOString(),
-    })
+    .update(payload)
     .eq("id", claimId);
 
   if (error) {
@@ -267,9 +273,9 @@ export async function saveDocumentStep(claimId, data, files) {
 
 export async function submitClaim(claimId, isEligible) {
   const client = requireSupabase();
-  const status = isEligible ? "submitted" : "not_eligible";
+  const eligibilityStatus = isEligible ? "eligible" : "not_eligible";
 
-  await updateClaimStep(claimId, isEligible ? "approved" : "denied", status);
+  await updateClaimStep(claimId, isEligible ? "approved" : "denied", "new", eligibilityStatus);
 
   let { error: resultError } = await client.from("eligibility_results").insert({
     claim_id: claimId,
@@ -293,11 +299,15 @@ export async function submitClaim(claimId, isEligible) {
     resultError = fallback.error;
   }
 
+  if (resultError?.code === "42501") {
+    return;
+  }
+
   if (resultError) {
     throw resultError;
   }
 
-  await addClaimEvent(claimId, isEligible ? "claim_submitted" : "claim_not_eligible", status);
+  await addClaimEvent(claimId, isEligible ? "claim_submitted" : "claim_not_eligible", eligibilityStatus);
 }
 
 export async function addClaimEvent(claimId, type, message) {
@@ -306,6 +316,10 @@ export async function addClaimEvent(claimId, type, message) {
     claim_id: claimId,
     ...eventPayload(type, message),
   });
+
+  if (error?.code === "42501") {
+    return;
+  }
 
   if (error) {
     throw error;
