@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.103.3",
     "@vitejs/plugin-react": "^5.0.4",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",

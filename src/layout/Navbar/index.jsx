@@ -106,6 +106,11 @@ function Navbar() {
   }, [isMenuOpen]);
 
   const closeMenu = () => setIsMenuOpen(false);
+  const openClaimModal = (event) => {
+    event.preventDefault();
+    setIsMenuOpen(false);
+    window.dispatchEvent(new Event("fly-friendly:start-claim"));
+  };
 
   return (
     <header className={`site-header${isMenuOpen ? " is-menu-open" : ""}`}>
@@ -133,7 +138,7 @@ function Navbar() {
               ))}
             </div>
           </div>
-          <a className="btn btn-primary" href="#">Start Your Claim</a>
+          <a className="btn btn-primary" href="#start-claim" onClick={openClaimModal}>Start Your Claim</a>
         </div>
         <button
           className="menu-toggle"
@@ -161,7 +166,7 @@ function Navbar() {
             ))}
           </div>
 
-          <a className="mobile-menu__claim" href="#" onClick={closeMenu}>
+          <a className="mobile-menu__claim" href="#start-claim" onClick={openClaimModal}>
             Start Your Claim
           </a>
 

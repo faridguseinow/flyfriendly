@@ -2,8 +2,13 @@ import { Infinity, PlaneLanding, PlaneTakeoff } from "lucide-react";
 import "./style.scss";
 
 function ClaimBox() {
+  const openClaimModal = (event) => {
+    event.preventDefault();
+    window.dispatchEvent(new Event("fly-friendly:start-claim"));
+  };
+
   return (
-    <form className="claim-box" action="#">
+    <form className="claim-box" action="#" onSubmit={openClaimModal}>
       <div className="claim-box__avatars" aria-hidden="true">
         <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="" />
         <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="" />
@@ -20,7 +25,7 @@ function ClaimBox() {
           <span className="icon" aria-hidden="true"><PlaneLanding size={24} strokeWidth={2} /></span>
           <input type="text" placeholder="Destination Airport" />
         </label>
-        <a href="#" className="btn btn-primary">Check Compensation <span>›</span></a>
+        <button className="btn btn-primary" type="submit">Check Compensation <span>›</span></button>
       </div>
       <div className="claim-box__meta">
         <span>It's free</span>

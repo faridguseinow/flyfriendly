@@ -3,6 +3,8 @@ import Home from "../pages/Home/index.jsx";
 import About from "../pages/About/index.jsx";
 import Contact from "../pages/Contact/index.jsx";
 import Referral from "../pages/Referral/index.jsx";
+import Claim from "../pages/Claim/index.jsx";
+import Admin from "../pages/Admin/index.jsx";
 import PrivacyPolicy from "../pages/PrivacyPolicy/index.jsx";
 import TermsOfUse from "../pages/TermsOfUse/index.jsx";
 import Cookies from "../pages/Cookies/index.jsx";
@@ -13,6 +15,10 @@ function AnimatedRoutes({ location }) {
       <Route path="/" element={<Home />} />
       <Route path="/referral" element={<Referral />} />
       <Route path="/referralProgram" element={<Referral />} />
+      <Route path="/claim" element={<Claim />} />
+      <Route path="/claim/:stage" element={<Claim />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/control-dashboard" element={<Admin />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/about" element={<About />} />
       <Route path="/aboutUs" element={<About />} />
