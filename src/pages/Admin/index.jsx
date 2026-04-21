@@ -6,6 +6,7 @@ import logoText from "../../assets/icons/fly-friendly.svg";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import {
   fetchAdminOverview,
+  getDocumentDownloadUrl,
   getAdminContext,
   updateClaimStatus,
   updateLeadStatus,
@@ -104,6 +105,17 @@ function Admin() {
   const changeRole = async (profileId, role) => {
     await updateProfileRole(profileId, role);
     await loadAdmin();
+  };
+
+  const downloadDocument = async (document) => {
+    setError("");
+
+    try {
+      const url = await getDocumentDownloadUrl(document);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (downloadError) {
+      setError(downloadError.message || "Could not create document download link.");
+    }
   };
 
   const submitLogin = async (event) => {
@@ -207,6 +219,31 @@ function Admin() {
             </table>
           </AdminTable>
 
+          <AdminTable title="Lead Details" description="Flight data, contact information, and customer notes collected from the lead form.">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Flight</th>
+                  <th>Delay</th>
+                  <th>Contact</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overview.leads.map((lead) => (
+                  <tr key={lead.id}>
+                    <td>{lead.lead_code || lead.id.slice(0, 8)}</td>
+                    <td>{lead.airline || "-"} · {lead.departure_airport || "-"} → {lead.arrival_airport || "-"}</td>
+                    <td>{lead.payload?.delayDuration || lead.eligibility_status || "-"}</td>
+                    <td>{lead.full_name || "-"} · {lead.email || lead.phone || "-"}</td>
+                    <td className="admin-cell-wrap">{lead.reason || lead.payload?.reason || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </AdminTable>
+
           <AdminTable title="Claims" description="Review customer requests and move them through the workflow.">
             <table>
               <thead>
@@ -267,19 +304,56 @@ function Admin() {
             <table>
               <thead>
                 <tr>
+                  <th>Owner</th>
                   <th>Type</th>
                   <th>File</th>
                   <th>Status</th>
                   <th>Created</th>
+                  <th>Download</th>
                 </tr>
               </thead>
               <tbody>
                 {overview.documents.map((document) => (
                   <tr key={document.id}>
+                    <td>{document.owner_type}</td>
                     <td>{document.document_type}</td>
                     <td>{document.file_name}</td>
                     <td>{document.status}</td>
                     <td>{document.created_at ? new Date(document.created_at).toLocaleDateString() : "-"}</td>
+                    <td>
+                      <button className="admin-link-button" type="button" onClick={() => downloadDocument(document)}>
+                        Download
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </AdminTable>
+
+          <AdminTable title="Electronic Signatures" description="Final lead signatures and accepted terms for submitted claims.">
+            <table>
+              <thead>
+                <tr>
+                  <th>Signer</th>
+                  <th>Email</th>
+                  <th>Terms</th>
+                  <th>Signed</th>
+                  <th>Preview</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overview.leadSignatures.map((signature) => (
+                  <tr key={signature.id}>
+                    <td>{signature.signer_name || "-"}</td>
+                    <td>{signature.signer_email || "-"}</td>
+                    <td>{signature.terms_accepted ? "Accepted" : "Missing"}</td>
+                    <td>{signature.signed_at ? new Date(signature.signed_at).toLocaleString() : "-"}</td>
+                    <td>
+                      <a className="admin-link-button" href={signature.signature_data_url} target="_blank" rel="noreferrer">
+                        Open signature
+                      </a>
+                    </td>
                   </tr>
                 ))}
               </tbody>

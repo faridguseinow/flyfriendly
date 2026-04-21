@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   BadgeCheck,
@@ -32,6 +32,7 @@ import {
 import {
   createLead,
   saveLeadDocuments,
+  saveLeadSignature,
   saveLeadStep,
   submitLead,
 } from "../../services/leadService.js";
@@ -329,39 +330,107 @@ function DocumentsStep({ data, files, onChange, onFile, onNext, onBack, isSaving
   );
 }
 
-function FinishStep({ data, onChange, onNext, onBack }) {
+function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasInk, setHasInk] = useState(Boolean(data.signatureDataUrl));
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    context.scale(ratio, ratio);
+    context.lineWidth = 2.5;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#1f2937";
+
+    if (data.signatureDataUrl) {
+      const image = new Image();
+      image.onload = () => context.drawImage(image, 0, 0, rect.width, rect.height);
+      image.src = data.signatureDataUrl;
+    }
+  }, [data.signatureDataUrl]);
+
+  const point = (event) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  const beginSignature = (event) => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    const { x, y } = point(event);
+    canvas.setPointerCapture(event.pointerId);
+    context.beginPath();
+    context.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const drawSignature = (event) => {
+    if (!isDrawing) return;
+    const context = canvasRef.current.getContext("2d");
+    const { x, y } = point(event);
+    context.lineTo(x, y);
+    context.stroke();
+    setHasInk(true);
+  };
+
+  const endSignature = () => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    onSignature(canvasRef.current.toDataURL("image/png"));
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    setHasInk(false);
+    onSignature("");
+  };
+
   return (
     <form className="claim-form" onSubmit={onNext}>
-      <section className="claim-question">
-        <h3>Your right to compensation?</h3>
-        <div className="claim-two">
-          <Field icon={Plane} name="departure" value={data.departure} onChange={onChange} placeholder="Departure Airport" />
-          <Field icon={Plane} name="destination" value={data.destination} onChange={onChange} placeholder="Destination Airport" />
+      <section className="claim-question claim-sign">
+        <h3>Finish & Sign</h3>
+        <p>Please review the terms and sign below to finalize your claim.</p>
+        <div className="claim-sign__field">
+          <label>Digital Signature</label>
+          <div className="claim-signature-pad">
+            <canvas
+              ref={canvasRef}
+              onPointerDown={beginSignature}
+              onPointerMove={drawSignature}
+              onPointerUp={endSignature}
+              onPointerLeave={endSignature}
+              aria-label="Digital signature"
+            />
+            <button type="button" onClick={clearSignature}>Clear</button>
+          </div>
+          <small>* Please use your mouse or finger to sign inside the box.</small>
         </div>
-      </section>
-      <section className="claim-question">
-        <h3>Your right to compensation?</h3>
-        <div className="claim-two">
-          <Field icon={Calendar} name="date" value={data.date} onChange={onChange} placeholder="dd/mm/yyyy" />
-          <Field icon={Plane} name="destination" value={data.destination} onChange={onChange} placeholder="Destination Airport" />
-        </div>
-      </section>
-      <section className="claim-question">
-        <h3>Your right to compensation?</h3>
-        <label className="claim-radio"><input type="radio" name="direct" value="yes" checked={data.direct === "yes"} onChange={onChange} /> Yes, that was direct</label>
-        <label className="claim-radio"><input type="radio" name="direct" value="no" checked={data.direct === "no"} onChange={onChange} /> No, that was not direct</label>
-      </section>
-      <section className="claim-question">
-        <h3>Your right to compensation?</h3>
-        <div className="claim-two">
-          <SelectField icon={Plane} name="departure" value={data.departure} onChange={onChange} placeholder="Departure Airport" />
-          <SelectField icon={Plane} name="destination" value={data.destination} onChange={onChange} placeholder="Destination Airport" />
-        </div>
-        <label className="claim-check"><input type="checkbox" name="terms" checked={Boolean(data.terms)} onChange={onChange} required /> I agree to the terms and conditions and privacy statement.</label>
+        <label className="claim-sign__terms">
+          <input type="checkbox" name="termsAccepted" checked={Boolean(data.termsAccepted)} onChange={onChange} required />
+          <span>
+            I agree to the <Link to="/terms">Terms & Conditions</Link> and confirm that the information provided is accurate.
+          </span>
+        </label>
       </section>
       <div className="claim-actions">
         <button className="claim-back" type="button" onClick={onBack}>Back</button>
-        <button className="btn btn-primary" type="submit">Submit</button>
+        <button className="btn btn-primary" type="submit" disabled={isSaving || !hasInk || !data.termsAccepted}>
+          {isSaving ? "Submitting..." : "Submit Claim"}
+        </button>
       </div>
     </form>
   );
@@ -539,6 +608,10 @@ function ClaimFlow() {
     setFiles((current) => ({ ...current, [documentType]: file }));
   };
 
+  const onSignature = (signatureDataUrl) => {
+    setData((current) => ({ ...current, signatureDataUrl }));
+  };
+
   const ensureLead = async () => {
     if (data.leadId) {
       return data.leadId;
@@ -596,6 +669,11 @@ function ClaimFlow() {
       }
 
       if (stage === "finish") {
+        if (!data.signatureDataUrl || !data.termsAccepted) {
+          throw new Error("Please sign and accept the terms before submitting.");
+        }
+
+        await saveLeadSignature(leadId, data);
         await submitLead(leadId, data, "eligible");
       }
 
@@ -613,7 +691,18 @@ function ClaimFlow() {
     if (stage === "approved") return <ApprovedResult data={data} />;
     if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} />;
     if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
-    if (stage === "finish") return <FinishStep data={data} onChange={onChange} onNext={(event) => submit("approved", event)} onBack={() => go("documents")} />;
+    if (stage === "finish") {
+      return (
+        <FinishStep
+          data={data}
+          onSignature={onSignature}
+          onChange={onChange}
+          onNext={(event) => submit("approved", event)}
+          onBack={() => go("documents")}
+          isSaving={isSaving}
+        />
+      );
+    }
     return (
       <EligibilityStep
         data={data}

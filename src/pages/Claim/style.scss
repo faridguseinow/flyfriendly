@@ -551,6 +551,97 @@
   }
 }
 
+.claim-sign {
+  h3 {
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+}
+
+.claim-sign__field {
+  margin-top: 28px;
+  display: grid;
+  gap: 10px;
+
+  > label {
+    color: #334155;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 700;
+  }
+
+  > small {
+    color: #8d98aa;
+    font-size: 13px;
+    line-height: 18px;
+    font-style: italic;
+  }
+}
+
+.claim-signature-pad {
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+  border: 2px dashed #d8e0ea;
+  border-radius: 16px;
+  background: #f8fafc;
+  transition: border-color 180ms ease;
+
+  &:focus-within {
+    border-color: var(--primary);
+  }
+
+  canvas {
+    width: 100%;
+    height: 220px;
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+  }
+
+  button {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    color: #8d98aa;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    cursor: pointer;
+  }
+}
+
+.claim-sign__terms {
+  margin-top: 24px;
+  padding: 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: #515763;
+  background: #f8fafc;
+  font-size: 16px;
+  line-height: 24px;
+
+  input {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    flex: 0 0 auto;
+    accent-color: var(--primary);
+  }
+
+  a {
+    color: var(--primary);
+    text-decoration: underline;
+    font-weight: 600;
+  }
+}
+
 .result-icon {
   margin-bottom: 14px;
 }

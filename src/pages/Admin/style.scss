@@ -187,6 +187,12 @@
   white-space: nowrap;
 }
 
+.admin-panel td.admin-cell-wrap {
+  min-width: 280px;
+  max-width: 520px;
+  white-space: normal;
+}
+
 .admin-panel th {
   color: #767c87;
   font-weight: 500;
@@ -200,6 +206,22 @@
   border-radius: 8px;
   color: #20242e;
   background: #fff;
+}
+
+.admin-link-button {
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--primary);
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
 }
 
 .admin-grid {

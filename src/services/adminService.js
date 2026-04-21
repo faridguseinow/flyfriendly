@@ -1,6 +1,10 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser } from "./authService.js";
 
+function isMissingOptionalTable(error) {
+  return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
+}
+
 export async function getAdminContext() {
   const client = requireSupabase();
   const user = await getCurrentUser();
@@ -25,10 +29,10 @@ export async function getAdminContext() {
 export async function fetchAdminOverview() {
   const client = requireSupabase();
 
-  const [leads, claims, profiles, documents, leadDocuments, events, eligibility] = await Promise.all([
+  const [leads, claims, profiles, documents, leadDocuments, leadSignatures, events, eligibility] = await Promise.all([
     client
       .from("leads")
-      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, full_name, email, phone, created_at, updated_at")
+      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, full_name, email, phone, reason, payload, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(50),
     client
@@ -43,12 +47,17 @@ export async function fetchAdminOverview() {
       .limit(25),
     client
       .from("documents")
-      .select("id, claim_id, user_id, document_type, file_name, mime_type, file_size, status, created_at")
+      .select("id, claim_id, user_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
       .order("created_at", { ascending: false })
       .limit(25),
     client
       .from("lead_documents")
-      .select("id, lead_id, document_type, file_name, mime_type, file_size, status, created_at")
+      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(25),
+    client
+      .from("lead_signatures")
+      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
       .order("created_at", { ascending: false })
       .limit(25),
     client
@@ -69,14 +78,35 @@ export async function fetchAdminOverview() {
     throw errors[0];
   }
 
+  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error)) {
+    throw leadSignatures.error;
+  }
+
   return {
     leads: leads.data || [],
     claims: claims.data || [],
     profiles: profiles.data || [],
-    documents: [...(leadDocuments.data || []), ...(documents.data || [])],
+    documents: [
+      ...(leadDocuments.data || []).map((document) => ({ ...document, owner_type: "lead", bucket: "claim-lead-documents" })),
+      ...(documents.data || []).map((document) => ({ ...document, owner_type: "claim", bucket: "claim-documents" })),
+    ],
+    leadSignatures: leadSignatures.data || [],
     events: events.data || [],
     eligibility: eligibility.data || [],
   };
+}
+
+export async function getDocumentDownloadUrl(document) {
+  const client = requireSupabase();
+  const { data, error } = await client.storage
+    .from(document.bucket)
+    .createSignedUrl(document.file_path, 60);
+
+  if (error) {
+    throw error;
+  }
+
+  return data.signedUrl;
 }
 
 export async function updateLeadStatus(leadId, status) {

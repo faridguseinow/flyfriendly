@@ -2,6 +2,10 @@ import { requireSupabase } from "../lib/supabase.js";
 
 const LEAD_DOCUMENT_BUCKET = "claim-lead-documents";
 
+function isMissingTableError(error) {
+  return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
+}
+
 function leadCode() {
   return `FL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
@@ -42,25 +46,26 @@ function baseLeadPayload(data = {}) {
 
 export async function createLead(data = {}, source = "claim_flow") {
   const client = requireSupabase();
+  const id = crypto.randomUUID();
+  const lead_code = leadCode();
   const payload = {
-    lead_code: leadCode(),
+    id,
+    lead_code,
     source,
     status: "new",
     stage: "eligibility",
     ...baseLeadPayload(data),
   };
 
-  const { data: lead, error } = await client
+  const { error } = await client
     .from("leads")
-    .insert(payload)
-    .select("id, lead_code")
-    .single();
+    .insert(payload);
 
   if (error) {
     throw error;
   }
 
-  return lead;
+  return { id, lead_code };
 }
 
 export async function saveLeadStep(leadId, stage, data = {}) {
@@ -92,6 +97,36 @@ export async function submitLead(leadId, data = {}, eligibilityStatus = "eligibl
       ...baseLeadPayload(data),
     })
     .eq("id", leadId);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return;
+    }
+
+    throw error;
+  }
+}
+
+export async function saveLeadSignature(leadId, data = {}) {
+  const client = requireSupabase();
+  const { error } = await client
+    .from("lead_signatures")
+    .insert({
+      lead_id: leadId,
+      signer_name: data.fullName || null,
+      signer_email: data.email || null,
+      signature_data_url: data.signatureDataUrl,
+      terms_accepted: Boolean(data.termsAccepted),
+      signed_at: new Date().toISOString(),
+      payload: {
+        route: {
+          departure: data.departure || null,
+          destination: data.destination || null,
+          airline: data.airline || null,
+          date: data.date || null,
+        },
+      },
+    });
 
   if (error) {
     throw error;
