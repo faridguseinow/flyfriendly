@@ -1,5 +1,5 @@
 .claim-box {
-  width: min(1028px, 100%);
+  width: 100%;
   margin: 28px auto 0;
   padding: 24px 20px;
   border: 1px solid var(--line);
@@ -67,6 +67,104 @@
     color: var(--ink);
     background: transparent;
   }
+}
+
+.claim-box__combobox {
+  position: relative;
+}
+
+.claim-box__combobox.is-open {
+  z-index: 12;
+}
+
+.claim-box__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 8px 0;
+  border: 1px solid rgba(12, 32, 64, 0.12);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, 0.18);
+}
+
+.claim-box__option,
+.claim-box__empty {
+  width: 100%;
+  padding: 0;
+  display: block;
+  text-align: left;
+}
+
+.claim-box__option {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background 140ms ease;
+
+  &:hover,
+  &.is-highlighted {
+    background: #eef8ff;
+  }
+}
+
+.claim-box__option-card {
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.claim-box__option-flag {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(12, 32, 64, 0.08);
+  border-radius: 18px;
+  background: #f7fbff;
+  font-size: 24px;
+}
+
+.claim-box__option-body {
+  min-width: 0;
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: #20242e;
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+
+  small {
+    margin-top: 4px;
+    color: #6f7887;
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
+.claim-box__option-meta {
+  margin-top: 4px;
+  color: #8fa0b4;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.claim-box__empty {
+  padding: 16px 20px;
+  color: #7c8798;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .claim-box__meta {

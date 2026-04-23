@@ -6,12 +6,15 @@ import AnimatedRoutes from "./routes/index.jsx";
 
 function App() {
   const location = useLocation();
-  const isClaimPage = location.pathname.startsWith("/claim");
   const isAdminPage = location.pathname.startsWith("/admin") || location.pathname.startsWith("/control-dashboard");
+
+  if (isAdminPage) {
+    return <AnimatedRoutes location={location} />;
+  }
 
   return (
     <>
-      {!isClaimPage && !isAdminPage && <Navbar />}
+      <Navbar />
       <AnimatePresence mode="wait">
         <motion.main
           key={location.pathname}
@@ -23,7 +26,7 @@ function App() {
           <AnimatedRoutes location={location} />
         </motion.main>
       </AnimatePresence>
-      {!isClaimPage && !isAdminPage && <Footer />}
+      {!location.pathname.startsWith("/claim") && <Footer />}
     </>
   );
 }

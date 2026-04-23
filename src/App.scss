@@ -1,3 +1,7 @@
+:root {
+  --site-max-width: 1160px;
+}
+
 .btn {
   min-height: 56px;
   padding: 0 28px;
@@ -41,7 +45,7 @@
 }
 
 .section {
-  width: min(1160px, calc(100% - 48px));
+  width: min(var(--site-max-width), calc(100% - 48px));
   margin: 0 auto;
   padding: 120px 0 60px;
   text-align: center;
@@ -111,6 +115,12 @@ h3 {
     height: 24px;
     display: block;
   }
+}
+
+.country-flag {
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
 }
 
 .band {

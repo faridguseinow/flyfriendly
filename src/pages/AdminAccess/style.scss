@@ -1,0 +1,150 @@
+.admin-access__filters {
+  padding: 20px 28px 24px;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 220px;
+  gap: 12px;
+
+  select {
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: #fff;
+    color: #20242e;
+    font: inherit;
+  }
+}
+
+.admin-access__grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-access__detail {
+  position: sticky;
+  top: 0;
+}
+
+.admin-access__detail-body {
+  padding: 24px 28px 28px;
+  display: grid;
+  gap: 20px;
+}
+
+.admin-access-page {
+  .admin-table-wrap tbody tr {
+    cursor: pointer;
+  }
+
+  .admin-table-wrap tbody tr.is-selected td {
+    background: #eef8ff;
+  }
+}
+
+.admin-access__roles {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-access__role-toggle {
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+  }
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: #20242e;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+  }
+
+  span {
+    color: #7c8491;
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+.admin-access__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-access__permissions {
+  display: grid;
+  gap: 16px;
+
+  article {
+    display: grid;
+    gap: 10px;
+  }
+
+  strong {
+    color: #20242e;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+}
+
+.admin-access__permission-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-access__permission-tag {
+  min-height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: #8d98aa;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+
+  &.is-active {
+    border-color: rgba(24, 151, 243, 0.25);
+    background: #eef8ff;
+    color: var(--primary);
+  }
+}
+
+@media (max-width: 1280px) {
+  .admin-access__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-access__detail {
+    position: static;
+  }
+}
+
+@media (max-width: 960px) {
+  .admin-access__filters {
+    grid-template-columns: 1fr;
+  }
+}

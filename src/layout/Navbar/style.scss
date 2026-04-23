@@ -7,7 +7,7 @@
 }
 
 .navbar {
-  width: min(1040px, 100%);
+  width: min(var(--site-max-width), 100%);
   min-height: 72px;
   margin: 0 auto;
   padding: 8px 10px 8px 16px;

@@ -1,5 +1,5 @@
 .hero {
-  width: min(1160px, calc(100% - 48px));
+  width: min(var(--site-max-width), calc(100% - 48px));
   padding: 120px 0 20px;
 
   p {
@@ -355,7 +355,7 @@
 }
 
 .membership {
-  padding: 80px max(24px, calc((100% - 1160px) / 2)) !important;
+  padding: 80px max(24px, calc((100% - var(--site-max-width)) / 2)) !important;
   background: var(--band);
   margin: 0 !important;
   width: 100% !important;
@@ -705,7 +705,7 @@
 }
 
 .newsletter {
-  padding: 80px max(24px, calc((100% - 1160px) / 2));
+  padding: 80px max(24px, calc((100% - var(--site-max-width)) / 2));
   background: var(--band);
 }
 
@@ -833,7 +833,7 @@ details p {
 
 @media (max-width: 980px) {
   .hero {
-    width: min(100% - 28px, 1160px);
+    width: min(100% - 28px, var(--site-max-width));
     padding-top: 126px;
   }
 

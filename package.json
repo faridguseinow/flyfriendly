@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "catalog:build": "node scripts/build-aviation-fallback.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.3",

@@ -1,73 +1,113 @@
 .footer {
-  padding: 80px max(24px, calc((100% - 1160px) / 2)) 40px;
+  position: relative;
+  overflow: hidden;
+  padding: 84px max(24px, calc((100% - var(--site-max-width)) / 2)) 38px;
   color: #fff;
-  background: var(--primary);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 20%),
+    linear-gradient(135deg, #0f8ce8 0%, #0ea1f2 38%, #0679ce 100%);
+}
+
+.footer__glow {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(56px);
+  opacity: 0.42;
+}
+
+.footer__glow--left {
+  inset: 80px auto auto -80px;
+  width: 360px;
+  height: 360px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.footer__glow--center {
+  inset: auto auto -120px 12%;
+  width: 520px;
+  height: 260px;
+  background: rgba(88, 31, 155, 0.28);
 }
 
 .footer__content {
+  position: relative;
   display: grid;
-  grid-template-columns: 1.1fr 1.2fr;
-  gap: 80px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 72px;
+  z-index: 1;
+}
+
+.footer__lead {
+  max-width: 620px;
 }
 
 .footer__brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 
   img:first-child {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    box-shadow: 0 14px 34px rgba(255, 255, 255, 0.24);
   }
 
   img:last-child {
     width: 110px;
-    filter: brightness(0) invert(1);
+    filter: brightness(0) invert(1) drop-shadow(0 8px 24px rgba(255, 255, 255, 0.18));
   }
 }
 
 .footer {
   h2 {
-    max-width: 520px;
-    margin-top: 26px;
+    max-width: 560px;
+    margin-top: 34px;
     color: #fff;
+    font-size: clamp(2.75rem, 3vw, 4.25rem);
+    line-height: 1.06;
   }
 
   p {
     max-width: 485px;
-    color: #f3f5fa;
+    margin-top: 20px;
+    color: rgba(255, 255, 255, 0.88);
     font-size: 20px;
-    line-height: 28px;
-    letter-spacing: 0.5px;
+    line-height: 1.45;
   }
 }
 
 .footer__follow {
   display: inline-block;
-  margin-top: 12px;
+  margin-top: 40px;
   color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .socials {
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 16px;
+  margin-top: 18px;
 
   a {
-    width: 44px;
-    height: 44px;
+    width: 54px;
+    height: 54px;
     display: grid;
     place-items: center;
-    border: 2px solid rgba(255, 255, 255, 0.95);
+    border: 1.5px solid rgba(255, 255, 255, 0.52);
     border-radius: 50%;
     color: #fff;
-    font-weight: 700;
-    transition: background 180ms ease, color 180ms ease;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    transition: background 180ms ease, color 180ms ease, transform 180ms ease, border-color 180ms ease;
 
     &:hover {
-      color: var(--primary);
+      color: #0a8fe9;
       background: #fff;
+      border-color: #fff;
+      transform: translateY(-2px);
     }
   }
 }
@@ -75,21 +115,23 @@
 .footer-links {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  gap: 28px;
+  padding-top: 8px;
 
   h3 {
-    color: #dfe2e8;
-    font-size: 20px;
-    line-height: 28px;
+    margin: 0 0 22px;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 18px;
+    line-height: 1.4;
+    font-weight: 600;
   }
 
   a {
     display: block;
-    margin: 4px 0;
-    color: #f3f5fa;
-    font-size: 20px;
-    line-height: 28px;
-    letter-spacing: 0.5px;
+    margin: 0 0 16px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 17px;
+    line-height: 1.35;
     transition: color 180ms ease;
 
     &:hover {
@@ -99,20 +141,27 @@
 }
 
 .footer__bottom {
+  position: relative;
   margin-top: 64px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 24px;
+  z-index: 1;
 
   strong {
-    font-size: 156px;
-    line-height: 0.9;
-    color: rgba(255, 255, 255, 0.68);
+    font-size: clamp(5rem, 11vw, 10rem);
+    letter-spacing: -0.04em;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.298) 0%, rgba(255, 255, 255, 0.07) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     letter-spacing: 0;
   }
 
   span {
-    color: rgba(255, 255, 255, 0.88);
+    color: rgba(255, 255, 255, 0.74);
+    white-space: nowrap;
   }
 }
 
@@ -125,6 +174,10 @@
   .footer__content,
   .footer-links {
     grid-template-columns: 1fr;
+  }
+
+  .footer__content {
+    gap: 42px;
   }
 
   .footer__bottom {

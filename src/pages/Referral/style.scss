@@ -1,7 +1,7 @@
 .ref-hero,
 .ref-section,
 .ref-faq {
-  width: min(1160px, calc(100% - 48px));
+  width: min(var(--site-max-width), calc(100% - 48px));
 }
 
 body:has(.ref-hero) {
@@ -316,7 +316,7 @@ body:has(.ref-hero) {
 }
 
 .ref-process__inner {
-  width: min(1160px, 100%);
+  width: min(var(--site-max-width), 100%);
   margin: 0 auto;
 
   h2 {
@@ -490,7 +490,7 @@ body:has(.ref-hero) {
 }
 
 .ref-cta__inner {
-  width: min(1160px, 100%);
+  width: min(var(--site-max-width), 100%);
   min-height: 456px;
   margin: 0 auto;
   display: grid;
@@ -672,7 +672,7 @@ body:has(.ref-hero) {
   .ref-hero,
   .ref-section,
   .ref-faq {
-    width: min(100% - 28px, 1160px);
+    width: min(100% - 28px, var(--site-max-width));
   }
 
   .ref-hero {

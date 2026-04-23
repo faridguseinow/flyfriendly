@@ -22,10 +22,11 @@ import {
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import claimImage from "../../assets/media/Image-4.png";
+import CountryFlag from "../../components/CountryFlag/index.jsx";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import {
-  formatAirlineOption,
-  formatAirportOption,
+  describeAirlineOption,
+  describeAirportOption,
   searchAirlines,
   searchAirports,
 } from "../../services/catalogService.js";
@@ -40,34 +41,19 @@ import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
 const stageLabels = ["Eligibility Check", "Contact Information", "Documents", "Finish"];
-const airportOptions = [
-  "London (LHR)",
-  "Washington (DCA)",
-  "Baku (GYD)",
-  "Istanbul (IST)",
-  "Dubai (DXB)",
-  "Paris (CDG)",
-  "Amsterdam (AMS)",
-  "Frankfurt (FRA)",
-  "New York (JFK)",
-  "Los Angeles (LAX)",
-  "Doha (DOH)",
-  "Singapore (SIN)",
-];
-const airlineOptions = [
-  "Azerbaijan Airlines / J2 / AHY",
-  "British Airways / BA / BAW",
-  "Turkish Airlines / TK / THY",
-  "Lufthansa / LH / DLH",
-  "Emirates / EK / UAE",
-  "Qatar Airways / QR / QTR",
-  "Air France / AF / AFR",
-  "KLM / KL / KLM",
-  "United Airlines / UA / UAL",
-  "American Airlines / AA / AAL",
-  "Delta Air Lines / DL / DAL",
-  "Wizz Air / W6 / WZZ",
-];
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return "0 KB";
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+
+  const megabytes = bytes / (1024 * 1024);
+  return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`;
+}
 
 function Flag() {
   return (
@@ -138,6 +124,127 @@ function Field({ icon: Icon, placeholder, type = "text", name, value, onChange, 
   );
 }
 
+function SearchCombobox({
+  icon: Icon,
+  name,
+  value,
+  placeholder,
+  options,
+  onInputChange,
+  onSelect,
+  renderOption,
+  emptyLabel,
+}) {
+  const rootRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [options, value]);
+
+  const commitSelection = (option) => {
+    onSelect(name, option);
+    setIsOpen(false);
+  };
+
+  const onKeyDown = (event) => {
+    if (!isOpen && (event.key === "ArrowDown" || event.key === "Enter")) {
+      setIsOpen(true);
+      return;
+    }
+
+    if (!options.length) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedIndex((current) => Math.min(current + 1, options.length - 1));
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedIndex((current) => Math.max(current - 1, 0));
+    }
+
+    if (event.key === "Enter" && isOpen) {
+      event.preventDefault();
+      commitSelection(options[highlightedIndex]);
+    }
+
+    if (event.key === "Escape") {
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <div className={`claim-combobox${isOpen ? " is-open" : ""}`} ref={rootRef}>
+      <label className="claim-field">
+        <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+        <input
+          name={name}
+          value={value || ""}
+          onChange={(event) => {
+            onInputChange(name, event.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          onKeyDown={onKeyDown}
+          autoComplete="off"
+          placeholder={placeholder}
+        />
+        <ChevronDown size={18} strokeWidth={1.8} aria-hidden="true" />
+      </label>
+      {isOpen && (
+        <div className="claim-combobox__menu">
+          {options.length ? options.map((option, index) => {
+            const content = renderOption(option);
+            return (
+              <button
+                type="button"
+                key={`${option.id || option.label}-${index}`}
+                className={`claim-combobox__option${index === highlightedIndex ? " is-highlighted" : ""}`}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  commitSelection(option);
+                }}
+              >
+                <div className="claim-combobox__option-card">
+                  {content.countryCode ? (
+                    <CountryFlag code={content.countryCode} label={content.subtitle} className="claim-combobox__option-flag" />
+                  ) : (
+                    <span className="claim-combobox__option-flag">{content.code?.slice(0, 3) || "•"}</span>
+                  )}
+                  <div className="claim-combobox__option-body">
+                    <strong>{content.title}</strong>
+                    {content.subtitle ? <small>{content.subtitle}</small> : null}
+                    {content.meta ? <div className="claim-combobox__option-meta">{content.meta}</div> : null}
+                  </div>
+                </div>
+              </button>
+            );
+          }) : (
+            <div className="claim-combobox__empty">{emptyLabel}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SelectField({ icon: Icon, placeholder, name, value, onChange }) {
   return (
     <label className="claim-field">
@@ -202,40 +309,82 @@ function UploadBox({ title, documentType, icon: Icon, file, onFile }) {
   );
 }
 
-function FileRow({ done }) {
+function FileRow({ file, done, onRemove }) {
   return (
     <div className={`claim-file${done ? " is-done" : ""}`}>
       <FileText size={22} strokeWidth={1.8} />
       <div>
-        <strong>Document.docx</strong>
-        <small>1 MB / 1.2 MB</small>
+        <strong>{file?.name || "Document"}</strong>
+        <small>{formatFileSize(file?.size || 0)} / {formatFileSize(file?.size || 0)}</small>
         <span />
       </div>
       {done ? <CircleCheck size={20} /> : <ShieldCheck size={20} />}
-      <X size={18} />
+      <button type="button" className="claim-file__remove" aria-label={`Remove ${file?.name || "file"}`} onClick={onRemove}>
+        <X size={18} />
+      </button>
     </div>
   );
 }
 
-function EligibilityStep({ data, onChange, onNext, airportOptions, airlineOptions }) {
+function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions }) {
   return (
     <form className="claim-form" onSubmit={onNext}>
-      <datalist id="claim-airports">
-        {airportOptions.map((item) => <option value={item.label || item} key={item.id || item} />)}
-      </datalist>
-      <datalist id="claim-airlines">
-        {airlineOptions.map((item) => <option value={item.label || item} key={item.id || item} />)}
-      </datalist>
       <section className="claim-question">
         <h3>Where did you fly?</h3>
         <div className="claim-two">
-          <Field icon={PlaneTakeoff} name="departure" value={data.departure} onChange={onChange} placeholder="Departure (IATA/ICAO/identifier)" list="claim-airports" />
-          <Field icon={PlaneLanding} name="destination" value={data.destination} onChange={onChange} placeholder="Destination (IATA/ICAO/identifier)" list="claim-airports" />
+          <SearchCombobox
+            icon={PlaneTakeoff}
+            name="departure"
+            value={data.departure}
+            placeholder="Departure airport, city or country"
+            options={airportOptions.departure}
+            onInputChange={onChange}
+            onSelect={onSelect}
+            renderOption={(option) => ({
+              title: option.title,
+              subtitle: option.subtitle,
+              meta: option.meta,
+              countryCode: option.countryCode,
+              code: option.code,
+            })}
+            emptyLabel="No airports found"
+          />
+          <SearchCombobox
+            icon={PlaneLanding}
+            name="destination"
+            value={data.destination}
+            placeholder="Arrival airport, city or country"
+            options={airportOptions.destination}
+            onInputChange={onChange}
+            onSelect={onSelect}
+            renderOption={(option) => ({
+              title: option.title,
+              subtitle: option.subtitle,
+              meta: option.meta,
+              countryCode: option.countryCode,
+              code: option.code,
+            })}
+            emptyLabel="No airports found"
+          />
         </div>
       </section>
       <section className="claim-question">
         <h3>Which airline did you fly with?</h3>
-        <Field icon={Plane} name="airline" value={data.airline} onChange={onChange} placeholder="Search airline (name / IATA / ICAO) e.g. Philippine / PR / PAL" list="claim-airlines" />
+        <SearchCombobox
+          icon={Plane}
+          name="airline"
+          value={data.airline}
+          placeholder="Search airline (name / IATA / ICAO)"
+          options={airlineOptions}
+          onInputChange={onChange}
+          onSelect={onSelect}
+          renderOption={(option) => ({
+            title: option.title,
+            subtitle: option.subtitle,
+            code: option.code,
+          })}
+          emptyLabel="No airlines found"
+        />
       </section>
       <section className="claim-question">
         <div className="claim-question-title">
@@ -300,7 +449,7 @@ function ContactStep({ data, onChange, onNext, onBack }) {
   );
 }
 
-function DocumentsStep({ data, files, onChange, onFile, onNext, onBack, isSaving }) {
+function DocumentsStep({ data, files, onChange, onFile, onRemoveFile, onNext, onBack, isSaving }) {
   return (
     <form className="claim-form" onSubmit={onNext}>
       <section className="claim-question">
@@ -308,10 +457,10 @@ function DocumentsStep({ data, files, onChange, onFile, onNext, onBack, isSaving
         <p>Please upload your Passport and Boarding Pass.</p>
         <div className="claim-upload-grid">
           <UploadBox title="Passport" documentType="passport" icon={User} file={files.passport} onFile={onFile} />
-          <UploadBox title="Boarding pas" documentType="boarding_pass" icon={FileText} file={files.boarding_pass} onFile={onFile} />
+          <UploadBox title="Boarding Pass" documentType="boarding_pass" icon={FileText} file={files.boarding_pass} onFile={onFile} />
         </div>
-        {files.passport && <FileRow done />}
-        {files.boarding_pass && <FileRow done />}
+        {files.passport && <FileRow file={files.passport} done onRemove={() => onRemoveFile("passport")} />}
+        {files.boarding_pass && <FileRow file={files.boarding_pass} done onRemove={() => onRemoveFile("boarding_pass")} />}
       </section>
       <section className="claim-question">
         <h3>What was the official reason for your flight delay or cancellation?</h3>
@@ -324,7 +473,7 @@ function DocumentsStep({ data, files, onChange, onFile, onNext, onBack, isSaving
       </div>
       <div className="claim-actions">
         <button className="claim-back" type="button" onClick={onBack}>Back</button>
-        <button className="btn btn-primary" type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Main Page"}</button>
+        <button className="btn btn-primary" type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Next"}</button>
       </div>
     </form>
   );
@@ -528,7 +677,8 @@ function ClaimFlow() {
     destination: searchParams.get("destination") || JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}").destination,
   }));
   const [files, setFiles] = useState({});
-  const [airportMatches, setAirportMatches] = useState([]);
+  const [departureMatches, setDepartureMatches] = useState([]);
+  const [destinationMatches, setDestinationMatches] = useState([]);
   const [airlineMatches, setAirlineMatches] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [syncError, setSyncError] = useState("");
@@ -540,33 +690,51 @@ function ClaimFlow() {
   }, [data]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || stage !== "eligibility") {
+    if (stage !== "eligibility") {
       return;
     }
 
-    const query = [data.departure, data.destination]
-      .filter(Boolean)
-      .sort((a, b) => b.length - a.length)[0];
-
-    if (!query || query.length < 2) {
-      setAirportMatches([]);
+    if (!data.departure || data.departure.length < 2) {
+      setDepartureMatches([]);
       return;
     }
 
     const timeout = window.setTimeout(async () => {
       try {
-        const airports = await searchAirports(query);
-        setAirportMatches(airports.map((airport) => ({ ...airport, label: formatAirportOption(airport) })));
+        const airports = await searchAirports(data.departure);
+        setDepartureMatches(airports.map((airport) => describeAirportOption(airport)));
       } catch {
-        setAirportMatches([]);
+        setDepartureMatches([]);
       }
     }, 180);
 
     return () => window.clearTimeout(timeout);
-  }, [data.departure, data.destination, stage]);
+  }, [data.departure, stage]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || stage !== "eligibility" || !data.airline || data.airline.length < 2) {
+    if (stage !== "eligibility") {
+      return;
+    }
+
+    if (!data.destination || data.destination.length < 2) {
+      setDestinationMatches([]);
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      try {
+        const airports = await searchAirports(data.destination);
+        setDestinationMatches(airports.map((airport) => describeAirportOption(airport)));
+      } catch {
+        setDestinationMatches([]);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [data.destination, stage]);
+
+  useEffect(() => {
+    if (stage !== "eligibility" || !data.airline || data.airline.length < 2) {
       setAirlineMatches([]);
       return;
     }
@@ -574,7 +742,7 @@ function ClaimFlow() {
     const timeout = window.setTimeout(async () => {
       try {
         const airlines = await searchAirlines(data.airline);
-        setAirlineMatches(airlines.map((airline) => ({ ...airline, label: formatAirlineOption(airline) })));
+        setAirlineMatches(airlines.map((airline) => describeAirlineOption(airline)));
       } catch {
         setAirlineMatches([]);
       }
@@ -583,22 +751,73 @@ function ClaimFlow() {
     return () => window.clearTimeout(timeout);
   }, [data.airline, stage]);
 
-  const onChange = (event) => {
-    const { name, type, checked, value } = event.target;
-    const nextData = { ...data, [name]: type === "checkbox" ? checked : value };
-    const selectedAirport = airportMatches.find((airport) => airport.label === value);
-    const selectedAirline = airlineMatches.find((airline) => airline.label === value);
+  const onSelectOption = (name, selectedOption) => {
+    const nextData = { ...data };
 
     if (name === "departure") {
-      nextData.departureAirportId = selectedAirport?.id || null;
+      nextData.departure = selectedOption.label;
+      nextData.departureAirportId = selectedOption.source === "supabase" ? selectedOption.id || null : null;
+      nextData.departureAirportSource = selectedOption.source || null;
     }
 
     if (name === "destination") {
-      nextData.destinationAirportId = selectedAirport?.id || null;
+      nextData.destination = selectedOption.label;
+      nextData.destinationAirportId = selectedOption.source === "supabase" ? selectedOption.id || null : null;
+      nextData.destinationAirportSource = selectedOption.source || null;
     }
 
     if (name === "airline") {
-      nextData.airlineId = selectedAirline?.id || null;
+      nextData.airline = selectedOption.label;
+      nextData.airlineId = selectedOption.source === "supabase" ? selectedOption.id || null : null;
+      nextData.airlineSource = selectedOption.source || null;
+    }
+
+    setData(nextData);
+  };
+
+  const onFieldInput = (name, value) => {
+    const nextData = { ...data, [name]: value };
+
+    if (name === "departure") {
+      nextData.departureAirportId = null;
+      nextData.departureAirportSource = null;
+    }
+
+    if (name === "destination") {
+      nextData.destinationAirportId = null;
+      nextData.destinationAirportSource = null;
+    }
+
+    if (name === "airline") {
+      nextData.airlineId = null;
+      nextData.airlineSource = null;
+    }
+
+    setData(nextData);
+  };
+
+  const onChange = (eventOrName, maybeValue) => {
+    if (typeof eventOrName === "string") {
+      onFieldInput(eventOrName, maybeValue);
+      return;
+    }
+
+    const { name, type, checked, value } = eventOrName.target;
+    const nextData = { ...data, [name]: type === "checkbox" ? checked : value };
+
+    if (name === "departure") {
+      nextData.departureAirportId = null;
+      nextData.departureAirportSource = null;
+    }
+
+    if (name === "destination") {
+      nextData.destinationAirportId = null;
+      nextData.destinationAirportSource = null;
+    }
+
+    if (name === "airline") {
+      nextData.airlineId = null;
+      nextData.airlineSource = null;
     }
 
     setData(nextData);
@@ -606,6 +825,14 @@ function ClaimFlow() {
 
   const onFile = (documentType, file) => {
     setFiles((current) => ({ ...current, [documentType]: file }));
+  };
+
+  const onRemoveFile = (documentType) => {
+    setFiles((current) => {
+      const next = { ...current };
+      delete next[documentType];
+      return next;
+    });
   };
 
   const onSignature = (signatureDataUrl) => {
@@ -690,7 +917,7 @@ function ClaimFlow() {
     if (stage === "denied") return <DeniedResult data={data} />;
     if (stage === "approved") return <ApprovedResult data={data} />;
     if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} />;
-    if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
+    if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
     if (stage === "finish") {
       return (
         <FinishStep
@@ -704,33 +931,36 @@ function ClaimFlow() {
       );
     }
     return (
-      <EligibilityStep
-        data={data}
-        onChange={onChange}
+        <EligibilityStep
+          data={data}
+        onChange={onFieldInput}
+        onSelect={onSelectOption}
         onNext={(event) => submit("contact", event)}
-        airportOptions={airportMatches.length ? airportMatches : airportOptions}
-        airlineOptions={airlineMatches.length ? airlineMatches : airlineOptions}
+        airportOptions={{ departure: departureMatches, destination: destinationMatches }}
+        airlineOptions={airlineMatches}
       />
     );
   };
 
   return (
     <div className="claim-page">
-      <ClaimHeader />
-      <main className="claim-shell">
-        <section className="claim-main">
-          <span className="section-label is-primary"><BadgeCheck size={16} fill="currentColor" aria-hidden="true" /> Verified by Real Travelers</span>
-          <h1>Check and claim compensation</h1>
-          <p>Serving millions of passengers in all countries, speaking all languages.</p>
-          {syncError && <p className="claim-sync is-error">{syncError}</p>}
-          {syncNotice && <p className="claim-sync is-notice">{syncNotice}</p>}
-          {stage !== "approved" && stage !== "denied" && <Stepper activeIndex={activeIndex} />}
-          {stage === "approved" && <Stepper activeIndex={3} completed />}
-          {renderStage()}
-        </section>
-        <PromoCard />
-      </main>
-      <ClaimFooter />
+      <div className="claim-frame">
+        <ClaimHeader />
+        <main className="claim-shell">
+          <section className="claim-main">
+            <span className="section-label is-primary"><BadgeCheck size={16} fill="currentColor" aria-hidden="true" /> Verified by Real Travelers</span>
+            <h1>Check and claim compensation</h1>
+            <p>Serving millions of passengers in all countries, speaking all languages.</p>
+            {syncError && <p className="claim-sync is-error">{syncError}</p>}
+            {syncNotice && <p className="claim-sync is-notice">{syncNotice}</p>}
+            {stage !== "approved" && stage !== "denied" && <Stepper activeIndex={activeIndex} />}
+            {stage === "approved" && <Stepper activeIndex={3} completed />}
+            {renderStage()}
+          </section>
+          <PromoCard />
+        </main>
+        <ClaimFooter />
+      </div>
     </div>
   );
 }

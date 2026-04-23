@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import SocialIcon from "../../components/SocialIcon/index.jsx";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import { languages, navLinks, socialLinks } from "../../constants/site.js";
@@ -176,7 +177,7 @@ function Navbar() {
           <div className="mobile-menu__socials" aria-label="Social links">
             {socialLinks.map((item) => (
               <a key={item.label} href={item.href} aria-label={item.label}>
-                {item.text}
+                <SocialIcon name={item.icon} size={18} />
               </a>
             ))}
           </div>

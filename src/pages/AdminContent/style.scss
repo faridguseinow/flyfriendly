@@ -1,0 +1,213 @@
+.admin-content-system-page {
+  .admin-content-system__filters {
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(160px, 220px));
+    gap: 12px;
+
+    select,
+    input,
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      outline: 0;
+      background: #fff;
+      color: #20242e;
+    }
+
+    textarea {
+      min-height: 108px;
+      padding: 12px;
+      resize: vertical;
+    }
+  }
+
+  .admin-content-system__layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.35fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .admin-content-system__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .admin-content-system__list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .admin-content-system__row {
+    padding: 16px;
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+
+    &:hover,
+    &.is-active {
+      border-color: rgba(24, 151, 243, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    strong {
+      color: #20242e;
+      font-size: 16px;
+      line-height: 22px;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+      color: #6c7480;
+      font-size: 13px;
+      line-height: 20px;
+    }
+
+    small {
+      color: #8d98aa;
+      font-size: 12px;
+      line-height: 18px;
+    }
+  }
+
+  .admin-content-system__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-content-system__badge {
+    min-height: 26px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #eef8ff;
+    color: var(--primary);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+  }
+
+  .admin-content-system__form {
+    display: grid;
+    gap: 14px;
+  }
+
+  .admin-content-system__form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .admin-content-system__field {
+    display: grid;
+    gap: 8px;
+
+    label {
+      color: #394150;
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 600;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      outline: 0;
+      color: #20242e;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 112px;
+      padding: 12px;
+      resize: vertical;
+    }
+
+    &.is-wide {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .admin-content-system__actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .admin-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #516074;
+    font-size: 14px;
+    line-height: 20px;
+
+    input {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .admin-content-system__subgrid {
+    display: grid;
+    gap: 14px;
+  }
+
+  .admin-content-system__mini-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .admin-content-system__mini-row {
+    padding: 12px 14px;
+    display: grid;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    cursor: pointer;
+    background: #fff;
+
+    &.is-active {
+      border-color: rgba(24, 151, 243, 0.35);
+      background: #f8fcff;
+    }
+  }
+
+  .admin-content-system__empty {
+    padding: 22px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 16px;
+    color: #7b8594;
+    background: #fff;
+  }
+}
+
+@media (max-width: 1100px) {
+  .admin-content-system-page {
+    .admin-content-system__filters,
+    .admin-content-system__layout,
+    .admin-content-system__form-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

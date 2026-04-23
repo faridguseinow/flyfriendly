@@ -23,11 +23,11 @@ function parseFlightDate(value) {
 
 function baseLeadPayload(data = {}) {
   return {
-    departure_airport_id: data.departureAirportId || null,
-    arrival_airport_id: data.destinationAirportId || null,
+    departure_airport_id: data.departureAirportSource === "supabase" ? data.departureAirportId || null : null,
+    arrival_airport_id: data.destinationAirportSource === "supabase" ? data.destinationAirportId || null : null,
     departure_airport: data.departure || null,
     arrival_airport: data.destination || null,
-    airline_id: data.airlineId || null,
+    airline_id: data.airlineSource === "supabase" ? data.airlineId || null : null,
     airline: data.airline || null,
     flight_number: data.flightNumber || null,
     scheduled_departure_date: parseFlightDate(data.date),
