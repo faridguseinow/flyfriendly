@@ -73,7 +73,7 @@ function TermsOfUse() {
         <section>
           <h2>8. Contact</h2>
           <p>
-            For questions about these terms, contact <a href="mailto:support@fly-friendly.com">support@fly-friendly.com</a>.
+            For questions about these terms, contact <a href="mailto:info@fly-friendly.com">info@fly-friendly.com</a>.
           </p>
         </section>
         <p className="legal-note">

@@ -11,6 +11,28 @@ import { adminNavigation } from "./navigation.js";
 import { useAdminAuth } from "./AdminAuthContext.jsx";
 import "./admin.scss";
 
+function rankSearchValue(value, query) {
+  const normalizedValue = String(value || "").trim().toLowerCase();
+
+  if (!normalizedValue || !query) {
+    return 0;
+  }
+
+  if (normalizedValue === query) {
+    return 120;
+  }
+
+  if (normalizedValue.startsWith(query)) {
+    return 72;
+  }
+
+  if (normalizedValue.includes(query)) {
+    return 30;
+  }
+
+  return 0;
+}
+
 function SidebarLink({ item, onNavigate }) {
   const Icon = item.icon;
 
@@ -166,6 +188,7 @@ function AdminLayout() {
           label: item.label,
           meta: item.path,
           path: item.path,
+          score: rankSearchValue(item.label, query) + rankSearchValue(item.path, query),
         });
       }
     });
@@ -184,61 +207,82 @@ function AdminLayout() {
     if (searchIndex) {
       addMatches("Leads", searchIndex.leads || [], (row) => ({
         id: `lead:${row.id}`,
-        label: row.lead_code || row.full_name || "Lead",
-        meta: [row.full_name, row.email, row.airline, row.departure_airport, row.arrival_airport, row.status].filter(Boolean).join(" • "),
+        label: row.full_name || row.lead_code || "Lead",
+        meta: [row.lead_code, row.email, row.airline, row.departure_airport, row.arrival_airport, row.status].filter(Boolean).join(" • "),
         path: `/admin/leads?lead=${row.id}`,
+        score:
+          rankSearchValue(row.full_name, query) * 3 +
+          rankSearchValue(row.lead_code, query) +
+          rankSearchValue(row.email, query) +
+          rankSearchValue(row.airline, query),
       }));
       addMatches("Cases", searchIndex.cases || [], (row) => ({
         id: `case:${row.id}`,
         label: row.case_code || "Case",
         meta: [row.airline, row.route_from && row.route_to ? `${row.route_from} → ${row.route_to}` : "", row.status].filter(Boolean).join(" • "),
         path: `/admin/cases?case=${row.id}`,
+        score: rankSearchValue(row.case_code, query) + rankSearchValue(row.airline, query),
       }));
       addMatches("Customers", searchIndex.customers || [], (row) => ({
         id: `customer:${row.id}`,
         label: row.full_name || row.email || "Customer",
         meta: [row.email, row.phone, row.country].filter(Boolean).join(" • "),
         path: `/admin/customers?customer=${row.id}`,
+        score: rankSearchValue(row.full_name, query) + rankSearchValue(row.email, query),
       }));
       addMatches("Tasks", searchIndex.tasks || [], (row) => ({
         id: `task:${row.id}`,
         label: row.title || "Task",
         meta: [row.related_entity_type, row.status].filter(Boolean).join(" • "),
         path: `/admin/tasks?task=${row.id}`,
+        score: rankSearchValue(row.title, query),
       }));
       addMatches("Partners", searchIndex.partners || [], (row) => ({
         id: `partner:${row.id}`,
         label: row.name || "Partner",
         meta: [row.referral_code, row.status].filter(Boolean).join(" • "),
         path: `/admin/referral-partners?partner=${row.id}`,
+        score: rankSearchValue(row.name, query) + rankSearchValue(row.referral_code, query),
       }));
       addMatches("Blog", searchIndex.blogPosts || [], (row) => ({
         id: `post:${row.id}`,
         label: row.title || "Post",
         meta: [row.slug, row.status].filter(Boolean).join(" • "),
         path: `/admin/blog?post=${row.id}`,
+        score: rankSearchValue(row.title, query) + rankSearchValue(row.slug, query),
       }));
       addMatches("FAQ", searchIndex.faqItems || [], (row) => ({
         id: `faq:${row.id}`,
         label: row.question || "FAQ item",
         meta: [row.category, row.status].filter(Boolean).join(" • "),
         path: `/admin/faq?faq=${row.id}`,
+        score: rankSearchValue(row.question, query),
       }));
       addMatches("CMS", searchIndex.cmsPages || [], (row) => ({
         id: `page:${row.id}`,
         label: row.title || row.page_key || "Page",
         meta: [row.page_key, row.slug, row.status].filter(Boolean).join(" • "),
         path: `/admin/cms?page=${row.id}`,
+        score: rankSearchValue(row.title, query) + rankSearchValue(row.page_key, query),
       }));
       addMatches("Settings", searchIndex.settings || [], (row) => ({
         id: `setting:${row.id}`,
         label: row.label || row.setting_key || "Setting",
         meta: [row.group_key, row.setting_key].filter(Boolean).join(" • "),
         path: `/admin/settings?setting=${row.id}`,
+        score: rankSearchValue(row.label, query) + rankSearchValue(row.setting_key, query),
       }));
     }
 
-    return results.slice(0, 14);
+    return results
+      .sort((left, right) => {
+        if ((right.score || 0) !== (left.score || 0)) {
+          return (right.score || 0) - (left.score || 0);
+        }
+
+        return String(left.label || "").localeCompare(String(right.label || ""));
+      })
+      .slice(0, 14);
   }, [navItems, searchIndex, searchValue]);
 
   const goToSearchResult = (path) => {
@@ -288,8 +332,15 @@ function AdminLayout() {
                 onBlur={() => window.setTimeout(() => setIsSearchOpen(false), 120)}
                 onChange={(event) => setSearchValue(event.target.value)}
               />
-              {isSearchOpen && (
-                <div className="admin-search__dropdown">
+              <AnimatePresence>
+                {isSearchOpen ? (
+                  <motion.div
+                    className="admin-search__dropdown"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
                   {isSearchLoading && !searchIndex ? (
                     <div className="admin-search__empty">Loading search index...</div>
                   ) : searchValue.trim() ? (
@@ -314,8 +365,9 @@ function AdminLayout() {
                   ) : (
                     <div className="admin-search__empty">Start typing to search modules and records.</div>
                   )}
-                </div>
-              )}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </label>
             <div className="admin-user-chip">
               <strong>{profile?.full_name || profile?.email || "Admin User"}</strong>

@@ -771,6 +771,15 @@
     padding: 0;
     font-size: 28px;
   }
+
+  small {
+    display: block;
+    max-width: 520px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 22px;
+  }
 }
 
 .faq-panel {
@@ -782,53 +791,68 @@
   box-shadow: none;
 }
 
-details {
+.faq-item {
   border: 1px solid var(--line);
   border-radius: 40px;
   background: #fff;
+  transition: border-radius 180ms ease, box-shadow 180ms ease;
 }
 
-summary {
+.faq-item.is-open {
+  box-shadow: inset 0 0 0 8px #fff, 0 0 6px 2px rgba(0, 0, 0, 0.05);
+}
+
+.faq-item__toggle {
+  width: 100%;
   min-height: 80px;
   padding: 20px 80px 20px 24px;
   display: flex;
   align-items: center;
+  border: 0;
   position: relative;
   cursor: pointer;
   color: var(--ink);
+  background: transparent;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
   font-size: 24px;
   line-height: 32px;
-  list-style: none;
 
-  &::-webkit-details-marker {
-    display: none;
-  }
-
-  &::after {
-    content: "+";
-    position: absolute;
-    right: 24px;
-    width: 40px;
-    height: 40px;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--line-strong);
-    border-radius: 50%;
-    color: var(--grey-800);
-    background: #fff;
+  span:first-child {
+    display: block;
   }
 }
 
-details[open] summary::after {
-  content: "-";
+.faq-item__icon {
+  position: absolute;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--grey-800);
+  background: #fff;
+  transition: transform 180ms ease, color 180ms ease, background 180ms ease;
 }
 
-details p {
-  margin: 0;
-  padding: 0 24px 24px;
-  color: var(--muted);
-  font-size: 18px;
-  line-height: 28px;
+.faq-item.is-open .faq-item__icon {
+  transform: rotate(45deg);
+  color: var(--primary);
+  background: #eef8ff;
+}
+
+.faq-item__content {
+  overflow: hidden;
+
+  p {
+    margin: 0;
+    padding: 0 24px 24px;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 28px;
+  }
 }
 
 @media (max-width: 980px) {

@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import ClaimBox from "../../components/ClaimBox/index.jsx";
 import CompensationSlider from "../../components/CompensationSlider/index.jsx";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
@@ -30,8 +31,10 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { articles, benefits, faqs, testimonials } from "../../constants/site.js";
+import { openMailClient } from "../../utils/mailto.js";
 import deniedBoardingImage from "../../assets/media/Image-4.png";
 import missedConnectionPlane from "../../assets/media/hand-drawn-airplane-outline-illustration.png";
 import "./style.scss";
@@ -55,7 +58,59 @@ function FeatureItem({ icon: Icon, children }) {
   );
 }
 
+function FaqItem({ item, isOpen, onToggle }) {
+  return (
+    <article className={`faq-item${isOpen ? " is-open" : ""}`}>
+      <button type="button" className="faq-item__toggle" onClick={onToggle} aria-expanded={isOpen}>
+        <span>{item.question}</span>
+        <span className="faq-item__icon" aria-hidden="true">+</span>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen ? (
+          <motion.div
+            key="content"
+            className="faq-item__content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+          >
+            <motion.p
+              initial={{ y: -8, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -6, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {item.answer}
+            </motion.p>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </article>
+  );
+}
+
 function Home() {
+  const [openFaq, setOpenFaq] = useState("");
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+
+  const handleNewsletterSubmit = (event) => {
+    event.preventDefault();
+
+    const email = newsletterEmail.trim();
+    if (!email) return;
+
+    openMailClient({
+      subject: "Newsletter subscription request",
+      lines: [
+        "Hello Fly Friendly,",
+        "",
+        "Please add this email to the newsletter list:",
+        email,
+      ],
+    });
+  };
+
   return (
     <>
       <section className="hero section">
@@ -248,13 +303,20 @@ function Home() {
           <SectionLabel icon={Mail}>Newsletter Signup</SectionLabel>
           <h2>Get the latest updates in your inbox</h2>
           <p>Compensation news, travel tips, and passenger rights delivered monthly.</p>
-          <form action="#">
+          <form onSubmit={handleNewsletterSubmit}>
             <label>
               <IconBadge icon={Mail} />
-              <input type="email" placeholder="Enter your email" />
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={newsletterEmail}
+                onChange={(event) => setNewsletterEmail(event.target.value)}
+                required
+              />
             </label>
             <button className="btn btn-primary" type="submit" aria-label="Subscribe"><SendHorizontal size={24} strokeWidth={2} /></button>
           </form>
+          <small>This opens your email app and prepares a subscription request to our team.</small>
         </div>
       </section>
 
@@ -264,10 +326,12 @@ function Home() {
         <p className="section-copy">Everything you need to know about claiming compensation.</p>
         <div className="faq-panel">
           {faqs.map((item) => (
-            <details key={item.question}>
-              <summary>{item.question}</summary>
-              <p>{item.answer}</p>
-            </details>
+            <FaqItem
+              key={item.question}
+              item={item}
+              isOpen={openFaq === item.question}
+              onToggle={() => setOpenFaq((current) => (current === item.question ? "" : item.question))}
+            />
           ))}
         </div>
       </section>

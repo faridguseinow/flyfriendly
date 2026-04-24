@@ -48,3 +48,26 @@ button,
 input {
   font: inherit;
 }
+
+a,
+button,
+summary,
+label,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  a:focus,
+  button:focus,
+  summary:focus,
+  label:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    box-shadow: none;
+  }
+}

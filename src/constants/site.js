@@ -4,6 +4,8 @@ export const navLinks = [
   { label: "About us", path: "/about" },
 ];
 
+export const contactEmail = "info@fly-friendly.com";
+
 export const languages = [
   ["az", "Azerbaijan"],
   ["ru", "Russia"],
@@ -83,9 +85,9 @@ export const testimonials = [
 export const articles = [
   {
     title: "Know Your Air Passenger Rights",
-    text: "Many travelers do not realize they can claim compensation for flight disruptions. Here is what you are entitled to when airlines fail you.",
+    text: "Many travelers do not realize they can claim compensation for flight disruptions. Here is what you are` entitled to when airlines fail you.",
     date: "July 22, 2025",
-    image: "https://images.unsplash.com/photo-1542317854-f9596ae570f3?auto=format&fit=crop&w=900&q=80",
+    image: "https://images.unsplash.com/photo-1483450388369-9ed95738483c?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
     title: "Why Airlines Delay Payments",

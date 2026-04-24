@@ -56,7 +56,7 @@ function Cookies() {
         <section>
           <h2>6. Contact</h2>
           <p>
-            Questions about cookies can be sent to <a href="mailto:support@fly-friendly.com">support@fly-friendly.com</a>.
+            Questions about cookies can be sent to <a href="mailto:info@fly-friendly.com">info@fly-friendly.com</a>.
           </p>
         </section>
         <p className="legal-note">

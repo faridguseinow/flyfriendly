@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
 import ClaimStartModal from "../../components/ClaimStartModal/index.jsx";
 import { faqs } from "../../constants/site.js";
@@ -103,9 +104,42 @@ function AvatarStack() {
   );
 }
 
+function FaqItem({ item, isOpen, onToggle }) {
+  return (
+    <article className={`faq-item${isOpen ? " is-open" : ""}`}>
+      <button type="button" className="faq-item__toggle" onClick={onToggle} aria-expanded={isOpen}>
+        <span>{item.question}</span>
+        <span className="faq-item__icon" aria-hidden="true">+</span>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen ? (
+          <motion.div
+            key="content"
+            className="faq-item__content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+          >
+            <motion.p
+              initial={{ y: -8, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -6, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {item.answer}
+            </motion.p>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </article>
+  );
+}
+
 function Referral() {
   const [authMode, setAuthMode] = useState("signup");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState("");
 
   const openPartnerAuth = (mode) => (event) => {
     event.preventDefault();
@@ -238,10 +272,12 @@ function Referral() {
         <p className="section-copy">Everything you need to know about claiming compensation.</p>
         <div className="faq-panel">
           {faqs.map((item) => (
-            <details key={item.question}>
-              <summary>{item.question}</summary>
-              <p>{item.answer}</p>
-            </details>
+            <FaqItem
+              key={item.question}
+              item={item}
+              isOpen={openFaq === item.question}
+              onToggle={() => setOpenFaq((current) => (current === item.question ? "" : item.question))}
+            />
           ))}
         </div>
       </section>

@@ -2036,7 +2036,7 @@ export async function fetchAdminSearchData() {
   const client = requireSupabase();
 
   const [leads, cases, customers, tasks, partners, blogPosts, faqItems, cmsPages, settings] = await Promise.all([
-    client.from("leads").select("id, lead_code, full_name, email, airline, departure_airport, arrival_airport, status").order("created_at", { ascending: false }).limit(100),
+    client.from("leads").select("id, lead_code, full_name, email, airline, departure_airport, arrival_airport, status").order("created_at", { ascending: false }).limit(250),
     client.from("cases").select("id, case_code, airline, route_from, route_to, status").order("created_at", { ascending: false }).limit(100),
     client.from("customers").select("id, full_name, email, phone, country").order("created_at", { ascending: false }).limit(100),
     client.from("tasks").select("id, title, status, related_entity_type").order("created_at", { ascending: false }).limit(100),

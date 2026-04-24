@@ -1,8 +1,41 @@
+import { useState } from "react";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
 import { Headphones, Mail, MessageSquare } from "lucide-react";
+import { contactEmail } from "../../constants/site.js";
+import { openMailClient } from "../../utils/mailto.js";
 import "./style.scss";
 
 function Contact() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    reference: "",
+    message: "",
+  });
+
+  const updateField = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    openMailClient({
+      subject: `Website contact message from ${form.name.trim() || "Fly Friendly visitor"}`,
+      lines: [
+        "Hello Fly Friendly,",
+        "",
+        `Name: ${form.name.trim()}`,
+        `Email: ${form.email.trim()}`,
+        form.reference.trim() ? `Flight or booking reference: ${form.reference.trim()}` : "",
+        "",
+        "Message:",
+        form.message.trim(),
+      ],
+    });
+  };
+
   return (
     <>
       <section className="contact-hero section">
@@ -26,37 +59,32 @@ function Contact() {
             </p>
             <div className="contact-methods">
               <div><span>WhatsApp</span><a href="https://api.whatsapp.com/send?phone=994998041525">+994 99 804 15 25</a></div>
-              <div><span>Email</span><a href="mailto:support@fly-friendly.com">support@fly-friendly.com</a></div>
+              <div><span>Email</span><a href={`mailto:${contactEmail}`}>{contactEmail}</a></div>
               <div><span>Hours</span><p>Mon-Fri, 09:00-18:00</p></div>
             </div>
           </article>
 
-          <form
-            className="contact-form"
-            action="mailto:support@fly-friendly.com"
-            method="post"
-            encType="text/plain"
-          >
+          <form className="contact-form" onSubmit={handleSubmit}>
             <SectionLabel icon={MessageSquare}>Send a message</SectionLabel>
             <h2>Write to us by email</h2>
             <label>
               <span>Name</span>
-              <input name="name" type="text" minLength="2" placeholder="Your name" required />
+              <input name="name" type="text" minLength="2" placeholder="Your name" required value={form.name} onChange={updateField} />
             </label>
             <label>
               <span>Email</span>
-              <input name="email" type="email" placeholder="you@example.com" required />
+              <input name="email" type="email" placeholder="you@example.com" required value={form.email} onChange={updateField} />
             </label>
             <label>
               <span>Flight or booking reference</span>
-              <input name="reference" type="text" placeholder="Optional" />
+              <input name="reference" type="text" placeholder="Optional" value={form.reference} onChange={updateField} />
             </label>
             <label>
               <span>Message</span>
-              <textarea name="message" minLength="10" rows="7" placeholder="Tell us what happened with your flight" required></textarea>
+              <textarea name="message" minLength="10" rows="7" placeholder="Tell us what happened with your flight" required value={form.message} onChange={updateField}></textarea>
             </label>
             <button className="btn btn-primary" type="submit">Send</button>
-            <small>Submitting opens your email app with this message. A backend email service can be connected later.</small>
+            <small>Submitting opens your email app and prepares your message to {contactEmail}.</small>
           </form>
         </div>
       </section>

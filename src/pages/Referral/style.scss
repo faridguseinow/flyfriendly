@@ -631,25 +631,20 @@ body:has(.ref-hero) {
     box-shadow: none;
   }
 
-  details {
-    min-height: 80px;
-    padding: 20px 24px;
-    border: 1px solid #f3f5fa;
-    border-radius: 40px;
-    background: #fff;
+  .faq-item {
+    border-color: #f3f5fa;
+  }
 
-    &[open] {
-      min-height: 160px;
+  .faq-item__toggle {
+    color: #20242e;
+
+    span:first-child {
+      font-size: 24px;
+      line-height: 32px;
     }
   }
 
-  summary {
-    color: #20242e;
-    font-size: 24px;
-    line-height: 32px;
-  }
-
-  details p {
+  .faq-item__content p {
     color: #767c87;
     font-size: 18px;
     line-height: 28px;
@@ -817,7 +812,7 @@ body:has(.ref-hero) {
     line-height: 34px;
   }
 
-  .ref-faq summary {
+  .ref-faq .faq-item__toggle span:first-child {
     font-size: 20px;
     line-height: 28px;
   }

@@ -65,13 +65,13 @@ function PrivacyPolicy() {
           <p>
             Depending on your location, you may have rights to access, correct, delete, restrict, or object
             to certain processing of your personal information. You may also withdraw marketing consent.
-            To make a request, contact <a href="mailto:support@fly-friendly.com">support@fly-friendly.com</a>.
+            To make a request, contact <a href="mailto:info@fly-friendly.com">info@fly-friendly.com</a>.
           </p>
         </section>
         <section>
           <h2>7. Contact</h2>
           <p>
-            Questions about privacy can be sent to <a href="mailto:support@fly-friendly.com">support@fly-friendly.com</a>.
+            Questions about privacy can be sent to <a href="mailto:info@fly-friendly.com">info@fly-friendly.com</a>.
           </p>
         </section>
         <p className="legal-note">
