@@ -385,6 +385,13 @@
   border-radius: 18px;
   background: #f7fbff;
   font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.claim-combobox__option-flag.is-empty {
+  border-color: transparent;
+  background: transparent;
 }
 
 .claim-combobox__option-body {

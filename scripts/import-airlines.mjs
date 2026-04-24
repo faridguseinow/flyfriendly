@@ -5,6 +5,28 @@ import { createClient } from "@supabase/supabase-js";
 const source = process.argv[2] || "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat";
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const curatedAirlines = [
+  {
+    id: 197,
+    name: "Azerbaijan Airlines",
+    alias: "AZAL",
+    iata_code: "J2",
+    icao_code: "AHY",
+    callsign: "AZAL",
+    country: "Azerbaijan",
+    active: true,
+  },
+  {
+    id: 9000001,
+    name: "AJet",
+    alias: "AnadoluJet",
+    iata_code: "VF",
+    icao_code: "TKJ",
+    callsign: "AJET",
+    country: "Turkey",
+    active: true,
+  },
+];
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.");
@@ -47,6 +69,20 @@ function searchText(parts) {
     .trim();
 }
 
+function isPassengerAirline(row) {
+  const name = (row.name || "").toLowerCase();
+
+  if (row.active !== "Y") {
+    return false;
+  }
+
+  if (/(cargo|freight|logistic|helicopter|charter|virtual|ambulance|air force|squadron|military|army|government|private shuttle)/i.test(name)) {
+    return false;
+  }
+
+  return true;
+}
+
 const raw = source.startsWith("http")
   ? await fetch(source).then((response) => {
     if (!response.ok) {
@@ -57,7 +93,7 @@ const raw = source.startsWith("http")
   })
   : await fs.readFile(source, "utf8");
 
-const airlines = raw
+const importedAirlines = raw
   .split(/\r?\n/)
   .filter(Boolean)
   .map((line) => {
@@ -75,7 +111,27 @@ const airlines = raw
       search_text: searchText([name, alias, iataCode, icaoCode, callsign, country]),
     };
   })
-  .filter((airline) => airline.name);
+  .filter((airline) => airline.name && isPassengerAirline({ name: airline.name, active: airline.active ? "Y" : "N" }));
+
+const airlineMap = new Map();
+
+[...importedAirlines, ...curatedAirlines.map((airline) => ({
+  ...airline,
+  active: Boolean(airline.active),
+  search_text: searchText([
+    airline.name,
+    airline.alias,
+    airline.iata_code,
+    airline.icao_code,
+    airline.callsign,
+    airline.country,
+  ]),
+}))].forEach((airline) => {
+  const key = [airline.iata_code || "", airline.icao_code || "", (airline.name || "").toLowerCase()].join("|");
+  airlineMap.set(key, airline);
+});
+
+const airlines = Array.from(airlineMap.values());
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },

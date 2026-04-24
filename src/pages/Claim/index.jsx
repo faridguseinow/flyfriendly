@@ -225,8 +225,10 @@ function SearchCombobox({
                 <div className="claim-combobox__option-card">
                   {content.countryCode ? (
                     <CountryFlag code={content.countryCode} label={content.subtitle} className="claim-combobox__option-flag" />
+                  ) : content.code ? (
+                    <span className="claim-combobox__option-flag">{content.code.slice(0, 3)}</span>
                   ) : (
-                    <span className="claim-combobox__option-flag">{content.code?.slice(0, 3) || "•"}</span>
+                    <span className="claim-combobox__option-flag is-empty" aria-hidden="true" />
                   )}
                   <div className="claim-combobox__option-body">
                     <strong>{content.title}</strong>
@@ -374,7 +376,7 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
           icon={Plane}
           name="airline"
           value={data.airline}
-          placeholder="Search airline (name / IATA / ICAO)"
+          placeholder="Search airline"
           options={airlineOptions}
           onInputChange={onChange}
           onSelect={onSelect}
@@ -931,9 +933,9 @@ function ClaimFlow() {
       );
     }
     return (
-        <EligibilityStep
-          data={data}
-        onChange={onFieldInput}
+      <EligibilityStep
+        data={data}
+        onChange={onChange}
         onSelect={onSelectOption}
         onNext={(event) => submit("contact", event)}
         airportOptions={{ departure: departureMatches, destination: destinationMatches }}

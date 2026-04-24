@@ -57,6 +57,25 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function isPassengerAirport(row) {
+  const type = (row.type || "").toLowerCase();
+  const name = (row.name || "").toLowerCase();
+
+  if (!row.iata_code) {
+    return false;
+  }
+
+  if (!["large_airport", "medium_airport", "small_airport"].includes(type)) {
+    return false;
+  }
+
+  if (/(heliport|seaplane|air base|airbase|naval|military|airfield|army air|raf )/i.test(name)) {
+    return false;
+  }
+
+  return true;
+}
+
 const raw = fs.readFileSync(path.resolve(csvPath), "utf8").trim();
 const [headerLine, ...lines] = raw.split(/\r?\n/);
 const headers = parseCsvLine(headerLine);
@@ -89,7 +108,7 @@ const airports = lines
       updated_at: new Date().toISOString(),
     };
   })
-  .filter((airport) => airport.id && airport.name);
+  .filter((airport) => airport.id && airport.name && isPassengerAirport(airport));
 
 const batchSize = 1000;
 

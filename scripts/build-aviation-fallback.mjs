@@ -18,6 +18,26 @@ const countryAliases = {
   VE: ["Bolivarian Republic of Venezuela"],
   SY: ["Syrian Arab Republic"],
 };
+const curatedAirlines = [
+  {
+    id: 197,
+    name: "Azerbaijan Airlines",
+    iata_code: "J2",
+    icao_code: "AHY",
+    country: "Azerbaijan",
+    active: true,
+    search_text: searchText(["Azerbaijan Airlines", "AZAL", "J2", "AHY", "Azerbaijan"]),
+  },
+  {
+    id: 9000001,
+    name: "AJet",
+    iata_code: "VF",
+    icao_code: "TKJ",
+    country: "Turkey",
+    active: true,
+    search_text: searchText(["AJet", "A Jet", "AnadoluJet", "Anadolu Jet", "VF", "TKJ", "Turkey"]),
+  },
+];
 
 function csvSplit(line) {
   const parts = [];
@@ -63,6 +83,39 @@ function normalizeAirportName(value) {
   return (value || "").replace(/^\(Duplicate\)\s*/i, "").trim();
 }
 
+function isPassengerAirportRow(row) {
+  const type = (row.type || "").toLowerCase();
+  const name = (row.name || "").toLowerCase();
+
+  if (!row.iata_code) {
+    return false;
+  }
+
+  if (!["large_airport", "medium_airport", "small_airport"].includes(type)) {
+    return false;
+  }
+
+  if (/(heliport|seaplane|air base|airbase|naval|military|airfield|army air|raf )/i.test(name)) {
+    return false;
+  }
+
+  return true;
+}
+
+function isPassengerAirlineRow(row) {
+  const name = (row.name || "").toLowerCase();
+
+  if (row.active !== "Y") {
+    return false;
+  }
+
+  if (/(cargo|freight|logistic|helicopter|charter|virtual|ambulance|air force|squadron|military|army|government|private shuttle)/i.test(name)) {
+    return false;
+  }
+
+  return true;
+}
+
 const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
 
 function getCountryTerms(code) {
@@ -81,13 +134,7 @@ async function buildAirportFallback() {
     const values = csvSplit(line);
     const row = Object.fromEntries(headers.map((header, index) => [header, normalize(values[index])]));
 
-    const include =
-      Boolean(row.iata_code) ||
-      row.scheduled_service === "yes" ||
-      row.type === "large_airport" ||
-      row.type === "medium_airport";
-
-    if (!include) {
+    if (!isPassengerAirportRow(row)) {
       continue;
     }
 
@@ -157,11 +204,11 @@ async function buildAirlineFallback() {
     })
     : await fs.readFile(airlinesSource, "utf8");
 
-  const airlines = raw
+  const importedAirlines = raw
     .split(/\r?\n/)
     .filter(Boolean)
     .map((line) => {
-      const [id, name, , iataCode, icaoCode, , country, active] = csvSplit(line);
+      const [id, name, alias, iataCode, icaoCode, callsign, country, active] = csvSplit(line);
 
       return {
         id: Number(id),
@@ -170,17 +217,24 @@ async function buildAirlineFallback() {
         icao_code: icaoCode === "\\N" || icaoCode === "-" ? "" : normalize(icaoCode),
         country: country === "\\N" ? "" : normalize(country),
         active: active === "Y",
-        search_text: searchText([name, iataCode, icaoCode, country]),
+        search_text: searchText([name, alias, iataCode, icaoCode, callsign, country]),
       };
     })
-    .filter((airline) => airline.name)
-    .sort((left, right) => {
-      if (left.active !== right.active) {
-        return Number(right.active) - Number(left.active);
-      }
+    .filter((airline) => airline.name && isPassengerAirlineRow({ name: airline.name, active: airline.active ? "Y" : "N" }))
+  const airlineMap = new Map();
 
-      return left.name.localeCompare(right.name);
-    });
+  [...importedAirlines, ...curatedAirlines].forEach((airline) => {
+    const key = [airline.iata_code, airline.icao_code, airline.name.toLowerCase()].join("|");
+    airlineMap.set(key, airline);
+  });
+
+  const airlines = Array.from(airlineMap.values()).sort((left, right) => {
+    if (left.active !== right.active) {
+      return Number(right.active) - Number(left.active);
+    }
+
+    return left.name.localeCompare(right.name);
+  });
 
   await fs.writeFile(
     path.join(outputDir, "airlines-fallback.json"),
