@@ -53,7 +53,7 @@ function Footer() {
       </div>
       <div className="footer__bottom">
         <strong>Fly Friendly</strong>
-        <span>©2025 Fly Friendly</span>
+        <span>©2026 Fly Friendly</span>
       </div>
     </footer>
   );

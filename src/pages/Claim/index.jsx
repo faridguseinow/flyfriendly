@@ -104,7 +104,7 @@ function ClaimFooter() {
         <Link to="/privacyPolicy">Privacy</Link>
         <Link to="/terms">Terms and Conditions</Link>
       </nav>
-      <span>©2025 Fly Friendly</span>
+      <span>©2026 Fly Friendly</span>
     </footer>
   );
 }
@@ -520,8 +520,20 @@ function DocumentsStep({ data, files, onChange, onFile, onRemoveFile, onNext, on
 
 function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
   const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [hasInk, setHasInk] = useState(Boolean(data.signatureDataUrl));
+  const isDrawingRef = useRef(false);
+  const activePointerIdRef = useRef(null);
+  const pointsRef = useRef([]);
+
+  const configureContext = (context) => {
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#1f4b99";
+    context.fillStyle = "#1f4b99";
+    context.lineWidth = 2.2;
+    context.shadowColor = "rgba(20, 47, 97, 0.14)";
+    context.shadowBlur = 0.6;
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -533,10 +545,7 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
     canvas.width = Math.max(1, Math.floor(rect.width * ratio));
     canvas.height = Math.max(1, Math.floor(rect.height * ratio));
     context.scale(ratio, ratio);
-    context.lineWidth = 2.5;
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.strokeStyle = "#1f2937";
+    configureContext(context);
 
     if (data.signatureDataUrl) {
       const image = new Image();
@@ -551,31 +560,110 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
     return {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
+      pressure: event.pressure && event.pressure > 0 ? event.pressure : 0.5,
     };
+  };
+
+  const midpoint = (first, second) => ({
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2,
+  });
+
+  const strokeWidthForPoint = (current, previous) => {
+    if (!previous) return 2.2;
+    const distance = Math.hypot(current.x - previous.x, current.y - previous.y);
+    const pressureBoost = (current.pressure || 0.5) * 0.65;
+    const speedPenalty = Math.min(distance / 18, 0.9);
+    return Math.max(1.6, Math.min(2.8, 2.55 + pressureBoost - speedPenalty));
+  };
+
+  const drawDot = (context, current) => {
+    context.beginPath();
+    context.arc(current.x, current.y, 1.3, 0, Math.PI * 2);
+    context.fill();
+  };
+
+  const drawSegment = (context, currentPoint) => {
+    const points = pointsRef.current;
+    points.push(currentPoint);
+
+    if (points.length === 1) {
+      drawDot(context, currentPoint);
+      return;
+    }
+
+    if (points.length === 2) {
+      const previous = points[0];
+      context.beginPath();
+      context.lineWidth = strokeWidthForPoint(currentPoint, previous);
+      context.moveTo(previous.x, previous.y);
+      context.lineTo(currentPoint.x, currentPoint.y);
+      context.stroke();
+      return;
+    }
+
+    const lastIndex = points.length - 1;
+    const previousPoint = points[lastIndex - 1];
+    const pointBeforePrevious = points[lastIndex - 2];
+    const start = midpoint(pointBeforePrevious, previousPoint);
+    const end = midpoint(previousPoint, currentPoint);
+
+    context.beginPath();
+    context.lineWidth = strokeWidthForPoint(currentPoint, previousPoint);
+    context.moveTo(start.x, start.y);
+    context.quadraticCurveTo(previousPoint.x, previousPoint.y, end.x, end.y);
+    context.stroke();
+
+    if (points.length > 6) {
+      points.shift();
+    }
+  };
+
+  const applyPointerSamples = (event) => {
+    if (!isDrawingRef.current || activePointerIdRef.current !== event.pointerId) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    const samples = typeof event.getCoalescedEvents === "function" ? event.getCoalescedEvents() : [event];
+
+    for (const sample of samples) {
+      drawSegment(context, point(sample));
+    }
+
+    setHasInk(true);
   };
 
   const beginSignature = (event) => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
-    const { x, y } = point(event);
+    const startPoint = point(event);
     canvas.setPointerCapture(event.pointerId);
-    context.beginPath();
-    context.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const drawSignature = (event) => {
-    if (!isDrawing) return;
-    const context = canvasRef.current.getContext("2d");
-    const { x, y } = point(event);
-    context.lineTo(x, y);
-    context.stroke();
+    activePointerIdRef.current = event.pointerId;
+    isDrawingRef.current = true;
+    pointsRef.current = [startPoint];
+    drawDot(context, startPoint);
     setHasInk(true);
   };
 
-  const endSignature = () => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
+  const drawSignature = (event) => {
+    applyPointerSamples(event);
+  };
+
+  const endSignature = (event) => {
+    if (!isDrawingRef.current) return;
+
+    applyPointerSamples(event);
+
+    const canvas = canvasRef.current;
+    if (event?.pointerId !== undefined && canvas.hasPointerCapture?.(event.pointerId)) {
+      canvas.releasePointerCapture(event.pointerId);
+    }
+
+    isDrawingRef.current = false;
+    activePointerIdRef.current = null;
+    pointsRef.current = [];
     onSignature(canvasRef.current.toDataURL("image/png"));
   };
 
@@ -583,6 +671,10 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
+    configureContext(context);
+    isDrawingRef.current = false;
+    activePointerIdRef.current = null;
+    pointsRef.current = [];
     setHasInk(false);
     onSignature("");
   };
@@ -601,6 +693,7 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
               onPointerMove={drawSignature}
               onPointerUp={endSignature}
               onPointerLeave={endSignature}
+              onPointerCancel={endSignature}
               aria-label="Digital signature"
             />
             <button type="button" onClick={clearSignature}>Clear</button>
