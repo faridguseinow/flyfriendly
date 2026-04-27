@@ -42,6 +42,16 @@ import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
 const stageLabels = ["Eligibility Check", "Contact Information", "Documents", "Finish"];
+const emailPattern = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+function getEmailError(value) {
+  const email = String(value || "").trim();
+  if (!email || !emailPattern.test(email)) {
+    return "Введите корректный email адрес";
+  }
+
+  return "";
+}
 
 function formatFileSize(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) {
@@ -116,11 +126,33 @@ function Stepper({ activeIndex, completed = false }) {
   );
 }
 
-function Field({ icon: Icon, placeholder, type = "text", name, value, onChange, list, required = false, onBlur }) {
+function Field({
+  icon: Icon,
+  placeholder,
+  type = "text",
+  name,
+  value,
+  onChange,
+  list,
+  required = false,
+  onBlur,
+  error = "",
+}) {
   return (
-    <label className="claim-field">
+    <label className={`claim-field${error ? " is-error" : ""}`}>
       <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
-      <input name={name} value={value || ""} onChange={onChange} onBlur={onBlur} readOnly={!onChange} type={type} placeholder={placeholder} list={list} required={required} />
+      <input
+        name={name}
+        value={value || ""}
+        onChange={onChange}
+        onBlur={onBlur}
+        readOnly={!onChange}
+        type={type}
+        placeholder={placeholder}
+        list={list}
+        required={required}
+        aria-invalid={Boolean(error)}
+      />
     </label>
   );
 }
@@ -429,14 +461,18 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
   );
 }
 
-function ContactStep({ data, onChange, onNext, onBack }) {
+function ContactStep({ data, onChange, onNext, onBack, emailError }) {
   return (
     <form className="claim-form" onSubmit={onNext}>
       <section className="claim-question">
         <h3>Please, enter your contact information.</h3>
         <div className="claim-two">
           <label><span>Full Name</span><Field icon={User} name="fullName" value={data.fullName} onChange={onChange} placeholder="Enter Your Full Name" required /></label>
-          <label><span>Email</span><Field icon={Mail} name="email" value={data.email} onChange={onChange} placeholder="Enter Your Email" required /></label>
+          <label>
+            <span>Email</span>
+            <Field icon={Mail} name="email" value={data.email} onChange={onChange} placeholder="Enter Your Email" required error={emailError} />
+            {emailError ? <small className="claim-field-error">{emailError}</small> : null}
+          </label>
         </div>
         <label className="claim-wide-field"><span>Address</span><Field icon={MapPin} name="city" value={data.city} onChange={onChange} placeholder="Enter Your City" /></label>
         <small className="claim-field-help">Optional</small>
@@ -686,6 +722,7 @@ function ClaimFlow() {
   const [isSaving, setIsSaving] = useState(false);
   const [syncError, setSyncError] = useState("");
   const [syncNotice, setSyncNotice] = useState("");
+  const [emailError, setEmailError] = useState("");
   const activeIndex = Math.max(0, stages.indexOf(stage));
 
   useEffect(() => {
@@ -802,6 +839,9 @@ function ClaimFlow() {
   const onChange = (eventOrName, maybeValue) => {
     if (typeof eventOrName === "string") {
       onFieldInput(eventOrName, maybeValue);
+      if (eventOrName === "email" && emailError) {
+        setEmailError(getEmailError(maybeValue));
+      }
       return;
     }
 
@@ -824,6 +864,10 @@ function ClaimFlow() {
     }
 
     setData(nextData);
+
+    if (name === "email" && emailError) {
+      setEmailError(getEmailError(value));
+    }
   };
 
   const onFile = (documentType, file) => {
@@ -873,6 +917,16 @@ function ClaimFlow() {
       setSyncNotice("Based on the delay duration, this flight is not eligible for compensation.");
       go("denied");
       return;
+    }
+
+    if (stage === "contact") {
+      const nextEmailError = getEmailError(data.email);
+      if (nextEmailError) {
+        setEmailError(nextEmailError);
+        return;
+      }
+
+      setEmailError("");
     }
 
     if (!isSupabaseConfigured) {
@@ -933,7 +987,7 @@ function ClaimFlow() {
   const renderStage = () => {
     if (stage === "denied") return <DeniedResult data={data} />;
     if (stage === "approved") return <ApprovedResult data={data} />;
-    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} />;
+    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} emailError={emailError} />;
     if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
     if (stage === "finish") {
       return (
