@@ -34,6 +34,7 @@ import {
   createLead,
   saveLeadDocuments,
   saveLeadSignature,
+  sendLeadConfirmationEmail,
   saveLeadStep,
   submitLead,
 } from "../../services/leadService.js";
@@ -904,9 +905,23 @@ function ClaimFlow() {
 
         await saveLeadSignature(leadId, data);
         await submitLead(leadId, data, "eligible");
+
+        try {
+          const emailResult = await sendLeadConfirmationEmail(leadId);
+          if (emailResult?.already_sent) {
+            setSyncNotice(`Claim submitted. Confirmation email was already sent to ${data.email || "the customer"}.`);
+          } else if (emailResult?.sent) {
+            setSyncNotice(`Claim submitted. Confirmation email was sent to ${data.email || "the customer"}.`);
+          }
+        } catch (emailError) {
+          console.error("Confirmation email error:", emailError);
+          setSyncNotice("Claim submitted, but the confirmation email could not be sent automatically.");
+        }
       }
 
-      setSyncNotice("Saved in Supabase.");
+      if (stage !== "finish") {
+        setSyncNotice("Saved in Supabase.");
+      }
       go(nextStage);
     } catch (error) {
       setSyncError(error.message || "Could not save claim data.");

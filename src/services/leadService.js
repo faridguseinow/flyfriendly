@@ -107,6 +107,19 @@ export async function submitLead(leadId, data = {}, eligibilityStatus = "eligibl
   }
 }
 
+export async function sendLeadConfirmationEmail(leadId) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke("send-claim-confirmation", {
+    body: { leadId },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function saveLeadSignature(leadId, data = {}) {
   const client = requireSupabase();
   const { error } = await client
