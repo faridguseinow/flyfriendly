@@ -1,0 +1,735 @@
+{
+  "common": {
+    "close": "Kapat",
+    "back": "Geri",
+    "next": "Sonraki",
+    "send": "Gönder",
+    "contact": "İletişim",
+    "aboutUs": "Hakkımızda",
+    "privacy": "Gizlilik",
+    "termsAndConditions": "Şartlar ve Koşullar",
+    "termsOfUse": "Kullanım Koşulları",
+    "privacyPolicy": "Gizlilik Politikası",
+    "cookies": "Çerezler",
+    "support": "Destek",
+    "startYourClaim": "Talebinizi Başlatın",
+    "checkCompensation": "Tazminatı Kontrol Edin",
+    "checkYourEligibility": "Uygunluğunuzu Kontrol Edin",
+    "mainPage": "Ana Sayfa",
+    "submitClaim": "Talebi Gönder",
+    "saving": "Kaydediliyor...",
+    "submitting": "Gönderiliyor...",
+    "savedInSupabase": "Supabase'e kaydedildi.",
+    "flyFriendlyHomeAria": "Fly Friendly ana sayfa",
+    "globalReachCopy": "Tüm ülkelerde, tüm dilleri konuşan milyonlarca yolcuya hizmet veriyoruz.",
+    "scrollToTop": "Yukarıya kaydır"
+  },
+  "nav": {
+    "mainNavigation": "Ana gezinme",
+    "referralProgram": "Tavsiye Programı",
+    "contact": "İletişim",
+    "aboutUs": "Hakkımızda",
+    "openMenu": "Menüyü aç",
+    "closeMenu": "Menüyü kapat",
+    "mobileHeadlinePrefix": "Hakkınız için savaşıyoruz",
+    "mobileHeadlineAccent": "tazminata"
+  },
+  "languageSwitcher": {
+    "open": "Dil seçin",
+    "caption": "Fly Friendly dil ayarları",
+    "title": "Dilinizi seçin",
+    "suggestedLanguages": "Önerilen diller",
+    "additionalLanguages": "Ek diller"
+  },
+  "footer": {
+    "leadTitle": "Tazminatınıza Giden 3 Basit Adım",
+    "leadText": "Aylık olarak sunulan tazminat haberleri, seyahat ipuçları ve yolcu hakları.",
+    "followUs": "Bizi takip edin:",
+    "socialAria": "Sosyal bağlantılar",
+    "company": "Şirket",
+    "resources": "Kaynaklar",
+    "claimHelp": "Yardım Talebi",
+    "compensation": "Tazminat",
+    "referralProgram": "Tavsiye Programı",
+    "checkCompensation": "Tazminatı kontrol edin",
+    "delayedFlights": "Gecikmeli uçuşlar",
+    "cancelledFlights": "İptal edilen uçuşlar",
+    "missedConnections": "Kaçırılan bağlantılar",
+    "copyright": "©2026 Fly Friendly"
+  },
+  "claimModal": {
+    "signupTitle": "Ortak hesabı oluştur",
+    "loginTitle": "Tekrar Hoş Geldiniz",
+    "signupPartnerDescription": "İş ortağı erişimi için başvurun ve Fly Friendly hesabınızdan yönlendirme etkinliğini yönetin.",
+    "signupDefaultDescription": "Devam etmek için hesabınızı oluşturun.",
+    "loginDescription": "Hesabınıza erişmek için e-posta adresinizi ve şifrenizi girin.",
+    "fullName": "Tam Ad",
+    "email": "E-posta",
+    "phone": "İletişim Numarası (WhatsApp tercih edilir)",
+    "password": "Şifre",
+    "fullNamePlaceholder": "Tam Adınızı Girin",
+    "emailPlaceholder": "E-postanızı Girin",
+    "phonePlaceholder": "Örn.: 050 XXX XX XX",
+    "passwordCreatePlaceholder": "Şifrenizi Oluşturun",
+    "passwordEnterPlaceholder": "Şifrenizi Girin",
+    "forgotPassword": "Şifrenizi mi unuttunuz?",
+    "getStarted": "Başlayın",
+    "logIn": "Giriş Yap",
+    "pleaseWait": "Lütfen bekleyin...",
+    "alreadyMember": "Zaten üye misiniz?",
+    "notMember": "Üye değil misiniz?",
+    "signUp": "Kayıt Ol",
+    "supabaseMissing": "Supabase env eksik. VITE_SUPABASE_URL ve VITE_SUPABASE_PUBLISHABLE_KEY'i ekleyin.",
+    "confirmEmailNotice": "Hesabınızı onaylamak için e-postanızı kontrol edin, ardından devam etmek için giriş yapın.",
+    "authError": "Kimlik doğrulaması yapılamadı. Lütfen tekrar deneyin."
+  },
+  "about": {
+    "heroLabel": "Fly Friendly Hakkında",
+    "heroTitle": "Uçuş kesintisi iddialarını yönetmenin daha basit bir yolu",
+    "heroText": "Fly Friendly seyahat edenlerin talep bilgilerini düzenlemesine, gerekli belgeleri yüklemesine ve net, adım adım tek bir akışla ilerlemeyi izlemesine yardımcı olur.",
+    "startClaim": "Talep Başlat",
+    "missionLabel": "Misyonumuz",
+    "missionTitle": "Yolcu haklarının kullanımını kolaylaştırın",
+    "missionText": "Karmaşık bir ücretlendirme sürecini rehberli bir deneyime dönüştürüyoruz. Uygunluk kontrollerinden belge yükleme ve vaka takibine kadar çalışmalarımız netlik, hız ve güven üzerine odaklıdır.",
+    "missionStatText": "Uygun kesintiye uğrayan uçuşlar için potansiyel tazminat.",
+    "whatWeDoLabel": "Ne Yapıyoruz?",
+    "whatWeDoTitle": "İlk kontrolden son güncellemeye kadar pratik destek",
+    "whatWeDoItems": [
+      {
+        "title": "Uygunluk Kontrolü",
+        "text": "Yolcuların gecikme, iptal, biniş reddi veya kaçırılan bağlantının geçerli olup olmadığını anlamalarına yardımcı oluyoruz."
+      },
+      {
+        "title": "Belge Akışı",
+        "text": "Seyahat edenler tazminat davasını desteklemek için gereken ayrıntıları ve belgeleri hazırlayabilir."
+      },
+      {
+        "title": "Vaka İşleme",
+        "text": "Fly Friendly havayolu iletişimini yönetebilir ve talep sürecini düzenli tutabilir."
+      }
+    ],
+    "valuesLabel": "Değerlerimiz",
+    "valuesTitle": "Güven, açıklık ve aksiyon üzerine inşa edilmiştir",
+    "values": [
+      {
+        "title": "Şeffaflık",
+        "text": "Talep sürecini takip etmeyi kolaylaştıran net adımlar, pratik açıklamalar ve durum güncellemeleri."
+      },
+      {
+        "title": "Sadelik",
+        "text": "Yolcuların gereksiz sürtüşmeler olmadan aksaklıktan gönderilen hak talebine geçmesine yardımcı olan yönlendirilmiş bir akış."
+      },
+      {
+        "title": "Güvenlik",
+        "text": "Süreç boyunca yolcu ayrıntılarının, yüklenen belgelerin ve vaka bilgilerinin dikkatli bir şekilde ele alınması."
+      },
+      {
+        "title": "Kullanıcı öncelikli",
+        "text": "Stresli seyahat kesintilerinin ardından pratik desteğe ihtiyaç duyan gerçek yolcular için tasarlandı."
+      }
+    ],
+    "processLabel": "Nasıl Çalışır?",
+    "processTitle": "Dört net aşama",
+    "processSteps": [
+      {
+        "number": "1",
+        "title": "Ayrıntıları girin",
+        "text": "Uçuş, rota, aksaklık ve yolcu bilgilerini sağlayın."
+      },
+      {
+        "number": "2",
+        "title": "Belgeleri yükleyin",
+        "text": "Gerekirse rezervasyon onayını, biniş kartını, havayolu mesajlarını veya kimliğini ekleyin."
+      },
+      {
+        "number": "3",
+        "title": "Gönder",
+        "text": "Talebi inceleme ve havayolu iletişimi için gönderin."
+      },
+      {
+        "number": "4",
+        "title": "Durumu takip et",
+        "text": "Dava çözülene veya kapatılana kadar güncellemeleri takip edin."
+      }
+    ],
+    "helpTitle": "Yardıma mı ihtiyacınız var?",
+    "helpText": "Ekibimize ulaşın, sonraki adımlarda size rehberlik edelim.",
+    "disclaimer": "Yasal Uyarı: Bu sayfa bilgilendirme amaçlıdır. Uygunluk ve talep gereksinimleri rotaya, havayoluna ve yerel düzenlemelere göre değişebilir."
+  },
+  "contactPage": {
+    "heroLabel": "İletişim",
+    "heroTitle": "Bize ulaşın",
+    "heroText": "Rötarlı, iptal edilmiş veya fazla rezervasyon yapılmış bir uçuşla ilgili sorunuz mu var? Bir mesaj gönderin; ekibimiz bir sonraki adımı anlamanıza yardımcı olacaktır.",
+    "supportLabel": "Destek",
+    "supportTitle": "Yardım etmek için buradayız",
+    "supportText": "Uçuşunuzda neler olduğunu, elinizde hangi belgeler olduğunu ve size nasıl ulaşabileceğimizi bize bildirin. Ekibimiz uygun talep akışı yoluyla talep edene kadar hassas kimlik belgelerini göndermeyin.",
+    "whatsApp": "WhatsApp",
+    "email": "E-posta",
+    "hours": "Saat",
+    "hoursValue": "Pazartesi-Cum, 09:00-18:00",
+    "messageLabel": "Mesaj gönder",
+    "messageTitle": "Bize e-posta ile yazın",
+    "name": "İsim",
+    "namePlaceholder": "Adınız",
+    "emailPlaceholder": "sen@example.com",
+    "reference": "Uçuş veya rezervasyon referansı",
+    "referencePlaceholder": "Opsiyonel",
+    "message": "Mesaj",
+    "messagePlaceholder": "Uçuşunuzda ne olduğunu bize anlatın",
+    "sendButton": "Gönder",
+    "emailAppNotice": "Gönderdiğinizde e-posta uygulamanız açılır ve mesajınız {{email}}'ye hazırlanır.",
+    "mailSubject": "{{name}}'den web sitesi iletişim mesajı",
+    "mailGreeting": "Merhaba Fly Friendly,",
+    "mailName": "İsim: {{value}}",
+    "mailEmail": "E-posta: {{value}}",
+    "mailReference": "Uçuş veya rezervasyon referansı: {{value}}",
+    "mailMessageLabel": "Mesaj:",
+    "visitorFallback": "Fly Friendly ziyaretçi"
+  },
+  "home": {
+    "claimBoxTitle": "Kontrol edin ve tazminatınızı talep edin.",
+    "claimBoxDestinationPlaceholder": "Hedef havaalanı, şehir veya ülke",
+    "claimBoxNoAirportsFound": "Havaalanı bulunamadı",
+    "claimBoxFree": "Ücretsizdir",
+    "claimBoxMinutes": "Dakikalar sürer",
+    "claimBoxRightText": "Tazminat hakkınız için mücadele ediyoruz.",
+    "heroLabel": "Gerçek Gezginler Tarafından Doğrulandı",
+    "heroTitle": "Uçuş rötarlı mı yoksa iptal mi edildi?",
+    "heroTitleStrong": "Şimdi 600€'ya kadar talepte bulunun.",
+    "heroText": "Tazminat hakkınız için mücadele ediyoruz. Talebinizi dakikalar içinde gönderin ve bırakın havayoluyla ilgilenelim.",
+    "trustLabel": "Küresel Erişim",
+    "trustTitle": "Dünya çapında güvenilir bir ortak",
+    "benefits": [
+      {
+        "title": "Hızlı ve Uygun Fiyatlı Hizmet",
+        "text": "Talebinizi hiçbir gizli maliyet veya gereksiz gecikme olmadan hızlı ve verimli bir şekilde hallediyoruz."
+      },
+      {
+        "title": "Kazanma Yok, Ücret Yok",
+        "text": "Tazminatınızı almayı başaramadığımız sürece hiçbir şey ödemezsiniz. Sıfır risk, tam adalet."
+      },
+      {
+        "title": "Eşsiz Talep Başarısı",
+        "text": "Havayolları veya acenteler bunun imkansız olduğunu söylediğinde bile tazminat kazanıyoruz."
+      }
+    ],
+    "calculatorLabel": "Tazminat Hesaplayıcı",
+    "calculatorTitle": "Ne kadar talep edebilirsiniz?",
+    "calculatorText": "Anında uygunluğunuzu kontrol edin ve ne kadar tazminat alabileceğinizi görün.",
+    "disruptionsLabel": "Uçuş Sorunları",
+    "disruptionsTitle": "Hangi aksaklıklar nitelendirilir?",
+    "disruptionsText": "Tazminat, gecikmelerden daha fazlası için geçerlidir.",
+    "disruptionCards": {
+      "cancellationTitle": "Uçuş İptalleri",
+      "cancellationText": "Havayolu uçuşunuzu son anda iptal mi etti? İddia et.",
+      "missedTitle": "Kaçırılan Bağlantılı Uçuş",
+      "missedText": "Bir sonraki uçuşunuzu kaçırırsanız ve son varış noktanıza 3 saatten fazla geç ulaşırsanız? Şimdi talep edin.",
+      "airlineFaultTitle": "Havayolunuzun hatası mı?\nYine de ödeme alabilirsiniz.",
+      "airlineFaultText": "3 saatten fazla geç mi geldiniz? Uygunsunuz.",
+      "deniedTitle": "Uçağa Biniş Reddedildi",
+      "deniedText": "Uçuşta çifte rezervasyon mu yapıldı? Tazminatınızın tamamını hemen talep edin. Haklarınız için mücadele ediyoruz.",
+      "allAirlines": "Tüm havayolları",
+      "allCountries": "Tüm ülkeler",
+      "noWinNoFee": "Kazanma yok, ücret yok"
+    },
+    "membershipLabel": "Abonelik Ücretimiz",
+    "membershipTitle": "Fly Friendly Üyelik",
+    "membershipText": "Basit bir abonelik tüm aylık yolculuklarınızı kapsar.",
+    "membershipPriceSuffix": "/ay",
+    "membershipPlan": "Fly Friendly Artı",
+    "membershipPlanText": "Sık seyahat edenler ve akıllı planlamacılar için mükemmeldir.",
+    "membershipItems": [
+      "Sınırsız uçuş araması",
+      "Gerçek zamanlı ücret güncellemeleri",
+      "Fiyat düşüşleri için akıllı uyarılar",
+      "Kaydedilen geziler ve favoriler",
+      "Çok şehirli gezi planlayıcısı",
+      "Seyahat fırsatlarına erken erişim"
+    ],
+    "subscribe": "Abone ol",
+    "membershipPhotoTitle": "Kazanma yok, ücret yok. Sadece bunu yaparsanız ödeme alıyoruz.",
+    "membershipPhotoTag": "Uçağa Biniş Reddedildi",
+    "stepsLabel": "Nasıl Çalışır?",
+    "stepsTitle": "Tazminatınıza Giden 3 Basit Adım",
+    "stepsText": "Zor işi biz yaparız, ödemeyi sorunsuz alırsınız.",
+    "stepsCards": {
+      "minutes": "Dakikalar içinde talep edin",
+      "processTitle": "Hızlı, güvenli ve kolay telafi",
+      "handleEverything": "Her şeyi biz hallediyoruz",
+      "legalTitle": "Havayollarında hukuki uzmanlık",
+      "moneyTitle": "Para doğrudan hesabınıza."
+    },
+    "testimonialsLabel": "Görüşler",
+    "testimonialsTitle": "Milyonlarca gezgin tarafından seviliyor",
+    "testimonialsText": "Gerçek yolcular. Gerçek tazminat. Gerçek hikayeler.",
+    "testimonials": [
+      {
+        "name": "Sarah Johnson",
+        "role": "Pazarlama Müdürü, Londra",
+        "quote": "Londra'dan Milano'ya uçuşum havalimanında iptal edildi ve tazminat talep edebileceğimi bilmiyordum. Bu hizmet her şeyi mükemmel bir şekilde halletti ve ödememi yalnızca iki hafta içinde aldım."
+      },
+      {
+        "name": "Tom Nguyen",
+        "role": "İşletme Danışmanı, Singapur",
+        "quote": "İlk başta tereddütlerim vardı ama süreç beklediğimden sorunsuz sonuçlandı. Ekip beni her aşamada bilgilendirdi ve tazminatı zamanında teslim etti."
+      },
+      {
+        "name": "David Romero",
+        "role": "Serbest Fotoğrafçı, Madrid",
+        "quote": "Bu platformu Madrid'den Berlin'e olan gecikmeli uçuşum sonrasında keşfettim. Ben sadece kısa bir form doldurdum, gerisini onlar hallettiler."
+      },
+      {
+        "name": "Emily Carter",
+        "role": "Kullanıcı Deneyimi Tasarımcısı, Amsterdam",
+        "quote": "Amsterdam'dan Paris'e olan gecikmeli uçağım hafta sonu planlarımı mahvetti ama bu firma bunu telafi etti. Genel olarak harika bir deneyim."
+      },
+      {
+        "name": "Anna Müller",
+        "role": "Yazılım Mühendisi, Berlin",
+        "quote": "5 saatlik gecikmemin ardından talebimi ilettim ve ekip her şeyi profesyonelce halletti. Karmaşık evrak işleri veya aramalar yok."
+      },
+      {
+        "name": "Lucas Bennett",
+        "role": "Yazılım Danışmanı, Toronto",
+        "quote": "Uçuş bilgilerimi beş dakikadan kısa bir sürede gönderdim ve gerisini ekip halletti. Beni bilgilendirdiler ve her adımı açıkladılar."
+      }
+    ],
+    "resourcesLabel": "Kaynaklar",
+    "resourcesTitle": "Seyahat İpuçları ve Kılavuzları",
+    "resourcesText": "Havayolu yolcu haklarına ilişkin en güncel kaynaklarımızdan haberdar olun.",
+    "articles": [
+      {
+        "title": "Havayolu Yolcu Haklarınızı Bilin",
+        "text": "Birçok yolcu, uçuş kesintileri nedeniyle tazminat talep edebileceklerinin farkında değil. Havayolları sizi başarısızlığa uğrattığında haklarınız şunlardır.",
+        "date": "22 Temmuz 2025"
+      },
+      {
+        "title": "Havayolları Ödemeleri Neden Geciktiriyor?",
+        "text": "Tazminatın neden zaman aldığını hiç merak ettiniz mi? Perde arkasında neler olduğunu ve süreci sizin için nasıl hızlandırdığımızı öğrenin.",
+        "date": "10 Ağustos 2025"
+      },
+      {
+        "title": "Stressiz Seyahat İçin En İyi İpuçları",
+        "text": "Akıllıca rezervasyon yapmaktan tazminat almaya ne zaman hak kazandığınızı öğrenmeye kadar seyahatlerinizi daha sorunsuz hale getiren basit alışkanlıkları keşfedin.",
+        "date": "5 Eylül 2025"
+      }
+    ],
+    "newsletterPhoto": "Gelen kutunuza en son güncellemeleri almak için bültenimize katılın.",
+    "newsletterTag": "Güncel Kal",
+    "newsletterLabel": "Bülten Kaydı",
+    "newsletterTitle": "En son güncellemeleri gelen kutunuza alın",
+    "newsletterText": "Aylık olarak sunulan tazminat haberleri, seyahat ipuçları ve yolcu hakları.",
+    "newsletterPlaceholder": "E-postanızı girin",
+    "newsletterAria": "Abone ol",
+    "newsletterNotice": "Bu, e-posta uygulamanızı açar ve ekibimize bir abonelik isteği hazırlar.",
+    "newsletterSubject": "Bülten aboneliği talebi",
+    "newsletterGreeting": "Merhaba Fly Friendly,",
+    "newsletterRequest": "Lütfen bu e-postayı bülten listesine ekleyin:",
+    "faqLabel": "SSS",
+    "faqTitle": "Sıkça Sorulan Sorular",
+    "faqText": "Tazminat talebinde bulunma hakkında bilmeniz gereken her şey.",
+    "faqs": [
+      {
+        "question": "Uçuş tazminatına hak kazanır mıyım?",
+        "answer": "Genel olarak, uçuşunuzun 3 saatten fazla gecikmesi, iptal edilmesi veya uçağa binmenizin reddedilmesi ve aksamanın havayolu şirketinin sorumluluğunda olması durumunda uygun olabilirsiniz."
+      },
+      {
+        "question": "Talebim karşılığında ne kadar alabilirim?",
+        "answer": "Tazminat mesafeye, gecikme uzunluğuna ve geçerli düzenlemelere göre değişir. Pek çok dava, örneğin bazı yargı bölgelerinde 600 Euro'ya kadar sabit kademelere girmektedir."
+      },
+      {
+        "question": "Tazminat süreci ne kadar sürer?",
+        "answer": "Zaman çizelgeleri değişiklik gösterir. Basit vakalar birkaç hafta içinde çözülebilirken, havayolunun iddiaya itiraz etmesi durumunda diğer vakalar daha uzun sürebilir."
+      },
+      {
+        "question": "Hangi belgeleri sunmam gerekiyor?",
+        "answer": "Tipik olarak temel uçuş ayrıntılarına ve rezervasyon onayı, biniş kartı ve herhangi bir gecikme veya iptal bildirimi gibi seyahat kanıtına ihtiyacınız vardır."
+      },
+      {
+        "question": "Havayolu talebimi reddederse ne olur?",
+        "answer": "Bir havayolunun talebi reddetmesi durumunda sebebini inceleyebilir, destekleyici kanıtlarla yanıt verebilir ve uygun olduğunda üst kademeye iletebiliriz."
+      },
+      {
+        "question": "Havayoluyla kendim mi ilgilenmem gerekiyor?",
+        "answer": "Hayır. Bilgilerinizi gönderdikten sonra havayolu şirketiyle iletişimi ve evrak işlerini biz hallederiz."
+      },
+      {
+        "question": "Hizmet ücretleriniz nedir?",
+        "answer": "Genel olarak başarıya dayalı bir ücret modeliyle çalışıyoruz: Kazanmazsak ödemezsiniz."
+      },
+      {
+        "question": "Kişisel verilerim güvende mi?",
+        "answer": "Bilgilerinizi yalnızca talebinizi işleme koymak ve ilgili taraflarla iletişim kurmak için kullanırız. Veriler yalnızca tazminat almak için gerekli olduğunda paylaşılır."
+      }
+    ]
+  },
+  "referral": {
+    "heroTag": "#Yaratıcılar ve Etkileyenler İçin",
+    "heroTitle": "Fly Friendly ile ortak olun ve gezginlere yardım ederek kazanın",
+    "heroText": "Ortaklık programımıza katılın, bağlantınızı paylaşın, hedef kitlenize ilham verin ve birlikte kazandığımız her iddia için ödüllendirilin.",
+    "joinAsPartner": "Ortak Olarak Katılın",
+    "logIn": "Giriş yap",
+    "exclusiveAccessLabel": "Ayrıcalıklı Erişim",
+    "exclusiveAccessTitle": "Kazançtan öte ortaklıktır",
+    "exclusiveAccessText": "Fly Friendly her yaratıcıyı hak ettiği araçlar ve görünürlükle destekler.",
+    "accessItems": [
+      {
+        "title": "Yarışın ve seyahat kuponları kazanın.",
+        "text": "Her başarılı yönlendirmeden %20'ye kadar kazanın."
+      },
+      {
+        "title": "Öne Çıkan İş Ortağı Özetleri",
+        "text": "Kanallarımızda tanıtım yapın."
+      },
+      {
+        "title": "Özel İşbirliği Fırsatları",
+        "text": "Tasarım ekibimizle birlikte kampanyalar oluşturun."
+      },
+      {
+        "title": "İçerik Oluşturucu Kaynak Merkezi",
+        "text": "Öğreticiler, ipuçları ve analiz bilgileri."
+      }
+    ],
+    "photoCard": "Hedef kitlenizi fırsata dönüştürün.",
+    "benefitsLabel": "Programın Faydaları",
+    "benefitsTitle": "Dünya çapında güvenilir bir ortak",
+    "benefitsText": "Tüm ülkelerde, tüm dilleri konuşan milyonlarca yolcuya hizmet veriyoruz.",
+    "benefits": [
+      {
+        "title": "Cömert Komisyonlar",
+        "text": "Her başarılı yönlendirmeden %20'ye kadar kazanın."
+      },
+      {
+        "title": "Anlık Takip Paneli",
+        "text": "Tıklamaları, kaydolmaları ve kazançları gerçek zamanlı olarak görüntüleyin."
+      },
+      {
+        "title": "Sağlanan Yaratıcı Varlıklar",
+        "text": "Hazır görseller, marka kitleri ve başlık şablonları."
+      },
+      {
+        "title": "Küresel Tanınma",
+        "text": "Dünya çapında uçuş deneyimlerini değiştiren bir ağın parçası olun."
+      }
+    ],
+    "processLabel": "Basit 3 Adımlı Süreç",
+    "processTitle": "Zahmetsiz kazanca giden yolunuz",
+    "processText": "Hızlıdır, şeffaftır ve etki yaratmak isteyen yaratıcılar için tasarlanmıştır.",
+    "steps": [
+      {
+        "step": "Adım 1",
+        "title": "Başvurun ve Bağlantınızı Alın",
+        "heading": "Bilgilerinizi gönderin ve e-postanızı alın",
+        "text": "24 saat içinde kişisel yönlendirme bağlantısı."
+      },
+      {
+        "step": "Adım 2",
+        "title": "Orijinal Olarak Paylaşın",
+        "heading": "Biyografinizde, hikayelerinizde ve videolarınızda yayınlayın,",
+        "text": "ve takipçilerinizi aylık kazancınıza dönüştürün."
+      },
+      {
+        "step": "Adım 3",
+        "title": "Aylık Ödül Kazanın",
+        "heading": "Kontrol panelinizdeki sonuçları takip edin ve",
+        "text": "her ay otomatik olarak ödenir."
+      }
+    ],
+    "voicesLabel": "Topluluk Sesleri",
+    "voicesTitle": "Fly Friendly ile büyüyen yaratıcılar",
+    "voicesText": "Birçok influencer, programımız aracılığıyla takipçilerini uçuş hakları konusunda paylaşarak ve eğiterek para kazandı.",
+    "stories": [
+      {
+        "name": "Lena Morales",
+        "role": "Seyahat Blogcusu",
+        "quote": "Birçok markayla işbirliği yaptım ama Fly Friendly yaratıcıları gerçekten destekliyor. İletişimleri ve şeffaflıkları eşsizdir."
+      },
+      {
+        "name": "James Yi",
+        "role": "YouTuber",
+        "quote": "Sadece iki videoda yönlendirme linkimi paylaştım ve ilk hafta kazançları gördüm. Kontrol paneli her şeyi son derece kolaylaştırıyor."
+      },
+      {
+        "name": "Sarah Johnson",
+        "role": "Pazarlama Müdürü, Londra",
+        "quote": "Her iki tarafın da gerçekten kazandığı ilk ortaklık programıdır. Hedef kitlem bana daha çok güveniyor ve ben de tutarlı bir şekilde kazanıyorum."
+      },
+      {
+        "name": "Sophie Duarte",
+        "role": "Instagram Yaratıcısı",
+        "quote": "Her iki tarafın da gerçekten kazandığı ilk ortaklık programıdır. Hedef kitlem bana daha çok güveniyor ve ben de tutarlı bir şekilde kazanıyorum."
+      }
+    ],
+    "ctaHash": "# Bugün Kazanmaya Başlayın",
+    "ctaPhotoTitle": "Haklarınız için mücadele ediyoruz.",
+    "ctaPhotoText": "Oluşturun. Paylaşmak. Para kazanmak.",
+    "ctaTitle": "Fly Friendly İş Ortağı Olun",
+    "ctaText": "Dünya çapında seyahat edenlere yardımcı olan yaratıcılardan oluşan bir ağa katılın. Başlamak 5 dakikadan az sürer.",
+    "applyNow": "Hemen Başvurun",
+    "faqLabel": "SSS",
+    "faqTitle": "Sıkça Sorulan Sorular",
+    "faqText": "Tazminat talebinde bulunma hakkında bilmeniz gereken her şey."
+  },
+  "claim": {
+    "languageShort": "Müh",
+    "heroLabel": "Gerçek Gezginler Tarafından Doğrulandı",
+    "heroTitle": "Tazminatı kontrol edin ve talep edin",
+    "promoTitle": "Şimdi 600€'ya kadar talepte bulunun.",
+    "promoText": "Tazminat hakkınız için mücadele ediyoruz. Talebinizi dakikalar içinde gönderin ve bırakın havayoluyla ilgilenelim.",
+    "promoIssueTitle": "Uçuş Gecikmesi",
+    "promoIssueText": "3 saatten fazla geç mi geldiniz? Uygunsun.",
+    "allAirlines": "Tüm havayolları",
+    "allCountries": "Tüm ülkeler",
+    "noWinNoFee": "Kazanma yok, ücret yok",
+    "stages": [
+      "Uygunluk Kontrolü",
+      "İletişim Bilgileri",
+      "Belgeler",
+      "Bitir"
+    ],
+    "emailError": "Введите корректный e-posta adresi",
+    "eligibility": {
+      "whereDidYouFly": "Nereye uçtunuz?",
+      "departurePlaceholder": "Kalkış havaalanı, şehir veya ülke",
+      "arrivalPlaceholder": "Varış havalimanı, şehir veya ülke",
+      "noAirportsFound": "Havaalanı bulunamadı",
+      "whichAirline": "Hangi havayoluyla uçtunuz?",
+      "searchAirline": "Havayolunu ara",
+      "noAirlinesFound": "Havayolu bulunamadı",
+      "delayTitle": "Uçuş gecikme süresi",
+      "lessThan3": "3 saatten az",
+      "notEligible": "Uygun değil",
+      "moreThan3": "3 saatten fazla",
+      "eligibleForClaim": "Talep için uygun",
+      "cancelled": "Uçuş iptal edildi",
+      "specialRights": "Özel haklar",
+      "scheduledDepartureDate": "Planlanan kalkış tarihiniz neydi?",
+      "directFlight": "Direkt uçuş muydu?",
+      "directYes": "Evet, bu doğrudandı",
+      "directNo": "Hayır, bu doğrudan değildi"
+    },
+    "contact": {
+      "title": "Lütfen iletişim bilgilerinizi giriniz.",
+      "fullName": "Tam Ad",
+      "fullNamePlaceholder": "Tam Adınızı Girin",
+      "email": "E-posta",
+      "emailPlaceholder": "E-postanızı Girin",
+      "address": "Adres",
+      "addressPlaceholder": "Şehrinizi Girin",
+      "optional": "Opsiyonel",
+      "phone": "İletişim Numarası (WhatsApp tercih edilir)",
+      "phonePlaceholder": "Örn.: +90 5xx xxx xx xx",
+      "hasWhatsapp": "Evet bu numaranın Whatsapp'ı var.",
+      "requiredToProceed": "Devam etmek için gerekli."
+    },
+    "documents": {
+      "title": "Güvenli Belge Yükleme",
+      "subtitle": "Lütfen Pasaportunuzu ve Biniş Kartınızı yükleyiniz.",
+      "passport": "Pasaport",
+      "boardingPass": "Biniş Kartı",
+      "dragAndDrop": "Dosyayı Sürükle ve Bırak",
+      "or": "veya",
+      "uploadFile": "Dosya yükle",
+      "uploadHint": "Lütfen biniş kartınızı PNG, JPG veya PDF olarak yükleyin. Maksimum boyut 25MB",
+      "reasonTitle": "Uçuşunuzun gecikmesinin veya iptalinin resmi nedeni neydi?",
+      "reasonPlaceholder": "örneğin Mürettebat/Personel Sorunları",
+      "signatureNote": "İmzanız, uçuşunuzun tazminatını havayolundan almamıza izin veriyor. Tazminatın işleme alınması için havayolu şirketi tarafından imzanız talep edilir. İmzalayarak şartlar ve koşulları kabul etmiş olursunuz."
+    },
+    "finish": {
+      "title": "Bitir ve İmzala",
+      "subtitle": "Talebinizi sonuçlandırmak için lütfen şartları inceleyin ve aşağıdaki imzayı atın.",
+      "digitalSignature": "Dijital İmza",
+      "clear": "Temizle",
+      "signatureHint": "* Lütfen kutunun içini imzalamak için farenizi veya parmağınızı kullanın.",
+      "terms": "<termsLink>Şartlar ve Koşullar</termsLink>'yı kabul ediyorum ve sağlanan bilgilerin doğru olduğunu onaylıyorum."
+    },
+    "denied": {
+      "title": "Maalesef bu uçuşun herhangi bir telafisi yok.",
+      "text": "Çeşitli hava yolcusu düzenlemeleri kapsamında müşterilerimize yardımcı oluyoruz ancak ne yazık ki bu uçuş bunların hiçbirinin kapsamına girmiyor.",
+      "noteTitle": "Not: Bu veriler herkese açık olarak paylaşılmaz.",
+      "noteText": "Bu bilgileri kesinlikle deneyiminizi kişiselleştirmek ve hizmetimizi geliştirmek için kullanıyoruz.",
+      "protectTitle": "Bir dahaki sefere anında korunmaya devam edin.",
+      "protectText": "Sık seyahat edenler ve akıllı planlamacılar için mükemmel",
+      "protectItems": [
+        "Sınırsız uçuş araması",
+        "Gerçek zamanlı ücret güncellemeleri",
+        "Kaydedilen geziler ve favoriler",
+        "Çok şehirli gezi planlayıcısı",
+        "Seyahat fırsatlarına erken erişim"
+      ]
+    },
+    "approved": {
+      "title": "Teşekkürler, talebiniz yola çıktı!",
+      "text": "Fly Friendly'e güvendiğiniz için teşekkür ederiz, talebiniz sistemimize güvenli bir şekilde ulaştı. Uçuş tazminatı ekibimiz şu anda durumunuzu inceliyor ve durum ilerledikçe sizi bilgilendirecek.",
+      "leadId": "Potansiyel Müşteri Kimliği",
+      "pending": "Beklemede",
+      "nextTitle": "Bundan sonra ne olacak?",
+      "nextText": "Her iddia, hava yolculuğunu en ince ayrıntısına kadar bilen özel bir ekip, uzmanlar, müzakereciler ve hukuk uzmanları tarafından ele alınır.",
+      "nextSteps": [
+        [
+          "Uçuş geçmişinizi kontrol ediyoruz",
+          "Uzmanlarımız kalkış kayıtlarından gecikme nedenlerine kadar tüm uçuş verilerini doğruluyor."
+        ],
+        [
+          "Kasanızı akıllıca oluşturuyoruz",
+          "Yapay zeka destekli araçlar en güçlü argümanları toplamamıza yardımcı olur, böylece havayolları haklarınızı göz ardı edemez."
+        ],
+        [
+          "Havayoluyla konuşuyoruz",
+          "Müzakere ekibimiz doğrudan havayolu şirketiyle iletişime geçerek yanıtları hızlandırır ve adil tazminat sağlar."
+        ],
+        [
+          "İşler karmaşıklaşırsa",
+          "Bazen havayolları direniyor. İşte o zaman yasal ağımız daha da ileri gitmek için devreye giriyor, kazanmadığınız sürece yine de ücret alınmıyor."
+        ],
+        [
+          "Ödeme başlıyor",
+          "Talebiniz onaylandığında parayı doğrudan hesabınıza aktarıyoruz."
+        ]
+      ]
+    },
+    "status": {
+      "notEligible": "Gecikme süresi nedeniyle bu uçuş tazminata uygun değildir.",
+      "supabaseMissing": "Supabase env eksik. Form yalnızca yerel olarak kaydedilir.",
+      "saveLeadError": "Potansiyel müşteri verileri kaydedilemedi.",
+      "saveClaimError": "Talep verileri kaydedilemedi.",
+      "signatureRequired": "Lütfen göndermeden önce şartları imzalayıp kabul edin.",
+      "emailAlreadySent": "Talep gönderildi. Onay e-postası zaten {{email}} adresine gönderildi.",
+      "emailSent": "Talep gönderildi. Onay e-postası {{email}} adresine gönderildi.",
+      "emailFailed": "Talep gönderildi ancak onay e-postası otomatik olarak gönderilemedi.",
+      "customerFallback": "müşteri",
+      "removeFile": "Kaldır {{file}}"
+    }
+  },
+  "legal": {
+    "label": "Yasal",
+    "updated": "Son güncelleme: 16 Nisan 2026",
+    "privacy": {
+      "title": "Gizlilik Politikası",
+      "intro": "Bu politika, uçuş tazminatı web sitemizi, talep akışımızı, iletişim formlarımızı ve haber bültenimizi kullandığınızda Fly Friendly'nin bilgileri nasıl topladığını, kullandığını, sakladığını ve koruduğunu açıklamaktadır.",
+      "sections": [
+        {
+          "title": "1. Biz kimiz",
+          "text": "Fly Friendly uçuş tazminatı destek hizmetidir. Yolcuların potansiyel uygunluk durumunu kontrol etmelerine, uçuş kesintisi ayrıntılarını göndermelerine, destekleyici belgeleri yüklemelerine ve talep sürecini takip etmelerine yardımcı oluyoruz."
+        },
+        {
+          "title": "2. Topladığımız bilgiler",
+          "text": "Web sitesini nasıl kullandığınıza bağlı olarak şunları toplayabiliriz:",
+          "items": [
+            "İsim, e-posta adresi, telefon numarası ve mesaj içeriği gibi iletişim bilgileri.",
+            "Havayolu, rota, tarihler, gecikme süresi, iptal ayrıntıları, rezervasyon referansı ve vaka durumu gibi uçuş ve talep ayrıntıları.",
+            "Rezervasyon onayları, biniş kartları, havayolu bildirimleri veya talep için gerekiyorsa kimlik bilgileri gibi yüklemeyi seçtiğiniz belgeler.",
+            "Cihaz tipi, tarayıcı, IP adresi, ziyaret edilen sayfalar, çerez tanımlayıcılar gibi teknik bilgiler.",
+            "Güncellemelere abone olursanız haber bülteni ve pazarlama tercihleri."
+          ]
+        },
+        {
+          "title": "3. Bilgileri nasıl kullanıyoruz?",
+          "items": [
+            "Uçuş tazminatı taleplerini değerlendirmek ve yönetmek.",
+            "Durumunuz, destek talebiniz veya gönderilen mesajınız hakkında sizinle iletişim kurmak için.",
+            "Hasar dokümantasyonunu hazırlamak ve gerektiğinde havayolları veya ilgili taraflarla iletişim kurmak.",
+            "Web sitesi performansını, kullanıcı deneyimini, dolandırıcılığın önlenmesini ve güvenliği iyileştirmek için.",
+            "Haber bültenlerini veya güncellemeleri yalnızca abone olduğunuzda veya buna başka bir şekilde izin verdiğinizde göndermek için."
+          ]
+        },
+        {
+          "title": "4. Bilgi paylaşımı",
+          "text": "Bilgileri yalnızca taleplerin ele alınması, web sitesinin işletilmesi, uyumluluk veya destek için gerekli olduğunda havayolları, yasal veya operasyonel ortaklar, ödeme sağlayıcılar, analiz sağlayıcılar, barındırma sağlayıcılar ve diğer hizmet sağlayıcılarla paylaşabiliriz."
+        },
+        {
+          "title": "5. Saklama ve güvenlik",
+          "text": "Bilgileri yalnızca taleplerin ele alınması, kayıt tutma, yasal yükümlülükler, anlaşmazlık çözümü ve dolandırıcılığın önlenmesi dahil olmak üzere toplanma amacı için makul ölçüde ihtiyaç duyulan süre boyunca saklıyoruz. Kişisel bilgileri korumak için makul organizasyonel ve teknik önlemler kullanıyoruz."
+        },
+        {
+          "title": "6. Haklarınız",
+          "text": "Bulunduğunuz yere bağlı olarak, kişisel bilgilerinize erişme, bunları düzeltme, silme, kısıtlama veya bunların belirli şekilde işlenmesine itiraz etme haklarınız olabilir. Ayrıca pazarlama onayınızı da geri çekebilirsiniz. Talepte bulunmak için <emailLink>info@fly-friendly.com</emailLink> ile iletişime geçin."
+        },
+        {
+          "title": "7. İletişim",
+          "text": "Gizlilik ile ilgili sorularınızı <emailLink>info@fly-friendly.com</emailLink> adresine gönderebilirsiniz."
+        }
+      ],
+      "note": "Bu sayfa, Fly Friendly hizmet modelini temel alan pratik bir web sitesi politika taslağıdır. Üretimde kullanılmadan önce danışman tarafından incelenmelidir."
+    },
+    "terms": {
+      "title": "Kullanım Koşulları",
+      "intro": "Bu şartlar, Fly Friendly web sitesini, talep gönderme araçlarını, yönlendirme sayfalarını, bülten formlarını ve ilgili çevrimiçi hizmetleri kullanımınızı düzenler.",
+      "sections": [
+        {
+          "title": "1. Web sitesinin kullanımı",
+          "text": "Web sitesini yolcu hakları hakkında bilgi edinmek, olası tazminatları kontrol etmek, iletişim talepleri göndermek ve hak talebinde bulunmak için kullanabilirsiniz. Web sitesini yasal olarak kullanmayı ve işleyişine, güvenliğine veya kullanılabilirliğine müdahale etmemeyi kabul edersiniz."
+        },
+        {
+          "title": "2. Talep bilgileri",
+          "text": "Uçuş, yolcu, iletişim ve belge bilgilerini doğru, eksiksiz ve güncel olarak sağlamak sizin sorumluluğunuzdadır. Yanlış bilgiler incelemeyi geciktirebilir veya hak taleplerinin ele alınmasını engelleyebilir."
+        },
+        {
+          "title": "3. Tazminat garantisi yok",
+          "text": "Uygunluk rotaya, aksaklığın türüne, gecikme süresine, havayolunun sorumluluğuna, kanıtlara, geçerli yasaya ve diğer faktörlere bağlıdır. Fly Friendly hak taleplerini değerlendirmeye ve takip etmeye yardımcı olabilir ancak sunulan her vakanın başarılı olacağını garanti etmiyoruz."
+        },
+        {
+          "title": "4. Ücretler ve ödemeler",
+          "text": "Web sitesinde kazanç yok, ücret yok gibi başarıya dayalı bir yaklaşım anlatılıyor. Herhangi bir nihai ücret, komisyon veya ödeme düzenlemesi, talep süreci sırasında sunulan talep sözleşmesinde veya hizmet koşullarında onaylanmalıdır."
+        },
+        {
+          "title": "5. Kullanıcı davranışı",
+          "items": [
+            "Yanlış, yanıltıcı veya hileli bilgi göndermeyin.",
+            "Kötü amaçlı yazılım, yasa dışı materyal veya paylaşma yetkiniz olmayan bilgileri içeren dosyaları yüklemeyin.",
+            "Web sitesini kopyalamayın, kazımayın, bozmayın, tersine mühendislik yapmayın veya kötüye kullanmayın."
+          ]
+        },
+        {
+          "title": "6. İçerik ve fikri mülkiyet",
+          "text": "Fly Friendly adı, web sitesi tasarımı, metin, grafikler ve marka varlıkları Fly Friendly veya lisans verenlerine aittir. Bunları ticari olarak izinsiz olarak yeniden kullanamazsınız."
+        },
+        {
+          "title": "7. Sorumluluğun Sınırlandırılması",
+          "text": "Web sitesi genel bilgi ve hizmet erişimi amacıyla sağlanmıştır. Yasaların izin verdiği ölçüde, Fly Friendly dolaylı kayıplardan, kullanılamayan web sitesi erişiminden, üçüncü taraf eylemlerinden, havayolu kararlarından veya kullanıcılar tarafından gönderilen yanlış bilgilerin sonuçlarından sorumlu değildir."
+        },
+        {
+          "title": "8. İletişim",
+          "text": "Bu şartlarla ilgili sorularınız için <emailLink>info@fly-friendly.com</emailLink> ile iletişime geçin."
+        }
+      ],
+      "note": "Bu Kullanım Koşulları sayfası, sitenin işlevselliğini temel alan bir taslaktır ve üretimde kullanılmadan önce danışman tarafından incelenmelidir."
+    },
+    "cookies": {
+      "title": "Çerez Politikası",
+      "intro": "Bu politika, Fly Friendly'nin web sitesini çalışır durumda tutmak, kullanımı anlamak, performansı iyileştirmek ve pazarlamayı desteklemek için çerezleri ve benzer teknolojileri nasıl kullanabileceğini açıklamaktadır.",
+      "sections": [
+        {
+          "title": "1. Çerezler nelerdir?",
+          "text": "Çerezler, bir web sitesini ziyaret ettiğinizde cihazınıza depolanan küçük metin dosyalarıdır. Benzer teknolojiler arasında yerel depolama, pikseller, etiketler ve analitik tanımlayıcılar bulunur."
+        },
+        {
+          "title": "2. Kullanabileceğimiz çerez türleri",
+          "items": [
+            "Temel çerezler: Gezinme, güvenlik, formlar ve temel web sitesi işlevleri için gereklidir.",
+            "Tercih çerezleri: Dil veya ekran ayarları gibi seçenekleri hatırlayın.",
+            "Analytics çerezleri: Sayfa ziyaretlerini, trafik kaynaklarını ve kullanıcıların web sitesiyle nasıl etkileşimde bulunduğunu anlamamıza yardımcı olur.",
+            "Pazarlama çerezleri: Kampanyaları, yönlendirme etkinliğini veya bülten performansını ölçmeye yardımcı olabilir."
+          ]
+        },
+        {
+          "title": "3. Çerezleri neden kullanıyoruz?",
+          "text": "Çerezler siteyi güvenilir tutmamıza, talep yolculuğunu iyileştirmemize, hangi sayfaların yararlı olduğunu anlamamıza, teknik sorunları tespit etmemize ve yönlendirme ve bülten kampanyaları gibi içeriklerin performansını ölçmemize yardımcı olur."
+        },
+        {
+          "title": "4. Üçüncü taraf araçlar",
+          "text": "Analitik, barındırma, formlar, güvenlik ve pazarlama ölçümü için üçüncü taraf sağlayıcıları kullanabiliriz. Bu sağlayıcılar kendi politikalarına göre çerez yerleştirebilir veya teknik veriler toplayabilir."
+        },
+        {
+          "title": "5. Çerezleri yönetme",
+          "text": "Tarayıcınızın ayarlarından çerezleri engelleyebilir, silebilir veya kısıtlayabilirsiniz. Çerezlerin devre dışı bırakılması durumunda bazı temel web sitesi işlevleri düzgün çalışmayabilir."
+        },
+        {
+          "title": "6. İletişim",
+          "text": "Çerezlerle ilgili sorularınızı <emailLink>info@fly-friendly.com</emailLink> adresine gönderebilirsiniz."
+        }
+      ],
+      "note": "Bu Çerez Politikası, Fly Friendly web sitesi modelini temel alan bir taslaktır ve üretimde kullanılmadan önce gözden geçirilmelidir."
+    }
+  }
+}

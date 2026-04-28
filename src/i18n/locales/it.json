@@ -1,0 +1,735 @@
+{
+  "common": {
+    "close": "Chiudi",
+    "back": "Indietro",
+    "next": "Avanti",
+    "send": "Invia",
+    "contact": "Contatto",
+    "aboutUs": "Chi siamo",
+    "privacy": "Privacy",
+    "termsAndConditions": "Termini e Condizioni",
+    "termsOfUse": "Condizioni d'uso",
+    "privacyPolicy": "Informativa sulla privacy",
+    "cookies": "Biscotti",
+    "support": "Supporto",
+    "startYourClaim": "Avvia il tuo reclamo",
+    "checkCompensation": "Controlla la compensazione",
+    "checkYourEligibility": "Verifica la tua idoneità",
+    "mainPage": "Pagina principale",
+    "submitClaim": "Invia reclamo",
+    "saving": "Salvataggio...",
+    "submitting": "Invio...",
+    "savedInSupabase": "Salvato in Supabase.",
+    "flyFriendlyHomeAria": "Fly Friendly casa",
+    "globalReachCopy": "Servire milioni di passeggeri in tutti i paesi, parlando tutte le lingue.",
+    "scrollToTop": "Scorri verso l'alto"
+  },
+  "nav": {
+    "mainNavigation": "Navigazione principale",
+    "referralProgram": "Programma di riferimento",
+    "contact": "Contatto",
+    "aboutUs": "Chi siamo",
+    "openMenu": "Apri il menu",
+    "closeMenu": "Chiudi il menu",
+    "mobileHeadlinePrefix": "Lottiamo per i tuoi diritti",
+    "mobileHeadlineAccent": "al risarcimento"
+  },
+  "languageSwitcher": {
+    "open": "Seleziona la lingua",
+    "caption": "Fly Friendly impostazioni della lingua",
+    "title": "Scegli la tua lingua",
+    "suggestedLanguages": "Lingue suggerite",
+    "additionalLanguages": "Lingue aggiuntive"
+  },
+  "footer": {
+    "leadTitle": "3 Semplici Passi per il Tuo Compensazione",
+    "leadText": "Notizie su risarcimenti, consigli di viaggio e diritti dei passeggeri consegnati mensilmente.",
+    "followUs": "Seguici:",
+    "socialAria": "Collegamenti sociali",
+    "company": "Azienda",
+    "resources": "Risorse",
+    "claimHelp": "Richiedi aiuto",
+    "compensation": "Compensazione",
+    "referralProgram": "Programma di riferimento",
+    "checkCompensation": "Controllare la compensazione",
+    "delayedFlights": "Voli in ritardo",
+    "cancelledFlights": "Voli cancellati",
+    "missedConnections": "Collegamenti persi",
+    "copyright": "©2026 Fly Friendly"
+  },
+  "claimModal": {
+    "signupTitle": "Crea un account partner",
+    "loginTitle": "Bentornato",
+    "signupPartnerDescription": "Richiedi l'accesso partner e gestisci l'attività di segnalazione dal tuo account Fly Friendly.",
+    "signupDefaultDescription": "Crea il tuo account per continuare.",
+    "loginDescription": "Inserisci la tua email e la password per accedere al tuo account.",
+    "fullName": "Nome completo",
+    "email": "E-mail",
+    "phone": "Numero di contatto (preferibilmente WhatsApp)",
+    "password": "Password",
+    "fullNamePlaceholder": "Inserisci il tuo nome completo",
+    "emailPlaceholder": "Inserisci la tua email",
+    "phonePlaceholder": "Es.: 050 XXX XX XX",
+    "passwordCreatePlaceholder": "Crea la tua password",
+    "passwordEnterPlaceholder": "Inserisci la tua password",
+    "forgotPassword": "Password dimenticata?",
+    "getStarted": "Inizia",
+    "logIn": "Accedi",
+    "pleaseWait": "Attendere prego...",
+    "alreadyMember": "Già membro?",
+    "notMember": "Non sei membro?",
+    "signUp": "Iscriviti",
+    "supabaseMissing": "Manca Supabase env. Aggiungi VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.",
+    "confirmEmailNotice": "Controlla la tua email per confermare il tuo account, quindi accedi per continuare.",
+    "authError": "Impossibile autenticarsi. Per favore riprova."
+  },
+  "about": {
+    "heroLabel": "Informazioni su Fly Friendly",
+    "heroTitle": "Un modo più semplice per gestire le richieste di interruzione del volo",
+    "heroText": "Fly Friendly aiuta i viaggiatori a organizzare le informazioni sui reclami, caricare i documenti richiesti e monitorare i progressi in un flusso chiaro e passo dopo passo.",
+    "startClaim": "Avvia un reclamo",
+    "missionLabel": "La nostra missione",
+    "missionTitle": "Semplificare l'utilizzo dei diritti dei passeggeri",
+    "missionText": "Trasformiamo un complesso processo retributivo in un'esperienza guidata. Dai controlli di idoneità al caricamento dei documenti e al monitoraggio dei casi, il nostro lavoro si concentra su chiarezza, velocità e fiducia.",
+    "missionStatText": "Potenziale risarcimento per voli interrotti ammissibili.",
+    "whatWeDoLabel": "Cosa Facciamo",
+    "whatWeDoTitle": "Supporto pratico dalla prima verifica all'aggiornamento finale",
+    "whatWeDoItems": [
+      {
+        "title": "Verifica di idoneità",
+        "text": "Aiutiamo i passeggeri a capire se un ritardo, una cancellazione, un negato imbarco o una mancata coincidenza possono rientrare nei requisiti."
+      },
+      {
+        "title": "Flusso di documenti",
+        "text": "I viaggiatori possono preparare i dettagli e i documenti necessari a supportare un caso di risarcimento."
+      },
+      {
+        "title": "Gestione dei casi",
+        "text": "Fly Friendly può gestire la comunicazione della compagnia aerea e mantenere organizzato il processo di richiesta di risarcimento."
+      }
+    ],
+    "valuesLabel": "I nostri valori",
+    "valuesTitle": "Costruito attorno alla fiducia, alla chiarezza e all'azione",
+    "values": [
+      {
+        "title": "Trasparenza",
+        "text": "Passaggi chiari, spiegazioni pratiche e aggiornamenti di stato che rendono più facile seguire il processo di richiesta."
+      },
+      {
+        "title": "Semplicità",
+        "text": "Un flusso guidato che aiuta i viaggiatori a passare dal disagio alla presentazione del reclamo senza inutili attriti."
+      },
+      {
+        "title": "Sicurezza",
+        "text": "Gestione attenta dei dettagli dei passeggeri, dei documenti caricati e delle informazioni sul caso durante tutto il processo."
+      },
+      {
+        "title": "Prima l'utente",
+        "text": "Costruito per passeggeri reali che necessitano di supporto pratico dopo stressanti interruzioni del viaggio."
+      }
+    ],
+    "processLabel": "Come funziona",
+    "processTitle": "Quattro tappe chiare",
+    "processSteps": [
+      {
+        "number": "1",
+        "title": "Inserisci i dettagli",
+        "text": "Fornire informazioni su volo, percorso, interruzione e passeggeri."
+      },
+      {
+        "number": "2",
+        "title": "Carica documenti",
+        "text": "Aggiungi conferma di prenotazione, carta d'imbarco, messaggi della compagnia aerea o documento d'identità, se necessario."
+      },
+      {
+        "number": "3",
+        "title": "Invia",
+        "text": "Invia il reclamo per revisione e comunicazione alla compagnia aerea."
+      },
+      {
+        "number": "4",
+        "title": "Tieni traccia dello stato",
+        "text": "Segui gli aggiornamenti fino alla risoluzione o alla chiusura del caso."
+      }
+    ],
+    "helpTitle": "Hai bisogno di aiuto?",
+    "helpText": "Contatta il nostro team e ti guideremo attraverso i passaggi successivi.",
+    "disclaimer": "Disclaimer: questa pagina è a scopo informativo. I requisiti di idoneità e richiesta possono variare in base alla rotta, alla compagnia aerea e alle normative locali."
+  },
+  "contactPage": {
+    "heroLabel": "Contatto",
+    "heroTitle": "Contattaci",
+    "heroText": "Hai una domanda su un volo in ritardo, cancellato o con overbooking? Invia un messaggio e il nostro team ti aiuterà a comprendere il passaggio successivo.",
+    "supportLabel": "Supporto",
+    "supportTitle": "Siamo qui per aiutarti",
+    "supportText": "Raccontaci cosa è successo con il tuo volo, quali documenti hai e come possiamo raggiungerti. Non inviare documenti di identità sensibili finché il nostro team non li richiede attraverso il flusso di reclamo appropriato.",
+    "whatsApp": "WhatsApp",
+    "email": "E-mail",
+    "hours": "Ore",
+    "hoursValue": "lun-ven, 09:00-18:00",
+    "messageLabel": "Invia un messaggio",
+    "messageTitle": "Scrivici via email",
+    "name": "Nome",
+    "namePlaceholder": "Il tuo nome",
+    "emailPlaceholder": "tu@esempio.com",
+    "reference": "Riferimento del volo o della prenotazione",
+    "referencePlaceholder": "Facoltativo",
+    "message": "Messaggio",
+    "messagePlaceholder": "Raccontaci cosa è successo con il tuo volo",
+    "sendButton": "Invia",
+    "emailAppNotice": "L'invio apre l'app di posta elettronica e prepara il messaggio a {{email}}.",
+    "mailSubject": "Messaggio di contatto del sito web da {{name}}",
+    "mailGreeting": "Ciao Fly Friendly,",
+    "mailName": "Nome: {{value}}",
+    "mailEmail": "E-mail: {{value}}",
+    "mailReference": "Riferimento del volo o della prenotazione: {{value}}",
+    "mailMessageLabel": "Messaggio:",
+    "visitorFallback": "Fly Friendly visitatore"
+  },
+  "home": {
+    "claimBoxTitle": "Verifica e richiedi il tuo risarcimento.",
+    "claimBoxDestinationPlaceholder": "Aeroporto, città o paese di destinazione",
+    "claimBoxNoAirportsFound": "Nessun aeroporto trovato",
+    "claimBoxFree": "È gratis",
+    "claimBoxMinutes": "Richiede pochi minuti",
+    "claimBoxRightText": "Lottiamo per il tuo diritto al risarcimento.",
+    "heroLabel": "Verificato da veri viaggiatori",
+    "heroTitle": "Volo in ritardo o cancellato?",
+    "heroTitleStrong": "Richiedi subito fino a 600€.",
+    "heroText": "Lottiamo per il tuo diritto al risarcimento. Invia il tuo reclamo in pochi minuti e lasciaci gestire la compagnia aerea.",
+    "trustLabel": "Portata globale",
+    "trustTitle": "Un partner fidato in tutto il mondo",
+    "benefits": [
+      {
+        "title": "Servizio veloce e conveniente",
+        "text": "Gestiamo il tuo sinistro in modo rapido ed efficiente, senza costi nascosti o ritardi inutili."
+      },
+      {
+        "title": "Nessuna vittoria, nessuna commissione",
+        "text": "Non pagherai nulla finché non riusciremo a ottenere il tuo risarcimento. Rischio zero, equità totale."
+      },
+      {
+        "title": "Reclamo riuscito senza corrispondenza",
+        "text": "Otteniamo un risarcimento anche quando le compagnie aeree o le agenzie dicono che è impossibile."
+      }
+    ],
+    "calculatorLabel": "Calcolatore del compenso",
+    "calculatorTitle": "Quanto puoi richiedere?",
+    "calculatorText": "Controlla immediatamente la tua idoneità e scopri quanto risarcimento puoi ricevere.",
+    "disruptionsLabel": "Problemi di volo",
+    "disruptionsTitle": "Quali disservizi si qualificano?",
+    "disruptionsText": "Il risarcimento non si applica solo ai ritardi.",
+    "disruptionCards": {
+      "cancellationTitle": "Cancellazione del volo",
+      "cancellationText": "La compagnia aerea ha cancellato il tuo volo all'ultimo minuto? Richiedilo.",
+      "missedTitle": "Volo in coincidenza persa",
+      "missedText": "Se hai perso il tuo prossimo volo e sei arrivato alla tua destinazione finale con più di 3 ore di ritardo? Richiedilo ora.",
+      "airlineFaultTitle": "Colpa della tua compagnia aerea?\nPuoi comunque essere pagato.",
+      "airlineFaultText": "Sei arrivato con più di 3 ore di ritardo? Sei idoneo.",
+      "deniedTitle": "Imbarco negato",
+      "deniedText": "Volo in overbooking? Chiedi subito il tuo intero risarcimento. Lottiamo per i tuoi diritti.",
+      "allAirlines": "Tutte le compagnie aeree",
+      "allCountries": "Tutti i paesi",
+      "noWinNoFee": "Nessuna vincita, nessuna commissione"
+    },
+    "membershipLabel": "La nostra quota di abbonamento",
+    "membershipTitle": "Fly Friendly Iscrizione",
+    "membershipText": "Un semplice abbonamento copre tutti i tuoi viaggi mensili.",
+    "membershipPriceSuffix": "/mese",
+    "membershipPlan": "Fly Friendly Inoltre",
+    "membershipPlanText": "Perfetto per viaggiatori frequenti e pianificatori intelligenti.",
+    "membershipItems": [
+      "Ricerche di voli illimitate",
+      "Aggiornamenti tariffari in tempo reale",
+      "Avvisi intelligenti per cali di prezzo",
+      "Viaggi salvati e preferiti",
+      "Pianificatore di viaggi multi-città",
+      "Accesso anticipato alle offerte di viaggio"
+    ],
+    "subscribe": "Iscriviti",
+    "membershipPhotoTitle": "Nessuna vincita, nessuna commissione. Veniamo pagati solo se lo fai.",
+    "membershipPhotoTag": "Imbarco negato",
+    "stepsLabel": "Come funziona",
+    "stepsTitle": "3 Semplici Passi per il Tuo Compensazione",
+    "stepsText": "Noi facciamo il duro lavoro, tu ricevi il pagamento senza problemi.",
+    "stepsCards": {
+      "minutes": "Richiedi in pochi minuti",
+      "processTitle": "Compensazione veloce, sicura e facile",
+      "handleEverything": "Gestiamo tutto noi",
+      "legalTitle": "Consulenze legali con compagnie aeree",
+      "moneyTitle": "Soldi direttamente sul tuo conto."
+    },
+    "testimonialsLabel": "Testimonianze",
+    "testimonialsTitle": "Amato da milioni di viaggiatori",
+    "testimonialsText": "Passeggeri veri. Compensazione reale. Storie vere.",
+    "testimonials": [
+      {
+        "name": "Sarah Johnson",
+        "role": "Direttore Marketing, Londra",
+        "quote": "Il mio volo da Londra a Milano è stato cancellato in aeroporto e non sapevo di poter richiedere un risarcimento. Questo servizio ha gestito tutto perfettamente e ho ricevuto il pagamento in sole due settimane."
+      },
+      {
+        "name": "Tom Nguyen",
+        "role": "Consulente aziendale, Singapore",
+        "quote": "All'inizio avevo dei dubbi, ma il processo si è rivelato più fluido del previsto. Il team mi ha tenuto informato in ogni fase e ha consegnato il risarcimento in tempo."
+      },
+      {
+        "name": "David Romero",
+        "role": "Fotografo freelance, Madrid",
+        "quote": "Ho scoperto questa piattaforma dopo il mio volo in ritardo da Madrid a Berlino. Ho compilato solo un breve modulo e loro si sono occupati del resto."
+      },
+      {
+        "name": "Emily Carter",
+        "role": "UX Designer, Amsterdam",
+        "quote": "Il mio volo in ritardo da Amsterdam a Parigi ha rovinato i miei programmi per il fine settimana, ma questa compagnia ha compensato. Esperienza fantastica nel complesso."
+      },
+      {
+        "name": "Anna Muller",
+        "role": "Ingegnere informatico, Berlino",
+        "quote": "Dopo 5 ore di ritardo, ho presentato il mio reclamo e il team ha gestito tutto in modo professionale. Nessuna documentazione o chiamata complicata."
+      },
+      {
+        "name": "Lucas Bennett",
+        "role": "Consulente software, Toronto",
+        "quote": "Ho inviato le informazioni sul mio volo in meno di cinque minuti e il team ha fatto il resto. Mi hanno tenuto aggiornato e spiegato ogni passaggio."
+      }
+    ],
+    "resourcesLabel": "Risorse",
+    "resourcesTitle": "Consigli e guide di viaggio",
+    "resourcesText": "Rimani informato con le nostre ultime risorse sui diritti dei passeggeri aerei.",
+    "articles": [
+      {
+        "title": "Conosci i tuoi diritti di passeggero aereo",
+        "text": "Molti viaggiatori non si rendono conto che possono richiedere un risarcimento per le interruzioni del volo. Ecco a cosa hai diritto quando le compagnie aeree ti deludono.",
+        "date": "22 luglio 2025"
+      },
+      {
+        "title": "Perché le compagnie aeree ritardano i pagamenti",
+        "text": "Ti sei mai chiesto perché la compensazione richiede tempo? Scopri cosa succede dietro le quinte e come acceleriamo il processo per te.",
+        "date": "10 agosto 2025"
+      },
+      {
+        "title": "I migliori consigli per viaggiare senza stress",
+        "text": "Scopri semplici abitudini che rendono i tuoi viaggi più agevoli, dalla prenotazione saggia al sapere quando hai diritto a un risarcimento.",
+        "date": "5 settembre 2025"
+      }
+    ],
+    "newsletterPhoto": "Iscriviti alla nostra newsletter per ricevere gli ultimi aggiornamenti nella tua casella di posta.",
+    "newsletterTag": "Rimani aggiornato",
+    "newsletterLabel": "Iscrizione alla newsletter",
+    "newsletterTitle": "Ricevi gli ultimi aggiornamenti nella tua casella di posta",
+    "newsletterText": "Notizie su risarcimenti, consigli di viaggio e diritti dei passeggeri forniti mensilmente.",
+    "newsletterPlaceholder": "Inserisci la tua email",
+    "newsletterAria": "Iscriviti",
+    "newsletterNotice": "Questo apre la tua app di posta elettronica e prepara una richiesta di iscrizione al nostro team.",
+    "newsletterSubject": "Richiesta di iscrizione alla newsletter",
+    "newsletterGreeting": "Ciao Fly Friendly,",
+    "newsletterRequest": "Aggiungi questa email all'elenco delle newsletter:",
+    "faqLabel": "Domande frequenti",
+    "faqTitle": "Domande frequenti",
+    "faqText": "Tutto quello che devi sapere sulla richiesta di risarcimento.",
+    "faqs": [
+      {
+        "question": "Ho diritto al risarcimento del volo?",
+        "answer": "In generale, potresti essere idoneo se il tuo volo ha subito un ritardo di oltre 3 ore, è stato cancellato o ti è stato negato l'imbarco e l'interruzione era di responsabilità della compagnia aerea."
+      },
+      {
+        "question": "Quanto posso ricevere per il mio sinistro?",
+        "answer": "La compensazione varia in base alla distanza, alla durata del ritardo e alla normativa applicabile. Molti casi rientrano in livelli fissi, ad esempio fino a 600 euro in alcune giurisdizioni."
+      },
+      {
+        "question": "Quanto dura il processo di risarcimento?",
+        "answer": "Le tempistiche variano. I casi semplici possono essere risolti in poche settimane, mentre altri potrebbero richiedere più tempo se la compagnia aerea contesta il reclamo."
+      },
+      {
+        "question": "Quali documenti devo presentare?",
+        "answer": "In genere sono necessari i dettagli di base del volo e una prova del viaggio, come la conferma della prenotazione, la carta d'imbarco e qualsiasi avviso di ritardo o cancellazione."
+      },
+      {
+        "question": "Cosa succede se la compagnia aerea rifiuta la mia richiesta?",
+        "answer": "Se una compagnia aerea respinge il reclamo, possiamo esaminare il motivo, rispondere con prove a sostegno e, se opportuno, intervenire."
+      },
+      {
+        "question": "Devo occuparmi personalmente della compagnia aerea?",
+        "answer": "No. Una volta inviati i tuoi dati, gestiamo la comunicazione con la compagnia aerea e gestiamo le pratiche burocratiche."
+      },
+      {
+        "question": "Quali sono le tariffe del servizio?",
+        "answer": "Generalmente operiamo secondo un modello tariffario basato sul successo: se non vinciamo, tu non paghi."
+      },
+      {
+        "question": "I miei dati personali sono al sicuro?",
+        "answer": "Utilizziamo le tue informazioni solo per elaborare il tuo reclamo e comunicare con le parti interessate. I dati vengono condivisi solo quando necessario per perseguire un risarcimento."
+      }
+    ]
+  },
+  "referral": {
+    "heroTag": "# Per Creatori&Influencer",
+    "heroTitle": "Collabora con Fly Friendly e guadagna aiutando i viaggiatori",
+    "heroText": "Unisciti al nostro programma di partnership, condividi il tuo link, ispira il tuo pubblico e ricevi una ricompensa per ogni richiesta che vinciamo insieme.",
+    "joinAsPartner": "Iscriviti come Partner",
+    "logIn": "Accedi",
+    "exclusiveAccessLabel": "Accesso esclusivo",
+    "exclusiveAccessTitle": "Più che guadagni è partnership",
+    "exclusiveAccessText": "Fly Friendly supporta ogni creatore con gli strumenti e la visibilità che merita.",
+    "accessItems": [
+      {
+        "title": "Competi e vinci buoni viaggio.",
+        "text": "Guadagna fino al 20% su ogni referral andato a buon fine."
+      },
+      {
+        "title": "Spotlight dei partner in primo piano",
+        "text": "Fatti promuovere sui nostri canali."
+      },
+      {
+        "title": "Opportunità di collaborazione personalizzata",
+        "text": "Co-crea campagne con il nostro team di progettazione."
+      },
+      {
+        "title": "Hub delle risorse per i creatori",
+        "text": "Tutorial, suggerimenti e approfondimenti analitici."
+      }
+    ],
+    "photoCard": "Trasforma il tuo pubblico in opportunità.",
+    "benefitsLabel": "Vantaggi del programma",
+    "benefitsTitle": "Un partner fidato in tutto il mondo",
+    "benefitsText": "Servire milioni di passeggeri in tutti i paesi, parlando tutte le lingue.",
+    "benefits": [
+      {
+        "title": "Commissioni generose",
+        "text": "Guadagna fino al 20% su ogni referral andato a buon fine."
+      },
+      {
+        "title": "Dashboard di monitoraggio istantaneo",
+        "text": "Visualizza clic, iscrizioni e guadagni in tempo reale."
+      },
+      {
+        "title": "Risorse creative fornite",
+        "text": "Elementi visivi già pronti, kit di marca e modelli di didascalie."
+      },
+      {
+        "title": "Riconoscimento globale",
+        "text": "Entra a far parte di una rete che sta cambiando le esperienze di volo in tutto il mondo."
+      }
+    ],
+    "processLabel": "Semplice processo in 3 passaggi",
+    "processTitle": "Il tuo percorso verso guadagni senza sforzo",
+    "processText": "È veloce, trasparente e pensato per i creatori che vogliono avere un impatto.",
+    "steps": [
+      {
+        "step": "Passaggio 1",
+        "title": "Candidati e ottieni il tuo collegamento",
+        "heading": "Invia le tue informazioni e ricevi il tuo",
+        "text": "link di riferimento personale entro 24 ore."
+      },
+      {
+        "step": "Passaggio 2",
+        "title": "Condividi autenticamente",
+        "heading": "Pubblicalo nella tua biografia, storie e video,",
+        "text": "e trasforma i tuoi follower nel tuo guadagno mensile."
+      },
+      {
+        "step": "Passaggio 3",
+        "title": "Guadagna premi mensili",
+        "heading": "Tieni traccia dei risultati nella tua dashboard e ottieni",
+        "text": "pagato automaticamente ogni mese."
+      }
+    ],
+    "voicesLabel": "Voci della comunità",
+    "voicesTitle": "Creatori cresciuti con Fly Friendly",
+    "voicesText": "Molti influencer hanno guadagnato denaro semplicemente condividendo ed educando i propri follower sui loro diritti di volo attraverso il nostro programma.",
+    "stories": [
+      {
+        "name": "Lena Morales",
+        "role": "Blogger di viaggi",
+        "quote": "Ho collaborato con molti marchi, ma Fly Friendly supporta davvero i creatori. La loro comunicazione e trasparenza non hanno eguali."
+      },
+      {
+        "name": "James Yi",
+        "role": "YouTuber",
+        "quote": "Ho condiviso il mio link di riferimento in soli due video e ho visto dei guadagni nella prima settimana. La dashboard rende tutto estremamente semplice."
+      },
+      {
+        "name": "Sarah Johnson",
+        "role": "Direttore Marketing, Londra",
+        "quote": "È il primo programma di affiliazione in cui entrambe le parti vincono davvero. Il mio pubblico si fida di più di me e guadagno costantemente."
+      },
+      {
+        "name": "Sophie Duarte",
+        "role": "Creatore di Instagram",
+        "quote": "È il primo programma di affiliazione in cui entrambe le parti vincono davvero. Il mio pubblico si fida di più di me e guadagno costantemente."
+      }
+    ],
+    "ctaHash": "# Inizia a guadagnare oggi",
+    "ctaPhotoTitle": "Lottiamo per i vostri diritti.",
+    "ctaPhotoText": "Crea. Condividere. Guadagnare.",
+    "ctaTitle": "Diventa un Partner Fly Friendly",
+    "ctaText": "Unisciti a una rete di creatori che aiutano i viaggiatori di tutto il mondo. Ci vogliono meno di 5 minuti per iniziare.",
+    "applyNow": "Candidati ora",
+    "faqLabel": "Domande frequenti",
+    "faqTitle": "Domande frequenti",
+    "faqText": "Tutto quello che devi sapere sulla richiesta di risarcimento."
+  },
+  "claim": {
+    "languageShort": "L'Ing",
+    "heroLabel": "Verificato da veri viaggiatori",
+    "heroTitle": "Controllare e richiedere un risarcimento",
+    "promoTitle": "Richiedi ora fino a 600€.",
+    "promoText": "Lottiamo per il tuo diritto al risarcimento. Invia il tuo reclamo in pochi minuti e lasciaci gestire la compagnia aerea.",
+    "promoIssueTitle": "Ritardo del volo",
+    "promoIssueText": "Sei arrivato con più di 3 ore di ritardo? Sei idoneo.",
+    "allAirlines": "Tutte le compagnie aeree",
+    "allCountries": "Tutti i paesi",
+    "noWinNoFee": "Nessuna vincita, nessuna commissione",
+    "stages": [
+      "Verifica di idoneità",
+      "Informazioni di contatto",
+      "Documenti",
+      "Fine"
+    ],
+    "emailError": "Visualizza l'indirizzo email corretto",
+    "eligibility": {
+      "whereDidYouFly": "Dove hai volato?",
+      "departurePlaceholder": "Aeroporto, città o paese di partenza",
+      "arrivalPlaceholder": "Aeroporto, città o paese di arrivo",
+      "noAirportsFound": "Nessun aeroporto trovato",
+      "whichAirline": "Con quale compagnia aerea hai volato?",
+      "searchAirline": "Cerca compagnia aerea",
+      "noAirlinesFound": "Nessuna compagnia aerea trovata",
+      "delayTitle": "Durata del ritardo del volo",
+      "lessThan3": "Meno di 3 ore",
+      "notEligible": "Non idoneo",
+      "moreThan3": "Più di 3 ore",
+      "eligibleForClaim": "Idoneo al reclamo",
+      "cancelled": "Volo cancellato",
+      "specialRights": "Diritti speciali",
+      "scheduledDepartureDate": "Qual era la data di partenza prevista?",
+      "directFlight": "Era un volo diretto?",
+      "directYes": "Sì, era diretto",
+      "directNo": "No, non era diretto"
+    },
+    "contact": {
+      "title": "Per favore, inserisci le tue informazioni di contatto.",
+      "fullName": "Nome completo",
+      "fullNamePlaceholder": "Inserisci il tuo nome completo",
+      "email": "E-mail",
+      "emailPlaceholder": "Inserisci la tua email",
+      "address": "Indirizzo",
+      "addressPlaceholder": "Inserisci la tua città",
+      "optional": "Facoltativo",
+      "phone": "Numero di contatto (preferibilmente WhatsApp)",
+      "phonePlaceholder": "Esempio: +90 5xx xxx xx xx",
+      "hasWhatsapp": "Sì, questo numero ha Whatsapp.",
+      "requiredToProceed": "Obbligatorio per procedere."
+    },
+    "documents": {
+      "title": "Caricamento sicuro dei documenti",
+      "subtitle": "Carica il tuo passaporto e la carta d'imbarco.",
+      "passport": "Passaporto",
+      "boardingPass": "Carta d'imbarco",
+      "dragAndDrop": "Trascina e rilascia il file",
+      "or": "o",
+      "uploadFile": "Carica file",
+      "uploadHint": "Carica la carta d'imbarco in formato PNG, JPG o PDF. Dimensione massima 25 MB",
+      "reasonTitle": "Qual è stato il motivo ufficiale del ritardo o della cancellazione del tuo volo?",
+      "reasonPlaceholder": "ad es. Problemi con l'equipaggio/personale",
+      "signatureNote": "La tua firma ci dà il consenso a ottenere il risarcimento per il tuo volo dalla compagnia aerea. La tua firma è richiesta dalla compagnia aerea per elaborare il risarcimento. Firmando accetti i termini e le condizioni."
+    },
+    "finish": {
+      "title": "Finisci e firma",
+      "subtitle": "Rileggi i termini e firma qui sotto per finalizzare il tuo reclamo.",
+      "digitalSignature": "Firma digitale",
+      "clear": "Cancella",
+      "signatureHint": "* Utilizza il mouse o il dito per firmare all'interno della casella.",
+      "terms": "Accetto i <termsLink>Termini e Condizioni</termsLink> e confermo che le informazioni fornite sono accurate."
+    },
+    "denied": {
+      "title": "Purtroppo non è prevista alcuna compensazione per questo volo.",
+      "text": "Aiutiamo i clienti in base a diversi regolamenti sui passeggeri aerei, ma sfortunatamente questo volo non è coperto da nessuno di essi.",
+      "noteTitle": "Nota: questi dati non sono condivisi pubblicamente.",
+      "noteText": "Utilizziamo queste informazioni esclusivamente per personalizzare la tua esperienza e migliorare il nostro servizio.",
+      "protectTitle": "Rimani protetto la prossima volta - istantaneamente.",
+      "protectText": "Perfetto per viaggiatori frequenti e pianificatori intelligenti",
+      "protectItems": [
+        "Ricerche di voli illimitate",
+        "Aggiornamenti tariffari in tempo reale",
+        "Viaggi salvati e preferiti",
+        "Pianificatore di viaggi multi-città",
+        "Accesso anticipato alle offerte di viaggio"
+      ]
+    },
+    "approved": {
+      "title": "Grazie, il tuo reclamo è in arrivo!",
+      "text": "Grazie per la fiducia Fly Friendly, la tua richiesta è arrivata in sicurezza nel nostro sistema. Il nostro team per il risarcimento del volo sta ora esaminando il tuo caso e ti terrà informato man mano che procede.",
+      "leadId": "ID lead",
+      "pending": "In sospeso",
+      "nextTitle": "Cosa succede dopo",
+      "nextText": "Ogni sinistro viene gestito da un team dedicato, specialisti, negoziatori e professionisti legali che conoscono a fondo i viaggi aerei.",
+      "nextSteps": [
+        [
+          "Controlliamo la cronologia dei tuoi voli",
+          "I nostri specialisti confermano tutti i dati del volo, dai record delle partenze ai motivi del ritardo."
+        ],
+        [
+          "Costruiamo il tuo caso in modo intelligente",
+          "Gli strumenti assistiti dall'intelligenza artificiale ci aiutano a raccogliere le argomentazioni più forti, in modo che le compagnie aeree non possano ignorare i tuoi diritti."
+        ],
+        [
+          "Parliamo con la compagnia aerea",
+          "Il nostro team di negoziazione contatta direttamente la compagnia aerea, accelerando le risposte e garantendo un giusto compenso."
+        ],
+        [
+          "Se le cose si complicano",
+          "A volte le compagnie aeree resistono. È allora che la nostra rete legale interviene per andare oltre, senza alcun costo a meno che tu non vinca."
+        ],
+        [
+          "Il pagamento decolla",
+          "Quando la tua richiesta viene approvata, trasferiamo il denaro direttamente sul tuo conto."
+        ]
+      ]
+    },
+    "status": {
+      "notEligible": "In base alla durata del ritardo, questo volo non ha diritto a un risarcimento.",
+      "supabaseMissing": "Manca Supabase env. Il modulo viene salvato solo localmente.",
+      "saveLeadError": "Impossibile salvare i dati dei lead.",
+      "saveClaimError": "Impossibile salvare i dati del sinistro.",
+      "signatureRequired": "Si prega di firmare e accettare i termini prima di inviarli.",
+      "emailAlreadySent": "Reclamo presentato. L'e-mail di conferma è già stata inviata a {{email}}.",
+      "emailSent": "Reclamo presentato. L'e-mail di conferma è stata inviata a {{email}}.",
+      "emailFailed": "Reclamo inviato, ma non è stato possibile inviare automaticamente l'e-mail di conferma.",
+      "customerFallback": "il cliente",
+      "removeFile": "Rimuovi {{file}}"
+    }
+  },
+  "legal": {
+    "label": "Legale",
+    "updated": "Ultimo aggiornamento: 16 aprile 2026",
+    "privacy": {
+      "title": "Informativa sulla privacy",
+      "intro": "Questa politica spiega come Fly Friendly raccoglie, utilizza, archivia e protegge le informazioni quando utilizzi il nostro sito Web di compensazione del volo, il flusso di richieste, i moduli di contatto e la newsletter.",
+      "sections": [
+        {
+          "title": "1. Chi siamo",
+          "text": "Fly Friendly è un servizio di supporto per il risarcimento del volo. Aiutiamo i passeggeri a verificare la potenziale idoneità, a inviare i dettagli sull'interruzione del volo, a caricare i documenti giustificativi e a tenere traccia dello stato di avanzamento della richiesta."
+        },
+        {
+          "title": "2. Informazioni che raccogliamo",
+          "text": "A seconda di come utilizzi il sito web, potremmo raccogliere:",
+          "items": [
+            "Dettagli di contatto come nome, indirizzo e-mail, numero di telefono e contenuto del messaggio.",
+            "Dettagli del volo e del sinistro come compagnia aerea, tratta, date, durata del ritardo, dettagli sulla cancellazione, riferimento della prenotazione e stato del caso.",
+            "Documenti che scegli di caricare, come conferme di prenotazione, carte d'imbarco, avvisi della compagnia aerea o informazioni sull'identità se richieste per un reclamo.",
+            "Informazioni tecniche come tipo di dispositivo, browser, indirizzo IP, pagine visitate e identificatori di cookie.",
+            "Newsletter e preferenze marketing se ti iscrivi agli aggiornamenti."
+          ]
+        },
+        {
+          "title": "3. Come utilizziamo le informazioni",
+          "items": [
+            "Valutare e gestire le richieste di risarcimento del volo.",
+            "Per comunicare con te in merito al tuo caso, richiesta di supporto o messaggio inviato.",
+            "Preparare la documentazione del sinistro e comunicare con le compagnie aeree o le parti interessate quando necessario.",
+            "Per migliorare le prestazioni del sito Web, l'esperienza dell'utente, la prevenzione delle frodi e la sicurezza.",
+            "Inviare newsletter o aggiornamenti solo quando sei iscritto o hai altrimenti consentito ciò."
+          ]
+        },
+        {
+          "title": "4. Condivisione delle informazioni",
+          "text": "Possiamo condividere informazioni con compagnie aeree, partner legali o operativi, fornitori di pagamenti, fornitori di analisi, fornitori di hosting e altri fornitori di servizi solo quando necessario per la gestione dei reclami, il funzionamento del sito Web, la conformità o il supporto."
+        },
+        {
+          "title": "5. Conservazione e sicurezza",
+          "text": "Conserviamo le informazioni solo per il tempo ragionevolmente necessario per lo scopo per cui sono state raccolte, inclusa la gestione dei reclami, la tenuta dei registri, gli obblighi legali, la risoluzione delle controversie e la prevenzione delle frodi. Utilizziamo ragionevoli misure organizzative e tecniche per proteggere le informazioni personali."
+        },
+        {
+          "title": "6. I tuoi diritti",
+          "text": "A seconda della tua posizione, potresti avere i diritti di accesso, correzione, cancellazione, limitazione o opposizione a determinati trattamenti delle tue informazioni personali. Puoi anche revocare il consenso al marketing. Per fare una richiesta, contattare <emailLink>info@fly-friendly.com</emailLink>."
+        },
+        {
+          "title": "7. Contatto",
+          "text": "Domande sulla privacy possono essere inviate a <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "Questa pagina è una bozza pratica della politica del sito web basata sul modello di servizio Fly Friendly. Dovrebbe essere esaminato da un consulente legale prima dell'uso in produzione."
+    },
+    "terms": {
+      "title": "Condizioni d'uso",
+      "intro": "I presenti termini regolano l'utilizzo del sito web Fly Friendly, degli strumenti di invio dei reclami, delle pagine di riferimento, dei moduli di newsletter e dei relativi servizi online.",
+      "sections": [
+        {
+          "title": "1. Utilizzo del sito web",
+          "text": "È possibile utilizzare il sito Web per conoscere i diritti dei passeggeri, verificare il potenziale risarcimento, inviare richieste di contatto e avviare un reclamo. L'utente accetta di utilizzare il sito Web legalmente e di non interferire con il suo funzionamento, sicurezza o disponibilità."
+        },
+        {
+          "title": "2. Informazioni sul reclamo",
+          "text": "Sei responsabile di fornire informazioni accurate, complete e aggiornate sul volo, sui passeggeri, sui contatti e sui documenti. Informazioni imprecise potrebbero ritardare la revisione o impedire la gestione del reclamo."
+        },
+        {
+          "title": "3. Nessuna garanzia di risarcimento",
+          "text": "L'idoneità dipende dalla rotta, dal tipo di interruzione, dalla durata del ritardo, dalla responsabilità della compagnia aerea, dalle prove, dalla legge applicabile e da altri fattori. Fly Friendly può aiutare a valutare e perseguire i reclami, ma non garantiamo che ogni caso presentato avrà successo."
+        },
+        {
+          "title": "4. Commissioni e pagamenti",
+          "text": "Il sito web descrive un approccio basato sul successo come nessuna vincita, nessuna commissione. Qualsiasi tariffa, commissione o accordo di pagamento finale deve essere confermato nell'accordo di richiesta di risarcimento o nei termini del servizio presentati durante la procedura di richiesta di risarcimento."
+        },
+        {
+          "title": "5. Condotta dell'utente",
+          "items": [
+            "Non fornire informazioni false, fuorvianti o fraudolente.",
+            "Non caricare file che contengono malware, materiale illegale o informazioni che non sei autorizzato a condividere.",
+            "Non copiare, raschiare, interrompere, decodificare o utilizzare in modo improprio il sito web."
+          ]
+        },
+        {
+          "title": "6. Contenuti e proprietà intellettuale",
+          "text": "Il nome Fly Friendly, il design del sito web, il testo, la grafica e le risorse del marchio appartengono a Fly Friendly o ai suoi concessori di licenza. Non è possibile riutilizzarli commercialmente senza autorizzazione."
+        },
+        {
+          "title": "7. Limitazione di responsabilità",
+          "text": "Il sito web è fornito per informazioni generali e accesso ai servizi. Nella misura massima consentita dalla legge, Fly Friendly non è responsabile per perdite indirette, accesso non disponibile al sito Web, azioni di terzi, decisioni della compagnia aerea o conseguenze di informazioni inesatte inviate dagli utenti."
+        },
+        {
+          "title": "8. Contatto",
+          "text": "Per domande su questi termini, contattare <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "Questa pagina delle Condizioni d'uso è una bozza basata sulla funzionalità del sito e deve essere esaminata da un legale prima dell'uso in produzione."
+    },
+    "cookies": {
+      "title": "Politica sui cookie",
+      "intro": "Questa politica spiega come Fly Friendly può utilizzare cookie e tecnologie simili per mantenere il funzionamento del sito Web, comprenderne l'utilizzo, migliorare le prestazioni e supportare il marketing.",
+      "sections": [
+        {
+          "title": "1. Cosa sono i cookie",
+          "text": "I cookie sono piccoli file di testo memorizzati sul tuo dispositivo quando visiti un sito web. Tecnologie simili includono archiviazione locale, pixel, tag e identificatori di analisi."
+        },
+        {
+          "title": "2. Tipi di cookie che potremmo utilizzare",
+          "items": [
+            "Cookie essenziali: necessari per la navigazione, la sicurezza, i moduli e le funzioni principali del sito Web.",
+            "Cookie di preferenza: ricordano scelte come la lingua o le impostazioni di visualizzazione.",
+            "Cookie analitici: aiutaci a comprendere le visite alle pagine, le sorgenti di traffico e il modo in cui gli utenti interagiscono con il sito web.",
+            "Cookie di marketing: possono aiutare a misurare le campagne, l'attività di riferimento o il rendimento delle newsletter."
+          ]
+        },
+        {
+          "title": "3. Perché utilizziamo i cookie",
+          "text": "I cookie ci aiutano a mantenere affidabile il sito, migliorare il percorso di reclamo, capire quali pagine sono utili, rilevare problemi tecnici e misurare le prestazioni dei contenuti come campagne di referral e newsletter."
+        },
+        {
+          "title": "4. Strumenti di terze parti",
+          "text": "Potremmo utilizzare fornitori di terze parti per analisi, hosting, moduli, sicurezza e misurazioni di marketing. Questi fornitori possono impostare cookie o raccogliere dati tecnici in base alle proprie politiche."
+        },
+        {
+          "title": "5. Gestione dei cookie",
+          "text": "Puoi bloccare, eliminare o limitare i cookie tramite le impostazioni del browser. Alcune funzioni essenziali del sito web potrebbero non funzionare correttamente se i cookie vengono disabilitati."
+        },
+        {
+          "title": "6. Contatto",
+          "text": "Domande sui cookie possono essere inviate a <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "La presente Politica sui cookie è una bozza basata sul modello del sito web Fly Friendly e deve essere rivista prima dell'uso in produzione."
+    }
+  }
+}

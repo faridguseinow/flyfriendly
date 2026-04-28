@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   BadgeCheck,
   Calendar,
@@ -23,6 +24,9 @@ import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import claimImage from "../../assets/media/Image-4.png";
 import CountryFlag from "../../components/CountryFlag/index.jsx";
+import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import { getLanguageByCode } from "../../i18n/languages.js";
+import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import {
   describeAirlineOption,
@@ -41,13 +45,12 @@ import {
 import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
-const stageLabels = ["Eligibility Check", "Contact Information", "Documents", "Finish"];
 const emailPattern = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
-function getEmailError(value) {
+function getEmailError(value, t) {
   const email = String(value || "").trim();
   if (!email || !emailPattern.test(email)) {
-    return "Введите корректный email адрес";
+    return t("claim.emailError");
   }
 
   return "";
@@ -66,43 +69,32 @@ function formatFileSize(bytes) {
   return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`;
 }
 
-function Flag() {
-  return (
-    <span className="claim-flag" aria-hidden="true">
-      <svg width="20" height="20" viewBox="0 0 36 36">
-        <clipPath id="claim-en-clip"><circle cx="18" cy="18" r="18" /></clipPath>
-        <g clipPath="url(#claim-en-clip)">
-          <path fill="#012169" d="M0 0h36v36H0z" />
-          <path stroke="#fff" strokeWidth="7" d="m0 0 36 36M36 0 0 36" />
-          <path stroke="#C8102E" strokeWidth="4" d="m0 0 36 36M36 0 0 36" />
-          <path stroke="#fff" strokeWidth="11" d="M18 0v36M0 18h36" />
-          <path stroke="#C8102E" strokeWidth="7" d="M18 0v36M0 18h36" />
-        </g>
-      </svg>
-    </span>
-  );
-}
-
 function ClaimHeader() {
+  const { t } = useTranslation();
+  const { lang } = useParams();
+  const currentLanguage = getLanguageByCode(lang);
+
   return (
     <header className="claim-header">
-      <Link to="/" className="claim-brand" aria-label="Fly Friendly home">
+      <LocalizedLink to="/" className="claim-brand" aria-label={t("common.flyFriendlyHomeAria")}>
         <img src={logoImage} alt="" />
         <img src={logoText} alt="Fly Friendly" />
-      </Link>
-      <span className="claim-lang"><Flag /> Eng</span>
+      </LocalizedLink>
+      <span className="claim-lang"><span className="claim-flag" aria-hidden="true">{currentLanguage.flag}</span> {currentLanguage.code.toUpperCase()}</span>
     </header>
   );
 }
 
 function ClaimFooter() {
+  const { t } = useTranslation();
+
   return (
     <footer className="claim-footer">
       <nav>
-        <Link to="/contact">Contact</Link>
-        <Link to="/about">About us</Link>
-        <Link to="/privacyPolicy">Privacy</Link>
-        <Link to="/terms">Terms and Conditions</Link>
+        <LocalizedLink to="/contact">{t("common.contact")}</LocalizedLink>
+        <LocalizedLink to="/about">{t("common.aboutUs")}</LocalizedLink>
+        <LocalizedLink to="/privacyPolicy">{t("common.privacy")}</LocalizedLink>
+        <LocalizedLink to="/terms">{t("common.termsAndConditions")}</LocalizedLink>
       </nav>
       <span>©2026 Fly Friendly</span>
     </footer>
@@ -110,8 +102,11 @@ function ClaimFooter() {
 }
 
 function Stepper({ activeIndex, completed = false }) {
+  const { t } = useTranslation();
+  const stageLabels = t("claim.stages", { returnObjects: true });
+
   return (
-    <div className="claim-stepper" aria-label="Claim progress">
+    <div className="claim-stepper" aria-label={t("claim.heroTitle")}>
       {stageLabels.map((label, index) => {
         const isActive = index === activeIndex;
         const isDone = completed || index < activeIndex;
@@ -297,30 +292,36 @@ function SelectField({ icon: Icon, placeholder, name, value, onChange }) {
 }
 
 function PromoCard() {
+  const { t } = useTranslation();
+  const { lang } = useParams();
+  const currentLanguage = getLanguageByCode(lang);
+
   return (
     <aside className="claim-promo">
       <div className="claim-promo__top">
-        <Link to="/" className="claim-brand">
+        <LocalizedLink to="/" className="claim-brand">
           <img src={logoImage} alt="" />
           <img src={logoText} alt="Fly Friendly" />
-        </Link>
-        <span className="claim-lang"><Flag /> English</span>
+        </LocalizedLink>
+        <span className="claim-lang"><span className="claim-flag" aria-hidden="true">{currentLanguage.flag}</span> {currentLanguage.label}</span>
       </div>
-      <h2>Claim up to <strong>€600</strong> now.</h2>
-      <p>We fight for your right to compensation. Submit your claim in minutes and let us handle the airline.</p>
+      <h2>{t("claim.promoTitle")}</h2>
+      <p>{t("claim.promoText")}</p>
       <img className="claim-promo__image" src={claimImage} alt="Traveler with passport and luggage" />
-      <h3>Flight Delay</h3>
-      <p>Arrived 3+ hours late? You're eligible.</p>
+      <h3>{t("claim.promoIssueTitle")}</h3>
+      <p>{t("claim.promoIssueText")}</p>
       <ul>
-        <li><CircleCheck size={18} /> All airlines</li>
-        <li><CircleCheck size={18} /> All countries</li>
-        <li><CircleCheck size={18} /> No win, no fee</li>
+        <li><CircleCheck size={18} /> {t("claim.allAirlines")}</li>
+        <li><CircleCheck size={18} /> {t("claim.allCountries")}</li>
+        <li><CircleCheck size={18} /> {t("claim.noWinNoFee")}</li>
       </ul>
     </aside>
   );
 }
 
 function UploadBox({ title, documentType, icon: Icon, file, onFile }) {
+  const { t } = useTranslation();
+
   const dropFile = (event) => {
     event.preventDefault();
     onFile(documentType, event.dataTransfer.files?.[0] || null);
@@ -335,26 +336,28 @@ function UploadBox({ title, documentType, icon: Icon, file, onFile }) {
         onChange={(event) => onFile(documentType, event.target.files?.[0] || null)}
       />
       <span><Icon size={34} strokeWidth={1.8} /></span>
-      <strong>{file ? file.name : "Drag and Drop file"}</strong>
-      <em>or</em>
-      <b>Upload file</b>
-      <small>Please upload your boarding pass as PNG, JPG or PDF. Max size 25MB</small>
+      <strong>{file ? file.name : t("claim.documents.dragAndDrop")}</strong>
+      <em>{t("claim.documents.or")}</em>
+      <b>{t("claim.documents.uploadFile")}</b>
+      <small>{t("claim.documents.uploadHint")}</small>
       <mark>{title}</mark>
     </label>
   );
 }
 
 function FileRow({ file, done, onRemove }) {
+  const { t } = useTranslation();
+
   return (
     <div className={`claim-file${done ? " is-done" : ""}`}>
       <FileText size={22} strokeWidth={1.8} />
       <div>
-        <strong>{file?.name || "Document"}</strong>
+        <strong>{file?.name || t("claim.documents.boardingPass")}</strong>
         <small>{formatFileSize(file?.size || 0)} / {formatFileSize(file?.size || 0)}</small>
         <span />
       </div>
       {done ? <CircleCheck size={20} /> : <ShieldCheck size={20} />}
-      <button type="button" className="claim-file__remove" aria-label={`Remove ${file?.name || "file"}`} onClick={onRemove}>
+      <button type="button" className="claim-file__remove" aria-label={t("claim.status.removeFile", { file: file?.name || "file" })} onClick={onRemove}>
         <X size={18} />
       </button>
     </div>
@@ -362,16 +365,18 @@ function FileRow({ file, done, onRemove }) {
 }
 
 function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions }) {
+  const { t } = useTranslation();
+
   return (
     <form className="claim-form" onSubmit={onNext}>
       <section className="claim-question">
-        <h3>Where did you fly?</h3>
+        <h3>{t("claim.eligibility.whereDidYouFly")}</h3>
         <div className="claim-two">
           <SearchCombobox
             icon={PlaneTakeoff}
             name="departure"
             value={data.departure}
-            placeholder="Departure airport, city or country"
+            placeholder={t("claim.eligibility.departurePlaceholder")}
             options={airportOptions.departure}
             onInputChange={onChange}
             onSelect={onSelect}
@@ -382,13 +387,13 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
               countryCode: option.countryCode,
               code: option.code,
             })}
-            emptyLabel="No airports found"
+            emptyLabel={t("claim.eligibility.noAirportsFound")}
           />
           <SearchCombobox
             icon={PlaneLanding}
             name="destination"
             value={data.destination}
-            placeholder="Arrival airport, city or country"
+            placeholder={t("claim.eligibility.arrivalPlaceholder")}
             options={airportOptions.destination}
             onInputChange={onChange}
             onSelect={onSelect}
@@ -399,17 +404,17 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
               countryCode: option.countryCode,
               code: option.code,
             })}
-            emptyLabel="No airports found"
+            emptyLabel={t("claim.eligibility.noAirportsFound")}
           />
         </div>
       </section>
       <section className="claim-question">
-        <h3>Which airline did you fly with?</h3>
+        <h3>{t("claim.eligibility.whichAirline")}</h3>
         <SearchCombobox
           icon={Plane}
           name="airline"
           value={data.airline}
-          placeholder="Search airline"
+          placeholder={t("claim.eligibility.searchAirline")}
           options={airlineOptions}
           onInputChange={onChange}
           onSelect={onSelect}
@@ -418,107 +423,112 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
             subtitle: option.subtitle,
             code: option.code,
           })}
-          emptyLabel="No airlines found"
+          emptyLabel={t("claim.eligibility.noAirlinesFound")}
         />
       </section>
       <section className="claim-question">
         <div className="claim-question-title">
           <span>4</span>
-          <h3>Flight delay duration</h3>
+          <h3>{t("claim.eligibility.delayTitle")}</h3>
         </div>
         <div className="claim-option-grid">
           <label className={`claim-choice-card${data.delayDuration === "less_than_3" ? " is-selected" : ""}`}>
             <input type="radio" name="delayDuration" value="less_than_3" checked={data.delayDuration === "less_than_3"} onChange={onChange} required />
-            <strong>Less than 3 hours</strong>
-            <small>Not eligible</small>
+            <strong>{t("claim.eligibility.lessThan3")}</strong>
+            <small>{t("claim.eligibility.notEligible")}</small>
           </label>
           <label className={`claim-choice-card${data.delayDuration === "more_than_3" ? " is-selected" : ""}`}>
             <input type="radio" name="delayDuration" value="more_than_3" checked={data.delayDuration === "more_than_3"} onChange={onChange} required />
-            <strong>More than 3 hours</strong>
-            <small>Eligible for claim</small>
+            <strong>{t("claim.eligibility.moreThan3")}</strong>
+            <small>{t("claim.eligibility.eligibleForClaim")}</small>
           </label>
           <label className={`claim-choice-card${data.delayDuration === "cancelled" ? " is-selected" : ""}`}>
             <input type="radio" name="delayDuration" value="cancelled" checked={data.delayDuration === "cancelled"} onChange={onChange} required />
-            <strong>Flight cancelled</strong>
-            <small>Special rights</small>
+            <strong>{t("claim.eligibility.cancelled")}</strong>
+            <small>{t("claim.eligibility.specialRights")}</small>
           </label>
         </div>
       </section>
       <section className="claim-question">
-        <h3>What was your scheduled departure date?</h3>
+        <h3>{t("claim.eligibility.scheduledDepartureDate")}</h3>
         <Field icon={Calendar} name="date" value={data.date} onChange={onChange} type="date" placeholder="dd.mm.yyyy" />
       </section>
       <section className="claim-question">
-        <h3>Was it a direct flight?</h3>
-        <label className="claim-radio"><input type="radio" name="direct" value="yes" checked={data.direct === "yes"} onChange={onChange} required /> Yes, that was direct</label>
-        <label className="claim-radio"><input type="radio" name="direct" value="no" checked={data.direct === "no"} onChange={onChange} required /> No, that was not direct</label>
+        <h3>{t("claim.eligibility.directFlight")}</h3>
+        <label className="claim-radio"><input type="radio" name="direct" value="yes" checked={data.direct === "yes"} onChange={onChange} required /> {t("claim.eligibility.directYes")}</label>
+        <label className="claim-radio"><input type="radio" name="direct" value="no" checked={data.direct === "no"} onChange={onChange} required /> {t("claim.eligibility.directNo")}</label>
       </section>
       <div className="claim-actions">
         <span />
-        <button className="btn btn-primary" type="submit">Next</button>
+        <button className="btn btn-primary" type="submit">{t("common.next")}</button>
       </div>
     </form>
   );
 }
 
 function ContactStep({ data, onChange, onNext, onBack, emailError }) {
+  const { t } = useTranslation();
+
   return (
     <form className="claim-form" onSubmit={onNext}>
       <section className="claim-question">
-        <h3>Please, enter your contact information.</h3>
+        <h3>{t("claim.contact.title")}</h3>
         <div className="claim-two">
-          <label><span>Full Name</span><Field icon={User} name="fullName" value={data.fullName} onChange={onChange} placeholder="Enter Your Full Name" required /></label>
+          <label><span>{t("claim.contact.fullName")}</span><Field icon={User} name="fullName" value={data.fullName} onChange={onChange} placeholder={t("claim.contact.fullNamePlaceholder")} required /></label>
           <label>
-            <span>Email</span>
-            <Field icon={Mail} name="email" value={data.email} onChange={onChange} placeholder="Enter Your Email" required error={emailError} />
+            <span>{t("claim.contact.email")}</span>
+            <Field icon={Mail} name="email" value={data.email} onChange={onChange} placeholder={t("claim.contact.emailPlaceholder")} required error={emailError} />
             {emailError ? <small className="claim-field-error">{emailError}</small> : null}
           </label>
         </div>
-        <label className="claim-wide-field"><span>Address</span><Field icon={MapPin} name="city" value={data.city} onChange={onChange} placeholder="Enter Your City" /></label>
-        <small className="claim-field-help">Optional</small>
-        <label className="claim-wide-field"><span>Contact Number (WhatsApp preferred)</span><Field icon={Phone} name="phone" value={data.phone} onChange={onChange} placeholder="E.g.: +90 5xx xxx xx xx" required /></label>
-        <label className="claim-check"><input type="checkbox" name="whatsapp" checked={Boolean(data.whatsapp)} onChange={onChange} /> Yes, this number has Whatsapp.</label>
-        <small className="claim-field-help">Required to proceed.</small>
+        <label className="claim-wide-field"><span>{t("claim.contact.address")}</span><Field icon={MapPin} name="city" value={data.city} onChange={onChange} placeholder={t("claim.contact.addressPlaceholder")} /></label>
+        <small className="claim-field-help">{t("claim.contact.optional")}</small>
+        <label className="claim-wide-field"><span>{t("claim.contact.phone")}</span><Field icon={Phone} name="phone" value={data.phone} onChange={onChange} placeholder={t("claim.contact.phonePlaceholder")} required /></label>
+        <label className="claim-check"><input type="checkbox" name="whatsapp" checked={Boolean(data.whatsapp)} onChange={onChange} /> {t("claim.contact.hasWhatsapp")}</label>
+        <small className="claim-field-help">{t("claim.contact.requiredToProceed")}</small>
       </section>
       <div className="claim-actions">
-        <button className="claim-back" type="button" onClick={onBack}>Back</button>
-        <button className="btn btn-primary" type="submit">Next</button>
+        <button className="claim-back" type="button" onClick={onBack}>{t("common.back")}</button>
+        <button className="btn btn-primary" type="submit">{t("common.next")}</button>
       </div>
     </form>
   );
 }
 
 function DocumentsStep({ data, files, onChange, onFile, onRemoveFile, onNext, onBack, isSaving }) {
+  const { t } = useTranslation();
+
   return (
     <form className="claim-form" onSubmit={onNext}>
       <section className="claim-question">
-        <h3>Secure Document Upload</h3>
-        <p>Please upload your Passport and Boarding Pass.</p>
+        <h3>{t("claim.documents.title")}</h3>
+        <p>{t("claim.documents.subtitle")}</p>
         <div className="claim-upload-grid">
-          <UploadBox title="Passport" documentType="passport" icon={User} file={files.passport} onFile={onFile} />
-          <UploadBox title="Boarding Pass" documentType="boarding_pass" icon={FileText} file={files.boarding_pass} onFile={onFile} />
+          <UploadBox title={t("claim.documents.passport")} documentType="passport" icon={User} file={files.passport} onFile={onFile} />
+          <UploadBox title={t("claim.documents.boardingPass")} documentType="boarding_pass" icon={FileText} file={files.boarding_pass} onFile={onFile} />
         </div>
         {files.passport && <FileRow file={files.passport} done onRemove={() => onRemoveFile("passport")} />}
         {files.boarding_pass && <FileRow file={files.boarding_pass} done onRemove={() => onRemoveFile("boarding_pass")} />}
       </section>
       <section className="claim-question">
-        <h3>What was the official reason for your flight delay or cancellation?</h3>
-        <textarea name="reason" value={data.reason || ""} onChange={onChange} placeholder="e.g., Crew/Staffing Problems" minLength={3} maxLength={200} required />
+        <h3>{t("claim.documents.reasonTitle")}</h3>
+        <textarea name="reason" value={data.reason || ""} onChange={onChange} placeholder={t("claim.documents.reasonPlaceholder")} minLength={3} maxLength={200} required />
         <small className="claim-limit">{(data.reason || "").length}/200</small>
       </section>
       <div className="claim-note">
         <Info size={18} strokeWidth={1.8} />
-        <p>Your signature give us consent to get the compensation for your flight from the airline. You signature is requested by the airline to process the compensation. By signing, you agree to the terms and conditions.</p>
+        <p>{t("claim.documents.signatureNote")}</p>
       </div>
       <div className="claim-actions">
-        <button className="claim-back" type="button" onClick={onBack}>Back</button>
-        <button className="btn btn-primary" type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Next"}</button>
+        <button className="claim-back" type="button" onClick={onBack}>{t("common.back")}</button>
+        <button className="btn btn-primary" type="submit" disabled={isSaving}>{isSaving ? t("common.saving") : t("common.next")}</button>
       </div>
     </form>
   );
 }
 
 function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
   const [hasInk, setHasInk] = useState(Boolean(data.signatureDataUrl));
   const isDrawingRef = useRef(false);
@@ -682,10 +692,10 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
   return (
     <form className="claim-form" onSubmit={onNext}>
       <section className="claim-question claim-sign">
-        <h3>Finish & Sign</h3>
-        <p>Please review the terms and sign below to finalize your claim.</p>
+        <h3>{t("claim.finish.title")}</h3>
+        <p>{t("claim.finish.subtitle")}</p>
         <div className="claim-sign__field">
-          <label>Digital Signature</label>
+          <label>{t("claim.finish.digitalSignature")}</label>
           <div className="claim-signature-pad">
             <canvas
               ref={canvasRef}
@@ -694,23 +704,23 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
               onPointerUp={endSignature}
               onPointerLeave={endSignature}
               onPointerCancel={endSignature}
-              aria-label="Digital signature"
+              aria-label={t("claim.finish.digitalSignature")}
             />
-            <button type="button" onClick={clearSignature}>Clear</button>
+            <button type="button" onClick={clearSignature}>{t("claim.finish.clear")}</button>
           </div>
-          <small>* Please use your mouse or finger to sign inside the box.</small>
+          <small>{t("claim.finish.signatureHint")}</small>
         </div>
         <label className="claim-sign__terms">
           <input type="checkbox" name="termsAccepted" checked={Boolean(data.termsAccepted)} onChange={onChange} required />
           <span>
-            I agree to the <Link to="/terms">Terms & Conditions</Link> and confirm that the information provided is accurate.
+            <Trans i18nKey="claim.finish.terms" components={{ termsLink: <LocalizedLink to="/terms" /> }} />
           </span>
         </label>
       </section>
       <div className="claim-actions">
-        <button className="claim-back" type="button" onClick={onBack}>Back</button>
+        <button className="claim-back" type="button" onClick={onBack}>{t("common.back")}</button>
         <button className="btn btn-primary" type="submit" disabled={isSaving || !hasInk || !data.termsAccepted}>
-          {isSaving ? "Submitting..." : "Submit Claim"}
+          {isSaving ? t("common.submitting") : t("common.submitClaim")}
         </button>
       </div>
     </form>
@@ -718,69 +728,63 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
 }
 
 function DeniedResult({ data }) {
+  const { t } = useTranslation();
+  const protectItems = t("claim.denied.protectItems", { returnObjects: true });
+
   return (
     <div className="claim-result is-denied">
       <section className="claim-question">
         <CircleAlert className="result-icon" size={34} strokeWidth={1.8} />
-        <h3>Unfortunately, there's no compensation for this flight.</h3>
-        <p>We help customers under several air passenger regulations, but unfortunately, this flight isn't covered by any of them.</p>
+        <h3>{t("claim.denied.title")}</h3>
+        <p>{t("claim.denied.text")}</p>
         <div className="claim-two">
           <Field icon={Plane} value={data.departure || "Baku (BAK)"} placeholder="Baku (BAK)" />
           <Field icon={Plane} value={data.destination || "Washington (DCA)"} placeholder="Washington (DCA)" />
         </div>
         <div className="claim-note">
           <Info size={18} strokeWidth={1.8} />
-          <p><strong>Note: This data is not shared publicly.</strong><br />We use this information strictly to personalize your experience and improve our service.</p>
+          <p><strong>{t("claim.denied.noteTitle")}</strong><br />{t("claim.denied.noteText")}</p>
         </div>
       </section>
       <section className="claim-question claim-protect">
-        <Link to="/" className="claim-brand">
+        <LocalizedLink to="/" className="claim-brand">
           <img src={logoImage} alt="" />
           <img src={logoText} alt="Fly Friendly" />
-        </Link>
-        <h3>Stay protected next time - instantly.</h3>
-        <p>Perfect for frequent travelers and smart planners</p>
+        </LocalizedLink>
+        <h3>{t("claim.denied.protectTitle")}</h3>
+        <p>{t("claim.denied.protectText")}</p>
         <ul>
-          <li><CircleCheck size={18} /> Unlimited flight searches</li>
-          <li><CircleCheck size={18} /> Real-time fare updates</li>
-          <li><CircleCheck size={18} /> Saved trips & favorites</li>
-          <li><CircleCheck size={18} /> Multi-city trip planner</li>
-          <li><CircleCheck size={18} /> Early access to travel deals</li>
+          {protectItems.map((item) => <li key={item}><CircleCheck size={18} /> {item}</li>)}
         </ul>
-        <Link className="btn btn-primary" to="/claim/eligibility">Check Compensation</Link>
+        <LocalizedLink className="btn btn-primary" to="/claim/eligibility">{t("common.checkCompensation")}</LocalizedLink>
       </section>
       <div className="claim-actions">
-        <Link className="claim-back" to="/claim/eligibility">Back</Link>
-        <Link className="btn btn-primary" to="/">Main Page</Link>
+        <LocalizedLink className="claim-back" to="/claim/eligibility">{t("common.back")}</LocalizedLink>
+        <LocalizedLink className="btn btn-primary" to="/">{t("common.mainPage")}</LocalizedLink>
       </div>
     </div>
   );
 }
 
 function ApprovedResult({ data }) {
-  const nextSteps = [
-    ["We check your flight history", "Our specialists confirm all flight data, from departure records to delay reasons."],
-    ["We build your case smartly", "AI-assisted tools help us gather the strongest arguments, so airlines can't ignore your rights."],
-    ["We talk to the airline", "Our negotiation team contacts the airline directly, speeding up responses and ensuring fair compensation."],
-    ["If things get complicated", "Sometimes airlines resist. That's when our legal network steps in to take it further, still no fee unless you win."],
-    ["Payment takes off", "When your claim is approved, we transfer the money straight to your account."],
-  ];
+  const { t } = useTranslation();
+  const nextSteps = t("claim.approved.nextSteps", { returnObjects: true });
 
   return (
     <div className="claim-result is-approved">
       <section className="claim-question">
         <CircleCheck className="result-icon" size={34} strokeWidth={1.8} />
-        <h3>Thank you, your claim is on its way!</h3>
-        <p>Thanks for trusting Fly Friendly, your request has safely landed in our system. Our flight compensation team is now reviewing your case and will keep you informed as it progresses.</p>
+        <h3>{t("claim.approved.title")}</h3>
+        <p>{t("claim.approved.text")}</p>
         <div className="claim-two">
           <Field icon={Plane} value={data.departure || "Baku (BAK)"} placeholder="Baku (BAK)" />
           <Field icon={Plane} value={data.destination || "Washington (DCA)"} placeholder="Washington (DCA)" />
         </div>
-        <strong className="claim-id">Lead ID: #{data.leadCode || "Pending"}</strong>
+        <strong className="claim-id">{t("claim.approved.leadId")}: #{data.leadCode || t("claim.approved.pending")}</strong>
       </section>
       <section className="claim-question claim-next">
-        <h3>What happens next</h3>
-        <p>Every claim is handled by a dedicated team, specialists, negotiators, and legal pros who know air travel inside out.</p>
+        <h3>{t("claim.approved.nextTitle")}</h3>
+        <p>{t("claim.approved.nextText")}</p>
         {nextSteps.map(([title, text]) => (
           <article key={title}>
             <FileText size={22} strokeWidth={1.8} />
@@ -792,8 +796,8 @@ function ApprovedResult({ data }) {
         ))}
       </section>
       <div className="claim-actions">
-        <Link className="claim-back" to="/claim/finish">Back</Link>
-        <Link className="btn btn-primary" to="/">Main Page</Link>
+        <LocalizedLink className="claim-back" to="/claim/finish">{t("common.back")}</LocalizedLink>
+        <LocalizedLink className="btn btn-primary" to="/">{t("common.mainPage")}</LocalizedLink>
       </div>
     </div>
   );
@@ -801,6 +805,8 @@ function ApprovedResult({ data }) {
 
 function ClaimFlow() {
   const navigate = useNavigate();
+  const toLocalizedPath = useLocalizedPath();
+  const { t } = useTranslation();
   const { stage = "eligibility" } = useParams();
   const [searchParams] = useSearchParams();
   const [data, setData] = useState(() => ({
@@ -933,7 +939,7 @@ function ClaimFlow() {
     if (typeof eventOrName === "string") {
       onFieldInput(eventOrName, maybeValue);
       if (eventOrName === "email" && emailError) {
-        setEmailError(getEmailError(maybeValue));
+        setEmailError(getEmailError(maybeValue, t));
       }
       return;
     }
@@ -959,7 +965,7 @@ function ClaimFlow() {
     setData(nextData);
 
     if (name === "email" && emailError) {
-      setEmailError(getEmailError(value));
+      setEmailError(getEmailError(value, t));
     }
   };
 
@@ -989,7 +995,7 @@ function ClaimFlow() {
     return lead.id;
   };
 
-  const go = (nextStage) => navigate(`/claim/${nextStage}`);
+  const go = (nextStage) => navigate(toLocalizedPath(`/claim/${nextStage}`));
   const submit = async (nextStage, event) => {
     event.preventDefault();
 
@@ -1002,18 +1008,18 @@ function ClaimFlow() {
           const leadId = await ensureLead();
           await submitLead(leadId, data, "not_eligible");
         } catch (error) {
-          setSyncError(error.message || "Could not save lead data.");
+          setSyncError(error.message || t("claim.status.saveLeadError"));
           return;
         }
       }
 
-      setSyncNotice("Based on the delay duration, this flight is not eligible for compensation.");
+      setSyncNotice(t("claim.status.notEligible"));
       go("denied");
       return;
     }
 
     if (stage === "contact") {
-      const nextEmailError = getEmailError(data.email);
+      const nextEmailError = getEmailError(data.email, t);
       if (nextEmailError) {
         setEmailError(nextEmailError);
         return;
@@ -1023,7 +1029,7 @@ function ClaimFlow() {
     }
 
     if (!isSupabaseConfigured) {
-      setSyncError("Supabase env is missing. The form is saved locally only.");
+      setSyncError(t("claim.status.supabaseMissing"));
       go(nextStage);
       return;
     }
@@ -1047,7 +1053,7 @@ function ClaimFlow() {
 
       if (stage === "finish") {
         if (!data.signatureDataUrl || !data.termsAccepted) {
-          throw new Error("Please sign and accept the terms before submitting.");
+          throw new Error(t("claim.status.signatureRequired"));
         }
 
         await saveLeadSignature(leadId, data);
@@ -1056,22 +1062,22 @@ function ClaimFlow() {
         try {
           const emailResult = await sendLeadConfirmationEmail(leadId);
           if (emailResult?.already_sent) {
-            setSyncNotice(`Claim submitted. Confirmation email was already sent to ${data.email || "the customer"}.`);
+            setSyncNotice(t("claim.status.emailAlreadySent", { email: data.email || t("claim.status.customerFallback") }));
           } else if (emailResult?.sent) {
-            setSyncNotice(`Claim submitted. Confirmation email was sent to ${data.email || "the customer"}.`);
+            setSyncNotice(t("claim.status.emailSent", { email: data.email || t("claim.status.customerFallback") }));
           }
         } catch (emailError) {
           console.error("Confirmation email error:", emailError);
-          setSyncNotice("Claim submitted, but the confirmation email could not be sent automatically.");
+          setSyncNotice(t("claim.status.emailFailed"));
         }
       }
 
       if (stage !== "finish") {
-        setSyncNotice("Saved in Supabase.");
+        setSyncNotice(t("common.savedInSupabase"));
       }
       go(nextStage);
     } catch (error) {
-      setSyncError(error.message || "Could not save claim data.");
+      setSyncError(error.message || t("claim.status.saveClaimError"));
     } finally {
       setIsSaving(false);
     }
@@ -1112,9 +1118,9 @@ function ClaimFlow() {
         <ClaimHeader />
         <main className="claim-shell">
           <section className="claim-main">
-            <span className="section-label is-primary"><BadgeCheck size={16} fill="currentColor" aria-hidden="true" /> Verified by Real Travelers</span>
-            <h1>Check and claim compensation</h1>
-            <p>Serving millions of passengers in all countries, speaking all languages.</p>
+            <span className="section-label is-primary"><BadgeCheck size={16} fill="currentColor" aria-hidden="true" /> {t("claim.heroLabel")}</span>
+            <h1>{t("claim.heroTitle")}</h1>
+            <p>{t("common.globalReachCopy")}</p>
             {syncError && <p className="claim-sync is-error">{syncError}</p>}
             {syncNotice && <p className="claim-sync is-notice">{syncNotice}</p>}
             {stage !== "approved" && stage !== "denied" && <Stepper activeIndex={activeIndex} />}

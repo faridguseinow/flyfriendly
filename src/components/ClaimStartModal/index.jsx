@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Lock, Mail, Phone, User, X } from "lucide-react";
 import logoImage from "../../assets/icons/logo-image.svg";
+import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { signInCustomer, signUpCustomer } from "../../services/authService.js";
 import "./style.scss";
 
 function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo = "/referralProgram", purpose = "partner" }) {
   const navigate = useNavigate();
+  const toLocalizedPath = useLocalizedPath();
+  const { t } = useTranslation();
   const [mode, setMode] = useState(initialMode);
   const [form, setForm] = useState({
     fullName: "",
@@ -61,7 +65,7 @@ function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo =
     setNotice("");
 
     if (!isSupabaseConfigured) {
-      setError("Supabase env is missing. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.");
+      setError(t("claimModal.supabaseMissing"));
       return;
     }
 
@@ -73,14 +77,14 @@ function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo =
         : await signInCustomer({ email: form.email, password: form.password });
 
       if (!authResult.session) {
-        setNotice("Check your email to confirm your account, then log in to continue.");
+        setNotice(t("claimModal.confirmEmailNotice"));
         return;
       }
 
       onClose();
-      navigate(redirectTo);
+      navigate(toLocalizedPath(redirectTo));
     } catch (authError) {
-      setError(authError.message || "Could not authenticate. Please try again.");
+      setError(authError.message || t("claimModal.authError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -97,7 +101,7 @@ function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo =
         aria-labelledby="claim-modal-title"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button className="claim-modal__close" type="button" aria-label="Close" onClick={onClose}>
+        <button className="claim-modal__close" type="button" aria-label={t("common.close")} onClick={onClose}>
           <X size={22} strokeWidth={1.8} />
         </button>
 
@@ -105,74 +109,74 @@ function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo =
           <img src={logoImage} alt="" />
         </div>
 
-        <h2 id="claim-modal-title">{isSignup ? "Create partner account" : "Welcome Back"}</h2>
+        <h2 id="claim-modal-title">{isSignup ? t("claimModal.signupTitle") : t("claimModal.loginTitle")}</h2>
         <p>
           {isSignup
             ? purpose === "partner"
-              ? "Apply for partner access and manage referral activity from your Fly Friendly account."
-              : "Create your account to continue."
-            : "Enter your email and password to access your account."}
+              ? t("claimModal.signupPartnerDescription")
+              : t("claimModal.signupDefaultDescription")
+            : t("claimModal.loginDescription")}
         </p>
 
         <form className="claim-modal__form" onSubmit={submitForm}>
           {isSignup && (
             <label>
-              <span>Full Name</span>
+              <span>{t("claimModal.fullName")}</span>
               <div>
                 <User size={18} strokeWidth={1.8} aria-hidden="true" />
-                <input name="fullName" value={form.fullName} onChange={updateField} type="text" placeholder="Enter Your Full Name" required />
+                <input name="fullName" value={form.fullName} onChange={updateField} type="text" placeholder={t("claimModal.fullNamePlaceholder")} required />
               </div>
             </label>
           )}
 
           <label>
-            <span>Email</span>
+            <span>{t("claimModal.email")}</span>
             <div>
               <Mail size={18} strokeWidth={1.8} aria-hidden="true" />
-              <input name="email" value={form.email} onChange={updateField} type="email" placeholder="Enter Your Email" required />
+              <input name="email" value={form.email} onChange={updateField} type="email" placeholder={t("claimModal.emailPlaceholder")} required />
             </div>
           </label>
 
           {isSignup ? (
             <>
               <label>
-                <span>Contact Number (WhatsApp preferred)</span>
+                <span>{t("claimModal.phone")}</span>
                 <div>
                   <Phone size={18} strokeWidth={1.8} aria-hidden="true" />
-                  <input name="phone" value={form.phone} onChange={updateField} type="tel" placeholder="E.g.: 050 XXX XX XX" required />
+                  <input name="phone" value={form.phone} onChange={updateField} type="tel" placeholder={t("claimModal.phonePlaceholder")} required />
                 </div>
               </label>
               <label>
-                <span>Password</span>
+                <span>{t("claimModal.password")}</span>
                 <div>
                   <Lock size={18} strokeWidth={1.8} aria-hidden="true" />
-                  <input name="password" value={form.password} onChange={updateField} type="password" placeholder="Create Your Password" minLength={6} required />
+                  <input name="password" value={form.password} onChange={updateField} type="password" placeholder={t("claimModal.passwordCreatePlaceholder")} minLength={6} required />
                 </div>
               </label>
             </>
           ) : (
             <label>
-              <span>Password</span>
+              <span>{t("claimModal.password")}</span>
               <div>
                 <Lock size={18} strokeWidth={1.8} aria-hidden="true" />
-                <input name="password" value={form.password} onChange={updateField} type="password" placeholder="Enter Your Password" required />
+                <input name="password" value={form.password} onChange={updateField} type="password" placeholder={t("claimModal.passwordEnterPlaceholder")} required />
               </div>
             </label>
           )}
 
-          {!isSignup && <a href="#" className="claim-modal__forgot">Forgot password?</a>}
+          {!isSignup && <a href="#" className="claim-modal__forgot">{t("claimModal.forgotPassword")}</a>}
           {error && <p className="claim-modal__message is-error">{error}</p>}
           {notice && <p className="claim-modal__message is-notice">{notice}</p>}
 
           <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Please wait..." : isSignup ? "Get Started" : "Log In"}
+            {isSubmitting ? t("claimModal.pleaseWait") : isSignup ? t("claimModal.getStarted") : t("claimModal.logIn")}
           </button>
         </form>
 
         <p className="claim-modal__switch">
-          {isSignup ? "Already a member?" : "Not a member?"}
+          {isSignup ? t("claimModal.alreadyMember") : t("claimModal.notMember")}
           <button type="button" onClick={() => setMode(isSignup ? "login" : "signup")}>
-            {isSignup ? "Log In" : "Sign Up"}
+            {isSignup ? t("claimModal.logIn") : t("claimModal.signUp")}
           </button>
         </p>
       </section>

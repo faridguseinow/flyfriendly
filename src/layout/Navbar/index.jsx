@@ -1,99 +1,136 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
+import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
-import { languages, navLinks, socialLinks } from "../../constants/site.js";
+import { socialLinks } from "../../constants/site.js";
+import { getLanguageByCode, languages } from "../../i18n/languages.js";
+import { replaceLanguageInPath } from "../../i18n/path.js";
 import "./style.scss";
 
-function Flag({ code }) {
-  const common = { width: 22, height: 22, viewBox: "0 0 36 36", "aria-hidden": "true" };
+function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useTranslation();
+  const currentLanguageOption = getLanguageByCode(currentLanguage);
+  const mainLanguages = useMemo(() => languages.filter((language) => language.group === "main"), []);
+  const additionalLanguages = useMemo(() => languages.filter((language) => language.group === "additional"), []);
 
-  if (code === "az") {
-    return (
-      <svg {...common}>
-        <clipPath id="az-clip"><circle cx="18" cy="18" r="18" /></clipPath>
-        <g clipPath="url(#az-clip)">
-          <path fill="#00B5E2" d="M0 0h36v12H0z" />
-          <path fill="#EF3340" d="M0 12h36v12H0z" />
-          <path fill="#509E2F" d="M0 24h36v12H0z" />
-          <circle cx="16" cy="18" r="4.8" fill="#fff" />
-          <circle cx="17.4" cy="18" r="4" fill="#EF3340" />
-          <path fill="#fff" d="m24 14 1 2.4 2.6-.8-1.4 2.3 2.2 1.5-2.7.4.2 2.7-1.9-1.9-1.9 1.9.2-2.7-2.7-.4 2.2-1.5-1.4-2.3 2.6.8z" />
-        </g>
-      </svg>
-    );
-  }
+  const selectLanguage = (languageCode) => {
+    if (languageCode === currentLanguage) {
+      onClose();
+      return;
+    }
 
-  if (code === "ru") {
-    return (
-      <svg {...common}>
-        <clipPath id="ru-clip"><circle cx="18" cy="18" r="18" /></clipPath>
-        <g clipPath="url(#ru-clip)">
-          <path fill="#fff" d="M0 0h36v12H0z" />
-          <path fill="#1C57A5" d="M0 12h36v12H0z" />
-          <path fill="#E32D38" d="M0 24h36v12H0z" />
-        </g>
-      </svg>
-    );
-  }
-
-  if (code === "tr") {
-    return (
-      <svg {...common}>
-        <circle cx="18" cy="18" r="18" fill="#E30A17" />
-        <circle cx="15.5" cy="18" r="7" fill="#fff" />
-        <circle cx="17.4" cy="18" r="5.6" fill="#E30A17" />
-        <path fill="#fff" d="m25 13.8 1.1 2.8 3-.9-1.6 2.6 2.5 1.8-3 .4.2 3-2.2-2.1-2.1 2.1.2-3-3-.4 2.5-1.8-1.6-2.6 3 .9z" />
-      </svg>
-    );
-  }
-
-  if (code === "fr") {
-    return (
-      <svg {...common}>
-        <clipPath id="fr-clip"><circle cx="18" cy="18" r="18" /></clipPath>
-        <g clipPath="url(#fr-clip)">
-          <path fill="#0055A4" d="M0 0h12v36H0z" />
-          <path fill="#fff" d="M12 0h12v36H12z" />
-          <path fill="#EF4135" d="M24 0h12v36H24z" />
-        </g>
-      </svg>
-    );
-  }
-
-  if (code === "ge") {
-    return (
-      <svg {...common}>
-        <circle cx="18" cy="18" r="18" fill="#fff" />
-        <path fill="#E30A17" d="M15 0h6v36h-6zM0 15h36v6H0z" />
-        <path fill="#E30A17" d="M7 7h2v6H7zM5 9h6v2H5zM27 7h2v6h-2zM25 9h6v2h-6zM7 25h2v6H7zM5 27h6v2H5zM27 25h2v6h-2zM25 27h6v2h-6z" />
-      </svg>
-    );
-  }
+    navigate(replaceLanguageInPath(`${location.pathname}${location.search}${location.hash}`, languageCode));
+    onClose();
+  };
 
   return (
-    <svg {...common}>
-      <clipPath id="en-clip"><circle cx="18" cy="18" r="18" /></clipPath>
-      <g clipPath="url(#en-clip)">
-        <path fill="#012169" d="M0 0h36v36H0z" />
-        <path stroke="#fff" strokeWidth="7" d="m0 0 36 36M36 0 0 36" />
-        <path stroke="#C8102E" strokeWidth="4" d="m0 0 36 36M36 0 0 36" />
-        <path stroke="#fff" strokeWidth="11" d="M18 0v36M0 18h36" />
-        <path stroke="#C8102E" strokeWidth="7" d="M18 0v36M0 18h36" />
-      </g>
-    </svg>
+    <div className="language-switcher">
+      <button
+        className="language-current"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={t("languageSwitcher.open")}
+        onClick={onOpen}
+      >
+        <span className="language-current__flag" aria-hidden="true">{currentLanguageOption.flag}</span>
+        <span className="language-current__code">{currentLanguageOption.code.toUpperCase()}</span>
+      </button>
+
+      {isOpen ? (
+        <div className="language-modal" role="presentation" onMouseDown={onClose}>
+          <section
+            className="language-modal__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="language-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button className="language-modal__close" type="button" aria-label={t("common.close")} onClick={onClose}>
+              <X size={18} strokeWidth={2} />
+            </button>
+
+            <header className="language-modal__header">
+              <h2 id="language-modal-title">{t("languageSwitcher.title")}</h2>
+            </header>
+
+            <div className="language-modal__section">
+              <h3>{t("languageSwitcher.suggestedLanguages")}</h3>
+              <div className="language-grid">
+                {mainLanguages.map((language) => (
+                  <button
+                    type="button"
+                    key={language.code}
+                    className={`language-option${language.code === currentLanguage ? " is-active" : ""}`}
+                    onClick={() => selectLanguage(language.code)}
+                  >
+                    <span className="language-option__flag" aria-hidden="true">{language.flag}</span>
+                    <span className="language-option__copy">
+                      <strong>{language.label}</strong>
+                      <small>{language.nativeLabel}</small>
+                    </span>
+                    <span className="language-option__code">{language.code.toUpperCase()}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="language-modal__section">
+              <h3>{t("languageSwitcher.additionalLanguages")}</h3>
+              <div className="language-grid">
+                {additionalLanguages.map((language) => (
+                  <button
+                    type="button"
+                    key={language.code}
+                    className={`language-option${language.code === currentLanguage ? " is-active" : ""}`}
+                    onClick={() => selectLanguage(language.code)}
+                  >
+                    <span className="language-option__flag" aria-hidden="true">{language.flag}</span>
+                    <span className="language-option__copy">
+                      <strong>{language.label}</strong>
+                      <small>{language.nativeLabel}</small>
+                    </span>
+                    <span className="language-option__code">{language.code.toUpperCase()}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 function Navbar() {
+  const location = useLocation();
+  const { t } = useTranslation();
+  const currentLanguage = location.pathname.split("/").filter(Boolean)[0] || "en";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+
+  const navLinks = useMemo(
+    () => [
+      { label: t("nav.referralProgram"), path: "/referralProgram" },
+      { label: t("nav.contact"), path: "/contact" },
+      { label: t("nav.aboutUs"), path: "/about" },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     document.body.classList.toggle("mobile-menu-open", isMenuOpen);
+    document.body.classList.toggle("language-modal-open", isLanguageOpen);
 
     const handleEscape = (event) => {
       if (event.key === "Escape") {
+        setIsLanguageOpen(false);
         setIsMenuOpen(false);
       }
     };
@@ -102,47 +139,40 @@ function Navbar() {
 
     return () => {
       document.body.classList.remove("mobile-menu-open");
+      document.body.classList.remove("language-modal-open");
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [isMenuOpen]);
+  }, [isLanguageOpen, isMenuOpen]);
 
   const closeMenu = () => setIsMenuOpen(false);
   const startClaim = () => {
     setIsMenuOpen(false);
+    setIsLanguageOpen(false);
   };
+
+  const openLanguageModal = () => setIsLanguageOpen(true);
+  const closeLanguageModal = () => setIsLanguageOpen(false);
 
   return (
     <header className={`site-header${isMenuOpen ? " is-menu-open" : ""}`}>
-      <nav className="navbar" aria-label="Main navigation">
-        <Link to="/" className="brand" aria-label="Fly Friendly home" onClick={closeMenu}>
+      <nav className="navbar" aria-label={t("nav.mainNavigation")}>
+        <LocalizedLink to="/" className="brand" aria-label={t("common.flyFriendlyHomeAria")} onClick={closeMenu}>
           <img className="brand__icon" src={logoImage} alt="" />
           <img className="brand__text" src={logoText} alt="Fly Friendly" />
-        </Link>
+        </LocalizedLink>
         <div className="nav-links">
           {navLinks.map((item) => (
-            <NavLink key={item.path} to={item.path}>{item.label}</NavLink>
+            <LocalizedNavLink key={item.path} to={item.path}>{item.label}</LocalizedNavLink>
           ))}
         </div>
         <div className="nav-actions">
-          <div className="language-switcher">
-            <button className="language-current" aria-label="Select language">
-              <Flag code="en" />
-            </button>
-            <div className="language-menu">
-              {languages.map(([code, label]) => (
-                <a href="#" key={code}>
-                  <Flag code={code} />
-                  <span>{label}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-          <Link className="btn btn-primary" to="/claim/eligibility">Start Your Claim</Link>
+          <LanguageSwitcher currentLanguage={currentLanguage} isOpen={isLanguageOpen} onOpen={openLanguageModal} onClose={closeLanguageModal} />
+          <LocalizedLink className="btn btn-primary" to="/claim/eligibility" onClick={startClaim}>{t("common.startYourClaim")}</LocalizedLink>
         </div>
         <button
           className="menu-toggle"
           type="button"
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          aria-label={isMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen((current) => !current)}
         >
@@ -153,28 +183,28 @@ function Navbar() {
       <div className="mobile-menu" aria-hidden={!isMenuOpen}>
         <div className="mobile-menu__content">
           <h2>
-            We fight for your right<br />
-            to <span>compensation</span>.
+            {t("nav.mobileHeadlinePrefix")}<br />
+            <span>{t("nav.mobileHeadlineAccent")}</span>.
           </h2>
 
           <div className="mobile-menu__links">
             {navLinks.map((item) => (
-              <NavLink key={item.path} to={item.path} onClick={closeMenu}>
+              <LocalizedNavLink key={item.path} to={item.path} onClick={closeMenu}>
                 {item.label}
-              </NavLink>
+              </LocalizedNavLink>
             ))}
           </div>
 
-          <Link className="mobile-menu__claim" to="/claim/eligibility" onClick={startClaim}>
-            Start Your Claim
-          </Link>
+          <LocalizedLink className="mobile-menu__claim" to="/claim/eligibility" onClick={startClaim}>
+            {t("common.startYourClaim")}
+          </LocalizedLink>
 
-          <div className="mobile-menu__language">
-            <Flag code="en" />
-            <span>Eng</span>
-          </div>
+          <button className="mobile-menu__language" type="button" onClick={openLanguageModal}>
+            <span>{getLanguageByCode(currentLanguage).flag}</span>
+            <span>{currentLanguage.toUpperCase()}</span>
+          </button>
 
-          <div className="mobile-menu__socials" aria-label="Social links">
+          <div className="mobile-menu__socials" aria-label={t("footer.socialAria")}>
             {socialLinks.map((item) => (
               <a key={item.label} href={item.href} aria-label={item.label}>
                 <SocialIcon name={item.icon} size={18} />

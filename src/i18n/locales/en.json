@@ -1,0 +1,675 @@
+{
+  "common": {
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "send": "Send",
+    "contact": "Contact",
+    "aboutUs": "About us",
+    "privacy": "Privacy",
+    "termsAndConditions": "Terms and Conditions",
+    "termsOfUse": "Terms of Use",
+    "privacyPolicy": "Privacy Policy",
+    "cookies": "Cookies",
+    "support": "Support",
+    "startYourClaim": "Start Your Claim",
+    "checkCompensation": "Check Compensation",
+    "checkYourEligibility": "Check Your Eligibility",
+    "mainPage": "Main Page",
+    "submitClaim": "Submit Claim",
+    "saving": "Saving...",
+    "submitting": "Submitting...",
+    "savedInSupabase": "Saved in Supabase.",
+    "flyFriendlyHomeAria": "Fly Friendly home",
+    "globalReachCopy": "Serving millions of passengers in all countries, speaking all languages.",
+    "scrollToTop": "Scroll to top"
+  },
+  "nav": {
+    "mainNavigation": "Main navigation",
+    "referralProgram": "Referral Program",
+    "contact": "Contact",
+    "aboutUs": "About us",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "mobileHeadlinePrefix": "We fight for your right",
+    "mobileHeadlineAccent": "to compensation"
+  },
+  "languageSwitcher": {
+    "open": "Select language",
+    "caption": "Fly Friendly language settings",
+    "title": "Choose your language",
+    "suggestedLanguages": "Suggested languages",
+    "additionalLanguages": "Additional languages"
+  },
+  "footer": {
+    "leadTitle": "3 Simple Steps to Your Compensation",
+    "leadText": "Compensation news, travel tips, and passenger rights delivered monthly.",
+    "followUs": "Follow us:",
+    "socialAria": "Social links",
+    "company": "Company",
+    "resources": "Resources",
+    "claimHelp": "Claim Help",
+    "compensation": "Compensation",
+    "referralProgram": "Referral Program",
+    "checkCompensation": "Check compensation",
+    "delayedFlights": "Delayed flights",
+    "cancelledFlights": "Cancelled flights",
+    "missedConnections": "Missed connections",
+    "copyright": "©2026 Fly Friendly"
+  },
+  "claimModal": {
+    "signupTitle": "Create partner account",
+    "loginTitle": "Welcome Back",
+    "signupPartnerDescription": "Apply for partner access and manage referral activity from your Fly Friendly account.",
+    "signupDefaultDescription": "Create your account to continue.",
+    "loginDescription": "Enter your email and password to access your account.",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Contact Number (WhatsApp preferred)",
+    "password": "Password",
+    "fullNamePlaceholder": "Enter Your Full Name",
+    "emailPlaceholder": "Enter Your Email",
+    "phonePlaceholder": "E.g.: 050 XXX XX XX",
+    "passwordCreatePlaceholder": "Create Your Password",
+    "passwordEnterPlaceholder": "Enter Your Password",
+    "forgotPassword": "Forgot password?",
+    "getStarted": "Get Started",
+    "logIn": "Log In",
+    "pleaseWait": "Please wait...",
+    "alreadyMember": "Already a member?",
+    "notMember": "Not a member?",
+    "signUp": "Sign Up",
+    "supabaseMissing": "Supabase env is missing. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.",
+    "confirmEmailNotice": "Check your email to confirm your account, then log in to continue.",
+    "authError": "Could not authenticate. Please try again."
+  },
+  "about": {
+    "heroLabel": "About Fly Friendly",
+    "heroTitle": "A simpler way to manage flight disruption claims",
+    "heroText": "Fly Friendly helps travelers organize claim information, upload required documents, and track progress in one clear, step-by-step flow.",
+    "startClaim": "Start a Claim",
+    "missionLabel": "Our Mission",
+    "missionTitle": "Make passenger rights easier to use",
+    "missionText": "We turn a complex compensation process into a guided experience. From eligibility checks to document uploads and case tracking, our work is focused on clarity, speed, and trust.",
+    "missionStatText": "Potential compensation for eligible disrupted flights.",
+    "whatWeDoLabel": "What We Do",
+    "whatWeDoTitle": "Practical support from first check to final update",
+    "whatWeDoItems": [
+      {
+        "title": "Eligibility Check",
+        "text": "We help passengers understand whether a delay, cancellation, denied boarding, or missed connection may qualify."
+      },
+      {
+        "title": "Document Flow",
+        "text": "Travelers can prepare the details and documents needed to support a compensation case."
+      },
+      {
+        "title": "Case Handling",
+        "text": "Fly Friendly can manage airline communication and keep the claim process organized."
+      }
+    ],
+    "valuesLabel": "Our Values",
+    "valuesTitle": "Built around trust, clarity, and action",
+    "values": [
+      {
+        "title": "Transparency",
+        "text": "Clear steps, practical explanations, and status updates that make the claim process easier to follow."
+      },
+      {
+        "title": "Simplicity",
+        "text": "A guided flow that helps travelers move from disruption to submitted claim without unnecessary friction."
+      },
+      {
+        "title": "Security",
+        "text": "Careful handling of passenger details, uploaded documents, and case information throughout the process."
+      },
+      {
+        "title": "User-first",
+        "text": "Built for real passengers who need practical support after stressful travel disruptions."
+      }
+    ],
+    "processLabel": "How It Works",
+    "processTitle": "Four clear stages",
+    "processSteps": [
+      { "number": "1", "title": "Enter details", "text": "Provide flight, route, disruption, and passenger information." },
+      { "number": "2", "title": "Upload documents", "text": "Add booking confirmation, boarding pass, airline messages, or ID if needed." },
+      { "number": "3", "title": "Submit", "text": "Send the claim for review and airline communication." },
+      { "number": "4", "title": "Track status", "text": "Follow updates until the case is resolved or closed." }
+    ],
+    "helpTitle": "Need help?",
+    "helpText": "Reach out to our team and we will guide you through the next steps.",
+    "disclaimer": "Disclaimer: This page is for informational purposes. Eligibility and claim requirements may vary by route, airline, and local regulations."
+  },
+  "contactPage": {
+    "heroLabel": "Contact",
+    "heroTitle": "Contact us",
+    "heroText": "Have a question about a delayed, canceled, or overbooked flight? Send a message and our team will help you understand the next step.",
+    "supportLabel": "Support",
+    "supportTitle": "We are here to help",
+    "supportText": "Tell us what happened with your flight, what documents you have, and how we can reach you. Do not send sensitive identity documents until our team requests them through the proper claim flow.",
+    "whatsApp": "WhatsApp",
+    "email": "Email",
+    "hours": "Hours",
+    "hoursValue": "Mon-Fri, 09:00-18:00",
+    "messageLabel": "Send a message",
+    "messageTitle": "Write to us by email",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "you@example.com",
+    "reference": "Flight or booking reference",
+    "referencePlaceholder": "Optional",
+    "message": "Message",
+    "messagePlaceholder": "Tell us what happened with your flight",
+    "sendButton": "Send",
+    "emailAppNotice": "Submitting opens your email app and prepares your message to {{email}}.",
+    "mailSubject": "Website contact message from {{name}}",
+    "mailGreeting": "Hello Fly Friendly,",
+    "mailName": "Name: {{value}}",
+    "mailEmail": "Email: {{value}}",
+    "mailReference": "Flight or booking reference: {{value}}",
+    "mailMessageLabel": "Message:",
+    "visitorFallback": "Fly Friendly visitor"
+  },
+  "home": {
+    "claimBoxTitle": "Check and claim your compensation.",
+    "claimBoxDestinationPlaceholder": "Destination airport, city or country",
+    "claimBoxNoAirportsFound": "No airports found",
+    "claimBoxFree": "It's free",
+    "claimBoxMinutes": "Takes minutes",
+    "claimBoxRightText": "We fight for your right to compensation.",
+    "heroLabel": "Verified by Real Travelers",
+    "heroTitle": "Delayed or canceled flight?",
+    "heroTitleStrong": "Claim up to €600 now.",
+    "heroText": "We fight for your right to compensation. Submit your claim in minutes and let us handle the airline.",
+    "trustLabel": "Global Reach",
+    "trustTitle": "A trusted partner worldwide",
+    "benefits": [
+      {
+        "title": "Fast & Affordable Service",
+        "text": "We handle your claim quickly and efficiently with no hidden costs or unnecessary delays."
+      },
+      {
+        "title": "No Win, No fee",
+        "text": "You pay nothing unless we succeed in getting your compensation. Zero risk, total fairness."
+      },
+      {
+        "title": "Unmatched Claim Success",
+        "text": "We win compensation even when airlines or agencies say it is impossible."
+      }
+    ],
+    "calculatorLabel": "Compensation Calculator",
+    "calculatorTitle": "How much can you claim?",
+    "calculatorText": "Check your eligibility instantly and see how much compensation you can receive.",
+    "disruptionsLabel": "Flight Issues",
+    "disruptionsTitle": "What disruptions qualify?",
+    "disruptionsText": "Compensation applies to more than just delays.",
+    "disruptionCards": {
+      "cancellationTitle": "Flight Cancellation",
+      "cancellationText": "Airline canceled your flight last minute? Claim it.",
+      "missedTitle": "Missed Connected Flight",
+      "missedText": "If you missed your next flight and arrived at your final destination more than 3 hours late? Claim now.",
+      "airlineFaultTitle": "Your airline's fault?\nYou can still get paid.",
+      "airlineFaultText": "Arrived 3+ hours late? You are eligible.",
+      "deniedTitle": "Denied Boarding",
+      "deniedText": "Overbooked flight? Demand your full compensation now. We fight for your rights.",
+      "allAirlines": "All airlines",
+      "allCountries": "All countries",
+      "noWinNoFee": "No win, no fee"
+    },
+    "membershipLabel": "Our Subscription Fee",
+    "membershipTitle": "Fly Friendly Membership",
+    "membershipText": "One simple subscription covers all your monthly journeys.",
+    "membershipPriceSuffix": "/month",
+    "membershipPlan": "Fly Friendly Plus",
+    "membershipPlanText": "Perfect for frequent travelers and smart planners.",
+    "membershipItems": [
+      "Unlimited flight searches",
+      "Real-time fare updates",
+      "Smart alerts for price drops",
+      "Saved trips and favorites",
+      "Multi-city trip planner",
+      "Early access to travel deals"
+    ],
+    "subscribe": "Subscribe",
+    "membershipPhotoTitle": "No win, no fee. We only get paid if you do.",
+    "membershipPhotoTag": "Denied Boarding",
+    "stepsLabel": "How It Works",
+    "stepsTitle": "3 Simple Steps to Your Compensation",
+    "stepsText": "We do the hard work, you get the payout hassle-free.",
+    "stepsCards": {
+      "minutes": "Claim in minutes",
+      "processTitle": "Fast, safe and easy compensation",
+      "handleEverything": "We handle everything",
+      "legalTitle": "Legal expertise with airlines",
+      "moneyTitle": "Money straight to your account."
+    },
+    "testimonialsLabel": "Testimonials",
+    "testimonialsTitle": "Loved by millions of travelers",
+    "testimonialsText": "Real passengers. Real compensation. Real stories.",
+    "testimonials": [
+      {
+        "name": "Sarah Johnson",
+        "role": "Marketing Manager, London",
+        "quote": "My flight from London to Milan was canceled at the airport, and I did not know I could claim compensation. This service handled everything perfectly, and I received my payment within just two weeks."
+      },
+      {
+        "name": "Tom Nguyen",
+        "role": "Business Consultant, Singapore",
+        "quote": "I had doubts at first, but the process turned out smoother than expected. The team kept me informed at every stage and delivered the compensation right on time."
+      },
+      {
+        "name": "David Romero",
+        "role": "Freelance Photographer, Madrid",
+        "quote": "I discovered this platform after my delayed flight from Madrid to Berlin. I only filled out a short form, and they took care of the rest."
+      },
+      {
+        "name": "Emily Carter",
+        "role": "UX Designer, Amsterdam",
+        "quote": "My delayed flight from Amsterdam to Paris ruined my weekend plans, but this company made up for it. Fantastic experience overall."
+      },
+      {
+        "name": "Anna Muller",
+        "role": "Software Engineer, Berlin",
+        "quote": "After my 5-hour delay, I submitted my claim and the team handled everything professionally. No complicated paperwork or calls."
+      },
+      {
+        "name": "Lucas Bennett",
+        "role": "Software Consultant, Toronto",
+        "quote": "I submitted my flight info in under five minutes, and the team did the rest. They kept me updated and explained every step."
+      }
+    ],
+    "resourcesLabel": "Resources",
+    "resourcesTitle": "Travel Tips & Guides",
+    "resourcesText": "Stay informed with our latest resources on air passenger rights.",
+    "articles": [
+      {
+        "title": "Know Your Air Passenger Rights",
+        "text": "Many travelers do not realize they can claim compensation for flight disruptions. Here is what you are entitled to when airlines fail you.",
+        "date": "July 22, 2025"
+      },
+      {
+        "title": "Why Airlines Delay Payments",
+        "text": "Ever wondered why compensation takes time? Learn what happens behind the scenes and how we speed up the process for you.",
+        "date": "August 10, 2025"
+      },
+      {
+        "title": "Top Tips for Stress-Free Travel",
+        "text": "Discover simple habits that make your trips smoother, from booking wisely to knowing when you are eligible for compensation.",
+        "date": "September 5, 2025"
+      }
+    ],
+    "newsletterPhoto": "Join our newsletter to get latest updates to your inbox.",
+    "newsletterTag": "Stay Updated",
+    "newsletterLabel": "Newsletter Signup",
+    "newsletterTitle": "Get the latest updates in your inbox",
+    "newsletterText": "Compensation news, travel tips, and passenger rights delivered monthly.",
+    "newsletterPlaceholder": "Enter your email",
+    "newsletterAria": "Subscribe",
+    "newsletterNotice": "This opens your email app and prepares a subscription request to our team.",
+    "newsletterSubject": "Newsletter subscription request",
+    "newsletterGreeting": "Hello Fly Friendly,",
+    "newsletterRequest": "Please add this email to the newsletter list:",
+    "faqLabel": "FAQ",
+    "faqTitle": "Frequently Asked Questions",
+    "faqText": "Everything you need to know about claiming compensation.",
+    "faqs": [
+      {
+        "question": "Am I eligible for flight compensation?",
+        "answer": "In general, you may be eligible if your flight was delayed by 3+ hours, canceled, or you were denied boarding, and the disruption was within the airline's responsibility."
+      },
+      {
+        "question": "How much can I receive for my claim?",
+        "answer": "Compensation varies by distance, delay length, and applicable regulation. Many cases fall into fixed tiers, for example up to EUR 600 in some jurisdictions."
+      },
+      {
+        "question": "How long does the compensation process take?",
+        "answer": "Timelines vary. Straightforward cases can be resolved in a few weeks, while others may take longer if the airline disputes the claim."
+      },
+      {
+        "question": "What documents do I need to submit?",
+        "answer": "Typically you need basic flight details and proof of travel, such as a booking confirmation, boarding pass, and any delay or cancellation notice."
+      },
+      {
+        "question": "What if the airline refuses my claim?",
+        "answer": "If an airline rejects the claim, we can review the reason, respond with supporting evidence, and escalate when appropriate."
+      },
+      {
+        "question": "Do I have to deal with the airline myself?",
+        "answer": "No. Once you submit your details, we handle communication with the airline and manage the paperwork."
+      },
+      {
+        "question": "What are your service fees?",
+        "answer": "We generally operate on a success-based fee model: if we do not win, you do not pay."
+      },
+      {
+        "question": "Is my personal data safe?",
+        "answer": "We only use your information to process your claim and communicate with relevant parties. Data is shared only when necessary to pursue compensation."
+      }
+    ]
+  },
+  "referral": {
+    "heroTag": "# ForCreators&Influencers",
+    "heroTitle": "Partner with Fly Friendly & earn by helping travelers",
+    "heroText": "Join our partnership program, share your link, inspire your audience, and get rewarded for every claim we win together.",
+    "joinAsPartner": "Join as a Partner",
+    "logIn": "Log in",
+    "exclusiveAccessLabel": "Exclusive Access",
+    "exclusiveAccessTitle": "More than earnings, it's partnership",
+    "exclusiveAccessText": "Fly Friendly supports every creator with the tools and visibility they deserve.",
+    "accessItems": [
+      { "title": "Compete and win travel vouchers.", "text": "Earn up to 20% on every successful referral." },
+      { "title": "Featured Partner Spotlights", "text": "Get promoted on our channels." },
+      { "title": "Custom Collab Opportunities", "text": "Co-create campaigns with our design team." },
+      { "title": "Creator Resource Hub", "text": "Tutorials, tips, and analytics insights." }
+    ],
+    "photoCard": "Turn your audience into opportunity.",
+    "benefitsLabel": "Program Benefits",
+    "benefitsTitle": "A trusted partner worldwide",
+    "benefitsText": "Serving millions of passengers in all countries, speaking all languages.",
+    "benefits": [
+      { "title": "Generous Commissions", "text": "Earn up to 20% on every successful referral." },
+      { "title": "Instant Tracking Dashboard", "text": "View clicks, signups, and earnings in real time." },
+      { "title": "Creative Assets Provided", "text": "Ready-made visuals, brand kits, and caption templates." },
+      { "title": "Global Recognition", "text": "Be part of a network that's changing flight experiences worldwide." }
+    ],
+    "processLabel": "Simple 3-Step Process",
+    "processTitle": "Your path to effortless earnings",
+    "processText": "It's quick, transparent, and built for creators who want to make an impact.",
+    "steps": [
+      {
+        "step": "Step 1",
+        "title": "Apply & Get Your Link",
+        "heading": "Submit your info and receive your",
+        "text": "personal referral link within 24 hours."
+      },
+      {
+        "step": "Step 2",
+        "title": "Share Authentically",
+        "heading": "Post it in your bio, stories and videos,",
+        "text": "and turn your followers into your monthly earnings."
+      },
+      {
+        "step": "Step 3",
+        "title": "Earn Rewards Monthly",
+        "heading": "Track results in your dashboard and get",
+        "text": "paid automatically every month."
+      }
+    ],
+    "voicesLabel": "Community Voices",
+    "voicesTitle": "Creators who grew with Fly Friendly",
+    "voicesText": "Many influencers have earned money simply by sharing and educating their followers about their flight rights through our program.",
+    "stories": [
+      {
+        "name": "Lena Morales",
+        "role": "Travel Blogger",
+        "quote": "I've collaborated with many brands, but Fly Friendly truly supports creators. Their communication and transparency are unmatched."
+      },
+      {
+        "name": "James Yi",
+        "role": "YouTuber",
+        "quote": "I shared my referral link in just two videos and saw earnings in the first week. The dashboard makes everything super easy."
+      },
+      {
+        "name": "Sarah Johnson",
+        "role": "Marketing Manager, London",
+        "quote": "It's the first affiliate program where both sides genuinely win. My audience trusts me more, and I earn consistently."
+      },
+      {
+        "name": "Sophie Duarte",
+        "role": "Instagram Creator",
+        "quote": "It's the first affiliate program where both sides genuinely win. My audience trusts me more, and I earn consistently."
+      }
+    ],
+    "ctaHash": "# StartEarningToday",
+    "ctaPhotoTitle": "We fight for your rights.",
+    "ctaPhotoText": "Create. Share. Earn.",
+    "ctaTitle": "Become a Fly Friendly Partner",
+    "ctaText": "Join a network of creators helping travelers worldwide. It takes less than 5 minutes to get started.",
+    "applyNow": "Apply Now",
+    "faqLabel": "FAQ",
+    "faqTitle": "Frequently Asked Questions",
+    "faqText": "Everything you need to know about claiming compensation."
+  },
+  "claim": {
+    "languageShort": "Eng",
+    "heroLabel": "Verified by Real Travelers",
+    "heroTitle": "Check and claim compensation",
+    "promoTitle": "Claim up to €600 now.",
+    "promoText": "We fight for your right to compensation. Submit your claim in minutes and let us handle the airline.",
+    "promoIssueTitle": "Flight Delay",
+    "promoIssueText": "Arrived 3+ hours late? You're eligible.",
+    "allAirlines": "All airlines",
+    "allCountries": "All countries",
+    "noWinNoFee": "No win, no fee",
+    "stages": ["Eligibility Check", "Contact Information", "Documents", "Finish"],
+    "emailError": "Введите корректный email адрес",
+    "eligibility": {
+      "whereDidYouFly": "Where did you fly?",
+      "departurePlaceholder": "Departure airport, city or country",
+      "arrivalPlaceholder": "Arrival airport, city or country",
+      "noAirportsFound": "No airports found",
+      "whichAirline": "Which airline did you fly with?",
+      "searchAirline": "Search airline",
+      "noAirlinesFound": "No airlines found",
+      "delayTitle": "Flight delay duration",
+      "lessThan3": "Less than 3 hours",
+      "notEligible": "Not eligible",
+      "moreThan3": "More than 3 hours",
+      "eligibleForClaim": "Eligible for claim",
+      "cancelled": "Flight cancelled",
+      "specialRights": "Special rights",
+      "scheduledDepartureDate": "What was your scheduled departure date?",
+      "directFlight": "Was it a direct flight?",
+      "directYes": "Yes, that was direct",
+      "directNo": "No, that was not direct"
+    },
+    "contact": {
+      "title": "Please, enter your contact information.",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter Your Full Name",
+      "email": "Email",
+      "emailPlaceholder": "Enter Your Email",
+      "address": "Address",
+      "addressPlaceholder": "Enter Your City",
+      "optional": "Optional",
+      "phone": "Contact Number (WhatsApp preferred)",
+      "phonePlaceholder": "E.g.: +90 5xx xxx xx xx",
+      "hasWhatsapp": "Yes, this number has Whatsapp.",
+      "requiredToProceed": "Required to proceed."
+    },
+    "documents": {
+      "title": "Secure Document Upload",
+      "subtitle": "Please upload your Passport and Boarding Pass.",
+      "passport": "Passport",
+      "boardingPass": "Boarding Pass",
+      "dragAndDrop": "Drag and Drop file",
+      "or": "or",
+      "uploadFile": "Upload file",
+      "uploadHint": "Please upload your boarding pass as PNG, JPG or PDF. Max size 25MB",
+      "reasonTitle": "What was the official reason for your flight delay or cancellation?",
+      "reasonPlaceholder": "e.g., Crew/Staffing Problems",
+      "signatureNote": "Your signature give us consent to get the compensation for your flight from the airline. You signature is requested by the airline to process the compensation. By signing, you agree to the terms and conditions."
+    },
+    "finish": {
+      "title": "Finish & Sign",
+      "subtitle": "Please review the terms and sign below to finalize your claim.",
+      "digitalSignature": "Digital Signature",
+      "clear": "Clear",
+      "signatureHint": "* Please use your mouse or finger to sign inside the box.",
+      "terms": "I agree to the <termsLink>Terms & Conditions</termsLink> and confirm that the information provided is accurate."
+    },
+    "denied": {
+      "title": "Unfortunately, there's no compensation for this flight.",
+      "text": "We help customers under several air passenger regulations, but unfortunately, this flight isn't covered by any of them.",
+      "noteTitle": "Note: This data is not shared publicly.",
+      "noteText": "We use this information strictly to personalize your experience and improve our service.",
+      "protectTitle": "Stay protected next time - instantly.",
+      "protectText": "Perfect for frequent travelers and smart planners",
+      "protectItems": [
+        "Unlimited flight searches",
+        "Real-time fare updates",
+        "Saved trips & favorites",
+        "Multi-city trip planner",
+        "Early access to travel deals"
+      ]
+    },
+    "approved": {
+      "title": "Thank you, your claim is on its way!",
+      "text": "Thanks for trusting Fly Friendly, your request has safely landed in our system. Our flight compensation team is now reviewing your case and will keep you informed as it progresses.",
+      "leadId": "Lead ID",
+      "pending": "Pending",
+      "nextTitle": "What happens next",
+      "nextText": "Every claim is handled by a dedicated team, specialists, negotiators, and legal pros who know air travel inside out.",
+      "nextSteps": [
+        ["We check your flight history", "Our specialists confirm all flight data, from departure records to delay reasons."],
+        ["We build your case smartly", "AI-assisted tools help us gather the strongest arguments, so airlines can't ignore your rights."],
+        ["We talk to the airline", "Our negotiation team contacts the airline directly, speeding up responses and ensuring fair compensation."],
+        ["If things get complicated", "Sometimes airlines resist. That's when our legal network steps in to take it further, still no fee unless you win."],
+        ["Payment takes off", "When your claim is approved, we transfer the money straight to your account."]
+      ]
+    },
+    "status": {
+      "notEligible": "Based on the delay duration, this flight is not eligible for compensation.",
+      "supabaseMissing": "Supabase env is missing. The form is saved locally only.",
+      "saveLeadError": "Could not save lead data.",
+      "saveClaimError": "Could not save claim data.",
+      "signatureRequired": "Please sign and accept the terms before submitting.",
+      "emailAlreadySent": "Claim submitted. Confirmation email was already sent to {{email}}.",
+      "emailSent": "Claim submitted. Confirmation email was sent to {{email}}.",
+      "emailFailed": "Claim submitted, but the confirmation email could not be sent automatically.",
+      "customerFallback": "the customer",
+      "removeFile": "Remove {{file}}"
+    }
+  },
+  "legal": {
+    "label": "Legal",
+    "updated": "Last updated: April 16, 2026",
+    "privacy": {
+      "title": "Privacy Policy",
+      "intro": "This policy explains how Fly Friendly collects, uses, stores, and protects information when you use our flight compensation website, claim flow, contact forms, and newsletter.",
+      "sections": [
+        {
+          "title": "1. Who we are",
+          "text": "Fly Friendly is a flight compensation support service. We help passengers check potential eligibility, submit flight disruption details, upload supporting documents, and track claim progress."
+        },
+        {
+          "title": "2. Information we collect",
+          "text": "Depending on how you use the website, we may collect:",
+          "items": [
+            "Contact details such as name, email address, phone number, and message content.",
+            "Flight and claim details such as airline, route, dates, delay length, cancellation details, booking reference, and case status.",
+            "Documents you choose to upload, such as booking confirmations, boarding passes, airline notices, or identity information if required for a claim.",
+            "Technical information such as device type, browser, IP address, pages visited, and cookie identifiers.",
+            "Newsletter and marketing preferences if you subscribe to updates."
+          ]
+        },
+        {
+          "title": "3. How we use information",
+          "items": [
+            "To assess and manage flight compensation claims.",
+            "To communicate with you about your case, support request, or submitted message.",
+            "To prepare claim documentation and communicate with airlines or relevant parties when needed.",
+            "To improve website performance, user experience, fraud prevention, and security.",
+            "To send newsletters or updates only when you have subscribed or otherwise permitted this."
+          ]
+        },
+        {
+          "title": "4. Sharing information",
+          "text": "We may share information with airlines, legal or operational partners, payment providers, analytics providers, hosting providers, and other service providers only when necessary for claim handling, website operation, compliance, or support."
+        },
+        {
+          "title": "5. Retention and security",
+          "text": "We keep information only as long as reasonably needed for the purpose it was collected, including claim handling, record keeping, legal obligations, dispute resolution, and fraud prevention. We use reasonable organizational and technical measures to protect personal information."
+        },
+        {
+          "title": "6. Your rights",
+          "text": "Depending on your location, you may have rights to access, correct, delete, restrict, or object to certain processing of your personal information. You may also withdraw marketing consent. To make a request, contact <emailLink>info@fly-friendly.com</emailLink>."
+        },
+        {
+          "title": "7. Contact",
+          "text": "Questions about privacy can be sent to <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "This page is a practical website policy draft based on the Fly Friendly service model. It should be reviewed by counsel before production use."
+    },
+    "terms": {
+      "title": "Terms of Use",
+      "intro": "These terms govern your use of the Fly Friendly website, claim submission tools, referral pages, newsletter forms, and related online services.",
+      "sections": [
+        {
+          "title": "1. Use of the website",
+          "text": "You may use the website to learn about passenger rights, check potential compensation, submit contact requests, and begin a claim. You agree to use the website lawfully and not interfere with its operation, security, or availability."
+        },
+        {
+          "title": "2. Claim information",
+          "text": "You are responsible for providing accurate, complete, and up-to-date flight, passenger, contact, and document information. Inaccurate information may delay review or prevent claim handling."
+        },
+        {
+          "title": "3. No guarantee of compensation",
+          "text": "Eligibility depends on route, disruption type, delay length, airline responsibility, evidence, applicable law, and other factors. Fly Friendly may help assess and pursue claims, but we do not guarantee that every submitted case will succeed."
+        },
+        {
+          "title": "4. Fees and payments",
+          "text": "The website describes a success-based approach such as no win, no fee. Any final fee, commission, or payment arrangement should be confirmed in the claim agreement or service terms presented during the claim process."
+        },
+        {
+          "title": "5. User conduct",
+          "items": [
+            "Do not submit false, misleading, or fraudulent information.",
+            "Do not upload files that contain malware, illegal material, or information you are not authorized to share.",
+            "Do not copy, scrape, disrupt, reverse engineer, or misuse the website."
+          ]
+        },
+        {
+          "title": "6. Content and intellectual property",
+          "text": "The Fly Friendly name, website design, text, graphics, and brand assets belong to Fly Friendly or its licensors. You may not reuse them commercially without permission."
+        },
+        {
+          "title": "7. Limitation of liability",
+          "text": "The website is provided for general information and service access. To the fullest extent permitted by law, Fly Friendly is not liable for indirect losses, unavailable website access, third-party actions, airline decisions, or consequences of inaccurate information submitted by users."
+        },
+        {
+          "title": "8. Contact",
+          "text": "For questions about these terms, contact <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "This Terms of Use page is a draft based on the site functionality and should be reviewed by counsel before production use."
+    },
+    "cookies": {
+      "title": "Cookies Policy",
+      "intro": "This policy explains how Fly Friendly may use cookies and similar technologies to keep the website working, understand usage, improve performance, and support marketing.",
+      "sections": [
+        {
+          "title": "1. What cookies are",
+          "text": "Cookies are small text files stored on your device when you visit a website. Similar technologies include local storage, pixels, tags, and analytics identifiers."
+        },
+        {
+          "title": "2. Types of cookies we may use",
+          "items": [
+            "Essential cookies: Required for navigation, security, forms, and core website functions.",
+            "Preference cookies: Remember choices such as language or display settings.",
+            "Analytics cookies: Help us understand page visits, traffic sources, and how users interact with the website.",
+            "Marketing cookies: May help measure campaigns, referral activity, or newsletter performance."
+          ]
+        },
+        {
+          "title": "3. Why we use cookies",
+          "text": "Cookies help us keep the site reliable, improve the claim journey, understand which pages are useful, detect technical issues, and measure the performance of content such as referral and newsletter campaigns."
+        },
+        {
+          "title": "4. Third-party tools",
+          "text": "We may use third-party providers for analytics, hosting, forms, security, and marketing measurement. These providers may set cookies or collect technical data according to their own policies."
+        },
+        {
+          "title": "5. Managing cookies",
+          "text": "You can block, delete, or restrict cookies through your browser settings. Some essential website functions may not work correctly if cookies are disabled."
+        },
+        {
+          "title": "6. Contact",
+          "text": "Questions about cookies can be sent to <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "This Cookies Policy is a draft based on the Fly Friendly website model and should be reviewed before production use."
+    }
+  }
+}

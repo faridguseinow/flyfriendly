@@ -1,11 +1,13 @@
 import { Infinity, PlaneLanding, PlaneTakeoff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import CountryFlag from "../../components/CountryFlag/index.jsx";
+import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { describeAirportOption, searchAirports } from "../../services/catalogService.js";
 import "./style.scss";
 
-function HomeAirportCombobox({ icon: Icon, placeholder, value, options, onInputChange, onSelect }) {
+function HomeAirportCombobox({ icon: Icon, placeholder, value, options, onInputChange, onSelect, emptyLabel }) {
   const rootRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -99,7 +101,7 @@ function HomeAirportCombobox({ icon: Icon, placeholder, value, options, onInputC
                 </div>
               </div>
             </button>
-          )) : <div className="claim-box__empty">No airports found</div>}
+          )) : <div className="claim-box__empty">{emptyLabel}</div>}
         </div>
       ) : null}
     </div>
@@ -108,6 +110,8 @@ function HomeAirportCombobox({ icon: Icon, placeholder, value, options, onInputC
 
 function ClaimBox() {
   const navigate = useNavigate();
+  const toLocalizedPath = useLocalizedPath();
+  const { t } = useTranslation();
   const [departure, setDeparture] = useState("");
   const [destination, setDestination] = useState("");
   const [departureMatches, setDepartureMatches] = useState([]);
@@ -156,7 +160,7 @@ function ClaimBox() {
     if (departure.trim()) query.set("departure", departure.trim());
     if (destination.trim()) query.set("destination", destination.trim());
 
-    navigate(`/claim/eligibility${query.toString() ? `?${query}` : ""}`);
+    navigate(toLocalizedPath(`/claim/eligibility${query.toString() ? `?${query}` : ""}`));
   };
 
   return (
@@ -167,30 +171,32 @@ function ClaimBox() {
         <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80" alt="" />
         <span><Infinity size={24} strokeWidth={2.4} aria-hidden="true" /></span>
       </div>
-      <h2>Check and claim your compensation.</h2>
+      <h2>{t("home.claimBoxTitle")}</h2>
       <div className="claim-box__fields">
         <HomeAirportCombobox
           icon={PlaneTakeoff}
           value={departure}
-          placeholder="Departure airport, city or country"
+          placeholder={t("claim.eligibility.departurePlaceholder")}
           options={departureMatches}
           onInputChange={setDeparture}
           onSelect={(item) => setDeparture(item.label)}
+          emptyLabel={t("home.claimBoxNoAirportsFound")}
         />
         <HomeAirportCombobox
           icon={PlaneLanding}
           value={destination}
-          placeholder="Destination airport, city or country"
+          placeholder={t("home.claimBoxDestinationPlaceholder")}
           options={destinationMatches}
           onInputChange={setDestination}
           onSelect={(item) => setDestination(item.label)}
+          emptyLabel={t("home.claimBoxNoAirportsFound")}
         />
-        <button className="btn btn-primary" type="submit">Check Compensation <span>›</span></button>
+        <button className="btn btn-primary" type="submit">{t("common.checkCompensation")} <span>›</span></button>
       </div>
       <div className="claim-box__meta">
-        <span>It's free</span>
-        <span>Takes minutes</span>
-        <span>We fight for your right to compensation.</span>
+        <span>{t("home.claimBoxFree")}</span>
+        <span>{t("home.claimBoxMinutes")}</span>
+        <span>{t("home.claimBoxRightText")}</span>
       </div>
     </form>
   );

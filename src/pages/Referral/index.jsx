@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
 import ClaimStartModal from "../../components/ClaimStartModal/index.jsx";
-import { faqs } from "../../constants/site.js";
 import { useState } from "react";
 import {
   BadgeCheck,
@@ -17,83 +17,29 @@ import {
   Sparkles,
   Trophy,
   Users,
+  Camera,
 } from "lucide-react";
 import "./style.scss";
 
-const partnerImage = "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80";
-const shareImage = "https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=1600&q=80";
-const rewardImage = "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1600&q=80";
-const creatorImage = "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1800&q=80";
+const partnerImage = "https://images.unsplash.com/photo-1713946598491-4f85decbeaaf?q=80&w=2064&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+const linkImage = "https://plus.unsplash.com/premium_photo-1670071482497-5dc3dac4800f?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+const shareImage = "https://images.unsplash.com/photo-1660732421012-83b2c4eb49ff?q=80&w=928&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+const rewardImage = "https://images.unsplash.com/photo-1744178173167-5bf201681dd3?q=80&w=696&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+const creatorImage = "https://images.unsplash.com/photo-1768839719921-6a554fb3e847?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 
 const avatars = [
   "https://i.pravatar.cc/80?img=11",
   "https://i.pravatar.cc/80?img=12",
   "https://i.pravatar.cc/80?img=13",
 ];
-
-const accessItems = [
-  [Trophy, "Compete and win travel vouchers.", "Earn up to 20% on every successful referral."],
-  [Megaphone, "Featured Partner Spotlights", "Get promoted on our channels."],
-  [Handshake, "Custom Collab Opportunities", "Co-create campaigns with our design team."],
-  [BookOpen, "Creator Resource Hub", "Tutorials, tips, and analytics insights."],
-];
-
-const benefits = [
-  [CircleDollarSign, "Generous Commissions", "Earn up to 20% on every successful referral."],
-  [ChartBar, "Instant Tracking Dashboard", "View clicks, signups, and earnings in real time."],
-  [Image, "Creative Assets Provided", "Ready-made visuals, brand kits, and caption templates."],
-  [Globe2, "Global Recognition", "Be part of a network that's changing flight experiences worldwide."],
-];
-
-const steps = [
-  {
-    step: "Step 1",
-    title: "Apply & Get Your Link",
-    heading: "Submit your info and receive your",
-    text: "personal referral link within 24 hours.",
-    image: partnerImage,
-  },
-  {
-    step: "Step 2",
-    title: "Share Authentically",
-    heading: "Post it in your bio, stories and videos,",
-    text: "and turn your followers into your monthly earnings.",
-    image: shareImage,
-  },
-  {
-    step: "Step 3",
-    title: "Earn Rewards Monthly",
-    heading: "Track results in your dashboard and get",
-    text: "paid automatically every month.",
-    image: rewardImage,
-  },
-];
-
-const creatorStories = [
-  {
-    name: "Lena Morales",
-    role: "Travel Blogger",
-    quote: "I've collaborated with many brands, but Fly Friendly truly supports creators. Their communication and transparency are unmatched.",
-    image: "https://i.pravatar.cc/80?img=47",
-  },
-  {
-    name: "James Yi",
-    role: "YouTuber",
-    quote: "I shared my referral link in just two videos and saw earnings in the first week. The dashboard makes everything super easy.",
-    image: "https://i.pravatar.cc/80?img=12",
-  },
-  {
-    name: "Sarah Johnson",
-    role: "Marketing Manager, London",
-    quote: "It's the first affiliate program where both sides genuinely win. My audience trusts me more, and I earn consistently.",
-    image: "https://i.pravatar.cc/80?img=53",
-  },
-  {
-    name: "Sophie Duarte",
-    role: "Instagram Creator",
-    quote: "It's the first affiliate program where both sides genuinely win. My audience trusts me more, and I earn consistently.",
-    image: "https://i.pravatar.cc/80?img=32",
-  },
+const accessIcons = [Trophy, Megaphone, Handshake, BookOpen];
+const benefitIcons = [CircleDollarSign, ChartBar, Image, Globe2];
+const stepImages = [linkImage, shareImage, rewardImage];
+const storyImages = [
+  "https://i.pravatar.cc/80?img=47",
+  "https://i.pravatar.cc/80?img=12",
+  "https://i.pravatar.cc/80?img=53",
+  "https://i.pravatar.cc/80?img=32",
 ];
 
 function AvatarStack() {
@@ -137,9 +83,15 @@ function FaqItem({ item, isOpen, onToggle }) {
 }
 
 function Referral() {
+  const { t } = useTranslation();
   const [authMode, setAuthMode] = useState("signup");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState("");
+  const accessItems = t("referral.accessItems", { returnObjects: true });
+  const benefits = t("referral.benefits", { returnObjects: true });
+  const steps = t("referral.steps", { returnObjects: true }).map((item, index) => ({ ...item, image: stepImages[index] }));
+  const creatorStories = t("referral.stories", { returnObjects: true }).map((item, index) => ({ ...item, image: storyImages[index] }));
+  const faqs = t("home.faqs", { returnObjects: true });
 
   const openPartnerAuth = (mode) => (event) => {
     event.preventDefault();
@@ -152,26 +104,25 @@ function Referral() {
       <section className="ref-hero section">
         <div className="ref-hero__inner">
           <AvatarStack />
-          <p className="ref-hero__tag"># ForCreators&Influencers</p>
-          <h1>Partner with Fly Friendly & earn by helping travelers</h1>
-          <p>
-            Join our partnership program, share your link, inspire your audience,
-            and get rewarded for every claim we win together.
-          </p>
+          <p className="ref-hero__tag">{t("referral.heroTag")}</p>
+          <h1>{t("referral.heroTitle")}</h1>
+          <p>{t("referral.heroText")}</p>
           <div className="ref-hero__actions">
-            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>Join as a Partner</a>
-            <a href="#partner-login" className="btn ref-btn-secondary" onClick={openPartnerAuth("login")}>Log in</a>
+            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>{t("referral.joinAsPartner")}</a>
+            <a href="#partner-login" className="btn ref-btn-secondary" onClick={openPartnerAuth("login")}>{t("referral.logIn")}</a>
           </div>
         </div>
       </section>
 
       <section className="ref-section section">
-        <SectionLabel icon={Sparkles}>Exclusive Access</SectionLabel>
-        <h2>More than earnings, it's partnership</h2>
-        <p className="section-copy">Fly Friendly supports every creator with the tools and visibility they deserve.</p>
+        <SectionLabel icon={Sparkles}>{t("referral.exclusiveAccessLabel")}</SectionLabel>
+        <h2>{t("referral.exclusiveAccessTitle")}</h2>
+        <p className="section-copy">{t("referral.exclusiveAccessText")}</p>
         <div className="ref-partnership-grid">
           <article className="ref-access-card">
-            {accessItems.map(([Icon, title, text]) => (
+            {accessItems.map(({ title, text }, index) => {
+              const Icon = accessIcons[index];
+              return (
               <div className="ref-access-item" key={title}>
                 <span><Icon size={24} strokeWidth={2} aria-hidden="true" /></span>
                 <div>
@@ -179,35 +130,37 @@ function Referral() {
                   <p>{text}</p>
                 </div>
               </div>
-            ))}
+            );})}
           </article>
           <article className="ref-photo-card">
             <img src={partnerImage} alt="Creators discussing a partnership campaign" />
-            <p>Turn your audience into opportunity.</p>
+            <p>{t("referral.photoCard")}</p>
           </article>
         </div>
       </section>
 
       <section className="ref-section ref-benefits section">
-        <SectionLabel icon={BadgeCheck}>Program Benefits</SectionLabel>
-        <h2>A trusted partner worldwide</h2>
-        <p className="section-copy">Serving millions of passengers in all countries, speaking all languages.</p>
+        <SectionLabel icon={BadgeCheck}>{t("referral.benefitsLabel")}</SectionLabel>
+        <h2>{t("referral.benefitsTitle")}</h2>
+        <p className="section-copy">{t("referral.benefitsText")}</p>
         <div className="ref-benefit-grid">
-          {benefits.map(([Icon, title, text]) => (
+          {benefits.map(({ title, text }, index) => {
+            const Icon = benefitIcons[index];
+            return (
             <article className="ref-benefit-card" key={title}>
               <span><Icon size={24} strokeWidth={2} aria-hidden="true" /></span>
               <h3>{title}</h3>
               <p>{text}</p>
             </article>
-          ))}
+          );})}
         </div>
       </section>
 
       <section className="ref-process band">
         <div className="ref-process__inner">
-          <SectionLabel icon={Settings}>Simple 3-Step Process</SectionLabel>
-          <h2>Your path to effortless earnings</h2>
-          <p>It's quick, transparent, and built for creators who want to make an impact.</p>
+          <SectionLabel icon={Settings}>{t("referral.processLabel")}</SectionLabel>
+          <h2>{t("referral.processTitle")}</h2>
+          <p>{t("referral.processText")}</p>
           <div className="ref-step-grid">
             {steps.map((item) => (
               <article className="ref-step-card" key={item.step}>
@@ -227,11 +180,9 @@ function Referral() {
       </section>
 
       <section className="ref-section ref-voices section">
-        <SectionLabel icon={Users}>Community Voices</SectionLabel>
-        <h2>Creators who grew with Fly Friendly</h2>
-        <p className="section-copy">
-          Many influencers have earned money simply by sharing and educating their followers about their flight rights through our program.
-        </p>
+        <SectionLabel icon={Users}>{t("referral.voicesLabel")}</SectionLabel>
+        <h2>{t("referral.voicesTitle")}</h2>
+        <p className="section-copy">{t("referral.voicesText")}</p>
         <div className="ref-story-panel">
           {creatorStories.map((story) => (
             <article className="ref-story-card" key={story.name}>
@@ -253,23 +204,24 @@ function Referral() {
         <div className="ref-cta__inner">
           <article className="ref-cta-photo">
             <img src={creatorImage} alt="Creators making travel content" />
-            <h3>We fight for your rights.</h3>
-            <p>Create. Share. Earn.</p>
+            <h3>{t("referral.ctaPhotoTitle")}</h3>
+            <Camera className="ref-cta-photo__icon" />
+            <p>{t("referral.ctaPhotoText")}</p>
           </article>
           <article className="ref-cta-card">
             <AvatarStack />
-            <span># StartEarningToday</span>
-            <h2>Become a Fly Friendly Partner</h2>
-            <p>Join a network of creators helping travelers worldwide. It takes less than 5 minutes to get started.</p>
-            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>Apply Now <span>›</span></a>
+            <span>{t("referral.ctaHash")}</span>
+            <h2>{t("referral.ctaTitle")}</h2>
+            <p>{t("referral.ctaText")}</p>
+            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>{t("referral.applyNow")} <span>›</span></a>
           </article>
         </div>
       </section>
 
       <section className="section faq ref-faq">
-        <SectionLabel icon={CircleHelp}>FAQ</SectionLabel>
-        <h2>Frequently Asked Questions</h2>
-        <p className="section-copy">Everything you need to know about claiming compensation.</p>
+        <SectionLabel icon={CircleHelp}>{t("referral.faqLabel")}</SectionLabel>
+        <h2>{t("referral.faqTitle")}</h2>
+        <p className="section-copy">{t("referral.faqText")}</p>
         <div className="faq-panel">
           {faqs.map((item) => (
             <FaqItem

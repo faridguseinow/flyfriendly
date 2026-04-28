@@ -1,14 +1,18 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import Navbar from "./layout/Navbar/index.jsx";
 import Footer from "./layout/Footer/index.jsx";
 import AnimatedRoutes from "./routes/index.jsx";
+import { getPathWithoutLanguage } from "./i18n/path.js";
 
 function App() {
   const location = useLocation();
+  const { t } = useTranslation();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const normalizedPath = getPathWithoutLanguage(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin") || location.pathname.startsWith("/control-dashboard");
 
   useEffect(() => {
@@ -48,7 +52,7 @@ function App() {
           <AnimatedRoutes location={location} />
         </motion.main>
       </AnimatePresence>
-      {!location.pathname.startsWith("/claim") && <Footer />}
+      {!normalizedPath.startsWith("/claim") && <Footer />}
       <AnimatePresence>
         {showScrollTop ? (
           <motion.button
@@ -60,7 +64,7 @@ function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.92 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            aria-label="Scroll to top"
+            aria-label={t("common.scrollToTop")}
           >
             <ChevronUp size={22} strokeWidth={2.4} />
           </motion.button>

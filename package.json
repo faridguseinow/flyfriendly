@@ -13,9 +13,11 @@
     "@supabase/supabase-js": "^2.103.3",
     "@vitejs/plugin-react": "^5.0.4",
     "framer-motion": "^12.38.0",
+    "i18next": "^26.0.8",
     "lucide-react": "^1.8.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-i18next": "^17.0.6",
     "react-router-dom": "^7.14.1",
     "sass": "^1.99.0",
     "vite": "^7.1.7"

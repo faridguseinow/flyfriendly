@@ -1,25 +1,28 @@
-import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
+import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import { socialLinks } from "../../constants/site.js";
 import "./style.scss";
 
 function Footer() {
+  const { t } = useTranslation();
+
   return (
     <footer className="footer">
       <div className="footer__glow footer__glow--left" aria-hidden="true" />
       <div className="footer__glow footer__glow--center" aria-hidden="true" />
       <div className="footer__content">
         <div className="footer__lead">
-          <Link to="/" className="footer__brand" aria-label="Fly Friendly home">
+          <LocalizedLink to="/" className="footer__brand" aria-label={t("common.flyFriendlyHomeAria")}>
             <img src={logoImage} alt="" />
             <img src={logoText} alt="Fly Friendly" />
-          </Link>
-          <h2>3 Simple Steps to Your Compensation</h2>
-          <p>Compensation news, travel tips, and passenger rights delivered monthly.</p>
-          <span className="footer__follow">Follow us:</span>
-          <div className="socials" aria-label="Social links">
+          </LocalizedLink>
+          <h2>{t("footer.leadTitle")}</h2>
+          <p>{t("footer.leadText")}</p>
+          <span className="footer__follow">{t("footer.followUs")}</span>
+          <div className="socials" aria-label={t("footer.socialAria")}>
             {socialLinks.map((item) => (
               <a key={item.label} href={item.href} aria-label={item.label}>
                 <SocialIcon name={item.icon} />
@@ -29,31 +32,31 @@ function Footer() {
         </div>
         <div className="footer-links">
           <div>
-            <h3>Company</h3>
-            <Link to="/about">About us</Link>
-            <Link to="/claim/eligibility">Compensation</Link>
-            <Link to="/referralProgram">Referral Program</Link>
-            <Link to="/contact">Contact</Link>
+            <h3>{t("footer.company")}</h3>
+            <LocalizedLink to="/about">{t("common.aboutUs")}</LocalizedLink>
+            <LocalizedLink to="/claim/eligibility">{t("footer.compensation")}</LocalizedLink>
+            <LocalizedLink to="/referralProgram">{t("footer.referralProgram")}</LocalizedLink>
+            <LocalizedLink to="/contact">{t("common.contact")}</LocalizedLink>
           </div>
           <div>
-            <h3>Resources</h3>
-            <Link to="/terms">Terms of Use</Link>
-            <Link to="/privacyPolicy">Privacy Policy</Link>
-            <Link to="/cookies">Cookies</Link>
-            <Link to="/contact">Support</Link>
+            <h3>{t("footer.resources")}</h3>
+            <LocalizedLink to="/terms">{t("common.termsOfUse")}</LocalizedLink>
+            <LocalizedLink to="/privacyPolicy">{t("common.privacyPolicy")}</LocalizedLink>
+            <LocalizedLink to="/cookies">{t("common.cookies")}</LocalizedLink>
+            <LocalizedLink to="/contact">{t("common.support")}</LocalizedLink>
           </div>
           <div>
-            <h3>Claim Help</h3>
-            <Link to="/claim/eligibility">Check compensation</Link>
-            <Link to="/claim/eligibility">Delayed flights</Link>
-            <Link to="/claim/eligibility">Cancelled flights</Link>
-            <Link to="/claim/eligibility">Missed connections</Link>
+            <h3>{t("footer.claimHelp")}</h3>
+            <LocalizedLink to="/claim/eligibility">{t("footer.checkCompensation")}</LocalizedLink>
+            <LocalizedLink to="/claim/eligibility">{t("footer.delayedFlights")}</LocalizedLink>
+            <LocalizedLink to="/claim/eligibility">{t("footer.cancelledFlights")}</LocalizedLink>
+            <LocalizedLink to="/claim/eligibility">{t("footer.missedConnections")}</LocalizedLink>
           </div>
         </div>
       </div>
       <div className="footer__bottom">
         <strong>Fly Friendly</strong>
-        <span>©2026 Fly Friendly</span>
+        <span>{t("footer.copyright")}</span>
       </div>
     </footer>
   );

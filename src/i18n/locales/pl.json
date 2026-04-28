@@ -1,0 +1,735 @@
+{
+  "common": {
+    "close": "Zamknij",
+    "back": "Wróć",
+    "next": "Dalej",
+    "send": "Wyślij",
+    "contact": "Kontakt",
+    "aboutUs": "O nas",
+    "privacy": "Prywatność",
+    "termsAndConditions": "Warunki",
+    "termsOfUse": "Warunki użytkowania",
+    "privacyPolicy": "Polityka prywatności",
+    "cookies": "Pliki cookie",
+    "support": "Wsparcie",
+    "startYourClaim": "Rozpocznij roszczenie",
+    "checkCompensation": "Sprawdź odszkodowanie",
+    "checkYourEligibility": "Sprawdź, czy się kwalifikujesz",
+    "mainPage": "Strona główna",
+    "submitClaim": "Prześlij roszczenie",
+    "saving": "Zapisywanie...",
+    "submitting": "Przesyłanie...",
+    "savedInSupabase": "Zapisano w Supabase.",
+    "flyFriendlyHomeAria": "Fly Friendly dom",
+    "globalReachCopy": "Obsługujemy miliony pasażerów we wszystkich krajach, mówiąc we wszystkich językach.",
+    "scrollToTop": "Przewiń do góry"
+  },
+  "nav": {
+    "mainNavigation": "Główna nawigacja",
+    "referralProgram": "Program polecający",
+    "contact": "Kontakt",
+    "aboutUs": "O nas",
+    "openMenu": "Otwórz menu",
+    "closeMenu": "Zamknij menu",
+    "mobileHeadlinePrefix": "Walczymy o Twoje prawo",
+    "mobileHeadlineAccent": "do odszkodowania"
+  },
+  "languageSwitcher": {
+    "open": "Wybierz język",
+    "caption": "Fly Friendly ustawienia języka",
+    "title": "Wybierz swój język",
+    "suggestedLanguages": "Sugerowane języki",
+    "additionalLanguages": "Dodatkowe języki"
+  },
+  "footer": {
+    "leadTitle": "3 proste kroki do odszkodowania",
+    "leadText": "Wiadomości dotyczące odszkodowań, wskazówki dotyczące podróży i prawa pasażerów dostarczane co miesiąc.",
+    "followUs": "Śledź nas:",
+    "socialAria": "Linki społecznościowe",
+    "company": "",
+    "resources": "Zasoby",
+    "claimHelp": "Uzyskaj pomoc",
+    "compensation": "Odszkodowanie",
+    "referralProgram": "Program polecający",
+    "checkCompensation": "Sprawdź odszkodowanie",
+    "delayedFlights": "Opóźnione loty",
+    "cancelledFlights": "Odwołane loty",
+    "missedConnections": "Nieodebrane połączenia",
+    "copyright": "©2026 Fly Friendly"
+  },
+  "claimModal": {
+    "signupTitle": "Utwórz konto partnera",
+    "loginTitle": "Witamy ponownie",
+    "signupPartnerDescription": "Złóż wniosek o dostęp dla partnerów i zarządzaj aktywnością polecającą ze swojego konta Fly Friendly.",
+    "signupDefaultDescription": "Utwórz konto, aby kontynuować.",
+    "loginDescription": "Wpisz swój adres e-mail i hasło, aby uzyskać dostęp do swojego konta.",
+    "fullName": "Pełna nazwa",
+    "email": "E-mail",
+    "phone": "Numer kontaktowy (preferowany WhatsApp)",
+    "password": "Hasło",
+    "fullNamePlaceholder": "Wpisz swoje pełne imię i nazwisko",
+    "emailPlaceholder": "Wpisz swój adres e-mail",
+    "phonePlaceholder": "Np.: 050 XXX XX XX",
+    "passwordCreatePlaceholder": "Utwórz swoje hasło",
+    "passwordEnterPlaceholder": "Wprowadź swoje hasło",
+    "forgotPassword": "Zapomniałeś hasła?",
+    "getStarted": "Rozpocznij",
+    "logIn": "Zaloguj się",
+    "pleaseWait": "Proszę czekać...",
+    "alreadyMember": "Jesteś już członkiem?",
+    "notMember": "Nie jesteś członkiem?",
+    "signUp": "Zarejestruj się\nBrakuje",
+    "supabaseMissing": "Env Supabase. Dodaj VITE_SUPABASE_URL i VITE_SUPABASE_PUBLISHABLE_KEY.",
+    "confirmEmailNotice": "Sprawdź swoją pocztę e-mail, aby potwierdzić konto, a następnie zaloguj się, aby kontynuować.",
+    "authError": "Nie można uwierzytelnić. Spróbuj ponownie."
+  },
+  "about": {
+    "heroLabel": "Informacje o Fly Friendly",
+    "heroTitle": "Prostszy sposób zarządzania roszczeniami z tytułu zakłócenia lotu",
+    "heroText": "Fly Friendly pomaga podróżnym organizować informacje o roszczeniu, przesyłać wymagane dokumenty i śledzić postępy w jednym, przejrzystym procesie krok po kroku.",
+    "startClaim": "Złóż wniosek",
+    "missionLabel": "Nasza misja",
+    "missionTitle": "Ułatw korzystanie z praw pasażerów",
+    "missionText": "Zamieniamy złożony proces kompensacyjny w doświadczenie z przewodnikiem. Od sprawdzania uprawnień po przesyłanie dokumentów i śledzenie spraw – nasza praca koncentruje się na przejrzystości, szybkości i zaufaniu.",
+    "missionStatText": "Potencjalna rekompensata za kwalifikujące się zakłócone loty.",
+    "whatWeDoLabel": "Czym się zajmujemy",
+    "whatWeDoTitle": "Praktyczne wsparcie od pierwszego sprawdzenia do końcowej aktualizacji",
+    "whatWeDoItems": [
+      {
+        "title": "Kontrola kwalifikowalności",
+        "text": "Pomagamy pasażerom zrozumieć, czy opóźnienie, odwołanie, odmowa przyjęcia na pokład lub utracone połączenie mogą się kwalifikować."
+      },
+      {
+        "title": "Przepływ dokumentów",
+        "text": "Podróżni mogą przygotować szczegóły i dokumenty potrzebne do wsparcia sprawy o odszkodowanie."
+      },
+      {
+        "title": "Obsługa spraw",
+        "text": "Fly Friendly może zarządzać komunikacją linii lotniczych i organizować proces reklamacji."
+      }
+    ],
+    "valuesLabel": "Nasze wartości",
+    "valuesTitle": "Zbudowany wokół zaufania, przejrzystości i działania",
+    "values": [
+      {
+        "title": "Przejrzystość",
+        "text": "Jasne kroki, praktyczne wyjaśnienia i aktualizacje statusu, które ułatwiają śledzenie procesu składania wniosku."
+      },
+      {
+        "title": "Prostota",
+        "text": "Przewodnik, który pomaga podróżnym przejść od zakłóceń do złożenia wniosku bez zbędnych problemów."
+      },
+      {
+        "title": "Bezpieczeństwo",
+        "text": "Staranne traktowanie danych pasażerów, przesłanych dokumentów i informacji o sprawie w trakcie całego procesu."
+      },
+      {
+        "title": "Najpierw użytkownik",
+        "text": "Stworzony dla prawdziwych pasażerów, którzy potrzebują praktycznego wsparcia po stresujących zakłóceniach w podróży."
+      }
+    ],
+    "processLabel": "Jak to działa",
+    "processTitle": "Cztery jasne etapy",
+    "processSteps": [
+      {
+        "number": "1",
+        "title": "Wprowadź szczegóły",
+        "text": "Podaj informacje o locie, trasie, zakłóceniach i pasażerach."
+      },
+      {
+        "number": "2",
+        "title": "Prześlij dokumenty",
+        "text": "Dodaj potwierdzenie rezerwacji, kartę pokładową, wiadomości linii lotniczych lub dokument tożsamości, jeśli to konieczne."
+      },
+      {
+        "number": "3",
+        "title": "Prześlij",
+        "text": "Wyślij roszczenie do sprawdzenia i komunikacji z linią lotniczą."
+      },
+      {
+        "number": "4",
+        "title": "Stan śledzenia",
+        "text": "Śledź aktualizacje, aż sprawa zostanie rozwiązana lub zamknięta."
+      }
+    ],
+    "helpTitle": "Potrzebujesz pomocy?",
+    "helpText": "Skontaktuj się z naszym zespołem, a poprowadzimy Cię przez kolejne kroki.",
+    "disclaimer": "Zastrzeżenie: Ta strona ma charakter informacyjny. Wymagania dotyczące uprawnień i roszczeń mogą się różnić w zależności od trasy, linii lotniczej i lokalnych przepisów."
+  },
+  "contactPage": {
+    "heroLabel": "Kontakt",
+    "heroTitle": "Skontaktuj się z nami",
+    "heroText": "Masz pytanie dotyczące opóźnionego, odwołanego lub przepełnionego lotu? Wyślij wiadomość, a nasz zespół pomoże Ci zrozumieć kolejny krok.",
+    "supportLabel": "Wsparcie",
+    "supportTitle": "Jesteśmy tutaj, aby Ci pomóc",
+    "supportText": "Powiedz nam, co się stało z Twoim lotem, jakie posiadasz dokumenty i jak możemy się z Tobą skontaktować. Nie wysyłaj wrażliwych dokumentów tożsamości, dopóki nasz zespół nie poprosi o nie w ramach odpowiedniego procesu składania wniosków.",
+    "whatsApp": "WhatsApp",
+    "email": "E-mail",
+    "hours": "Godziny",
+    "hoursValue": "poniedziałek-piątek, 09:00-18:00",
+    "messageLabel": "Wyślij wiadomość",
+    "messageTitle": "Napisz do nas e-mailem",
+    "name": "Nazwa",
+    "namePlaceholder": "Twoje imię i nazwisko",
+    "emailPlaceholder": "ty@example.com",
+    "reference": "Numer referencyjny lotu lub rezerwacji",
+    "referencePlaceholder": "Opcjonalnie",
+    "message": "Wiadomość",
+    "messagePlaceholder": "Powiedz nam, co się stało z Twoim lotem",
+    "sendButton": "Wyślij",
+    "emailAppNotice": "Przesyłanie otwiera aplikację e-mail i przygotowuje wiadomość do {{email}}.",
+    "mailSubject": "Wiadomość kontaktowa na stronie internetowej od {{name}}",
+    "mailGreeting": "Witaj Fly Friendly,",
+    "mailName": "Nazwa: {{value}}",
+    "mailEmail": "E-mail: {{value}}",
+    "mailReference": "Numer referencyjny lotu lub rezerwacji: {{value}}",
+    "mailMessageLabel": "Wiadomość:",
+    "visitorFallback": "Fly Friendly gość"
+  },
+  "home": {
+    "claimBoxTitle": "Sprawdź i ubiegaj się o odszkodowanie.",
+    "claimBoxDestinationPlaceholder": "Lotnisko docelowe, miasto lub kraj",
+    "claimBoxNoAirportsFound": "Nie znaleziono lotnisk",
+    "claimBoxFree": "To nic nie kosztuje",
+    "claimBoxMinutes": "Trwa kilka minut",
+    "claimBoxRightText": "Walczymy o Twoje prawo do odszkodowania.",
+    "heroLabel": "Zweryfikowane przez prawdziwych podróżników",
+    "heroTitle": "Opóźniony lub odwołany lot?",
+    "heroTitleStrong": "Odbierz teraz aż do 600 €.",
+    "heroText": "Walczymy o Twoje prawo do odszkodowania. Złóż wniosek w ciągu kilku minut, a my zajmiemy się linią lotniczą.",
+    "trustLabel": "Globalny zasięg",
+    "trustTitle": "Zaufany partner na całym świecie",
+    "benefits": [
+      {
+        "title": "Szybka i niedroga obsługa",
+        "text": "Rozpatrzymy Twoją reklamację szybko i skutecznie, bez ukrytych kosztów i niepotrzebnych opóźnień."
+      },
+      {
+        "title": "Bez wygranej, bez opłat",
+        "text": "Nic nie płacisz, chyba że uda nam się uzyskać Twoje odszkodowanie. Zero ryzyka, całkowita uczciwość."
+      },
+      {
+        "title": "Niezrównany sukces roszczenia",
+        "text": "Wygrywamy odszkodowanie nawet wtedy, gdy linie lotnicze lub agencje twierdzą, że jest to niemożliwe."
+      }
+    ],
+    "calculatorLabel": "Kalkulator odszkodowań",
+    "calculatorTitle": "Ile możesz ubiegać się o odszkodowanie?",
+    "calculatorText": "Natychmiast sprawdź swoje uprawnienia i zobacz, jaką kwotę odszkodowania możesz otrzymać.",
+    "disruptionsLabel": "Problemy z lotem",
+    "disruptionsTitle": "Jakie zakłócenia kwalifikują się?",
+    "disruptionsText": "Odszkodowanie dotyczy czegoś więcej niż tylko opóźnień.",
+    "disruptionCards": {
+      "cancellationTitle": "Anulowanie lotu",
+      "cancellationText": "Linie lotnicze odwołały Twój lot w ostatniej chwili? Zgłoś to.",
+      "missedTitle": "Nieodebrany lot połączony",
+      "missedText": "Jeśli spóźniłeś się na następny lot i dotarłeś do miejsca docelowego z opóźnieniem większym niż 3 godziny? Złóż wniosek teraz.",
+      "airlineFaultTitle": "Wina Twojej linii lotniczej?\nNadal możesz otrzymać zapłatę.",
+      "airlineFaultText": "Przybyłeś z ponad 3-godzinnym opóźnieniem? Jesteś uprawniony.",
+      "deniedTitle": "Odmowa przyjęcia na pokład",
+      "deniedText": "Przepełniony lot? Zażądaj teraz pełnego odszkodowania. Walczymy o Twoje prawa.",
+      "allAirlines": "Wszystkie linie lotnicze",
+      "allCountries": "Wszystkie kraje",
+      "noWinNoFee": "Nie ma wygranej, nie ma opłat"
+    },
+    "membershipLabel": "Nasza opłata subskrypcyjna",
+    "membershipTitle": "Fly Friendly Członkostwo",
+    "membershipText": "Jedna prosta subskrypcja obejmuje wszystkie Twoje miesięczne podróże.",
+    "membershipPriceSuffix": "/miesiąc",
+    "membershipPlan": "Fly Friendly Plus",
+    "membershipPlanText": "Idealny dla osób często podróżujących i inteligentnych planistów.",
+    "membershipItems": [
+      "Nieograniczone wyszukiwanie lotów",
+      "Aktualizacje taryf w czasie rzeczywistym",
+      "Inteligentne powiadomienia o obniżkach cen",
+      "Zapisane wycieczki i ulubione",
+      "Planowanie podróży do wielu miast",
+      "Wczesny dostęp do ofert turystycznych"
+    ],
+    "subscribe": "Subskrybuj",
+    "membershipPhotoTitle": "Nie ma wygranej, nie ma opłat. Zarabiamy tylko wtedy, gdy to zrobisz.",
+    "membershipPhotoTag": "Odmowa przyjęcia na pokład",
+    "stepsLabel": "Jak to działa",
+    "stepsTitle": "3 proste kroki do odszkodowania",
+    "stepsText": "Wykonujemy ciężką pracę, a Ty otrzymasz wypłatę bezproblemowo.",
+    "stepsCards": {
+      "minutes": "Odbierz w ciągu kilku minut",
+      "processTitle": "Szybka, bezpieczna i łatwa rekompensata",
+      "handleEverything": "Zajmiemy się wszystkim",
+      "legalTitle": "Ekspertyza prawna z liniami lotniczymi",
+      "moneyTitle": "Pieniądze prosto na Twoje konto."
+    },
+    "testimonialsLabel": "Referencje",
+    "testimonialsTitle": "Uwielbiany przez miliony podróżników",
+    "testimonialsText": "Prawdziwi pasażerowie. Prawdziwe odszkodowanie. Prawdziwe historie.",
+    "testimonials": [
+      {
+        "name": "Sarah Johnson",
+        "role": "Menedżer ds. marketingu, Londyn",
+        "quote": "Mój lot z Londynu do Mediolanu został odwołany na lotnisku i nie wiedziałem, że mogę ubiegać się o odszkodowanie. Usługa ta poradziła sobie ze wszystkim doskonale, a płatność otrzymałam w ciągu zaledwie dwóch tygodni."
+      },
+      {
+        "name": "Tom Nguyen",
+        "role": "Konsultant biznesowy, Singapur",
+        "quote": "Na początku miałem wątpliwości, ale proces przebiegł sprawniej, niż się spodziewałem. Zespół informował mnie na każdym etapie i wypłacał odszkodowanie na czas."
+      },
+      {
+        "name": "David Romero",
+        "role": "Fotograf niezależny, Madryt",
+        "quote": "Odkryłem tę platformę po opóźnionym locie z Madrytu do Berlina. Wypełniłem tylko krótki formularz, a oni zajęli się resztą."
+      },
+      {
+        "name": "Emily Carter",
+        "role": "Projektant UX, Amsterdam",
+        "quote": "Opóźniony lot z Amsterdamu do Paryża pokrzyżował mi weekendowe plany, ale ta firma to wynagrodziła. Ogólnie fantastyczne doświadczenie."
+      },
+      {
+        "name": "Anna Muller",
+        "role": "Inżynier oprogramowania, Berlin",
+        "quote": "Po 5-godzinnym opóźnieniu złożyłem reklamację, a zespół zajął się wszystkim profesjonalnie. Żadnych skomplikowanych dokumentów i rozmów."
+      },
+      {
+        "name": "Lucasa Bennetta",
+        "role": "Konsultant ds. oprogramowania, Toronto",
+        "quote": "Przesłałem informacje o locie w niecałe pięć minut, a zespół zrobił resztę. Informowali mnie na bieżąco i wyjaśniali każdy krok."
+      }
+    ],
+    "resourcesLabel": "Zasoby",
+    "resourcesTitle": "Wskazówki i przewodniki podróżnicze",
+    "resourcesText": "Bądź na bieżąco dzięki naszym najnowszym zasobom na temat praw pasażerów linii lotniczych.",
+    "articles": [
+      {
+        "title": "Poznaj swoje prawa pasażerów linii lotniczych",
+        "text": "Wielu podróżnych nie zdaje sobie sprawy, że mogą ubiegać się o odszkodowanie za zakłócenia lotu. Oto, do czego masz prawo, gdy linie lotnicze Cię zawiodą.",
+        "date": "22 lipca 2025 r"
+      },
+      {
+        "title": "Dlaczego linie lotnicze opóźniają płatności",
+        "text": "Czy zastanawiałeś się kiedyś, dlaczego rekompensata wymaga czasu? Dowiedz się, co dzieje się za kulisami i jak przyspieszamy ten proces.",
+        "date": "10 sierpnia 2025 r"
+      },
+      {
+        "title": "Najlepsze wskazówki dotyczące bezstresowej podróży",
+        "text": "Odkryj proste nawyki, które sprawią, że Twoje podróże będą płynniejsze – od mądrej rezerwacji po wiedzę, kiedy przysługuje Ci odszkodowanie.",
+        "date": "5 września 2025 r"
+      }
+    ],
+    "newsletterPhoto": "Dołącz do naszego newslettera, aby otrzymywać najnowsze aktualizacje do swojej skrzynki odbiorczej.",
+    "newsletterTag": "Bądź na bieżąco",
+    "newsletterLabel": "Zapisz się do newslettera",
+    "newsletterTitle": "Otrzymuj najnowsze aktualizacje w swojej skrzynce odbiorczej",
+    "newsletterText": "Wiadomości dotyczące odszkodowań, wskazówki dotyczące podróży i prawa pasażerów dostarczane co miesiąc.",
+    "newsletterPlaceholder": "Wpisz swój adres e-mail",
+    "newsletterAria": "Subskrybuj",
+    "newsletterNotice": "Spowoduje to otwarcie aplikacji e-mail i przygotowanie prośby o subskrypcję do naszego zespołu.",
+    "newsletterSubject": "Prośba o subskrypcję biuletynu",
+    "newsletterGreeting": "Witaj Fly Friendly,",
+    "newsletterRequest": "Proszę dodać ten adres e-mail do listy newslettera:",
+    "faqLabel": "Często zadawane pytania",
+    "faqTitle": "Często zadawane pytania",
+    "faqText": "Wszystko, co musisz wiedzieć o ubieganiu się o odszkodowanie.",
+    "faqs": [
+      {
+        "question": "Czy przysługuje mi odszkodowanie za lot?",
+        "answer": "Ogólnie rzecz biorąc, możesz kwalifikować się, jeśli Twój lot był opóźniony o ponad 3 godziny, odwołany lub odmówiono Ci przyjęcia na pokład, a za zakłócenie odpowiadała linia lotnicza."
+      },
+      {
+        "question": "Ile mogę otrzymać za moje roszczenie?",
+        "answer": "Kompensacja różni się w zależności od odległości, długości opóźnienia i obowiązujących przepisów. Wiele spraw dzieli się na stałe poziomy, na przykład w niektórych jurysdykcjach do 600 EUR."
+      },
+      {
+        "question": "Jak długo trwa proces kompensacji?",
+        "answer": "Terminy są różne. Proste sprawy można rozwiązać w ciągu kilku tygodni, inne zaś mogą zająć więcej czasu, jeśli linia lotnicza zakwestionuje roszczenie."
+      },
+      {
+        "question": "Jakie dokumenty muszę złożyć?",
+        "answer": "Zwykle potrzebne są podstawowe dane lotu i dowód podróży, taki jak potwierdzenie rezerwacji, karta pokładowa oraz powiadomienie o opóźnieniu lub odwołaniu lotu."
+      },
+      {
+        "question": "Co się stanie, jeśli linia lotnicza odrzuci moje roszczenie?",
+        "answer": "Jeśli linia lotnicza odrzuci roszczenie, możemy sprawdzić przyczynę, przedstawić dowody potwierdzające i w razie potrzeby przekazać sprawę dalej."
+      },
+      {
+        "question": "Czy muszę sam kontaktować się z linią lotniczą?",
+        "answer": "Nie. Po przesłaniu danych zajmiemy się komunikacją z linią lotniczą i formalnościami."
+      },
+      {
+        "question": "Jakie są opłaty za usługi?",
+        "answer": "Generalnie działamy w oparciu o model wynagrodzeń oparty na sukcesie: jeśli nie wygramy, nie płacisz."
+      },
+      {
+        "question": "Czy moje dane osobowe są bezpieczne?",
+        "answer": "Używamy Twoich danych wyłącznie w celu rozpatrzenia Twojego roszczenia i komunikacji z odpowiednimi stronami. Dane udostępniane są wyłącznie wtedy, gdy jest to niezbędne do dochodzenia odszkodowania."
+      }
+    ]
+  },
+  "referral": {
+    "heroTag": "# Dla twórców i wpływowych osób",
+    "heroTitle": "Współpracuj z Fly Friendly i zarabiaj, pomagając podróżnym",
+    "heroText": "Dołącz do naszego programu partnerskiego, udostępnij swój link, zainspiruj swoich odbiorców i zdobądź nagrodę za każde wygrane wspólnie roszczenie.",
+    "joinAsPartner": "Dołącz jako partner",
+    "logIn": "Zaloguj się",
+    "exclusiveAccessLabel": "Ekskluzywny dostęp",
+    "exclusiveAccessTitle": "To więcej niż zarobki, to partnerstwo",
+    "exclusiveAccessText": "Fly Friendly wspiera każdego twórcę narzędziami i widocznością, na jaką zasługuje.",
+    "accessItems": [
+      {
+        "title": "Rywalizuj i wygrywaj bony podróżne.",
+        "text": "Zarabiaj do 20% za każde pomyślne polecenie."
+      },
+      {
+        "title": "Wyróżnieni partnerzy",
+        "text": "Zdobądź promocję na naszych kanałach."
+      },
+      {
+        "title": "Niestandardowe możliwości współpracy",
+        "text": "Współtwórz kampanie z naszym zespołem projektowym."
+      },
+      {
+        "title": "Centrum zasobów dla twórców",
+        "text": "Poradniki, wskazówki i spostrzeżenia analityczne."
+      }
+    ],
+    "photoCard": "Zmień swoich odbiorców w możliwości.",
+    "benefitsLabel": "Korzyści z programu",
+    "benefitsTitle": "Zaufany partner na całym świecie",
+    "benefitsText": "Obsługujemy miliony pasażerów we wszystkich krajach, mówiąc we wszystkich językach.",
+    "benefits": [
+      {
+        "title": "Hojne prowizje",
+        "text": "Zarabiaj do 20% za każde pomyślne polecenie."
+      },
+      {
+        "title": "Panel natychmiastowego śledzenia",
+        "text": "Wyświetlaj kliknięcia, rejestracje i zarobki w czasie rzeczywistym."
+      },
+      {
+        "title": "Dostarczono zasoby kreatywne",
+        "text": "Gotowe wizualizacje, zestawy brandingowe i szablony napisów."
+      },
+      {
+        "title": "Globalne uznanie",
+        "text": "Bądź częścią sieci, która zmienia doświadczenia związane z lotami na całym świecie."
+      }
+    ],
+    "processLabel": "Prosty, 3-etapowy proces",
+    "processTitle": "Twoja droga do łatwych zarobków",
+    "processText": "Jest szybki, przejrzysty i stworzony dla twórców, którzy chcą wywrzeć wpływ.",
+    "steps": [
+      {
+        "step": "Krok 1",
+        "title": "Złóż wniosek i uzyskaj link",
+        "heading": "Prześlij swoje dane i otrzymaj",
+        "text": "osobisty link polecający w ciągu 24 godzin."
+      },
+      {
+        "step": "Krok 2",
+        "title": "Udostępnij autentycznie",
+        "heading": "Opublikuj to w swojej biografii, relacjach i filmach,",
+        "text": "i zamień swoich obserwujących w swoje miesięczne zarobki."
+      },
+      {
+        "step": "Krok 3",
+        "title": "Zdobywaj nagrody co miesiąc",
+        "heading": "Śledź wyniki w swoim panelu i otrzymuj",
+        "text": "płatne automatycznie co miesiąc."
+      }
+    ],
+    "voicesLabel": "Głosy społeczności",
+    "voicesTitle": "Twórcy, którzy dorastali wraz z Fly Friendly",
+    "voicesText": "Wiele wpływowych osób zarobiło pieniądze po prostu dzieląc się informacjami i edukując swoich obserwujących na temat przysługujących im praw do lotów w ramach naszego programu.",
+    "stories": [
+      {
+        "name": "Lena Morales",
+        "role": "Bloger podróżniczy",
+        "quote": "Współpracowałem z wieloma markami, ale Fly Friendly naprawdę wspiera twórców. Ich komunikacja i przejrzystość nie mają sobie równych."
+      },
+      {
+        "name": "James Yi",
+        "role": "YouTuber",
+        "quote": "Udostępniłem swój link polecający w zaledwie dwóch filmach i już w pierwszym tygodniu widziałem zarobki. Dzięki panelowi wszystko staje się niezwykle proste."
+      },
+      {
+        "name": "Sarah Johnson",
+        "role": "Menedżer ds. marketingu, Londyn",
+        "quote": "To pierwszy program partnerski, w którym obie strony naprawdę wygrywają. Moi odbiorcy ufają mi bardziej, a ja zarabiam konsekwentnie."
+      },
+      {
+        "name": "Sophie Duarte",
+        "role": "Kreator Instagrama",
+        "quote": "To pierwszy program partnerski, w którym obie strony naprawdę wygrywają. Moi odbiorcy ufają mi bardziej, a ja zarabiam konsekwentnie."
+      }
+    ],
+    "ctaHash": "# Zacznij zarabiać już dziś",
+    "ctaPhotoTitle": "Walczymy o Twoje prawa.",
+    "ctaPhotoText": "Utwórz. Udział. Zarabiać.",
+    "ctaTitle": "Zostań partnerem Fly Friendly",
+    "ctaText": "Dołącz do sieci twórców pomagających podróżnym na całym świecie. Rozpoczęcie zajmuje mniej niż 5 minut.",
+    "applyNow": "Aplikuj teraz",
+    "faqLabel": "Często zadawane pytania",
+    "faqTitle": "Często zadawane pytania",
+    "faqText": "Wszystko, co musisz wiedzieć o ubieganiu się o odszkodowanie."
+  },
+  "claim": {
+    "languageShort": "inż",
+    "heroLabel": "Zweryfikowane przez prawdziwych podróżników",
+    "heroTitle": "Sprawdź i złóż wniosek o odszkodowanie",
+    "promoTitle": "Odbierz teraz aż do 600 €.",
+    "promoText": "Walczymy o Twoje prawo do odszkodowania. Złóż wniosek w ciągu kilku minut, a my zajmiemy się linią lotniczą.",
+    "promoIssueTitle": "Opóźnienie lotu",
+    "promoIssueText": "Przybyłeś z ponad 3-godzinnym opóźnieniem? Kwalifikujesz się.",
+    "allAirlines": "Wszystkie linie lotnicze",
+    "allCountries": "Wszystkie kraje",
+    "noWinNoFee": "Nie ma wygranej, nie ma opłat",
+    "stages": [
+      "Kontrola kwalifikowalności",
+      "Informacje kontaktowe",
+      "Dokumenty",
+      "Zakończ"
+    ],
+    "emailError": "Введите корректный e-mail адрес",
+    "eligibility": {
+      "whereDidYouFly": "Gdzie poleciałeś?",
+      "departurePlaceholder": "Lotnisko odlotu, miasto lub kraj",
+      "arrivalPlaceholder": "Lotnisko przylotu, miasto lub kraj",
+      "noAirportsFound": "Nie znaleziono lotnisk",
+      "whichAirline": "Którą linią lotniczą leciałeś?",
+      "searchAirline": "Wyszukaj linię lotniczą",
+      "noAirlinesFound": "Nie znaleziono linii lotniczych",
+      "delayTitle": "Czas opóźnienia lotu",
+      "lessThan3": "Mniej niż 3 godziny",
+      "notEligible": "Nie kwalifikuje się",
+      "moreThan3": "Ponad 3 godziny",
+      "eligibleForClaim": "Kwalifikuje się do roszczenia",
+      "cancelled": "Lot odwołany",
+      "specialRights": "Prawa specjalne",
+      "scheduledDepartureDate": "Jaka była planowana data wyjazdu?",
+      "directFlight": "Czy był to lot bezpośredni?",
+      "directYes": "Tak, to było bezpośrednie",
+      "directNo": "Nie, to nie było bezpośrednie"
+    },
+    "contact": {
+      "title": "Proszę podać swoje dane kontaktowe.",
+      "fullName": "Pełna nazwa",
+      "fullNamePlaceholder": "Wpisz swoje pełne imię i nazwisko",
+      "email": "E-mail",
+      "emailPlaceholder": "Wpisz swój adres e-mail",
+      "address": "Adres",
+      "addressPlaceholder": "Wpisz swoje miasto",
+      "optional": "Opcjonalnie",
+      "phone": "Numer kontaktowy (preferowany WhatsApp)",
+      "phonePlaceholder": "Np.: +90 5xx xxx xx xx",
+      "hasWhatsapp": "Tak, pod tym numerem znajduje się Whatsapp.",
+      "requiredToProceed": "Wymagane, aby kontynuować."
+    },
+    "documents": {
+      "title": "Bezpieczne przesyłanie dokumentów",
+      "subtitle": "Proszę przesłać swój paszport i kartę pokładową.",
+      "passport": "Paszport",
+      "boardingPass": "Karta pokładowa",
+      "dragAndDrop": "Przeciągnij i upuść plik",
+      "or": "lub",
+      "uploadFile": "Prześlij plik",
+      "uploadHint": "Prześlij swoją kartę pokładową w formacie PNG, JPG lub PDF. Maksymalny rozmiar 25 MB",
+      "reasonTitle": "Jaki był oficjalny powód opóźnienia lub odwołania lotu?",
+      "reasonPlaceholder": "np. Problemy z załogą/personelem",
+      "signatureNote": "Twój podpis wyraża zgodę na otrzymanie od linii lotniczej odszkodowania za Twój lot. Linia lotnicza prosi o Twój podpis w celu przetworzenia odszkodowania. Podpisując, wyrażasz zgodę na warunki."
+    },
+    "finish": {
+      "title": "Zakończ i podpisz",
+      "subtitle": "Zapoznaj się z warunkami i podpisz poniżej, aby sfinalizować swoje roszczenie.",
+      "digitalSignature": "Podpis cyfrowy",
+      "clear": "Wyczyść",
+      "signatureHint": "* Użyj myszki lub palca, aby podpisać się w polu.",
+      "terms": "Zgadzam się z <termsLink>Warunkami korzystania</termsLink> i potwierdzam, że podane informacje są dokładne."
+    },
+    "denied": {
+      "title": "Niestety za ten lot nie przysługuje odszkodowanie.",
+      "text": "Pomagamy klientom w ramach kilku przepisów dotyczących pasażerów linii lotniczych, ale niestety ten lot nie jest objęty żadnym z nich.",
+      "noteTitle": "Uwaga: te dane nie są udostępniane publicznie.",
+      "noteText": "Używamy tych informacji wyłącznie w celu personalizacji Twoich doświadczeń i ulepszania naszych usług.",
+      "protectTitle": "Następnym razem zachowaj ochronę – natychmiast.",
+      "protectText": "Idealny dla osób często podróżujących i inteligentnych planistów",
+      "protectItems": [
+        "Nieograniczone wyszukiwanie lotów",
+        "Aktualizacje taryf w czasie rzeczywistym",
+        "Zapisane wycieczki i ulubione",
+        "Planowanie podróży do wielu miast",
+        "Wczesny dostęp do ofert turystycznych"
+      ]
+    },
+    "approved": {
+      "title": "Dziękujemy, Twoje roszczenie jest w drodze!",
+      "text": "Dziękujemy za zaufanie Fly Friendly, Twoje zgłoszenie bezpiecznie trafiło do naszego systemu. Nasz zespół ds. odszkodowań za lot analizuje obecnie Twoją sprawę i będzie Cię informować o postępach.",
+      "leadId": "Identyfikator potencjalnego klienta",
+      "pending": "Oczekuje",
+      "nextTitle": "Co stanie się dalej",
+      "nextText": "Każdą reklamacją zajmuje się oddany zespół, specjaliści, negocjatorzy i prawnicy, którzy znają podróże lotnicze od podszewki.",
+      "nextSteps": [
+        [
+          "Sprawdzamy Twoją historię lotów",
+          "Nasi specjaliści potwierdzają wszystkie dane lotu, od zapisów odlotów po przyczyny opóźnień."
+        ],
+        [
+          "Inteligentnie budujemy Twoją sprawę",
+          "Narzędzia wspomagane sztuczną inteligencją pomagają nam zebrać najsilniejsze argumenty, aby linie lotnicze nie mogły ignorować Twoich praw."
+        ],
+        [
+          "Rozmawiamy z linią lotniczą",
+          "Nasz zespół negocjacyjny kontaktuje się bezpośrednio z linią lotniczą, przyspieszając reakcję i zapewniając sprawiedliwe odszkodowanie."
+        ],
+        [
+          "Jeśli sprawy się skomplikują",
+          "Czasami linie lotnicze stawiają opór. Wtedy wkracza nasza sieć prawnicza, aby posunąć się dalej, nadal bez żadnych opłat, chyba że wygrasz."
+        ],
+        [
+          "Płatność rozpoczyna się",
+          "Kiedy Twoje roszczenie zostanie zatwierdzone, przelejemy pieniądze bezpośrednio na Twoje konto."
+        ]
+      ]
+    },
+    "status": {
+      "notEligible": "Biorąc pod uwagę czas opóźnienia, lot ten nie kwalifikuje się do odszkodowania.\nBrakuje",
+      "supabaseMissing": "Supabase env. Formularz jest zapisywany wyłącznie lokalnie.",
+      "saveLeadError": "Nie można zapisać danych potencjalnego klienta.",
+      "saveClaimError": "Nie można zapisać danych roszczenia.",
+      "signatureRequired": "Przed przesłaniem podpisz i zaakceptuj warunki.",
+      "emailAlreadySent": "Roszczenie przesłane. E-mail z potwierdzeniem został już wysłany na adres {{email}}.",
+      "emailSent": "Roszczenie przesłane. E-mail z potwierdzeniem został wysłany na adres {{email}}.",
+      "emailFailed": "Roszczenie przesłane, ale wiadomość e-mail z potwierdzeniem nie mogła zostać wysłana automatycznie.",
+      "customerFallback": "klienta",
+      "removeFile": "Usuń {{file}}"
+    }
+  },
+  "legal": {
+    "label": "Legalne",
+    "updated": "Ostatnia aktualizacja: 16 kwietnia 2026 r",
+    "privacy": {
+      "title": "Polityka prywatności",
+      "intro": "Niniejsza polityka wyjaśnia, w jaki sposób Fly Friendly gromadzi, wykorzystuje, przechowuje i chroni informacje podczas korzystania z naszej witryny dotyczącej odszkodowań za loty, przepływu roszczeń, formularzy kontaktowych i biuletynu.",
+      "sections": [
+        {
+          "title": "1. Kim jesteśmy",
+          "text": "Fly Friendly to usługa wsparcia w zakresie odszkodowań za lot. Pomagamy pasażerom sprawdzić potencjalne uprawnienia, przesłać szczegółowe informacje o zakłóceniu lotu, przesłać dokumenty potwierdzające i śledzić postęp roszczenia."
+        },
+        {
+          "title": "2. Informacje, które zbieramy",
+          "text": "W zależności od tego, w jaki sposób korzystasz z witryny, możemy zbierać:",
+          "items": [
+            "Dane kontaktowe, takie jak imię i nazwisko, adres e-mail, numer telefonu i treść wiadomości.",
+            "Szczegóły lotu i roszczenia, takie jak linia lotnicza, trasa, daty, długość opóźnienia, szczegóły anulowania, numer rezerwacji i status sprawy.",
+            "Dokumenty, które zdecydujesz się przesłać, takie jak potwierdzenia rezerwacji, karty pokładowe, zawiadomienia o liniach lotniczych lub dane identyfikacyjne, jeśli są wymagane do roszczenia.",
+            "Informacje techniczne, takie jak typ urządzenia, przeglądarka, adres IP, odwiedzane strony i identyfikatory plików cookie.",
+            "Preferencje dotyczące biuletynu i marketingu, jeśli subskrybujesz aktualizacje."
+          ]
+        },
+        {
+          "title": "3. Jak wykorzystujemy informacje",
+          "items": [
+            "Aby ocenić i zarządzać roszczeniami o odszkodowanie za lot.",
+            "Aby skontaktować się z Tobą w sprawie Twojej sprawy, prośby o wsparcie lub przesłanej wiadomości.",
+            "Przygotowywanie dokumentacji reklamacyjnej i w razie potrzeby komunikowanie się z liniami lotniczymi lub odpowiednimi stronami.",
+            "Aby poprawić wydajność witryny, wygodę użytkownika, zapobieganie oszustwom i bezpieczeństwo.",
+            "Aby wysyłać biuletyny lub aktualizacje tylko wtedy, gdy subskrybujesz lub zezwoliłeś na to w inny sposób."
+          ]
+        },
+        {
+          "title": "4. Udostępnianie informacji",
+          "text": "Możemy udostępniać informacje liniom lotniczym, partnerom prawnym lub operacyjnym, dostawcom usług płatniczych, dostawcom usług analitycznych, dostawcom hostingu i innym dostawcom usług tylko wtedy, gdy jest to konieczne do rozpatrywania roszczeń, obsługi witryny internetowej, zgodności lub wsparcia."
+        },
+        {
+          "title": "5. Przechowywanie i bezpieczeństwo",
+          "text": "Informacje przechowujemy tylko tak długo, jak jest to zasadnie potrzebne do celu, w jakim zostały zebrane, w tym do obsługi roszczeń, prowadzenia rejestrów, zobowiązań prawnych, rozstrzygania sporów i zapobiegania oszustwom. Stosujemy rozsądne środki organizacyjne i techniczne w celu ochrony danych osobowych."
+        },
+        {
+          "title": "6. Twoje prawa",
+          "text": "W zależności od Twojej lokalizacji możesz mieć prawo dostępu, poprawiania, usuwania, ograniczania lub sprzeciwu wobec określonego przetwarzania Twoich danych osobowych. Możesz także wycofać zgodę marketingową. Aby złożyć wniosek, skontaktuj się z <emailLink>info@fly-friendly.com</emailLink>."
+        },
+        {
+          "title": "7. Kontakt",
+          "text": "Pytania dotyczące prywatności można przesyłać na adres <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "Ta strona to praktyczny projekt polityki serwisu oparty na modelu usług Fly Friendly. Przed użyciem do produkcji powinien zostać sprawdzony przez prawnika."
+    },
+    "terms": {
+      "title": "Warunki użytkowania",
+      "intro": "Niniejsze warunki regulują korzystanie z witryny Fly Friendly, narzędzi do zgłaszania roszczeń, stron polecających, formularzy biuletynów i powiązanych usług online.",
+      "sections": [
+        {
+          "title": "1. Korzystanie z serwisu",
+          "text": "Możesz skorzystać ze strony internetowej, aby dowiedzieć się o prawach pasażerów, sprawdzić potencjalne odszkodowanie, przesłać prośbę o kontakt i rozpocząć roszczenie. Zgadzasz się korzystać z witryny internetowej zgodnie z prawem i nie zakłócać jej działania, bezpieczeństwa ani dostępności."
+        },
+        {
+          "title": "2. Informacje o roszczeniach",
+          "text": "Jesteś odpowiedzialny za podanie dokładnych, kompletnych i aktualnych informacji o locie, pasażerach, danych kontaktowych i dokumentach. Niedokładne informacje mogą opóźnić rozpatrzenie reklamacji lub uniemożliwić rozpatrzenie reklamacji."
+        },
+        {
+          "title": "3. Brak gwarancji odszkodowania",
+          "text": "Kwalifikowalność zależy od trasy, rodzaju zakłócenia, długości opóźnienia, odpowiedzialności linii lotniczej, dowodów, obowiązującego prawa i innych czynników. Fly Friendly może pomóc w ocenie i dochodzeniu roszczeń, jednak nie gwarantujemy, że każda zgłoszona sprawa zakończy się sukcesem."
+        },
+        {
+          "title": "4. Opłaty i płatności",
+          "text": "Na stronie opisano podejście oparte na sukcesie, takie jak brak wygranej, brak opłat. Wszelkie ostateczne opłaty, prowizje lub ustalenia dotyczące płatności powinny zostać potwierdzone w umowie reklamacyjnej lub warunkach świadczenia usług przedstawionych w trakcie procesu reklamacyjnego."
+        },
+        {
+          "title": "5. Zachowanie użytkownika",
+          "items": [
+            "Nie przesyłaj fałszywych, wprowadzających w błąd lub oszukańczych informacji.",
+            "Nie przesyłaj plików zawierających złośliwe oprogramowanie, nielegalne materiały lub informacje, do udostępniania których nie jesteś upoważniony.",
+            "Nie kopiuj, nie wycinaj, nie zakłócaj, nie używaj inżynierii wstecznej ani niewłaściwie korzystaj ze strony internetowej."
+          ]
+        },
+        {
+          "title": "6. Treść i własność intelektualna",
+          "text": "Nazwa Fly Friendly, projekt strony internetowej, tekst, grafika i zasoby marki należą do Fly Friendly lub jej licencjodawców. Nie możesz ich ponownie wykorzystywać komercyjnie bez pozwolenia."
+        },
+        {
+          "title": "7. Ograniczenie odpowiedzialności",
+          "text": "Strona internetowa służy do ogólnych informacji i dostępu do usług. W najszerszym zakresie dozwolonym przez prawo Fly Friendly nie ponosi odpowiedzialności za straty pośrednie, brak dostępu do strony internetowej, działania osób trzecich, decyzje linii lotniczych lub konsekwencje nieprawidłowych informacji przekazanych przez użytkowników."
+        },
+        {
+          "title": "8. Kontakt",
+          "text": "W przypadku pytań dotyczących niniejszych warunków prosimy o kontakt pod numerem <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "Niniejsza strona z Warunkami użytkowania jest wersją roboczą opartą na funkcjonalności witryny i powinna zostać przejrzana przez prawnika przed użyciem w wersji produkcyjnej."
+    },
+    "cookies": {
+      "title": "Polityka plików cookies",
+      "intro": "Niniejsza polityka wyjaśnia, w jaki sposób Fly Friendly może wykorzystywać pliki cookie i podobne technologie, aby zapewnić działanie witryny, zrozumieć jej użytkowanie, poprawić wydajność i wspierać marketing.",
+      "sections": [
+        {
+          "title": "1. Czym są pliki cookies",
+          "text": "Cookies to małe pliki tekstowe zapisywane na Twoim urządzeniu podczas odwiedzania strony internetowej. Podobne technologie obejmują pamięć lokalną, piksele, tagi i identyfikatory analityczne."
+        },
+        {
+          "title": "2. Rodzaje plików cookies, z których możemy korzystać",
+          "items": [
+            "Niezbędne pliki cookie: wymagane do nawigacji, bezpieczeństwa, formularzy i podstawowych funkcji witryny.",
+            "Preferencyjne pliki cookie: zapamiętują wybrane opcje, takie jak ustawienia języka lub wyświetlania.",
+            "Analityczne pliki cookie: pomagają nam zrozumieć wizyty na stronach, źródła ruchu i sposób interakcji użytkowników z witryną.",
+            "Marketingowe pliki cookie: mogą pomóc mierzyć kampanie, aktywność polecającą lub skuteczność biuletynu."
+          ]
+        },
+        {
+          "title": "3. Dlaczego używamy plików cookies",
+          "text": "Pliki cookie pomagają nam utrzymać niezawodność witryny, usprawnić proces zgłaszania roszczeń, zrozumieć, które strony są przydatne, wykryć problemy techniczne i zmierzyć wydajność treści, takich jak kampanie polecające i biuletyny."
+        },
+        {
+          "title": "4. Narzędzia innych firm",
+          "text": "Możemy korzystać z usług zewnętrznych dostawców w zakresie analiz, hostingu, formularzy, bezpieczeństwa i pomiarów marketingowych. Dostawcy ci mogą ustawiać pliki cookie lub gromadzić dane techniczne zgodnie ze swoimi własnymi politykami."
+        },
+        {
+          "title": "5. Zarządzanie plikami cookies",
+          "text": "Możesz blokować, usuwać lub ograniczać pliki cookie za pomocą ustawień przeglądarki. Niektóre istotne funkcje strony internetowej mogą nie działać poprawnie, jeśli pliki cookie są wyłączone."
+        },
+        {
+          "title": "6. Kontakt",
+          "text": "Pytania dotyczące plików cookies można przesyłać na adres <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "Niniejsza Polityka dotycząca plików cookie jest wersją roboczą opartą na modelu witryny Fly Friendly i należy ją sprawdzić przed użyciem w wersji produkcyjnej."
+    }
+  }
+}

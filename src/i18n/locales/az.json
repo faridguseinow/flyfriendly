@@ -1,0 +1,735 @@
+{
+  "common": {
+    "close": "Bağlayın",
+    "back": "Geri",
+    "next": "Sonrakı",
+    "send": "Göndər",
+    "contact": "Əlaqə",
+    "aboutUs": "Haqqımızda",
+    "privacy": "Məxfilik",
+    "termsAndConditions": "Qaydalar və Şərtlər",
+    "termsOfUse": "İstifadə şərtləri",
+    "privacyPolicy": "Məxfilik Siyasəti",
+    "cookies": "Kukilər",
+    "support": "Dəstək",
+    "startYourClaim": "İddianıza başlayın",
+    "checkCompensation": "Kompensasiyanı yoxlayın",
+    "checkYourEligibility": "Uyğunluğunuzu yoxlayın",
+    "mainPage": "Əsas Səhifə",
+    "submitClaim": "İddia göndərin",
+    "saving": "Yadda saxlanılır...",
+    "submitting": "Göndərilir...",
+    "savedInSupabase": "Supabase-də saxlandı.",
+    "flyFriendlyHomeAria": "Fly Friendly ev",
+    "globalReachCopy": "Bütün dillərdə danışan bütün ölkələrdə milyonlarla sərnişinə xidmət göstərir.",
+    "scrollToTop": "Yuxarıya sürüşdürün"
+  },
+  "nav": {
+    "mainNavigation": "Əsas naviqasiya",
+    "referralProgram": "İstinad Proqramı",
+    "contact": "Əlaqə",
+    "aboutUs": "Haqqımızda",
+    "openMenu": "Menyu açın",
+    "closeMenu": "Menyunu bağlayın",
+    "mobileHeadlinePrefix": "Sizin haqqınız üçün mübarizə aparırıq",
+    "mobileHeadlineAccent": "kompensasiyaya"
+  },
+  "languageSwitcher": {
+    "open": "Dil seçin",
+    "caption": "Fly Friendly dil parametrləri",
+    "title": "Dilinizi seçin",
+    "suggestedLanguages": "Təklif olunan dillər",
+    "additionalLanguages": "Əlavə dillər"
+  },
+  "footer": {
+    "leadTitle": "Kompensasiyanıza 3 sadə addım",
+    "leadText": "Kompensasiya xəbərləri, səyahət tövsiyələri və sərnişin hüquqları aylıq çatdırılır.",
+    "followUs": "Bizi izləyin:",
+    "socialAria": "Sosial bağlantılar",
+    "company": "Şirkət",
+    "resources": "Resurslar",
+    "claimHelp": "Yardım tələb edin",
+    "compensation": "Kompensasiya",
+    "referralProgram": "İstinad Proqramı",
+    "checkCompensation": "Kompensasiyanı yoxlayın",
+    "delayedFlights": "Gecikmiş uçuşlar",
+    "cancelledFlights": "Ləğv edilmiş uçuşlar",
+    "missedConnections": "Buraxılmış əlaqələr",
+    "copyright": "©2026 Fly Friendly"
+  },
+  "claimModal": {
+    "signupTitle": "Tərəfdaş hesabı yaradın",
+    "loginTitle": "Xoş gəlmisiniz",
+    "signupPartnerDescription": "Tərəfdaş girişi üçün müraciət edin və Fly Friendly hesabınızdan yönləndirmə fəaliyyətini idarə edin.",
+    "signupDefaultDescription": "Davam etmək üçün hesabınızı yaradın.",
+    "loginDescription": "Hesabınıza daxil olmaq üçün e-poçt və şifrənizi daxil edin.",
+    "fullName": "Tam adı",
+    "email": "E-poçt",
+    "phone": "Əlaqə nömrəsi (WhatsApp-a üstünlük verilir)",
+    "password": "parol",
+    "fullNamePlaceholder": "Tam Adınızı daxil edin",
+    "emailPlaceholder": "E-poçtunuzu daxil edin",
+    "phonePlaceholder": "Məsələn: 050 XXX XX XX",
+    "passwordCreatePlaceholder": "Parolunuzu Yaradın",
+    "passwordEnterPlaceholder": "Şifrənizi daxil edin",
+    "forgotPassword": "Şifrəni unutmusunuz?",
+    "getStarted": "Başlayın",
+    "logIn": "Daxil ol",
+    "pleaseWait": "Zəhmət olmasa gözləyin...",
+    "alreadyMember": "Artıq üzvsünüz?",
+    "notMember": "Üzv deyilsiniz?",
+    "signUp": "Qeydiyyatdan keçin",
+    "supabaseMissing": "Supabase env yoxdur. VITE_SUPABASE_URL və VITE_SUPABASE_PUBLISHABLE_KEY əlavə edin.",
+    "confirmEmailNotice": "Hesabınızı təsdiqləmək üçün e-poçtunuzu yoxlayın, sonra davam etmək üçün daxil olun.",
+    "authError": "Doğrulamaq mümkün olmadı. Yenidən cəhd edin."
+  },
+  "about": {
+    "heroLabel": "Təxminən Fly Friendly",
+    "heroTitle": "Uçuşun pozulması ilə bağlı iddiaları idarə etməyin daha sadə yolu",
+    "heroText": "Fly Friendly səyahətçilərə iddia məlumatlarını təşkil etməyə, tələb olunan sənədləri yükləməyə və bir aydın, addım-addım gedişatını izləməyə kömək edir.",
+    "startClaim": "İddiaya başlayın",
+    "missionLabel": "Missiyamız",
+    "missionTitle": "Sərnişin hüquqlarından istifadəni asanlaşdırın",
+    "missionText": "Biz mürəkkəb kompensasiya prosesini rəhbər təcrübəyə çeviririk. Uyğunluq yoxlamalarından tutmuş sənəd yükləmələrinə və işin izlənməsinə qədər işimiz aydınlığa, sürətə və etibara yönəlib.",
+    "missionStatText": "Uyğun pozulmuş uçuşlar üçün potensial kompensasiya.",
+    "whatWeDoLabel": "Biz nə edirik",
+    "whatWeDoTitle": "İlk yoxlamadan son yeniləməyə qədər praktiki dəstək",
+    "whatWeDoItems": [
+      {
+        "title": "Uyğunluq yoxlanışı",
+        "text": "Biz sərnişinlərə gecikmənin, ləğvin, minmənin rədd edilməsinin və ya buraxılmış əlaqənin uyğun olub olmadığını anlamağa kömək edirik."
+      },
+      {
+        "title": "Sənəd axını",
+        "text": "Səyahətçilər kompensasiya işini dəstəkləmək üçün lazım olan təfərrüatları və sənədləri hazırlaya bilərlər."
+      },
+      {
+        "title": "Dava ilə işləmə",
+        "text": "Fly Friendly hava yolu əlaqəsini idarə edə və iddia prosesini təşkil edə bilər."
+      }
+    ],
+    "valuesLabel": "Dəyərlərimiz",
+    "valuesTitle": "Etibar, aydınlıq və fəaliyyət ətrafında qurulmuşdur",
+    "values": [
+      {
+        "title": "Şəffaflıq",
+        "text": "İddia prosesini izləməyi asanlaşdıran aydın addımlar, praktik izahatlar və status yeniləmələri."
+      },
+      {
+        "title": "Sadəlik",
+        "text": "Səyahətçilərə lazımsız sürtünmə olmadan pozuntudan təqdim edilmiş iddiaya keçməyə kömək edən idarə olunan axın."
+      },
+      {
+        "title": "Təhlükəsizlik",
+        "text": "Sərnişin təfərrüatları, yüklənmiş sənədlər və proses boyu iş məlumatlarına diqqətlə yanaşmaq."
+      },
+      {
+        "title": "İstifadəçi ilk",
+        "text": "Stressli səyahət fasilələrindən sonra praktiki dəstəyə ehtiyacı olan real sərnişinlər üçün yaradılmışdır."
+      }
+    ],
+    "processLabel": "Necə işləyir",
+    "processTitle": "Dörd aydın mərhələ",
+    "processSteps": [
+      {
+        "number": "1",
+        "title": "Detalları daxil edin",
+        "text": "Uçuş, marşrut, fasilə və sərnişin məlumatını təmin edin."
+      },
+      {
+        "number": "2",
+        "title": "Sənədləri yükləyin",
+        "text": "Lazım gələrsə, rezervasiya təsdiqi, minmə bileti, hava yolu mesajları və ya şəxsiyyət vəsiqəsi əlavə edin."
+      },
+      {
+        "number": "3",
+        "title": "Təqdim et",
+        "text": "İddianı nəzərdən keçirmək və hava yolu ilə əlaqə saxlamaq üçün göndərin."
+      },
+      {
+        "number": "4",
+        "title": "Vəziyyəti izləyin",
+        "text": "İş həll olunana və ya bağlanana qədər yeniləmələri izləyin."
+      }
+    ],
+    "helpTitle": "Kömək lazımdır?",
+    "helpText": "Komandamızla əlaqə saxlayın və biz növbəti addımlarda sizə rəhbərlik edəcəyik.",
+    "disclaimer": "İmtina: Bu səhifə məlumat məqsədi daşıyır. Uyğunluq və iddia tələbləri marşruta, aviaşirkətə və yerli qaydalara görə dəyişə bilər."
+  },
+  "contactPage": {
+    "heroLabel": "Əlaqə",
+    "heroTitle": "Bizimlə əlaqə saxlayın",
+    "heroText": "Gecikmiş, ləğv edilmiş və ya çox bron edilmiş uçuşla bağlı sualınız var? Mesaj göndərin və komandamız növbəti addımı anlamağa kömək edəcək.",
+    "supportLabel": "Dəstək",
+    "supportTitle": "Biz kömək etmək üçün buradayıq",
+    "supportText": "Uçuşunuzla nə baş verdiyini, hansı sənədlərinizin olduğunu və sizinlə necə əlaqə saxlaya biləcəyimizi bizə deyin. Komandamız müvafiq iddia axını vasitəsilə onları tələb etməyənə qədər həssas şəxsiyyət sənədlərini göndərməyin.",
+    "whatsApp": "WhatsApp",
+    "email": "E-poçt",
+    "hours": "Saatlar",
+    "hoursValue": "Bazar ertəsi-Cümə, 09:00-18:00",
+    "messageLabel": "Mesaj göndərin",
+    "messageTitle": "Bizə e-poçt vasitəsilə yazın",
+    "name": "ad",
+    "namePlaceholder": "Adınız",
+    "emailPlaceholder": "you@example.com",
+    "reference": "Uçuş və ya rezervasiya arayışı",
+    "referencePlaceholder": "Könüllü",
+    "message": "Mesaj",
+    "messagePlaceholder": "Uçuşunuzla nə baş verdiyini bizə deyin",
+    "sendButton": "Göndər",
+    "emailAppNotice": "Göndərmə e-poçt proqramınızı açır və mesajınızı {{email}} nömrəsinə hazırlayır.",
+    "mailSubject": "{{name}}-dən vebsayt əlaqə mesajı",
+    "mailGreeting": "salam Fly Friendly,",
+    "mailName": "Adı: {{value}}",
+    "mailEmail": "E-poçt: {{value}}",
+    "mailReference": "Uçuş və ya rezervasiya arayışı: {{value}}",
+    "mailMessageLabel": "Mesaj:",
+    "visitorFallback": "Fly Friendly qonaq"
+  },
+  "home": {
+    "claimBoxTitle": "Təzminatınızı yoxlayın və tələb edin.",
+    "claimBoxDestinationPlaceholder": "Təyinat hava limanı, şəhər və ya ölkə",
+    "claimBoxNoAirportsFound": "Heç bir hava limanı tapılmadı",
+    "claimBoxFree": "Pulsuzdur",
+    "claimBoxMinutes": "dəqiqə çəkir",
+    "claimBoxRightText": "Biz sizin təzminat hüququnuz üçün mübarizə aparırıq.",
+    "heroLabel": "Real Travels tərəfindən təsdiq edilmişdir",
+    "heroTitle": "Uçuş gecikdi və ya ləğv edildi?",
+    "heroTitleStrong": "İndi €600-a qədər iddia edin.",
+    "heroText": "Biz sizin təzminat hüququnuz üçün mübarizə aparırıq. İddianızı bir neçə dəqiqə ərzində təqdim edin və bizə hava yolu ilə baxmağa icazə verin.",
+    "trustLabel": "Qlobal Reach",
+    "trustTitle": "Dünyada etibarlı tərəfdaş",
+    "benefits": [
+      {
+        "title": "Sürətli və Sərfəli Xidmət",
+        "text": "Biz heç bir gizli xərc və ya lazımsız gecikmələr olmadan iddianızı tez və səmərəli şəkildə həll edirik."
+      },
+      {
+        "title": "Qalib yoxdur, ödəniş yoxdur",
+        "text": "Təzminatınızı ala bilməsək, heç nə ödəmirsiniz. Sıfır risk, tam ədalət."
+      },
+      {
+        "title": "Bənzərsiz İddia Müvəffəqiyyəti",
+        "text": "Aviaşirkətlər və ya agentliklər bunun qeyri-mümkün olduğunu dedikdə belə, biz kompensasiya qazanırıq."
+      }
+    ],
+    "calculatorLabel": "Kompensasiya kalkulyatoru",
+    "calculatorTitle": "Nə qədər iddia edə bilərsiniz?",
+    "calculatorText": "Dərhal uyğunluğunuzu yoxlayın və nə qədər kompensasiya ala biləcəyinizi görün.",
+    "disruptionsLabel": "Uçuş Problemləri",
+    "disruptionsTitle": "Hansı pozuntular uyğun gəlir?",
+    "disruptionsText": "Kompensasiya yalnız gecikmələrdən daha çoxuna aiddir.",
+    "disruptionCards": {
+      "cancellationTitle": "Uçuşun ləğvi",
+      "cancellationText": "Aviaşirkət son anda uçuşunuzu ləğv etdi? İddia et.",
+      "missedTitle": "Buraxılmış Əlaqəli Uçuş",
+      "missedText": "Əgər növbəti uçuşunuzu buraxıb son təyinat yerinə 3 saatdan çox gec çatmısınızsa? İndi iddia et.",
+      "airlineFaultTitle": "Sənin aviaşirkətin günahı?\nSiz hələ də ödəniş ala bilərsiniz.",
+      "airlineFaultText": "3+ saat gec gəldiniz? Siz uyğunsunuz.",
+      "deniedTitle": "İnternatdan imtina edildi",
+      "deniedText": "Çox bron edilmiş uçuş? İndi tam kompensasiyanızı tələb edin. Hüquqlarınız üçün mübarizə aparırıq.",
+      "allAirlines": "Bütün aviaşirkətlər",
+      "allCountries": "Bütün ölkələr",
+      "noWinNoFee": "Qələbə yoxdur, ödəniş yoxdur"
+    },
+    "membershipLabel": "Abunə haqqımız",
+    "membershipTitle": "Fly Friendly Üzvlük",
+    "membershipText": "Bir sadə abunə bütün aylıq səyahətlərinizi əhatə edir.",
+    "membershipPriceSuffix": "/ay",
+    "membershipPlan": "Fly Friendly Plus",
+    "membershipPlanText": "Tez-tez səyahət edənlər və ağıllı planlaşdırıcılar üçün mükəmməldir.",
+    "membershipItems": [
+      "Limitsiz uçuş axtarışları",
+      "Real vaxtda gediş haqqı yeniləmələri",
+      "Qiymət enişləri üçün ağıllı xəbərdarlıqlar",
+      "Saxlanan səfərlər və sevimlilər",
+      "Çox şəhər səyahət planlayıcısı",
+      "Səyahət sövdələşmələrinə erkən giriş"
+    ],
+    "subscribe": "Abunə ol",
+    "membershipPhotoTitle": "Qələbə yox, ödəniş yoxdur. Biz yalnız siz ödəsəniz alırıq.",
+    "membershipPhotoTag": "İnternatdan imtina edildi",
+    "stepsLabel": "Necə işləyir",
+    "stepsTitle": "Kompensasiyanıza 3 sadə addım",
+    "stepsText": "Biz çətin işi görürük, siz ödənişi problemsiz əldə edirsiniz.",
+    "stepsCards": {
+      "minutes": "Bir neçə dəqiqə ərzində iddia edin",
+      "processTitle": "Tez, təhlükəsiz və asan kompensasiya",
+      "handleEverything": "Biz hər şeyi idarə edirik",
+      "legalTitle": "Aviaşirkətlər ilə hüquqi ekspertiza",
+      "moneyTitle": "Pulunuzu birbaşa hesabınıza köçürün."
+    },
+    "testimonialsLabel": "Rəylər",
+    "testimonialsTitle": "Milyonlarla səyahətçi tərəfindən sevilir",
+    "testimonialsText": "Əsl sərnişinlər. Real kompensasiya. Real hekayələr.",
+    "testimonials": [
+      {
+        "name": "Sarah Johnson",
+        "role": "Marketinq meneceri, London",
+        "quote": "Londondan Milana uçuşum hava limanında ləğv edildi və mən kompensasiya tələb edə biləcəyimi bilmirdim. Bu xidmət hər şeyi mükəmməl idarə etdi və mən cəmi iki həftə ərzində ödənişimi aldım."
+      },
+      {
+        "name": "Tom Nguyen",
+        "role": "Biznes məsləhətçisi, Sinqapur",
+        "quote": "Əvvəlcə şübhələndim, amma proses gözlənildiyindən daha yumşaq oldu. Komanda hər mərhələdə məni məlumatlandırdı və kompensasiyanı vaxtında çatdırdı."
+      },
+      {
+        "name": "David Romero",
+        "role": "Sərbəst Fotoqraf, Madrid",
+        "quote": "Bu platformanı Madriddən Berlinə gecikən uçuşumdan sonra kəşf etdim. Mən yalnız qısa bir anket doldurdum, qalanını da onlar həll etdi."
+      },
+      {
+        "name": "Emili Karter",
+        "role": "UX Dizayneri, Amsterdam",
+        "quote": "Amsterdamdan Parisə gecikən uçuşum həftəsonu planlarımı pozdu, lakin bu şirkət bunun əvəzini verdi. Ümumilikdə fantastik təcrübə."
+      },
+      {
+        "name": "Anna Müller",
+        "role": "Proqram mühəndisi, Berlin",
+        "quote": "5 saatlıq gecikməmdən sonra iddiamı təqdim etdim və komanda hər şeyi peşəkar şəkildə həll etdi. Mürəkkəb sənədlər və zənglər yoxdur."
+      },
+      {
+        "name": "Lucas Bennett",
+        "role": "Proqram təminatı üzrə məsləhətçi, Toronto",
+        "quote": "Uçuş məlumatımı beş dəqiqədən az müddətdə təqdim etdim və komanda qalanını etdi. Məni xəbərdar etdilər və hər addımı izah etdilər."
+      }
+    ],
+    "resourcesLabel": "Resurslar",
+    "resourcesTitle": "Səyahət Məsləhətləri və Bələdçiləri",
+    "resourcesText": "Hava sərnişin hüquqlarına dair ən son resurslarımızdan xəbərdar olun.",
+    "articles": [
+      {
+        "title": "Təyyarə Sərnişin Hüquqlarınızı Bilin",
+        "text": "Bir çox səyahətçilər uçuşun pozulmasına görə kompensasiya tələb edə biləcəklərini bilmirlər. Aviaşirkətlər sizi uğursuzluğa düçar edəndə sizin haqqınız budur.",
+        "date": "22 iyul 2025-ci il"
+      },
+      {
+        "title": "Aviaşirkətlər niyə ödənişləri gecikdirir?",
+        "text": "Heç düşünmüsünüz ki, niyə kompensasiya vaxt alır? Pərdə arxasında nə baş verdiyini və prosesi sizin üçün necə sürətləndirdiyimizi öyrənin.",
+        "date": "10 avqust 2025-ci il"
+      },
+      {
+        "title": "Stresssiz Səyahət üçün Ən Yaxşı Məsləhətlər",
+        "text": "Ağıllı sifarişdən tutmuş kompensasiya üçün nə vaxt uyğun olduğunuzu bilməyə kimi səfərlərinizi asanlaşdıran sadə vərdişləri kəşf edin.",
+        "date": "5 sentyabr 2025-ci il"
+      }
+    ],
+    "newsletterPhoto": "Gələnlər qutunuzda ən son yeniləmələri əldə etmək üçün bülletenimizə qoşulun.",
+    "newsletterTag": "Yenilənib qalın",
+    "newsletterLabel": "Bülletendə Qeydiyyat",
+    "newsletterTitle": "Gələnlər qutunuzda ən son yeniləmələri əldə edin",
+    "newsletterText": "Kompensasiya xəbərləri, səyahət tövsiyələri və sərnişin hüquqları aylıq çatdırılır.",
+    "newsletterPlaceholder": "E-poçtunuzu daxil edin",
+    "newsletterAria": "Abunə ol",
+    "newsletterNotice": "Bu, e-poçt proqramınızı açır və komandamıza abunə sorğusu hazırlayır.",
+    "newsletterSubject": "Bülletenə abunə sorğusu",
+    "newsletterGreeting": "salam Fly Friendly,",
+    "newsletterRequest": "Zəhmət olmasa bu e-poçtu xəbər bülleteni siyahısına əlavə edin:",
+    "faqLabel": "Tez-tez verilən suallar",
+    "faqTitle": "Tez-tez verilən suallar",
+    "faqText": "Kompensasiya tələbi haqqında bilmək lazım olan hər şey.",
+    "faqs": [
+      {
+        "question": "Uçuş üçün kompensasiya almaq hüququm varmı?",
+        "answer": "Ümumiyyətlə, əgər uçuşunuz 3+ saat gecikibsə, ləğv edilibsə və ya təyyarəyə minməyinizə icazə verilməyibsə və pozuntu aviaşirkətin məsuliyyətindədirsə, uyğun ola bilərsiniz."
+      },
+      {
+        "question": "Mən iddiam üçün nə qədər ala bilərəm?",
+        "answer": "Kompensasiya məsafəyə, gecikmə uzunluğuna və tətbiq olunan qaydalara görə dəyişir. Bir çox iş sabit səviyyələrə düşür, məsələn, bəzi yurisdiksiyalarda 600 Avroya qədər."
+      },
+      {
+        "question": "Kompensasiya prosesi nə qədər vaxt aparır?",
+        "answer": "Vaxt qrafikləri dəyişir. Birbaşa işlər bir neçə həftə ərzində həll oluna bilər, digərləri isə aviaşirkətin iddianı rədd etdiyi təqdirdə daha uzun çəkə bilər."
+      },
+      {
+        "question": "Hansı sənədləri təqdim etməliyəm?",
+        "answer": "Adətən sizə əsas uçuş təfərrüatları və səyahət sübutu, məsələn, rezervasiya təsdiqi, minmə bileti və hər hansı gecikmə və ya ləğvetmə bildirişi lazımdır."
+      },
+      {
+        "question": "Aviaşirkət mənim iddiamı rədd edərsə nə etməli?",
+        "answer": "Aviaşirkət iddianı rədd edərsə, biz səbəbi nəzərdən keçirə, dəstəkləyici dəlillərlə cavab verə və lazım gəldikdə eskalasiya edə bilərik."
+      },
+      {
+        "question": "Mən özüm aviaşirkətlə məşğul olmalıyam?",
+        "answer": "Xeyr. Siz təfərrüatlarınızı təqdim etdikdən sonra biz aviaşirkətlə əlaqə saxlayır və sənədləşmə işlərini idarə edirik."
+      },
+      {
+        "question": "Xidmət haqlarınız nə qədərdir?",
+        "answer": "Biz ümumiyyətlə uğura əsaslanan ödəniş modelində fəaliyyət göstəririk: qalib gəlməsək, siz ödəmirsiniz."
+      },
+      {
+        "question": "Şəxsi məlumatlarım təhlükəsizdirmi?",
+        "answer": "Biz məlumatınızdan yalnız iddianızı emal etmək və müvafiq tərəflərlə əlaqə saxlamaq üçün istifadə edirik. Məlumat yalnız təzminat almaq üçün lazım olduqda paylaşılır."
+      }
+    ]
+  },
+  "referral": {
+    "heroTag": "# Creators & Influencers For",
+    "heroTitle": "Fly Friendly ilə partnyor olun və səyahətçilərə kömək edərək qazanın",
+    "heroText": "Tərəfdaşlıq proqramımıza qoşulun, linkinizi paylaşın, izləyicilərinizi ruhlandırın və birlikdə qazandığımız hər iddiaya görə mükafat alın.",
+    "joinAsPartner": "Tərəfdaş kimi qoşulun",
+    "logIn": "Daxil ol",
+    "exclusiveAccessLabel": "Eksklüziv Giriş",
+    "exclusiveAccessTitle": "Qazancdan çox, ortaqlıqdır",
+    "exclusiveAccessText": "Fly Friendly hər bir yaradıcıya layiq olduqları alətlər və görmə qabiliyyəti ilə dəstək verir.",
+    "accessItems": [
+      {
+        "title": "Rəqabət edin və səyahət çekləri qazanın.",
+        "text": "Hər uğurlu referaldan 20%-ə qədər qazanın."
+      },
+      {
+        "title": "Seçilmiş Partnyor Spot İşıqları",
+        "text": "Kanallarımızda reklam olun."
+      },
+      {
+        "title": "Fərdi Əməkdaşlıq İmkanları",
+        "text": "Dizayn komandamızla birgə kampaniyalar yaradın."
+      },
+      {
+        "title": "Yaradıcı Resurs Mərkəzi",
+        "text": "Dərsliklər, məsləhətlər və analitik anlayışlar."
+      }
+    ],
+    "photoCard": "Tamaşaçılarınızı fürsətə çevirin.",
+    "benefitsLabel": "Proqramın üstünlükləri",
+    "benefitsTitle": "Dünyada etibarlı tərəfdaş",
+    "benefitsText": "Bütün dillərdə danışan bütün ölkələrdə milyonlarla sərnişinə xidmət göstərir.",
+    "benefits": [
+      {
+        "title": "Səxavətli Komissiyalar",
+        "text": "Hər uğurlu referaldan 20%-ə qədər qazanın."
+      },
+      {
+        "title": "Ani İzləmə Paneli",
+        "text": "Real vaxtda kliklərə, qeydiyyata və qazanclara baxın."
+      },
+      {
+        "title": "Təqdim olunan Yaradıcı Aktivlər",
+        "text": "Hazır vizuallar, brend dəstləri və başlıq şablonları."
+      },
+      {
+        "title": "Qlobal tanınma",
+        "text": "Bütün dünyada uçuş təcrübələrini dəyişən şəbəkənin bir hissəsi olun."
+      }
+    ],
+    "processLabel": "Sadə 3-Addımlı Proses",
+    "processTitle": "Zəhmətsiz qazanc yolunuz",
+    "processText": "O, sürətli, şəffafdır və təsir göstərmək istəyən yaradıcılar üçün hazırlanmışdır.",
+    "steps": [
+      {
+        "step": "Addım 1",
+        "title": "Müraciət edin və Linkinizi Alın",
+        "heading": "Məlumatlarınızı göndərin və məlumatlarınızı alın",
+        "text": "24 saat ərzində şəxsi istinad linki."
+      },
+      {
+        "step": "Addım 2",
+        "title": "Əsl Paylaşın",
+        "heading": "Bunu bio, hekayə və videolarınızda yerləşdirin,",
+        "text": "və izləyicilərinizi aylıq qazancınıza çevirin."
+      },
+      {
+        "step": "Addım 3",
+        "title": "Aylıq mükafatlar qazanın",
+        "heading": "Nəticələri idarə panelinizdə izləyin və əldə edin",
+        "text": "hər ay avtomatik ödənilir."
+      }
+    ],
+    "voicesLabel": "İcma Səsləri",
+    "voicesTitle": "Fly Friendly ilə böyüyən yaradıcılar",
+    "voicesText": "Bir çox təsir edənlər proqramımız vasitəsilə sadəcə olaraq öz izləyicilərini uçuş hüquqları haqqında paylaşaraq və öyrətməklə pul qazandılar.",
+    "stories": [
+      {
+        "name": "Lena Morales",
+        "role": "Travel Blogger",
+        "quote": "Mən bir çox brendlərlə əməkdaşlıq etmişəm, lakin Fly Friendly yaradıcıları həqiqətən dəstəkləyir. Onların ünsiyyəti və şəffaflığı bənzərsizdir."
+      },
+      {
+        "name": "James Yi",
+        "role": "YouTuber",
+        "quote": "Referans linkimi cəmi iki videoda paylaşdım və ilk həftədə qazanc gördüm. İdarə paneli hər şeyi çox asanlaşdırır."
+      },
+      {
+        "name": "Sarah Johnson",
+        "role": "Marketinq meneceri, London",
+        "quote": "Bu, hər iki tərəfin həqiqətən qalib gəldiyi ilk ortaq proqramdır. Tamaşaçılarım mənə daha çox güvənir və mən davamlı olaraq qazanıram."
+      },
+      {
+        "name": "Sofi Duarte",
+        "role": "Instagram yaradıcısı",
+        "quote": "Bu, hər iki tərəfin həqiqətən qalib gəldiyi ilk ortaq proqramdır. Tamaşaçılarım mənə daha çox güvənir və mən davamlı olaraq qazanıram."
+      }
+    ],
+    "ctaHash": "#Bu gün Qazanmağa Başlayın",
+    "ctaPhotoTitle": "Hüquqlarınız üçün mübarizə aparırıq.",
+    "ctaPhotoText": "Yaradın. Paylaşın. Qazanmaq.",
+    "ctaTitle": "Fly Friendly Tərəfdaş olun",
+    "ctaText": "Bütün dünyada səyahət edənlərə kömək edən yaradıcılar şəbəkəsinə qoşulun. Başlamaq üçün 5 dəqiqədən az vaxt lazımdır.",
+    "applyNow": "İndi müraciət edin",
+    "faqLabel": "Tez-tez verilən suallar",
+    "faqTitle": "Tez-tez verilən suallar",
+    "faqText": "Kompensasiya tələbi haqqında bilmək lazım olan hər şey."
+  },
+  "claim": {
+    "languageShort": "Eng",
+    "heroLabel": "Real Travels tərəfindən təsdiq edilmişdir",
+    "heroTitle": "Yoxlayın və kompensasiya tələb edin",
+    "promoTitle": "İndi €600-a qədər iddia edin.",
+    "promoText": "Biz sizin təzminat hüququnuz üçün mübarizə aparırıq. İddianızı bir neçə dəqiqə ərzində təqdim edin və bizə hava yolu ilə baxmağa icazə verin.",
+    "promoIssueTitle": "Uçuş gecikməsi",
+    "promoIssueText": "3+ saat gec gəldiniz? Siz uyğunsunuz.",
+    "allAirlines": "Bütün aviaşirkətlər",
+    "allCountries": "Bütün ölkələr",
+    "noWinNoFee": "Qələbə yoxdur, ödəniş yoxdur",
+    "stages": [
+      "Uyğunluq yoxlanışı",
+      "Əlaqə məlumatı",
+      "Sənədlər",
+      "Bitir"
+    ],
+    "emailError": "Düzəliş e-poçt ünvanına daxil olun",
+    "eligibility": {
+      "whereDidYouFly": "hara uçmusan?",
+      "departurePlaceholder": "Gediş hava limanı, şəhər və ya ölkə",
+      "arrivalPlaceholder": "Gəliş hava limanı, şəhər və ya ölkə",
+      "noAirportsFound": "Heç bir hava limanı tapılmadı",
+      "whichAirline": "Hansı aviaşirkətlə uçmusunuz?",
+      "searchAirline": "Aviaşirkət axtarın",
+      "noAirlinesFound": "Heç bir aviaşirkət tapılmadı",
+      "delayTitle": "Uçuş gecikmə müddəti",
+      "lessThan3": "3 saatdan az",
+      "notEligible": "Uyğun deyil",
+      "moreThan3": "3 saatdan çox",
+      "eligibleForClaim": "İddia üçün uyğundur",
+      "cancelled": "Uçuş ləğv edildi",
+      "specialRights": "Xüsusi hüquqlar",
+      "scheduledDepartureDate": "Planlaşdırılmış gediş tarixiniz nə idi?",
+      "directFlight": "Bu birbaşa uçuş idi?",
+      "directYes": "Bəli, bu birbaşa idi",
+      "directNo": "Xeyr, bu birbaşa deyildi"
+    },
+    "contact": {
+      "title": "Zəhmət olmasa əlaqə məlumatlarınızı daxil edin.",
+      "fullName": "Tam adı",
+      "fullNamePlaceholder": "Tam Adınızı daxil edin",
+      "email": "E-poçt",
+      "emailPlaceholder": "E-poçtunuzu daxil edin",
+      "address": "Ünvan",
+      "addressPlaceholder": "Şəhərinizə daxil olun",
+      "optional": "Könüllü",
+      "phone": "Əlaqə nömrəsi (WhatsApp-a üstünlük verilir)",
+      "phonePlaceholder": "Məsələn: +90 5xx xxx xx xx",
+      "hasWhatsapp": "Bəli, bu nömrədə Whatsapp var.",
+      "requiredToProceed": "Davam etmək tələb olunur."
+    },
+    "documents": {
+      "title": "Təhlükəsiz Sənəd Yükləmə",
+      "subtitle": "Zəhmət olmasa, Pasport və Internat Talonunuzu yükləyin.",
+      "passport": "Pasport",
+      "boardingPass": "Minik bileti",
+      "dragAndDrop": "Faylı sürükləyin və buraxın",
+      "or": "və ya",
+      "uploadFile": "Fayl yükləyin",
+      "uploadHint": "Lütfən, minmə talonunuzu PNG, JPG və ya PDF formatında yükləyin. Maksimum ölçü 25 MB",
+      "reasonTitle": "Uçuşunuzun gecikməsi və ya ləğv edilməsinin rəsmi səbəbi nə idi?",
+      "reasonPlaceholder": "məsələn, Ekipaj/Heyət Problemləri",
+      "signatureNote": "İmzanız uçuşunuz üçün kompensasiyanı aviaşirkətdən almağa razılıq verir. Aviaşirkət kompensasiyanı emal etmək üçün sizdən imza tələb edir. İmzalamaqla siz şərtlərlə razılaşırsınız."
+    },
+    "finish": {
+      "title": "Bitir və imzala",
+      "subtitle": "Lütfən, şərtləri nəzərdən keçirin və iddianızı yekunlaşdırmaq üçün aşağıda imzalayın.",
+      "digitalSignature": "Rəqəmsal İmza",
+      "clear": "Təmiz",
+      "signatureHint": "* Qutunun içərisinə daxil olmaq üçün siçan və ya barmağınızdan istifadə edin.",
+      "terms": "Mən <termsLink>Qaydalar və Şərtlər</termsLink> ilə razıyam və təqdim olunan məlumatın doğru olduğunu təsdiqləyirəm."
+    },
+    "denied": {
+      "title": "Təəssüf ki, bu uçuş üçün heç bir kompensasiya yoxdur.",
+      "text": "Biz müştərilərə bir neçə hava sərnişini qaydaları çərçivəsində kömək edirik, lakin təəssüf ki, bu uçuş onların heç biri ilə əhatə olunmur.",
+      "noteTitle": "Qeyd: Bu məlumatlar açıq şəkildə paylaşılmır.",
+      "noteText": "Biz bu məlumatdan ciddi şəkildə təcrübənizi fərdiləşdirmək və xidmətimizi təkmilləşdirmək üçün istifadə edirik.",
+      "protectTitle": "Növbəti dəfə mühafizə olun - dərhal.",
+      "protectText": "Tez-tez səyahət edənlər və ağıllı planlaşdırıcılar üçün mükəmməldir",
+      "protectItems": [
+        "Limitsiz uçuş axtarışları",
+        "Real vaxtda gediş haqqı yeniləmələri",
+        "Saxlanan səfərlər və sevimlilər",
+        "Çox şəhər səyahət planlayıcısı",
+        "Səyahət sövdələşmələrinə erkən giriş"
+      ]
+    },
+    "approved": {
+      "title": "Təşəkkür edirəm, iddianız yoldadır!",
+      "text": "Fly Friendly-ə etibar etdiyiniz üçün təşəkkür edirik, sorğunuz sistemimizə təhlükəsiz şəkildə daxil oldu. Uçuş təzminat komandamız indi işinizi nəzərdən keçirir və irəliləyiş zamanı sizi məlumatlandıracaq.",
+      "leadId": "Aparıcı ID",
+      "pending": "Gözlənir",
+      "nextTitle": "Sonra nə olacaq",
+      "nextText": "Hər bir iddiaya xüsusi komanda, mütəxəssislər, danışıqlar aparan şəxslər və hava səyahətini kənardan bilən hüquqi mütəxəssislər tərəfindən baxılır.",
+      "nextSteps": [
+        [
+          "Uçuş tarixçənizi yoxlayırıq",
+          "Mütəxəssislərimiz uçuş qeydlərindən tutmuş gecikmə səbəblərinə qədər bütün uçuş məlumatlarını təsdiqləyir."
+        ],
+        [
+          "Davanızı ağıllı şəkildə qururuq",
+          "Süni intellektlə dəstəklənən alətlər bizə ən güclü arqumentləri toplamağa kömək edir, beləliklə, aviaşirkətlər sizin hüquqlarınıza məhəl qoymasın."
+        ],
+        [
+          "Aviaşirkətlə danışırıq",
+          "Danışıqlar üzrə komandamız birbaşa aviaşirkətlə əlaqə saxlayır, cavabları sürətləndirir və ədalətli kompensasiyanı təmin edir."
+        ],
+        [
+          "İşlər mürəkkəbləşərsə",
+          "Bəzən aviaşirkətlər müqavimət göstərirlər. Məhz o zaman hüquqi şəbəkəmiz onu daha da irəli aparmaq üçün işə başlayır, siz qazanmadığınız müddətdə heç bir ödəniş tələb olunmur."
+        ],
+        [
+          "Ödəniş qalxır",
+          "İddianız təsdiq edildikdə, pulu birbaşa hesabınıza köçürürük."
+        ]
+      ]
+    },
+    "status": {
+      "notEligible": "Gecikmə müddətinə əsasən, bu uçuş kompensasiya üçün uyğun deyil.",
+      "supabaseMissing": "Supabase env yoxdur. Forma yalnız yerli olaraq saxlanılır.",
+      "saveLeadError": "Potensial məlumatı saxlamaq mümkün olmadı.",
+      "saveClaimError": "İddia datasını saxlamaq mümkün olmadı.",
+      "signatureRequired": "Təqdim etməzdən əvvəl şərtləri imzalayın və qəbul edin.",
+      "emailAlreadySent": "İddia təqdim edildi. Təsdiq e-məktubu artıq {{email}} nömrəsinə göndərilib.",
+      "emailSent": "İddia təqdim edildi. Təsdiq e-məktubu {{email}} nömrəsinə göndərildi.",
+      "emailFailed": "İddia təqdim edildi, lakin təsdiq e-poçtu avtomatik göndərilə bilmədi.",
+      "customerFallback": "müştəri",
+      "removeFile": "{{file}} silin"
+    }
+  },
+  "legal": {
+    "label": "Hüquqi",
+    "updated": "Son yeniləmə: 16 aprel 2026-cı il",
+    "privacy": {
+      "title": "Məxfilik Siyasəti",
+      "intro": "Bu siyasət uçuş kompensasiyası vebsaytımızdan, iddia axınımızdan, əlaqə formalarımızdan və xəbər bülletenimizdən istifadə etdiyiniz zaman Fly Friendly-nin məlumatı necə topladığını, istifadə etdiyini, saxladığını və qoruduğunu izah edir.",
+      "sections": [
+        {
+          "title": "1. Biz kimik",
+          "text": "Fly Friendly uçuş təzminatına dəstək xidmətidir. Biz sərnişinlərə potensial uyğunluğu yoxlamaqda, uçuşun dayandırılması təfərrüatlarını təqdim etməkdə, dəstəkləyici sənədləri yükləməkdə və iddia irəliləyişini izləməkdə kömək edirik."
+        },
+        {
+          "title": "2. Topladığımız məlumat",
+          "text": "Veb saytdan necə istifadə etdiyinizdən asılı olaraq, biz aşağıdakıları toplaya bilərik:",
+          "items": [
+            "Ad, e-poçt ünvanı, telefon nömrəsi və mesaj məzmunu kimi əlaqə məlumatları.",
+            "Aviaşirkət, marşrut, tarix, gecikmə müddəti, ləğvetmə təfərrüatları, rezervasiya arayışı və iş statusu kimi uçuş və iddia təfərrüatları.",
+            "Yükləməyi seçdiyiniz sənədlər, məsələn, sifariş təsdiqləri, minik biletləri, aviaşirkət bildirişləri və ya iddia üçün tələb olunarsa, şəxsiyyət məlumatı.",
+            "Cihaz növü, brauzer, IP ünvanı, ziyarət edilən səhifələr və kuki identifikatorları kimi texniki məlumatlar.",
+            "Yeniliklərə abunə olsanız, bülleten və marketinq üstünlükləri."
+          ]
+        },
+        {
+          "title": "3. Məlumatdan necə istifadə edirik",
+          "items": [
+            "Uçuş kompensasiyası iddialarını qiymətləndirmək və idarə etmək.",
+            "İşiniz, dəstək sorğunuz və ya göndərdiyiniz mesaj haqqında sizinlə əlaqə saxlamaq üçün.",
+            "İddia sənədlərini hazırlamaq və lazım olduqda hava yolları və ya müvafiq tərəflərlə əlaqə saxlamaq.",
+            "Veb saytın performansını, istifadəçi təcrübəsini, saxtakarlığın qarşısının alınmasını və təhlükəsizliyi yaxşılaşdırmaq üçün.",
+            "Xəbər bülletenlərini və ya yeniləmələri yalnız abunə olduğunuzda və ya buna başqa şəkildə icazə verdikdə göndərmək üçün."
+          ]
+        },
+        {
+          "title": "4. Məlumatın paylaşılması",
+          "text": "Biz məlumatı aviaşirkətlər, hüquqi və ya əməliyyat partnyorları, ödəniş provayderləri, analitik provayderlər, hostinq provayderləri və digər xidmət təminatçıları ilə yalnız iddiaların idarə edilməsi, vebsaytın işləməsi, uyğunluq və ya dəstək üçün lazım olduqda paylaşa bilərik."
+        },
+        {
+          "title": "5. Saxlama və təhlükəsizlik",
+          "text": "Biz məlumatı yalnız toplandığı məqsəd üçün ağlabatan lazım olan müddətcə saxlayırıq, o cümlədən iddiaların idarə edilməsi, qeydlərin aparılması, hüquqi öhdəliklər, mübahisələrin həlli və saxtakarlığın qarşısının alınması. Biz şəxsi məlumatları qorumaq üçün ağlabatan təşkilati və texniki tədbirlərdən istifadə edirik."
+        },
+        {
+          "title": "6. Hüquqlarınız",
+          "text": "Yerləşdiyiniz yerdən asılı olaraq, şəxsi məlumatlarınıza daxil olmaq, düzəltmək, silmək, məhdudlaşdırmaq və ya müəyyən emalına etiraz etmək hüquqlarınız ola bilər. Siz həmçinin marketinq razılığını geri ala bilərsiniz. Sorğu etmək üçün <emailLink>info@fly-friendly.com</emailLink>."
+        },
+        {
+          "title": "7 ilə əlaqə saxlayın. Əlaqə",
+          "text": "Məxfiliyə dair suallar <emailLink>info@fly-friendly.com</emailLink> ünvanına göndərilə bilər."
+        }
+      ],
+      "note": "Bu səhifə Fly Friendly xidmət modelinə əsaslanan praktiki veb-sayt siyasəti layihəsidir. İstehsaldan istifadə etməzdən əvvəl məsləhətçi tərəfindən nəzərdən keçirilməlidir."
+    },
+    "terms": {
+      "title": "İstifadə şərtləri",
+      "intro": "Bu şərtlər Fly Friendly vebsaytından, iddia təqdimetmə alətlərindən, istinad səhifələrindən, xəbər bülleteni formalarından və əlaqəli onlayn xidmətlərdən istifadənizi tənzimləyir.",
+      "sections": [
+        {
+          "title": "1. Vebsaytdan istifadə",
+          "text": "Siz internet saytından sərnişin hüquqları haqqında öyrənmək, potensial kompensasiyaları yoxlamaq, əlaqə sorğularını göndərmək və iddiaya başlamaq üçün istifadə edə bilərsiniz. Siz veb-saytdan qanuni şəkildə istifadə etməyə və onun işinə, təhlükəsizliyinə və ya mövcudluğuna müdaxilə etməməyə razılaşırsınız."
+        },
+        {
+          "title": "2. İddia məlumatı",
+          "text": "Siz dəqiq, tam və aktual uçuş, sərnişin, əlaqə və sənəd məlumatlarının təmin edilməsinə cavabdehsiniz. Qeyri-dəqiq məlumatlar nəzərdən keçirilməsini gecikdirə və ya iddianın baxılmasına mane ola bilər."
+        },
+        {
+          "title": "3. Kompensasiya zəmanətinin olmaması",
+          "text": "Uyğunluq marşrutdan, fasilə növündən, gecikmə uzunluğundan, aviaşirkətin məsuliyyətindən, sübutlardan, tətbiq olunan qanunlardan və digər amillərdən asılıdır. Fly Friendly iddiaları qiymətləndirməyə və davam etdirməyə kömək edə bilər, lakin biz hər bir təqdim edilmiş işin uğur qazanacağına zəmanət vermirik."
+        },
+        {
+          "title": "4. Rüsumlar və ödənişlər",
+          "text": "Veb sayt qalibiyyət, heç bir ödəniş kimi uğura əsaslanan yanaşmanı təsvir edir. Hər hansı son rüsum, komissiya və ya ödəniş razılaşması iddia prosesi zamanı təqdim olunan iddia müqaviləsində və ya xidmət şərtlərində təsdiqlənməlidir."
+        },
+        {
+          "title": "5. İstifadəçi davranışı",
+          "items": [
+            "Yalan, aldadıcı və ya saxta məlumatlar təqdim etməyin.",
+            "Zərərli proqram, qeyri-qanuni material və ya paylaşmağa icazəniz olmayan məlumatları ehtiva edən faylları yükləməyin.",
+            "Veb saytı kopyalamayın, qırmayın, pozmayın, tərsinə çevirməyin və ya sui-istifadə etməyin."
+          ]
+        },
+        {
+          "title": "6. Məzmun və əqli mülkiyyət",
+          "text": "Fly Friendly adı, vebsayt dizaynı, mətn, qrafika və brend aktivləri Fly Friendly və ya onun lisenziya verənlərinə məxsusdur. Siz icazəsiz onlardan kommersiya məqsədli istifadə edə bilməzsiniz."
+        },
+        {
+          "title": "7. Məsuliyyətin məhdudlaşdırılması",
+          "text": "Veb sayt ümumi məlumat və xidmətə giriş üçün nəzərdə tutulub. Qanunun icazə verdiyi maksimum dərəcədə, Fly Friendly dolayı itkilərə, vebsayta əlçatan olmayan girişə, üçüncü tərəfin hərəkətlərinə, aviaşirkətin qərarlarına və ya istifadəçilər tərəfindən təqdim edilən qeyri-dəqiq məlumatların nəticələrinə görə məsuliyyət daşımır."
+        },
+        {
+          "title": "8. Əlaqə",
+          "text": "Bu şərtlərlə bağlı suallarınız üçün <emailLink>info@fly-friendly.com</emailLink> ilə əlaqə saxlayın."
+        }
+      ],
+      "note": "Bu İstifadə Şərtləri səhifəsi saytın funksionallığına əsaslanan layihədir və istehsaldan istifadə etməzdən əvvəl məsləhətçi tərəfindən nəzərdən keçirilməlidir."
+    },
+    "cookies": {
+      "title": "Kukilər Siyasəti",
+      "intro": "Bu siyasət Fly Friendly-nin vebsaytın işləməsini saxlamaq, istifadəni başa düşmək, performansı yaxşılaşdırmaq və marketinqi dəstəkləmək üçün kukilərdən və oxşar texnologiyalardan necə istifadə edə biləcəyini izah edir.",
+      "sections": [
+        {
+          "title": "1. Kukilər nələrdir",
+          "text": "Kukilər vebsayta daxil olduğunuz zaman cihazınızda saxlanılan kiçik mətn fayllarıdır. Oxşar texnologiyalara yerli yaddaş, piksellər, teqlər və analitik identifikatorlar daxildir."
+        },
+        {
+          "title": "2. İstifadə edə biləcəyimiz kukilərin növləri",
+          "items": [
+            "Əsas kukilər: Naviqasiya, təhlükəsizlik, formalar və əsas veb-sayt funksiyaları üçün tələb olunur.",
+            "Üstünlük kukiləri: Dil və ya ekran parametrləri kimi seçimləri yadda saxlayın.",
+            "Analitik kukilər: Səhifə ziyarətlərini, trafik mənbələrini və istifadəçilərin vebsaytla necə qarşılıqlı əlaqədə olduğunu anlamağa kömək edin.",
+            "Marketinq kukiləri: Kampaniyaları, yönləndirmə fəaliyyətini və ya xəbər bülleteni performansını ölçməyə kömək edə bilər."
+          ]
+        },
+        {
+          "title": "3. Niyə biz kukilərdən istifadə edirik",
+          "text": "Kukilər saytı etibarlı saxlamağa, iddia səyahətini yaxşılaşdırmağa, hansı səhifələrin faydalı olduğunu başa düşməyə, texniki problemləri aşkar etməyə və istinad və xəbər bülleteni kampaniyaları kimi məzmunun performansını ölçməyə kömək edir."
+        },
+        {
+          "title": "4. Üçüncü tərəf alətləri",
+          "text": "Analitika, hostinq, formalar, təhlükəsizlik və marketinq ölçüləri üçün üçüncü tərəf təminatçılarından istifadə edə bilərik. Bu provayderlər öz siyasətlərinə uyğun olaraq kukilər quraşdıra və ya texniki məlumatları toplaya bilərlər."
+        },
+        {
+          "title": "5. Kukilərin idarə edilməsi",
+          "text": "Siz brauzerinizin parametrləri vasitəsilə kukiləri bloklaya, silə və ya məhdudlaşdıra bilərsiniz. Kukilər deaktiv edilərsə, bəzi əsas veb-sayt funksiyaları düzgün işləməyə bilər."
+        },
+        {
+          "title": "6. Əlaqə",
+          "text": "Kukilərlə bağlı sualları <emailLink>info@fly-friendly.com</emailLink> nömrəsinə göndərə bilərsiniz."
+        }
+      ],
+      "note": "Bu Kukilər Siyasəti Fly Friendly veb-sayt modelinə əsaslanan layihədir və istehsaldan istifadə etməzdən əvvəl nəzərdən keçirilməlidir."
+    }
+  }
+}
