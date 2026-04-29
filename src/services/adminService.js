@@ -1611,7 +1611,7 @@ function slugifyText(value) {
   return String(value || "")
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 96);
 }
@@ -1754,7 +1754,7 @@ export async function fetchBlogModuleData() {
   const client = requireSupabase();
   const response = await client
     .from("blog_posts")
-    .select("id, title, slug, excerpt, content, cover_image, categories, tags, author_name, status, published_at, seo_title, seo_description, created_at, updated_at, created_by, updated_by")
+    .select("id, title, slug, excerpt, content, content_sections, cover_image, categories, tags, author_name, status, published_at, locale, read_time, seo_title, seo_description, created_at, updated_at, created_by, updated_by")
     .order("updated_at", { ascending: false })
     .limit(500);
 
@@ -1778,11 +1778,14 @@ export async function createBlogPost(input) {
     excerpt: input.excerpt || null,
     content: input.content || "",
     cover_image: input.cover_image || null,
+    content_sections: input.content_sections || [],
     categories: input.categories || [],
     tags: input.tags || [],
     author_name: input.author_name || null,
     status: input.status || "draft",
     published_at: input.published_at || null,
+    locale: input.locale || "en",
+    read_time: input.read_time || null,
     seo_title: input.seo_title || null,
     seo_description: input.seo_description || null,
     created_by: user?.id || null,

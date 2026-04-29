@@ -3,6 +3,8 @@ import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-r
 import Home from "../pages/Home/index.jsx";
 import About from "../pages/About/index.jsx";
 import Contact from "../pages/Contact/index.jsx";
+import Blog from "../pages/Blog/index.jsx";
+import BlogArticle from "../pages/Blog/Article.jsx";
 import Referral from "../pages/Referral/index.jsx";
 import Claim from "../pages/Claim/index.jsx";
 import Admin from "../pages/Admin/index.jsx";
@@ -97,6 +99,8 @@ function AnimatedRoutes({ location }) {
       <Route path="/claim" element={<RedirectToPreferredLanguage />} />
       <Route path="/claim/:stage" element={<RedirectToPreferredLanguage />} />
       <Route path="/contact" element={<RedirectToPreferredLanguage />} />
+      <Route path="/blog" element={<RedirectToPreferredLanguage />} />
+      <Route path="/blog/:slug" element={<RedirectToPreferredLanguage />} />
       <Route path="/about" element={<RedirectToPreferredLanguage />} />
       <Route path="/aboutUs" element={<RedirectToPreferredLanguage />} />
       <Route path="/privacyPolicy" element={<RedirectToPreferredLanguage />} />
@@ -110,6 +114,8 @@ function AnimatedRoutes({ location }) {
         <Route path="claim" element={<Claim />} />
         <Route path="claim/:stage" element={<Claim />} />
         <Route path="contact" element={<Contact />} />
+        <Route path="blog" element={<Blog />} />
+        <Route path="blog/:slug" element={<BlogArticle />} />
         <Route path="about" element={<About />} />
         <Route path="aboutUs" element={<About />} />
         <Route path="privacyPolicy" element={<PrivacyPolicy />} />

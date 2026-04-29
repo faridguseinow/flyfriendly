@@ -131,10 +131,26 @@
     "processLabel": "How It Works",
     "processTitle": "Four clear stages",
     "processSteps": [
-      { "number": "1", "title": "Enter details", "text": "Provide flight, route, disruption, and passenger information." },
-      { "number": "2", "title": "Upload documents", "text": "Add booking confirmation, boarding pass, airline messages, or ID if needed." },
-      { "number": "3", "title": "Submit", "text": "Send the claim for review and airline communication." },
-      { "number": "4", "title": "Track status", "text": "Follow updates until the case is resolved or closed." }
+      {
+        "number": "1",
+        "title": "Enter details",
+        "text": "Provide flight, route, disruption, and passenger information."
+      },
+      {
+        "number": "2",
+        "title": "Upload documents",
+        "text": "Add booking confirmation, boarding pass, airline messages, or ID if needed."
+      },
+      {
+        "number": "3",
+        "title": "Submit",
+        "text": "Send the claim for review and airline communication."
+      },
+      {
+        "number": "4",
+        "title": "Track status",
+        "text": "Follow updates until the case is resolved or closed."
+      }
     ],
     "helpTitle": "Need help?",
     "helpText": "Reach out to our team and we will guide you through the next steps.",
@@ -357,20 +373,44 @@
     "exclusiveAccessTitle": "More than earnings, it's partnership",
     "exclusiveAccessText": "Fly Friendly supports every creator with the tools and visibility they deserve.",
     "accessItems": [
-      { "title": "Compete and win travel vouchers.", "text": "Earn up to 20% on every successful referral." },
-      { "title": "Featured Partner Spotlights", "text": "Get promoted on our channels." },
-      { "title": "Custom Collab Opportunities", "text": "Co-create campaigns with our design team." },
-      { "title": "Creator Resource Hub", "text": "Tutorials, tips, and analytics insights." }
+      {
+        "title": "Compete and win travel vouchers.",
+        "text": "Earn up to 20% on every successful referral."
+      },
+      {
+        "title": "Featured Partner Spotlights",
+        "text": "Get promoted on our channels."
+      },
+      {
+        "title": "Custom Collab Opportunities",
+        "text": "Co-create campaigns with our design team."
+      },
+      {
+        "title": "Creator Resource Hub",
+        "text": "Tutorials, tips, and analytics insights."
+      }
     ],
     "photoCard": "Turn your audience into opportunity.",
     "benefitsLabel": "Program Benefits",
     "benefitsTitle": "A trusted partner worldwide",
     "benefitsText": "Serving millions of passengers in all countries, speaking all languages.",
     "benefits": [
-      { "title": "Generous Commissions", "text": "Earn up to 20% on every successful referral." },
-      { "title": "Instant Tracking Dashboard", "text": "View clicks, signups, and earnings in real time." },
-      { "title": "Creative Assets Provided", "text": "Ready-made visuals, brand kits, and caption templates." },
-      { "title": "Global Recognition", "text": "Be part of a network that's changing flight experiences worldwide." }
+      {
+        "title": "Generous Commissions",
+        "text": "Earn up to 20% on every successful referral."
+      },
+      {
+        "title": "Instant Tracking Dashboard",
+        "text": "View clicks, signups, and earnings in real time."
+      },
+      {
+        "title": "Creative Assets Provided",
+        "text": "Ready-made visuals, brand kits, and caption templates."
+      },
+      {
+        "title": "Global Recognition",
+        "text": "Be part of a network that's changing flight experiences worldwide."
+      }
     ],
     "processLabel": "Simple 3-Step Process",
     "processTitle": "Your path to effortless earnings",
@@ -441,7 +481,12 @@
     "allAirlines": "All airlines",
     "allCountries": "All countries",
     "noWinNoFee": "No win, no fee",
-    "stages": ["Eligibility Check", "Contact Information", "Documents", "Finish"],
+    "stages": [
+      "Eligibility Check",
+      "Contact Information",
+      "Documents",
+      "Finish"
+    ],
     "emailError": "Введите корректный email адрес",
     "eligibility": {
       "whereDidYouFly": "Where did you fly?",
@@ -521,11 +566,26 @@
       "nextTitle": "What happens next",
       "nextText": "Every claim is handled by a dedicated team, specialists, negotiators, and legal pros who know air travel inside out.",
       "nextSteps": [
-        ["We check your flight history", "Our specialists confirm all flight data, from departure records to delay reasons."],
-        ["We build your case smartly", "AI-assisted tools help us gather the strongest arguments, so airlines can't ignore your rights."],
-        ["We talk to the airline", "Our negotiation team contacts the airline directly, speeding up responses and ensuring fair compensation."],
-        ["If things get complicated", "Sometimes airlines resist. That's when our legal network steps in to take it further, still no fee unless you win."],
-        ["Payment takes off", "When your claim is approved, we transfer the money straight to your account."]
+        [
+          "We check your flight history",
+          "Our specialists confirm all flight data, from departure records to delay reasons."
+        ],
+        [
+          "We build your case smartly",
+          "AI-assisted tools help us gather the strongest arguments, so airlines can't ignore your rights."
+        ],
+        [
+          "We talk to the airline",
+          "Our negotiation team contacts the airline directly, speeding up responses and ensuring fair compensation."
+        ],
+        [
+          "If things get complicated",
+          "Sometimes airlines resist. That's when our legal network steps in to take it further, still no fee unless you win."
+        ],
+        [
+          "Payment takes off",
+          "When your claim is approved, we transfer the money straight to your account."
+        ]
       ]
     },
     "status": {
@@ -671,5 +731,69 @@
       ],
       "note": "This Cookies Policy is a draft based on the Fly Friendly website model and should be reviewed before production use."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Search travel guides",
+    "searchAria": "Search blog posts",
+    "readArticle": "Read article",
+    "noResultsLabel": "No results",
+    "noResultsTitle": "No matching guides yet",
+    "noResultsText": "Try a different keyword or explore our latest air passenger rights resources.",
+    "backToBlog": "Back to blog",
+    "relatedLabel": "Keep reading",
+    "relatedTitle": "More travel guides",
+    "articleDetails": [
+      {
+        "readTime": "5 min read",
+        "sections": [
+          {
+            "title": "What passenger rights usually cover",
+            "body": "When a flight is delayed, cancelled, overbooked, or causes a missed connection, passengers may have compensation rights depending on the route, airline responsibility, and arrival delay. The important first step is to keep your booking reference, boarding pass, and any airline messages."
+          },
+          {
+            "title": "Why timing matters",
+            "body": "Eligibility is often tied to the final arrival time, not only the departure delay. A disruption that looks small at the gate can still become claimable if you arrive several hours late at your final destination."
+          },
+          {
+            "title": "How Fly Friendly helps",
+            "body": "Fly Friendly checks the disruption details, organizes the claim evidence, and handles communication with the airline so passengers do not have to navigate policy language alone."
+          }
+        ]
+      },
+      {
+        "readTime": "4 min read",
+        "sections": [
+          {
+            "title": "Airlines review claims carefully",
+            "body": "Compensation claims can take time because airlines review operational records, weather reports, airport restrictions, and internal disruption notes before accepting liability."
+          },
+          {
+            "title": "Missing documents slow things down",
+            "body": "The most common delays come from incomplete passenger details, missing booking references, or unclear flight timelines. A clean claim file makes the process easier to defend."
+          },
+          {
+            "title": "How we speed up the process",
+            "body": "We structure the claim clearly, submit the right evidence, track responses, and follow up when airlines delay decisions longer than expected."
+          }
+        ]
+      },
+      {
+        "readTime": "6 min read",
+        "sections": [
+          {
+            "title": "Book with disruption risk in mind",
+            "body": "Direct flights, realistic connection windows, and morning departures can reduce the chance that one delay ruins the rest of your trip."
+          },
+          {
+            "title": "Keep a simple travel record",
+            "body": "Save boarding passes, screenshots of delay notifications, booking confirmations, and arrival times. These details are easy to forget after a stressful travel day."
+          },
+          {
+            "title": "Know when to check compensation",
+            "body": "If your arrival was delayed by several hours, your flight was cancelled close to departure, or you were denied boarding, it is worth checking your eligibility before moving on."
+          }
+        ]
+      }
+    ]
   }
 }

@@ -731,5 +731,69 @@
       ],
       "note": "Diese Cookie-Richtlinie ist ein Entwurf, der auf dem Website-Modell Fly Friendly basiert und vor der Verwendung in der Produktion überprüft werden sollte."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Reiseführer suchen",
+    "searchAria": "Blogbeiträge suchen",
+    "readArticle": "Artikel lesen",
+    "noResultsLabel": "Keine Ergebnisse",
+    "noResultsTitle": "Keine passenden Leitfäden",
+    "noResultsText": "Versuchen Sie ein anderes Stichwort oder lesen Sie unsere Ressourcen zu Fluggastrechten.",
+    "backToBlog": "Zurück zum Blog",
+    "relatedLabel": "Weiterlesen",
+    "relatedTitle": "Weitere Reiseleitfäden",
+    "articleDetails": [
+      {
+        "readTime": "5 Min. Lesezeit",
+        "sections": [
+          {
+            "title": "Was Fluggastrechte normalerweise abdecken",
+            "body": "Wenn ein Flug verspätet, annulliert, überbucht ist oder zu einem verpassten Anschluss führt, können Passagiere je nach Strecke, Verantwortung der Airline und Ankunftsverspätung Anspruch auf Entschädigung haben. Wichtig ist zuerst, Buchungsreferenz, Bordkarte und Nachrichten der Airline aufzubewahren."
+          },
+          {
+            "title": "Warum der Zeitpunkt wichtig ist",
+            "body": "Die Berechtigung hängt oft von der tatsächlichen Ankunftszeit am Endziel ab, nicht nur von der Abflugverspätung. Eine kleine Störung am Gate kann anspruchsberechtigt sein, wenn Sie mehrere Stunden später am Ziel ankommen."
+          },
+          {
+            "title": "Wie Fly Friendly hilft",
+            "body": "Fly Friendly prüft die Störungsdetails, ordnet die Nachweise und übernimmt die Kommunikation mit der Airline, damit Passagiere sich nicht allein durch Richtlinien kämpfen müssen."
+          }
+        ]
+      },
+      {
+        "readTime": "4 Min. Lesezeit",
+        "sections": [
+          {
+            "title": "Airlines prüfen Ansprüche sorgfältig",
+            "body": "Entschädigungsansprüche können Zeit brauchen, weil Airlines Betriebsdaten, Wetterberichte, Flughafenbeschränkungen und interne Störungsnotizen prüfen, bevor sie Verantwortung anerkennen."
+          },
+          {
+            "title": "Fehlende Dokumente bremsen den Ablauf",
+            "body": "Die häufigsten Verzögerungen entstehen durch unvollständige Passagierdaten, fehlende Buchungsreferenzen oder unklare Flugabläufe. Eine saubere Anspruchsakte erleichtert die Durchsetzung."
+          },
+          {
+            "title": "Wie wir den Prozess beschleunigen",
+            "body": "Wir strukturieren den Anspruch klar, reichen die richtigen Nachweise ein, verfolgen Antworten und haken nach, wenn Airlines Entscheidungen länger als erwartet verzögern."
+          }
+        ]
+      },
+      {
+        "readTime": "6 Min. Lesezeit",
+        "sections": [
+          {
+            "title": "Buchen Sie mit Blick auf Störungsrisiken",
+            "body": "Direktflüge, realistische Umsteigezeiten und morgendliche Abflüge können das Risiko reduzieren, dass eine Verspätung die gesamte Reise beeinträchtigt."
+          },
+          {
+            "title": "Führen Sie einfache Reiseunterlagen",
+            "body": "Speichern Sie Bordkarten, Screenshots von Verspätungsmeldungen, Buchungsbestätigungen und Ankunftszeiten. Diese Details geraten nach einem stressigen Reisetag leicht in Vergessenheit."
+          },
+          {
+            "title": "Wissen, wann sich ein Entschädigungscheck lohnt",
+            "body": "Wenn Sie mehrere Stunden verspätet angekommen sind, Ihr Flug kurz vor Abflug annulliert wurde oder Ihnen die Beförderung verweigert wurde, sollten Sie Ihre Berechtigung prüfen."
+          }
+        ]
+      }
+    ]
   }
 }

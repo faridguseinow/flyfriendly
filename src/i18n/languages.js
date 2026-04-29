@@ -11,6 +11,7 @@ export const languages = [
   { code: "de", label: "German", nativeLabel: "Deutsch", flag: "🇩🇪", group: "additional" },
   { code: "it", label: "Italian", nativeLabel: "Italiano", flag: "🇮🇹", group: "additional" },
   { code: "tr", label: "Turkish", nativeLabel: "Türkçe", flag: "🇹🇷", group: "additional" },
+  { code: "ka", label: "Georgian", nativeLabel: "ქართული", flag: "🇬🇪", group: "additional" },
   { code: "uk", label: "Ukrainian", nativeLabel: "Українська", flag: "🇺🇦", group: "additional" },
   { code: "pl", label: "Polish", nativeLabel: "Polski", flag: "🇵🇱", group: "additional" },
 ];

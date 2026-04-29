@@ -731,5 +731,69 @@
       ],
       "note": "La presente Politica sui cookie è una bozza basata sul modello del sito web Fly Friendly e deve essere rivista prima dell'uso in produzione."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Cerca guide di viaggio",
+    "searchAria": "Cerca articoli del blog",
+    "readArticle": "Leggi articolo",
+    "noResultsLabel": "Nessun risultato",
+    "noResultsTitle": "Nessuna guida corrispondente",
+    "noResultsText": "Prova un’altra parola chiave o esplora le nostre risorse sui diritti dei passeggeri aerei.",
+    "backToBlog": "Torna al blog",
+    "relatedLabel": "Continua a leggere",
+    "relatedTitle": "Altre guide di viaggio",
+    "articleDetails": [
+      {
+        "readTime": "5 min di lettura",
+        "sections": [
+          {
+            "title": "Cosa coprono di solito i diritti dei passeggeri",
+            "body": "Quando un volo è in ritardo, cancellato, in overbooking o causa una coincidenza persa, i passeggeri possono avere diritto a un risarcimento in base alla rotta, alla responsabilità della compagnia e al ritardo all’arrivo. Il primo passo è conservare riferimento di prenotazione, carta d’imbarco e messaggi della compagnia."
+          },
+          {
+            "title": "Perché il tempo conta",
+            "body": "L’idoneità spesso dipende dall’orario effettivo di arrivo alla destinazione finale, non solo dal ritardo in partenza. Un problema apparentemente piccolo al gate può diventare reclamabile se arrivi con diverse ore di ritardo."
+          },
+          {
+            "title": "Come aiuta Fly Friendly",
+            "body": "Fly Friendly verifica i dettagli dell’interruzione, organizza le prove della richiesta e gestisce la comunicazione con la compagnia, così i passeggeri non devono affrontare da soli regole complesse."
+          }
+        ]
+      },
+      {
+        "readTime": "4 min di lettura",
+        "sections": [
+          {
+            "title": "Le compagnie esaminano attentamente le richieste",
+            "body": "Le richieste di risarcimento possono richiedere tempo perché le compagnie verificano registri operativi, meteo, restrizioni aeroportuali e note interne prima di accettare la responsabilità."
+          },
+          {
+            "title": "I documenti mancanti rallentano tutto",
+            "body": "I ritardi più comuni derivano da dati passeggero incompleti, riferimenti di prenotazione mancanti o cronologie di volo poco chiare. Un fascicolo ordinato rende la richiesta più facile da sostenere."
+          },
+          {
+            "title": "Come acceleriamo il processo",
+            "body": "Strutturiamo chiaramente la richiesta, inviamo le prove corrette, monitoriamo le risposte e sollecitiamo quando le compagnie ritardano le decisioni più del previsto."
+          }
+        ]
+      },
+      {
+        "readTime": "6 min di lettura",
+        "sections": [
+          {
+            "title": "Prenota considerando il rischio di disagi",
+            "body": "Voli diretti, coincidenze realistiche e partenze al mattino possono ridurre il rischio che un ritardo rovini l’intero viaggio."
+          },
+          {
+            "title": "Conserva una semplice traccia del viaggio",
+            "body": "Salva carte d’imbarco, screenshot delle notifiche di ritardo, conferme di prenotazione e orari di arrivo. Dopo una giornata stressante questi dettagli si dimenticano facilmente."
+          },
+          {
+            "title": "Sapere quando controllare il risarcimento",
+            "body": "Se sei arrivato con diverse ore di ritardo, il volo è stato cancellato vicino alla partenza o ti è stato negato l’imbarco, vale la pena verificare l’idoneità."
+          }
+        ]
+      }
+    ]
   }
 }

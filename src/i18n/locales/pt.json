@@ -731,5 +731,69 @@
       ],
       "note": "Esta Política de Cookies é um rascunho baseado no modelo de site Fly Friendly e deve ser revisada antes do uso em produção."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Pesquisar guias de viagem",
+    "searchAria": "Pesquisar publicações do blog",
+    "readArticle": "Ler artigo",
+    "noResultsLabel": "Sem resultados",
+    "noResultsTitle": "Nenhum guia correspondente",
+    "noResultsText": "Experimente outra palavra-chave ou explore os nossos recursos sobre direitos dos passageiros aéreos.",
+    "backToBlog": "Voltar ao blog",
+    "relatedLabel": "Continuar lendo",
+    "relatedTitle": "Mais guias de viagem",
+    "articleDetails": [
+      {
+        "readTime": "5 min de leitura",
+        "sections": [
+          {
+            "title": "O que os direitos dos passageiros normalmente cobrem",
+            "body": "Quando um voo atrasa, é cancelado, está sobrelotado ou causa uma ligação perdida, os passageiros podem ter direito a compensação dependendo da rota, da responsabilidade da companhia aérea e do atraso na chegada. O primeiro passo é guardar a referência da reserva, o cartão de embarque e todas as mensagens da companhia."
+          },
+          {
+            "title": "Porque o horário importa",
+            "body": "A elegibilidade costuma depender da hora real de chegada ao destino final, não apenas do atraso na partida. Uma perturbação pequena no portão pode tornar-se reclamável se chegar várias horas atrasado ao destino final."
+          },
+          {
+            "title": "Como a Fly Friendly ajuda",
+            "body": "A Fly Friendly verifica os detalhes da perturbação, organiza as provas da reclamação e gere a comunicação com a companhia aérea para que os passageiros não tenham de lidar sozinhos com regras complexas."
+          }
+        ]
+      },
+      {
+        "readTime": "4 min de leitura",
+        "sections": [
+          {
+            "title": "As companhias analisam reclamações com cuidado",
+            "body": "As reclamações de compensação podem demorar porque as companhias verificam registos operacionais, meteorologia, restrições do aeroporto e notas internas antes de aceitar responsabilidade."
+          },
+          {
+            "title": "Documentos em falta atrasam o processo",
+            "body": "Os atrasos mais comuns vêm de dados incompletos do passageiro, referências de reserva em falta ou cronologias de voo pouco claras. Um ficheiro organizado torna a reclamação mais fácil de defender."
+          },
+          {
+            "title": "Como aceleramos o processo",
+            "body": "Estruturamos a reclamação com clareza, enviamos as provas corretas, acompanhamos respostas e fazemos seguimento quando as companhias atrasam decisões mais do que o esperado."
+          }
+        ]
+      },
+      {
+        "readTime": "6 min de leitura",
+        "sections": [
+          {
+            "title": "Reserve pensando no risco de perturbações",
+            "body": "Voos diretos, ligações realistas e partidas de manhã podem reduzir a probabilidade de um atraso estragar toda a viagem."
+          },
+          {
+            "title": "Mantenha um registo simples da viagem",
+            "body": "Guarde cartões de embarque, capturas de notificações de atraso, confirmações de reserva e horários de chegada. Estes detalhes são fáceis de esquecer depois de um dia stressante."
+          },
+          {
+            "title": "Saiba quando verificar a compensação",
+            "body": "Se chegou várias horas atrasado, se o voo foi cancelado perto da partida ou se lhe foi recusado o embarque, vale a pena verificar a elegibilidade."
+          }
+        ]
+      }
+    ]
   }
 }

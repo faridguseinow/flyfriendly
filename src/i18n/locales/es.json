@@ -731,5 +731,69 @@
       ],
       "note": "Esta Política de Cookies es un borrador basado en el modelo de sitio web Fly Friendly y debe revisarse antes de su uso en producción."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Buscar guías de viaje",
+    "searchAria": "Buscar publicaciones del blog",
+    "readArticle": "Leer artículo",
+    "noResultsLabel": "Sin resultados",
+    "noResultsTitle": "No hay guías coincidentes",
+    "noResultsText": "Prueba otra palabra clave o explora nuestros recursos sobre derechos de pasajeros aéreos.",
+    "backToBlog": "Volver al blog",
+    "relatedLabel": "Seguir leyendo",
+    "relatedTitle": "Más guías de viaje",
+    "articleDetails": [
+      {
+        "readTime": "5 min de lectura",
+        "sections": [
+          {
+            "title": "Qué suelen cubrir los derechos de los pasajeros",
+            "body": "Cuando un vuelo se retrasa, se cancela, está sobrevendido o provoca una conexión perdida, los pasajeros pueden tener derecho a compensación según la ruta, la responsabilidad de la aerolínea y el retraso en la llegada. El primer paso importante es conservar la referencia de reserva, la tarjeta de embarque y cualquier mensaje de la aerolínea."
+          },
+          {
+            "title": "Por qué importa el tiempo",
+            "body": "La elegibilidad suele depender de la hora real de llegada al destino final, no solo del retraso en la salida. Una interrupción que parece pequeña en la puerta de embarque puede ser reclamable si llegas varias horas tarde a tu destino final."
+          },
+          {
+            "title": "Cómo ayuda Fly Friendly",
+            "body": "Fly Friendly revisa los detalles de la interrupción, organiza las pruebas de la reclamación y gestiona la comunicación con la aerolínea para que los pasajeros no tengan que enfrentarse solos al lenguaje de las políticas."
+          }
+        ]
+      },
+      {
+        "readTime": "4 min de lectura",
+        "sections": [
+          {
+            "title": "Las aerolíneas revisan las reclamaciones con cuidado",
+            "body": "Las reclamaciones de compensación pueden tardar porque las aerolíneas revisan registros operativos, informes meteorológicos, restricciones del aeropuerto y notas internas sobre la interrupción antes de aceptar responsabilidad."
+          },
+          {
+            "title": "Los documentos faltantes ralentizan el proceso",
+            "body": "Los retrasos más comunes vienen de datos incompletos del pasajero, referencias de reserva faltantes o cronologías de vuelo poco claras. Un expediente bien preparado facilita defender la reclamación."
+          },
+          {
+            "title": "Cómo aceleramos el proceso",
+            "body": "Estructuramos la reclamación con claridad, presentamos las pruebas correctas, hacemos seguimiento de las respuestas y contactamos de nuevo cuando las aerolíneas tardan más de lo esperado."
+          }
+        ]
+      },
+      {
+        "readTime": "6 min de lectura",
+        "sections": [
+          {
+            "title": "Reserva pensando en el riesgo de interrupciones",
+            "body": "Los vuelos directos, conexiones realistas y salidas por la mañana pueden reducir la posibilidad de que un retraso arruine todo tu viaje."
+          },
+          {
+            "title": "Mantén un registro simple del viaje",
+            "body": "Guarda tarjetas de embarque, capturas de notificaciones de retraso, confirmaciones de reserva y horas de llegada. Estos detalles se olvidan fácilmente después de un día estresante."
+          },
+          {
+            "title": "Sabe cuándo comprobar la compensación",
+            "body": "Si llegaste varias horas tarde, tu vuelo fue cancelado cerca de la salida o te denegaron el embarque, vale la pena comprobar tu elegibilidad antes de pasar página."
+          }
+        ]
+      }
+    ]
   }
 }

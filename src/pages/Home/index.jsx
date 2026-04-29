@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { useParams } from "react-router-dom";
 import ClaimBox from "../../components/ClaimBox/index.jsx";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import CompensationSlider from "../../components/CompensationSlider/index.jsx";
@@ -34,6 +35,10 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { useEffect } from "react";
+import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
+import { fetchPublishedBlogPosts } from "../../services/blogService.js";
+import { getArticles } from "../Blog/articles.js";
 import { openMailClient } from "../../utils/mailto.js";
 import deniedBoardingImage from "../../assets/media/Image-4.png";
 import missedConnectionPlane from "../../assets/media/hand-drawn-airplane-outline-illustration.png";
@@ -48,12 +53,6 @@ const testimonialImages = [
   "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=160&q=80",
   "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80",
 ];
-const articleImages = [
-  "https://images.unsplash.com/photo-1483450388369-9ed95738483c?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-];
-
 function IconBadge({ icon: Icon, className = "" }) {
   return (
     <span className={`icon ${className}`.trim()} aria-hidden="true">
@@ -105,15 +104,46 @@ function FaqItem({ item, isOpen, onToggle }) {
 
 function Home() {
   const { t } = useTranslation();
+  const { lang } = useParams();
+  const locale = lang || DEFAULT_LANGUAGE;
   const [openFaq, setOpenFaq] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [cmsArticles, setCmsArticles] = useState([]);
   const benefits = t("home.benefits", { returnObjects: true });
   const testimonials = t("home.testimonials", { returnObjects: true }).map((item, index) => ({ ...item, image: testimonialImages[index] }));
-  const articles = t("home.articles", { returnObjects: true }).map((item, index) => ({ ...item, image: articleImages[index] }));
+  const fallbackArticles = getArticles(
+    t("home.articles", { returnObjects: true }),
+    t("blog.articleDetails", { returnObjects: true }),
+  );
+  const articles = (cmsArticles.length ? cmsArticles : fallbackArticles).slice(0, 3);
   const faqs = t("home.faqs", { returnObjects: true });
   const membershipItems = t("home.membershipItems", { returnObjects: true });
   const disruptionCards = t("home.disruptionCards", { returnObjects: true });
   const stepCards = t("home.stepsCards", { returnObjects: true });
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadPosts() {
+      try {
+        const result = await fetchPublishedBlogPosts(locale);
+        if (isActive) {
+          setCmsArticles(result.posts);
+        }
+      } catch (error) {
+        console.warn("Could not load resources from Supabase.", error);
+        if (isActive) {
+          setCmsArticles([]);
+        }
+      }
+    }
+
+    loadPosts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [locale]);
 
   const handleNewsletterSubmit = (event) => {
     event.preventDefault();
@@ -135,8 +165,9 @@ function Home() {
   return (
     <>
       <section className="hero section">
+        <span className="hero__ambient hero__ambient--glow" aria-hidden="true" />
         <div className="hero__inner">
-          <span className="hero__ambient hero__ambient--glow" aria-hidden="true" />
+
           <span className="section-label is-primary"><Star size={16} fill="currentColor" aria-hidden="true" /> {t("home.heroLabel")}</span>
           <h1>{t("home.heroTitle")}<br /><strong>{t("home.heroTitleStrong")}</strong></h1>
           <p>{t("home.heroText")}</p>
@@ -152,12 +183,13 @@ function Home() {
           {benefits.map((item, index) => {
             const BenefitIcon = benefitIcons[index] || BadgeCheck;
             return (
-            <article className="mini-card" key={item.title}>
-              <IconBadge icon={BenefitIcon} />
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </article>
-          )})}
+              <article className="mini-card" key={item.title}>
+                <IconBadge icon={BenefitIcon} />
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            )
+          })}
         </div>
       </section>
 
@@ -300,12 +332,12 @@ function Home() {
         <p className="section-copy">{t("home.resourcesText")}</p>
         <div className="article-grid">
           {articles.map((item) => (
-            <article className="article-card" key={item.title}>
+            <LocalizedLink className="article-card" to={`/blog/${item.slug}`} key={item.title}>
               <img src={item.image} alt="" />
               <time>{item.date}</time>
               <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </article>
+              <p>{item.text || item.excerpt}</p>
+            </LocalizedLink>
           ))}
         </div>
       </section>

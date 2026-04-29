@@ -118,6 +118,7 @@ function Navbar() {
   const navLinks = useMemo(
     () => [
       { label: t("nav.referralProgram"), path: "/referralProgram" },
+      { label: t("nav.blog", { defaultValue: "Blog" }), path: "/blog" },
       { label: t("nav.contact"), path: "/contact" },
       { label: t("nav.aboutUs"), path: "/about" },
     ],

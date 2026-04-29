@@ -731,5 +731,69 @@
       ],
       "note": "Niniejsza Polityka dotycząca plików cookie jest wersją roboczą opartą na modelu witryny Fly Friendly i należy ją sprawdzić przed użyciem w wersji produkcyjnej."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Szukaj poradników podróżnych",
+    "searchAria": "Szukaj wpisów na blogu",
+    "readArticle": "Czytaj artykuł",
+    "noResultsLabel": "Brak wyników",
+    "noResultsTitle": "Brak pasujących poradników",
+    "noResultsText": "Spróbuj innego słowa kluczowego albo sprawdź nasze materiały o prawach pasażerów lotniczych.",
+    "backToBlog": "Wróć do bloga",
+    "relatedLabel": "Czytaj dalej",
+    "relatedTitle": "Więcej poradników",
+    "articleDetails": [
+      {
+        "readTime": "5 min czytania",
+        "sections": [
+          {
+            "title": "Co zwykle obejmują prawa pasażerów",
+            "body": "Gdy lot jest opóźniony, odwołany, przepełniony lub powoduje utratę przesiadki, pasażerowie mogą mieć prawo do odszkodowania w zależności od trasy, odpowiedzialności linii i opóźnienia przylotu. Pierwszym ważnym krokiem jest zachowanie numeru rezerwacji, karty pokładowej i wiadomości od linii lotniczej."
+          },
+          {
+            "title": "Dlaczego czas ma znaczenie",
+            "body": "Uprawnienie często zależy od faktycznego czasu przylotu do miejsca docelowego, a nie tylko od opóźnienia odlotu. Małe zakłócenie przy bramce może być podstawą roszczenia, jeśli dotrzesz kilka godzin później."
+          },
+          {
+            "title": "Jak pomaga Fly Friendly",
+            "body": "Fly Friendly sprawdza szczegóły zakłócenia, porządkuje dowody i prowadzi komunikację z linią lotniczą, aby pasażer nie musiał samodzielnie mierzyć się ze skomplikowanymi zasadami."
+          }
+        ]
+      },
+      {
+        "readTime": "4 min czytania",
+        "sections": [
+          {
+            "title": "Linie lotnicze dokładnie analizują roszczenia",
+            "body": "Roszczenia odszkodowawcze mogą potrwać, ponieważ linie sprawdzają zapisy operacyjne, raporty pogodowe, ograniczenia lotniska i wewnętrzne notatki przed przyjęciem odpowiedzialności."
+          },
+          {
+            "title": "Brakujące dokumenty spowalniają proces",
+            "body": "Najczęstsze opóźnienia wynikają z niepełnych danych pasażera, brakujących numerów rezerwacji lub niejasnej chronologii lotu. Uporządkowany plik roszczenia ułatwia jego obronę."
+          },
+          {
+            "title": "Jak przyspieszamy proces",
+            "body": "Jasno strukturyzujemy roszczenie, składamy właściwe dowody, śledzimy odpowiedzi i ponawiamy kontakt, gdy linie opóźniają decyzje dłużej niż oczekiwano."
+          }
+        ]
+      },
+      {
+        "readTime": "6 min czytania",
+        "sections": [
+          {
+            "title": "Rezerwuj z myślą o ryzyku zakłóceń",
+            "body": "Loty bezpośrednie, realistyczne przesiadki i poranne wyloty mogą zmniejszyć ryzyko, że jedno opóźnienie zepsuje całą podróż."
+          },
+          {
+            "title": "Prowadź prosty zapis podróży",
+            "body": "Zachowuj karty pokładowe, zrzuty powiadomień o opóźnieniach, potwierdzenia rezerwacji i godziny przylotu. Po stresującym dniu te szczegóły łatwo umykają."
+          },
+          {
+            "title": "Wiedz, kiedy sprawdzić odszkodowanie",
+            "body": "Jeśli dotarłeś kilka godzin później, lot odwołano blisko wylotu lub odmówiono ci wejścia na pokład, warto sprawdzić uprawnienie do odszkodowania."
+          }
+        ]
+      }
+    ]
   }
 }

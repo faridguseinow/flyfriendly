@@ -731,5 +731,69 @@
       ],
       "note": "Bu Çerez Politikası, Fly Friendly web sitesi modelini temel alan bir taslaktır ve üretimde kullanılmadan önce gözden geçirilmelidir."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Seyahat rehberlerinde ara",
+    "searchAria": "Blog yazılarında ara",
+    "readArticle": "Makaleyi oku",
+    "noResultsLabel": "Sonuç yok",
+    "noResultsTitle": "Eşleşen rehber bulunamadı",
+    "noResultsText": "Farklı bir anahtar kelime deneyin veya hava yolcu hakları kaynaklarımızı inceleyin.",
+    "backToBlog": "Bloga dön",
+    "relatedLabel": "Okumaya devam et",
+    "relatedTitle": "Daha fazla seyahat rehberi",
+    "articleDetails": [
+      {
+        "readTime": "5 dk okuma",
+        "sections": [
+          {
+            "title": "Yolcu hakları genelde neleri kapsar",
+            "body": "Bir uçuş geciktiğinde, iptal edildiğinde, fazla satıldığında veya aktarmanın kaçırılmasına neden olduğunda, rota, havayolunun sorumluluğu ve varış gecikmesine bağlı olarak yolcuların tazminat hakkı olabilir. İlk önemli adım rezervasyon kodunu, biniş kartını ve havayolundan gelen tüm mesajları saklamaktır."
+          },
+          {
+            "title": "Zamanlama neden önemlidir",
+            "body": "Uygunluk çoğu zaman sadece kalkış gecikmesine değil, son varış noktasına gerçek varış saatine bağlıdır. Kapıda küçük görünen bir aksaklık, son varışta birkaç saat gecikmeye neden olursa talep edilebilir hale gelebilir."
+          },
+          {
+            "title": "Fly Friendly nasıl yardımcı olur",
+            "body": "Fly Friendly aksaklık ayrıntılarını kontrol eder, talep kanıtlarını düzenler ve havayolu ile iletişimi yönetir; böylece yolcular karmaşık politika diliyle yalnız kalmaz."
+          }
+        ]
+      },
+      {
+        "readTime": "4 dk okuma",
+        "sections": [
+          {
+            "title": "Havayolları talepleri dikkatle inceler",
+            "body": "Tazminat talepleri zaman alabilir çünkü havayolları sorumluluğu kabul etmeden önce operasyon kayıtlarını, hava raporlarını, havalimanı kısıtlamalarını ve dahili aksaklık notlarını inceler."
+          },
+          {
+            "title": "Eksik belgeler süreci yavaşlatır",
+            "body": "En yaygın gecikmeler eksik yolcu bilgilerinden, eksik rezervasyon kodlarından veya belirsiz uçuş zaman çizelgelerinden kaynaklanır. Düzenli bir talep dosyası süreci savunmayı kolaylaştırır."
+          },
+          {
+            "title": "Süreci nasıl hızlandırıyoruz",
+            "body": "Talebi net şekilde yapılandırır, doğru kanıtları sunar, yanıtları takip eder ve havayolları kararları beklenenden uzun geciktirdiğinde yeniden iletişime geçeriz."
+          }
+        ]
+      },
+      {
+        "readTime": "6 dk okuma",
+        "sections": [
+          {
+            "title": "Aksaklık riskini düşünerek rezervasyon yapın",
+            "body": "Direkt uçuşlar, gerçekçi aktarma süreleri ve sabah kalkışları, tek bir gecikmenin tüm seyahati bozma ihtimalini azaltabilir."
+          },
+          {
+            "title": "Basit bir seyahat kaydı tutun",
+            "body": "Biniş kartlarını, gecikme bildirimlerinin ekran görüntülerini, rezervasyon onaylarını ve varış saatlerini saklayın. Stresli bir seyahat gününden sonra bu ayrıntılar kolayca unutulur."
+          },
+          {
+            "title": "Tazminatı ne zaman kontrol edeceğinizi bilin",
+            "body": "Varışınız birkaç saat geciktiyse, uçuşunuz kalkışa yakın iptal edildiyse veya uçağa alınmadıysanız, uygunluğunuzu kontrol etmeye değer."
+          }
+        ]
+      }
+    ]
   }
 }

@@ -12,7 +12,18 @@ as $$
     select 1
     from public.profiles
     where id = auth.uid()
-      and role = 'admin'
+      and role in (
+        'admin',
+        'super_admin',
+        'operations_manager',
+        'case_manager',
+        'customer_support_agent',
+        'content_manager',
+        'finance_manager',
+        'read_only',
+        'manager',
+        'support'
+      )
   );
 $$;
 

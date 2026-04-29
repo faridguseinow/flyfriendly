@@ -731,5 +731,69 @@
       ],
       "note": "Cette politique en matière de cookies est un projet basé sur le modèle de site Web Fly Friendly et doit être examinée avant une utilisation en production."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Rechercher des guides de voyage",
+    "searchAria": "Rechercher des articles",
+    "readArticle": "Lire l’article",
+    "noResultsLabel": "Aucun résultat",
+    "noResultsTitle": "Aucun guide correspondant",
+    "noResultsText": "Essayez un autre mot-clé ou consultez nos ressources sur les droits des passagers aériens.",
+    "backToBlog": "Retour au blog",
+    "relatedLabel": "Continuer à lire",
+    "relatedTitle": "Plus de guides de voyage",
+    "articleDetails": [
+      {
+        "readTime": "5 min de lecture",
+        "sections": [
+          {
+            "title": "Ce que couvrent généralement les droits des passagers",
+            "body": "Lorsqu’un vol est retardé, annulé, surbooké ou entraîne une correspondance manquée, les passagers peuvent avoir droit à une indemnisation selon l’itinéraire, la responsabilité de la compagnie aérienne et le retard à l’arrivée. La première étape importante consiste à conserver la référence de réservation, la carte d’embarquement et tous les messages de la compagnie."
+          },
+          {
+            "title": "Pourquoi le timing compte",
+            "body": "L’éligibilité dépend souvent de l’heure réelle d’arrivée à la destination finale, et pas seulement du retard au départ. Une perturbation qui semble mineure à la porte peut devenir indemnisable si vous arrivez plusieurs heures en retard."
+          },
+          {
+            "title": "Comment Fly Friendly aide",
+            "body": "Fly Friendly vérifie les détails de la perturbation, organise les preuves de la demande et gère les échanges avec la compagnie aérienne afin que les passagers ne soient pas seuls face au langage des règlements."
+          }
+        ]
+      },
+      {
+        "readTime": "4 min de lecture",
+        "sections": [
+          {
+            "title": "Les compagnies examinent les demandes avec attention",
+            "body": "Les demandes d’indemnisation peuvent prendre du temps, car les compagnies aériennes vérifient les registres opérationnels, la météo, les restrictions aéroportuaires et les notes internes avant d’accepter leur responsabilité."
+          },
+          {
+            "title": "Les documents manquants ralentissent tout",
+            "body": "Les retards les plus fréquents viennent d’informations passager incomplètes, de références de réservation manquantes ou d’une chronologie de vol peu claire. Un dossier propre facilite la défense de la demande."
+          },
+          {
+            "title": "Comment nous accélérons le processus",
+            "body": "Nous structurons clairement la demande, soumettons les bonnes preuves, suivons les réponses et relançons lorsque les compagnies retardent leur décision plus longtemps que prévu."
+          }
+        ]
+      },
+      {
+        "readTime": "6 min de lecture",
+        "sections": [
+          {
+            "title": "Réservez en tenant compte du risque de perturbation",
+            "body": "Les vols directs, les correspondances réalistes et les départs le matin peuvent réduire le risque qu’un seul retard gâche tout votre voyage."
+          },
+          {
+            "title": "Gardez une trace simple du voyage",
+            "body": "Conservez les cartes d’embarquement, captures d’écran des notifications de retard, confirmations de réservation et heures d’arrivée. Ces détails s’oublient facilement après une journée stressante."
+          },
+          {
+            "title": "Sachez quand vérifier l’indemnisation",
+            "body": "Si votre arrivée a été retardée de plusieurs heures, si votre vol a été annulé peu avant le départ ou si l’embarquement vous a été refusé, il vaut la peine de vérifier votre éligibilité."
+          }
+        ]
+      }
+    ]
   }
 }

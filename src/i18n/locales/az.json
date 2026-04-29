@@ -731,5 +731,69 @@
       ],
       "note": "Bu Kukilər Siyasəti Fly Friendly veb-sayt modelinə əsaslanan layihədir və istehsaldan istifadə etməzdən əvvəl nəzərdən keçirilməlidir."
     }
+  },
+  "blog": {
+    "searchPlaceholder": "Səyahət bələdçilərində axtar",
+    "searchAria": "Blog yazılarında axtar",
+    "readArticle": "Məqaləni oxu",
+    "noResultsLabel": "Nəticə yoxdur",
+    "noResultsTitle": "Uyğun bələdçi tapılmadı",
+    "noResultsText": "Başqa açar söz sınayın və ya hava sərnişin hüquqları üzrə son resurslarımıza baxın.",
+    "backToBlog": "Bloqa qayıt",
+    "relatedLabel": "Oxumağa davam et",
+    "relatedTitle": "Daha çox səyahət bələdçisi",
+    "articleDetails": [
+      {
+        "readTime": "5 dəq oxu",
+        "sections": [
+          {
+            "title": "Sərnişin hüquqları adətən nələri əhatə edir",
+            "body": "Uçuş gecikdikdə, ləğv edildikdə, artıq bron edildikdə və ya bağlantı uçuşunun qaçırılmasına səbəb olduqda, marşrutdan, aviaşirkətin məsuliyyətindən və gəliş gecikməsindən asılı olaraq sərnişinlərin kompensasiya hüququ ola bilər. İlk vacib addım bron nömrəsini, minik talonunu və aviaşirkətdən gələn bütün mesajları saxlamaqdır."
+          },
+          {
+            "title": "Vaxt niyə önəmlidir",
+            "body": "Uyğunluq çox vaxt yalnız gediş gecikməsinə deyil, son təyinat yerinə real çatma vaxtına bağlıdır. Qapıda kiçik görünən problem, son təyinat yerinə bir neçə saat gec çatdıqda kompensasiya üçün əsas ola bilər."
+          },
+          {
+            "title": "Fly Friendly necə kömək edir",
+            "body": "Fly Friendly pozuntu detallarını yoxlayır, iddia sübutlarını sistemləşdirir və aviaşirkətlə ünsiyyəti idarə edir ki, sərnişinlər mürəkkəb qaydalarla təkbaşına məşğul olmasınlar."
+          }
+        ]
+      },
+      {
+        "readTime": "4 dəq oxu",
+        "sections": [
+          {
+            "title": "Aviaşirkətlər iddiaları diqqətlə nəzərdən keçirir",
+            "body": "Kompensasiya iddiaları vaxt ala bilər, çünki aviaşirkətlər məsuliyyəti qəbul etməzdən əvvəl əməliyyat qeydlərini, hava hesabatlarını, hava limanı məhdudiyyətlərini və daxili pozuntu qeydlərini yoxlayır."
+          },
+          {
+            "title": "Çatışmayan sənədlər prosesi ləngidir",
+            "body": "Ən çox gecikmələr natamam sərnişin məlumatlarından, çatışmayan bron nömrələrindən və ya qeyri-dəqiq uçuş xronologiyasından yaranır. Səliqəli iddia faylı prosesi müdafiə etməyi asanlaşdırır."
+          },
+          {
+            "title": "Prosesi necə sürətləndiririk",
+            "body": "Biz iddianı aydın şəkildə hazırlayır, düzgün sübutları təqdim edir, cavabları izləyir və aviaşirkətlər qərarı gözləniləndən çox gecikdirəndə təkrar əlaqə saxlayırıq."
+          }
+        ]
+      },
+      {
+        "readTime": "6 dəq oxu",
+        "sections": [
+          {
+            "title": "Pozuntu riskini nəzərə alaraq bron edin",
+            "body": "Birbaşa uçuşlar, real bağlantı vaxtları və səhər reysləri bir gecikmənin bütün səfəri pozması riskini azalda bilər."
+          },
+          {
+            "title": "Sadə səyahət qeydi saxlayın",
+            "body": "Minik talonlarını, gecikmə bildirişlərinin ekran görüntülərini, bron təsdiqlərini və gəliş vaxtlarını saxlayın. Stressli səyahət günündən sonra bu detallar asanlıqla unudulur."
+          },
+          {
+            "title": "Kompensasiyanı nə vaxt yoxlamağı bilin",
+            "body": "Əgər gəlişiniz bir neçə saat gecikibsə, uçuşunuz yola düşmə vaxtına yaxın ləğv edilibsə və ya bortdan imtina edilibsə, uyğunluğunuzu yoxlamağa dəyər."
+          }
+        ]
+      }
+    ]
   }
 }

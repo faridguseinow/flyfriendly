@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { requireSupabase } from "../lib/supabase.js";
+import { isSupabaseConfigured, requireSupabase } from "../lib/supabase.js";
 import { getAvailablePermissions, getRoleDefinition, hasPermission, normalizeRoleCode } from "./rbac.js";
 
 const AdminAuthContext = createContext(null);
@@ -48,6 +48,11 @@ export function AdminAuthProvider({ children }) {
   });
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setState({ isLoading: false, user: null, profile: null, roles: [] });
+      return;
+    }
+
     const client = requireSupabase();
 
     const loadSession = async () => {
@@ -119,6 +124,11 @@ export function AdminAuthProvider({ children }) {
       hasPermission: (permission) => hasPermission(state.roles, permission),
       isAdminUser: state.roles.length > 0,
       refreshAuth: async () => {
+        if (!isSupabaseConfigured) {
+          setState({ isLoading: false, user: null, profile: null, roles: [] });
+          return;
+        }
+
         const client = requireSupabase();
         const { data } = await client.auth.getSession();
         if (!data.session?.user) {

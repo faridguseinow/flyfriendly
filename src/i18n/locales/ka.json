@@ -1,0 +1,801 @@
+{
+  "common": {
+    "close": "დახურვა",
+    "back": "უკან",
+    "next": "შემდეგი",
+    "send": "გაგზავნა",
+    "contact": "კონტაქტი",
+    "aboutUs": "ჩვენ შესახებ",
+    "privacy": "კონფიდენციალურობა",
+    "termsAndConditions": "წესები და პირობები",
+    "termsOfUse": "გამოყენების პირობები",
+    "privacyPolicy": "კონფიდენციალურობის პოლიტიკა",
+    "cookies": "ქუქი-ფაილები",
+    "support": "მხარდაჭერა",
+    "startYourClaim": "დაიწყეთ მოთხოვნა",
+    "checkCompensation": "შეამოწმეთ კომპენსაცია",
+    "checkYourEligibility": "შეამოწმეთ უფლება",
+    "mainPage": "მთავარი გვერდი",
+    "submitClaim": "მოთხოვნის გაგზავნა",
+    "saving": "ინახება...",
+    "submitting": "იგზავნება...",
+    "savedInSupabase": "შენახულია Supabase-ში.",
+    "flyFriendlyHomeAria": "Fly Friendly მთავარი",
+    "globalReachCopy": "ვემსახურებით მილიონობით მგზავრს ყველა ქვეყანაში, ყველა ენაზე.",
+    "scrollToTop": "ზემოთ დაბრუნება"
+  },
+  "nav": {
+    "mainNavigation": "მთავარი ნავიგაცია",
+    "referralProgram": "პარტნიორობის პროგრამა",
+    "contact": "კონტაქტი",
+    "aboutUs": "ჩვენ შესახებ",
+    "openMenu": "მენიუს გახსნა",
+    "closeMenu": "მენიუს დახურვა",
+    "mobileHeadlinePrefix": "ჩვენ ვიცავთ თქვენს უფლებას",
+    "mobileHeadlineAccent": "კომპენსაციაზე",
+    "blog": "ბლოგი"
+  },
+  "languageSwitcher": {
+    "open": "ენის არჩევა",
+    "caption": "Fly Friendly ენის პარამეტრები",
+    "title": "აირჩიეთ ენა",
+    "suggestedLanguages": "რეკომენდებული ენები",
+    "additionalLanguages": "დამატებითი ენები"
+  },
+  "footer": {
+    "leadTitle": "3 მარტივი ნაბიჯი თქვენს კომპენსაციამდე",
+    "leadText": "კომპენსაციის სიახლეები, მოგზაურობის რჩევები და მგზავრის უფლებები ყოველთვიურად.",
+    "followUs": "გამოგვყევით:",
+    "socialAria": "სოციალური ბმულები",
+    "company": "კომპანია",
+    "resources": "რესურსები",
+    "claimHelp": "მოთხოვნის დახმარება",
+    "compensation": "კომპენსაცია",
+    "referralProgram": "პარტნიორობის პროგრამა",
+    "checkCompensation": "კომპენსაციის შემოწმება",
+    "delayedFlights": "დაგვიანებული ფრენები",
+    "cancelledFlights": "გაუქმებული ფრენები",
+    "missedConnections": "გამოტოვებული გადაჯდომები",
+    "copyright": "©2026 Fly Friendly"
+  },
+  "claimModal": {
+    "signupTitle": "პარტნიორის ანგარიშის შექმნა",
+    "loginTitle": "კეთილი დაბრუნება",
+    "signupPartnerDescription": "მოითხოვეთ პარტნიორის წვდომა და მართეთ რეფერალური აქტივობა Fly Friendly ანგარიშიდან.",
+    "signupDefaultDescription": "გააგრძელეთ ანგარიშის შექმნით.",
+    "loginDescription": "შეიყვანეთ ელფოსტა და პაროლი ანგარიშში შესასვლელად.",
+    "fullName": "სრული სახელი",
+    "email": "ელფოსტა",
+    "phone": "საკონტაქტო ნომერი (სასურველია WhatsApp)",
+    "password": "პაროლი",
+    "fullNamePlaceholder": "შეიყვანეთ სრული სახელი",
+    "emailPlaceholder": "შეიყვანეთ ელფოსტა",
+    "phonePlaceholder": "მაგ.: 050 XXX XX XX",
+    "passwordCreatePlaceholder": "შექმენით პაროლი",
+    "passwordEnterPlaceholder": "შეიყვანეთ პაროლი",
+    "forgotPassword": "დაგავიწყდათ პაროლი?",
+    "getStarted": "დაწყება",
+    "logIn": "შესვლა",
+    "pleaseWait": "გთხოვთ მოიცადოთ...",
+    "alreadyMember": "უკვე წევრი ხართ?",
+    "notMember": "არ ხართ წევრი?",
+    "signUp": "რეგისტრაცია",
+    "supabaseMissing": "Supabase env აკლია. დაამატეთ VITE_SUPABASE_URL და VITE_SUPABASE_PUBLISHABLE_KEY.",
+    "confirmEmailNotice": "შეამოწმეთ ელფოსტა ანგარიშის დასადასტურებლად, შემდეგ შედით.",
+    "authError": "ავტორიზაცია ვერ მოხერხდა. სცადეთ თავიდან."
+  },
+  "about": {
+    "heroLabel": "Fly Friendly-ის შესახებ",
+    "heroTitle": "უფრო მარტივი გზა ფრენის შეფერხების მოთხოვნების სამართავად",
+    "heroText": "Fly Friendly ეხმარება მგზავრებს მოთხოვნის ინფორმაციის ორგანიზებაში, საჭირო დოკუმენტების ატვირთვასა და პროგრესის ნათლად თვალყურის დევნებაში.",
+    "startClaim": "მოთხოვნის დაწყება",
+    "missionLabel": "ჩვენი მისია",
+    "missionTitle": "მგზავრის უფლებების გამოყენება უფრო მარტივი გავხადოთ",
+    "missionText": "რთულ კომპენსაციის პროცესს ვაქცევთ მარტივ, ნაბიჯ-ნაბიჯ გამოცდილებად. ჩვენი მიზანია სიცხადე, სისწრაფე და ნდობა.",
+    "missionStatText": "შესაძლო კომპენსაცია შესაბამისი შეფერხებული ფრენებისთვის.",
+    "whatWeDoLabel": "რას ვაკეთებთ",
+    "whatWeDoTitle": "პრაქტიკული მხარდაჭერა პირველი შემოწმებიდან საბოლოო განახლებამდე",
+    "whatWeDoItems": [
+      {
+        "title": "უფლების შემოწმება",
+        "text": "ვამოწმებთ, შეიძლება თუ არა დაგვიანება, გაუქმება, ჩასხდომაზე უარი ან გამოტოვებული გადაჯდომა კომპენსაციას დაექვემდებაროს."
+      },
+      {
+        "title": "დოკუმენტების პროცესი",
+        "text": "მგზავრებს შეუძლიათ მოამზადონ დეტალები და დოკუმენტები, რომლებიც კომპენსაციის საქმეს სჭირდება."
+      },
+      {
+        "title": "საქმის მართვა",
+        "text": "Fly Friendly მართავს ავიაკომპანიასთან კომუნიკაციას და მოთხოვნის პროცესს ორგანიზებულად ინახავს."
+      }
+    ],
+    "valuesLabel": "ჩვენი ღირებულებები",
+    "valuesTitle": "ნდობაზე, სიცხადესა და მოქმედებაზე აგებული",
+    "values": [
+      {
+        "title": "გამჭვირვალობა",
+        "text": "ნათელი ნაბიჯები, პრაქტიკული ახსნები და სტატუსის განახლებები."
+      },
+      {
+        "title": "სიმარტივე",
+        "text": "გიდირებული პროცესი შეფერხებიდან გაგზავნილ მოთხოვნამდე ზედმეტი დაბრკოლებების გარეშე."
+      },
+      {
+        "title": "უსაფრთხოება",
+        "text": "მგზავრის მონაცემების, ატვირთული დოკუმენტებისა და საქმის ინფორმაციის ფრთხილი მართვა."
+      },
+      {
+        "title": "მომხმარებელი პირველ ადგილზე",
+        "text": "შექმნილია რეალური მგზავრებისთვის, რომლებსაც სტრესული შეფერხების შემდეგ პრაქტიკული დახმარება სჭირდებათ."
+      }
+    ],
+    "processLabel": "როგორ მუშაობს",
+    "processTitle": "ოთხი ნათელი ეტაპი",
+    "processSteps": [
+      {
+        "number": "1",
+        "title": "შეიყვანეთ დეტალები",
+        "text": "ფრენის, მარშრუტის, შეფერხებისა და მგზავრის ინფორმაცია."
+      },
+      {
+        "number": "2",
+        "title": "ატვირთეთ დოკუმენტები",
+        "text": "დაამატეთ ჯავშნის დადასტურება, ჩასხდომის ბარათი, ავიაკომპანიის შეტყობინებები ან ID საჭიროების შემთხვევაში."
+      },
+      {
+        "number": "3",
+        "title": "გაგზავნა",
+        "text": "გაგზავნეთ მოთხოვნა განხილვისა და ავიაკომპანიასთან კომუნიკაციისთვის."
+      },
+      {
+        "number": "4",
+        "title": "სტატუსის თვალყურის დევნება",
+        "text": "მიიღეთ განახლებები საქმის დასრულებამდე."
+      }
+    ],
+    "helpTitle": "დახმარება გჭირდებათ?",
+    "helpText": "დაგვიკავშირდით და ჩვენი გუნდი შემდეგ ნაბიჯებში დაგეხმარებათ.",
+    "disclaimer": "შენიშვნა: ეს გვერდი საინფორმაციოა. უფლება და მოთხოვნები შეიძლება განსხვავდებოდეს მარშრუტის, ავიაკომპანიისა და ადგილობრივი წესების მიხედვით."
+  },
+  "contactPage": {
+    "heroLabel": "კონტაქტი",
+    "heroTitle": "დაგვიკავშირდით",
+    "heroText": "გაქვთ კითხვა დაგვიანებულ, გაუქმებულ ან ზედმეტად დაჯავშნილ ფრენაზე? მოგვწერეთ და ჩვენი გუნდი დაგეხმარებათ შემდეგი ნაბიჯის გაგებაში.",
+    "supportLabel": "მხარდაჭერა",
+    "supportTitle": "ჩვენ აქ ვართ დასახმარებლად",
+    "supportText": "გვითხარით რა მოხდა თქვენს ფრენაზე, რა დოკუმენტები გაქვთ და როგორ დაგიკავშირდეთ.",
+    "whatsApp": "WhatsApp",
+    "email": "ელფოსტა",
+    "hours": "სამუშაო საათები",
+    "hoursValue": "ორშ-პარ, 09:00-18:00",
+    "messageLabel": "შეტყობინების გაგზავნა",
+    "messageTitle": "მოგვწერეთ ელფოსტით",
+    "name": "სახელი",
+    "namePlaceholder": "თქვენი სახელი",
+    "emailPlaceholder": "you@example.com",
+    "reference": "ფრენის ან ჯავშნის ნომერი",
+    "referencePlaceholder": "არასავალდებულო",
+    "message": "შეტყობინება",
+    "messagePlaceholder": "გვითხარით რა მოხდა თქვენს ფრენაზე",
+    "sendButton": "გაგზავნა",
+    "emailAppNotice": "გაგზავნა გახსნის ელფოსტის აპს და მოამზადებს შეტყობინებას {{email}}-ზე.",
+    "mailSubject": "ვებგვერდის შეტყობინება {{name}}-გან",
+    "mailGreeting": "გამარჯობა Fly Friendly,",
+    "mailName": "სახელი: {{value}}",
+    "mailEmail": "ელფოსტა: {{value}}",
+    "mailReference": "ფრენის ან ჯავშნის ნომერი: {{value}}",
+    "mailMessageLabel": "შეტყობინება:",
+    "visitorFallback": "Fly Friendly ვიზიტორი"
+  },
+  "home": {
+    "claimBoxTitle": "შეამოწმეთ და მოითხოვეთ თქვენი კომპენსაცია.",
+    "claimBoxDestinationPlaceholder": "დანიშნულების აეროპორტი, ქალაქი ან ქვეყანა",
+    "claimBoxNoAirportsFound": "აეროპორტები ვერ მოიძებნა",
+    "claimBoxFree": "უფასოა",
+    "claimBoxMinutes": "რამდენიმე წუთია საჭირო",
+    "claimBoxRightText": "ჩვენ ვიცავთ თქვენს უფლებას კომპენსაციაზე.",
+    "heroLabel": "რეალური მგზავრებით დადასტურებული",
+    "heroTitle": "ფრენა დაგვიანდა ან გაუქმდა?",
+    "heroTitleStrong": "მოითხოვეთ €600-მდე ახლავე.",
+    "heroText": "ჩვენ ვიცავთ თქვენს უფლებას კომპენსაციაზე. გაგზავნეთ მოთხოვნა რამდენიმე წუთში და ავიაკომპანიასთან საქმეს ჩვენ მოვაგვარებთ.",
+    "trustLabel": "გლობალური დაფარვა",
+    "trustTitle": "სანდო პარტნიორი მთელ მსოფლიოში",
+    "benefits": [
+      {
+        "title": "სწრაფი და ხელმისაწვდომი სერვისი",
+        "text": "თქვენს მოთხოვნას სწრაფად და ეფექტურად ვმართავთ დამალული ხარჯებისა და ზედმეტი დაგვიანებების გარეშე."
+      },
+      {
+        "title": "მოგება არ არის, გადასახადი არ არის",
+        "text": "არაფერს იხდით, თუ კომპენსაციის მიღებაში წარმატებას ვერ მივაღწევთ."
+      },
+      {
+        "title": "უმაღლესი წარმატება მოთხოვნებში",
+        "text": "კომპენსაციას ვაღწევთ მაშინაც, როცა ავიაკომპანიები ამბობენ, რომ ეს შეუძლებელია."
+      }
+    ],
+    "calculatorLabel": "კომპენსაციის კალკულატორი",
+    "calculatorTitle": "რამდენის მოთხოვნა შეგიძლიათ?",
+    "calculatorText": "შეამოწმეთ უფლება სწრაფად და ნახეთ რამდენი კომპენსაციის მიღება შეგიძლიათ.",
+    "disruptionsLabel": "ფრენის პრობლემები",
+    "disruptionsTitle": "რომელი შეფერხებები კვალიფიცირდება?",
+    "disruptionsText": "კომპენსაცია მხოლოდ დაგვიანებებს არ ეხება.",
+    "disruptionCards": {
+      "cancellationTitle": "ფრენის გაუქმება",
+      "cancellationText": "ავიაკომპანიამ ბოლო წუთს გააუქმა ფრენა? მოითხოვეთ კომპენსაცია.",
+      "missedTitle": "გამოტოვებული გადაჯდომა",
+      "missedText": "თუ შემდეგი ფრენა გამოტოვეთ და საბოლოო დანიშნულებაზე 3 საათზე მეტი დაგვიანებით ჩახვედით, მოითხოვეთ ახლავე.",
+      "airlineFaultTitle": "ავიაკომპანიის ბრალია?\nთქვენ მაინც შეგიძლიათ მიიღოთ თანხა.",
+      "airlineFaultText": "3+ საათით გვიან ჩახვედით? თქვენ უფლება გაქვთ.",
+      "deniedTitle": "ჩასხდომაზე უარი",
+      "deniedText": "ზედმეტად დაჯავშნილი ფრენა? მოითხოვეთ სრული კომპენსაცია ახლავე. ჩვენ ვიცავთ თქვენს უფლებებს.",
+      "allAirlines": "ყველა ავიაკომპანია",
+      "allCountries": "ყველა ქვეყანა",
+      "noWinNoFee": "მოგება არ არის, გადასახადი არ არის"
+    },
+    "membershipLabel": "ჩვენი გამოწერის საფასური",
+    "membershipTitle": "Fly Friendly წევრობა",
+    "membershipText": "ერთი მარტივი გამოწერა ფარავს თქვენს ყოველთვიურ მოგზაურობებს.",
+    "membershipPriceSuffix": "/თვე",
+    "membershipPlan": "Fly Friendly Plus",
+    "membershipPlanText": "ხშირი მოგზაურებისა და გონიერი დამგეგმავებისთვის.",
+    "membershipItems": [
+      "ულიმიტო ფრენის ძიება",
+      "ტარიფების რეალურ დროში განახლება",
+      "ფასის კლების ჭკვიანი შეტყობინებები",
+      "შენახული მოგზაურობები და ფავორიტები",
+      "მრავალქალაქიანი მოგზაურობის დამგეგმავი",
+      "ადრეული წვდომა მოგზაურობის შეთავაზებებზე"
+    ],
+    "subscribe": "გამოწერა",
+    "membershipPhotoTitle": "მოგება არ არის, გადასახადი არ არის. ჩვენ ვიღებთ მხოლოდ მაშინ, როცა თქვენ იღებთ.",
+    "membershipPhotoTag": "ჩასხდომაზე უარი",
+    "stepsLabel": "როგორ მუშაობს",
+    "stepsTitle": "3 მარტივი ნაბიჯი თქვენს კომპენსაციამდე",
+    "stepsText": "რთულ საქმეს ჩვენ ვაკეთებთ, თქვენ კი თანხას მარტივად იღებთ.",
+    "stepsCards": {
+      "minutes": "მოთხოვნა წუთებში",
+      "processTitle": "სწრაფი, უსაფრთხო და მარტივი კომპენსაცია",
+      "handleEverything": "ჩვენ ყველაფერს ვმართავთ",
+      "legalTitle": "იურიდიული ექსპერტიზა ავიაკომპანიებთან",
+      "moneyTitle": "თანხა პირდაპირ თქვენს ანგარიშზე."
+    },
+    "testimonialsLabel": "მიმოხილვები",
+    "testimonialsTitle": "მილიონობით მგზავრის მიერ მოწონებული",
+    "testimonialsText": "რეალური მგზავრები. რეალური კომპენსაცია. რეალური ისტორიები.",
+    "testimonials": [
+      {
+        "name": "Sarah Johnson",
+        "role": "მარკეტინგის მენეჯერი, ლონდონი",
+        "quote": "ლონდონიდან მილანში ჩემი ფრენა აეროპორტში გაუქმდა და არ ვიცოდი, რომ კომპენსაციის მოთხოვნა შემეძლო. სერვისმა ყველაფერი იდეალურად მოაგვარა და თანხა მხოლოდ ორ კვირაში მივიღე."
+      },
+      {
+        "name": "Tom Nguyen",
+        "role": "ბიზნეს კონსულტანტი, სინგაპური",
+        "quote": "თავიდან ეჭვი მქონდა, მაგრამ პროცესი მოსალოდნელზე ბევრად მარტივი აღმოჩნდა. გუნდი ყოველ ეტაპზე მაწვდიდა ინფორმაციას და კომპენსაცია დროულად მივიღე."
+      },
+      {
+        "name": "David Romero",
+        "role": "ფრილანს ფოტოგრაფი, მადრიდი",
+        "quote": "ეს პლატფორმა მადრიდიდან ბერლინში დაგვიანებული ფრენის შემდეგ აღმოვაჩინე. მხოლოდ მოკლე ფორმა შევავსე, დანარჩენი კი მათ მოაგვარეს."
+      },
+      {
+        "name": "Emily Carter",
+        "role": "UX დიზაინერი, ამსტერდამი",
+        "quote": "ამსტერდამიდან პარიზში დაგვიანებულმა ფრენამ ჩემი შაბათ-კვირის გეგმები ჩაშალა, მაგრამ ამ კომპანიამ ყველაფერი გამოასწორა. საერთო გამოცდილება შესანიშნავი იყო."
+      },
+      {
+        "name": "Anna Muller",
+        "role": "პროგრამული უზრუნველყოფის ინჟინერი, ბერლინი",
+        "quote": "5-საათიანი დაგვიანების შემდეგ მოთხოვნა გავაგზავნე და გუნდმა ყველაფერი პროფესიონალურად მოაგვარა. არანაირი რთული დოკუმენტები ან ზარები."
+      },
+      {
+        "name": "Lucas Bennett",
+        "role": "პროგრამული უზრუნველყოფის კონსულტანტი, ტორონტო",
+        "quote": "ფრენის ინფორმაცია ხუთ წუთზე ნაკლებ დროში გავაგზავნე და დანარჩენი გუნდმა გააკეთა. მუდმივად მაწვდიდნენ განახლებებს და თითოეულ ნაბიჯს მიხსნიდნენ."
+      }
+    ],
+    "resourcesLabel": "რესურსები",
+    "resourcesTitle": "მოგზაურობის რჩევები და გზამკვლევები",
+    "resourcesText": "იყავით ინფორმირებული ავიამგზავრის უფლებების შესახებ ჩვენი უახლესი რესურსებით.",
+    "articles": [
+      {
+        "title": "იცოდეთ თქვენი ავიამგზავრის უფლებები",
+        "text": "ბევრმა მგზავრმა არ იცის, რომ ფრენის შეფერხებისთვის კომპენსაციის მოთხოვნა შეუძლია. გაიგეთ რა გეკუთვნით, როცა ავიაკომპანია ვერ ასრულებს ვალდებულებას.",
+        "date": "22 ივლისი, 2025"
+      },
+      {
+        "title": "რატომ აჭიანურებენ ავიაკომპანიები გადახდებს",
+        "text": "გაინტერესებთ რატომ სჭირდება კომპენსაციას დრო? გაიგეთ რა ხდება კულისებში და როგორ ვაჩქარებთ პროცესს თქვენთვის.",
+        "date": "10 აგვისტო, 2025"
+      },
+      {
+        "title": "საუკეთესო რჩევები სტრესის გარეშე მოგზაურობისთვის",
+        "text": "აღმოაჩინეთ მარტივი ჩვევები, რომლებიც მოგზაურობას უფრო მშვიდს ხდის.",
+        "date": "5 სექტემბერი, 2025"
+      }
+    ],
+    "newsletterPhoto": "შემოგვიერთდით სიახლეებისთვის.",
+    "newsletterTag": "იყავით განახლებული",
+    "newsletterLabel": "სიახლეებზე გამოწერა",
+    "newsletterTitle": "მიიღეთ უახლესი ინფორმაცია ელფოსტაში",
+    "newsletterText": "კომპენსაციის სიახლეები, მოგზაურობის რჩევები და მგზავრის უფლებები ყოველთვიურად.",
+    "newsletterPlaceholder": "შეიყვანეთ ელფოსტა",
+    "newsletterAria": "გამოწერა",
+    "newsletterNotice": "ეს გახსნის ელფოსტის აპს და მოამზადებს გამოწერის მოთხოვნას.",
+    "newsletterSubject": "სიახლეების გამოწერის მოთხოვნა",
+    "newsletterGreeting": "გამარჯობა Fly Friendly,",
+    "newsletterRequest": "გთხოვთ დაამატოთ ეს ელფოსტა სიახლეების სიაში:",
+    "faqLabel": "FAQ",
+    "faqTitle": "ხშირად დასმული კითხვები",
+    "faqText": "ყველაფერი, რაც კომპენსაციის მოთხოვნაზე უნდა იცოდეთ.",
+    "faqs": [
+      {
+        "question": "მაქვს თუ არა ფრენის კომპენსაციის უფლება?",
+        "answer": "ზოგადად, უფლება შეიძლება გქონდეთ, თუ ფრენა 3 საათზე მეტით დაგვიანდა, გაუქმდა, ან ჩასხდომაზე უარი გითხრეს და შეფერხება ავიაკომპანიის პასუხისმგებლობაში შედიოდა."
+      },
+      {
+        "question": "რამდენი თანხის მიღება შემიძლია?",
+        "answer": "კომპენსაციის ოდენობა დამოკიდებულია მანძილზე, დაგვიანების ხანგრძლივობაზე და მოქმედ რეგულაციებზე. ბევრ შემთხვევაში თანხა ფიქსირებულ კატეგორიებშია, ზოგჯერ €600-მდეც."
+      },
+      {
+        "question": "რამდენ ხანს გრძელდება კომპენსაციის პროცესი?",
+        "answer": "ვადები განსხვავებულია. მარტივი საქმეები რამდენიმე კვირაში შეიძლება დასრულდეს, ხოლო სადავო შემთხვევებს მეტი დრო სჭირდება."
+      },
+      {
+        "question": "რომელი დოკუმენტებია საჭირო?",
+        "answer": "ჩვეულებრივ საჭიროა ფრენის ძირითადი დეტალები და მგზავრობის დამადასტურებელი დოკუმენტები, მაგალითად ჯავშნის დადასტურება, ჩასხდომის ბარათი და დაგვიანების ან გაუქმების შეტყობინება."
+      },
+      {
+        "question": "რა მოხდება, თუ ავიაკომპანია მოთხოვნას უარყოფს?",
+        "answer": "თუ ავიაკომპანია მოთხოვნას უარყოფს, ჩვენ შეგვიძლია მიზეზის გადახედვა, დამატებითი მტკიცებულებებით პასუხი და საჭიროების შემთხვევაში პროცესის გაგრძელება."
+      },
+      {
+        "question": "ავიაკომპანიასთან თავად უნდა ვიმუშაო?",
+        "answer": "არა. დეტალების გაგზავნის შემდეგ ავიაკომპანიასთან კომუნიკაციას და დოკუმენტაციას ჩვენ ვმართავთ."
+      },
+      {
+        "question": "როგორია თქვენი მომსახურების საფასური?",
+        "answer": "ჩვეულებრივ ვმუშაობთ წარმატებაზე დაფუძნებული მოდელით: თუ კომპენსაციას ვერ მოვიპოვებთ, თქვენ არ იხდით."
+      },
+      {
+        "question": "უსაფრთხოა ჩემი პირადი მონაცემები?",
+        "answer": "თქვენს ინფორმაციას მხოლოდ მოთხოვნის დასამუშავებლად და საჭირო მხარეებთან კომუნიკაციისთვის ვიყენებთ. მონაცემები მხოლოდ აუცილებლობის შემთხვევაში ზიარდება."
+      }
+    ]
+  },
+  "referral": {
+    "heroTag": "# შემქმნელებისთვის და ინფლუენსერებისთვის",
+    "heroTitle": "ითანამშრომლეთ Fly Friendly-სთან და დაეხმარეთ მოგზაურებს",
+    "heroText": "შემოუერთდით პარტნიორობის პროგრამას, გააზიარეთ თქვენი ბმული და მიიღეთ ჯილდო ყოველი წარმატებული მოთხოვნისთვის.",
+    "joinAsPartner": "პარტნიორად გაწევრიანება",
+    "logIn": "შესვლა",
+    "exclusiveAccessLabel": "ექსკლუზიური წვდომა",
+    "exclusiveAccessTitle": "მხოლოდ შემოსავალზე მეტი — პარტნიორობა",
+    "exclusiveAccessText": "Fly Friendly ყველა შემქმნელს აძლევს საჭირო ინსტრუმენტებსა და მხარდაჭერას.",
+    "accessItems": [
+      {
+        "title": "Compete and win travel vouchers.",
+        "text": "Earn up to 20% on every successful referral."
+      },
+      {
+        "title": "Featured Partner Spotlights",
+        "text": "Get promoted on our channels."
+      },
+      {
+        "title": "Custom Collab Opportunities",
+        "text": "Co-create campaigns with our design team."
+      },
+      {
+        "title": "Creator Resource Hub",
+        "text": "Tutorials, tips, and analytics insights."
+      }
+    ],
+    "photoCard": "Turn your audience into opportunity.",
+    "benefitsLabel": "პროგრამის უპირატესობები",
+    "benefitsTitle": "სანდო პარტნიორი მთელ მსოფლიოში",
+    "benefitsText": "ვემსახურებით მილიონობით მგზავრს ყველა ქვეყანაში, ყველა ენაზე.",
+    "benefits": [
+      {
+        "title": "Generous Commissions",
+        "text": "Earn up to 20% on every successful referral."
+      },
+      {
+        "title": "Instant Tracking Dashboard",
+        "text": "View clicks, signups, and earnings in real time."
+      },
+      {
+        "title": "Creative Assets Provided",
+        "text": "Ready-made visuals, brand kits, and caption templates."
+      },
+      {
+        "title": "Global Recognition",
+        "text": "Be part of a network that's changing flight experiences worldwide."
+      }
+    ],
+    "processLabel": "მარტივი 3-ნაბიჯიანი პროცესი",
+    "processTitle": "თქვენი გზა მარტივ შემოსავალამდე",
+    "processText": "სწრაფი, გამჭვირვალე და შექმნილია შემქმნელებისთვის.",
+    "steps": [
+      {
+        "step": "Step 1",
+        "title": "Apply & Get Your Link",
+        "heading": "Submit your info and receive your",
+        "text": "personal referral link within 24 hours."
+      },
+      {
+        "step": "Step 2",
+        "title": "Share Authentically",
+        "heading": "Post it in your bio, stories and videos,",
+        "text": "and turn your followers into your monthly earnings."
+      },
+      {
+        "step": "Step 3",
+        "title": "Earn Rewards Monthly",
+        "heading": "Track results in your dashboard and get",
+        "text": "paid automatically every month."
+      }
+    ],
+    "voicesLabel": "საზოგადოების ხმები",
+    "voicesTitle": "შემქმნელები, რომლებიც Fly Friendly-სთან გაიზარდნენ",
+    "voicesText": "ბევრმა ინფლუენსერმა გამოიმუშავა თანხა უბრალოდ თავისი აუდიტორიისთვის ფრენის უფლებების გაზიარებით.",
+    "stories": [
+      {
+        "name": "Lena Morales",
+        "role": "Travel Blogger",
+        "quote": "I've collaborated with many brands, but Fly Friendly truly supports creators. Their communication and transparency are unmatched."
+      },
+      {
+        "name": "James Yi",
+        "role": "YouTuber",
+        "quote": "I shared my referral link in just two videos and saw earnings in the first week. The dashboard makes everything super easy."
+      },
+      {
+        "name": "Sarah Johnson",
+        "role": "Marketing Manager, London",
+        "quote": "It's the first affiliate program where both sides genuinely win. My audience trusts me more, and I earn consistently."
+      },
+      {
+        "name": "Sophie Duarte",
+        "role": "Instagram Creator",
+        "quote": "It's the first affiliate program where both sides genuinely win. My audience trusts me more, and I earn consistently."
+      }
+    ],
+    "ctaHash": "# დაიწყე დღეს",
+    "ctaPhotoTitle": "ჩვენ ვიცავთ თქვენს უფლებებს.",
+    "ctaPhotoText": "შექმენი. გააზიარე. გამოიმუშავე.",
+    "ctaTitle": "გახდი Fly Friendly პარტნიორი",
+    "ctaText": "შემოუერთდი შემქმნელების ქსელს, რომელიც მოგზაურებს მთელ მსოფლიოში ეხმარება.",
+    "applyNow": "განაცხადის გაგზავნა",
+    "faqLabel": "FAQ",
+    "faqTitle": "ხშირად დასმული კითხვები",
+    "faqText": "ყველაფერი, რაც კომპენსაციაზე უნდა იცოდეთ."
+  },
+  "claim": {
+    "languageShort": "ქარ",
+    "heroLabel": "რეალური მგზავრებით დადასტურებული",
+    "heroTitle": "შეამოწმეთ და მოითხოვეთ კომპენსაცია",
+    "promoTitle": "მოითხოვეთ €600-მდე ახლავე.",
+    "promoText": "ჩვენ ვიცავთ თქვენს უფლებას კომპენსაციაზე. გაგზავნეთ მოთხოვნა წუთებში.",
+    "promoIssueTitle": "ფრენის დაგვიანება",
+    "promoIssueText": "3+ საათით გვიან ჩახვედით? თქვენ უფლება გაქვთ.",
+    "allAirlines": "ყველა ავიაკომპანია",
+    "allCountries": "ყველა ქვეყანა",
+    "noWinNoFee": "მოგება არ არის, გადასახადი არ არის",
+    "stages": [
+      "უფლების შემოწმება",
+      "საკონტაქტო ინფორმაცია",
+      "დოკუმენტები",
+      "დასრულება"
+    ],
+    "emailError": "შეიყვანეთ სწორი ელფოსტის მისამართი",
+    "eligibility": {
+      "whereDidYouFly": "სად გაფრინდით?",
+      "departurePlaceholder": "გამგზავრების აეროპორტი, ქალაქი ან ქვეყანა",
+      "arrivalPlaceholder": "ჩამოსვლის აეროპორტი, ქალაქი ან ქვეყანა",
+      "noAirportsFound": "აეროპორტები ვერ მოიძებნა",
+      "whichAirline": "რომელი ავიაკომპანიით იფრინეთ?",
+      "searchAirline": "ავიაკომპანიის ძიება",
+      "noAirlinesFound": "ავიაკომპანიები ვერ მოიძებნა",
+      "delayTitle": "ფრენის დაგვიანების ხანგრძლივობა",
+      "lessThan3": "3 საათზე ნაკლები",
+      "notEligible": "არ არის შესაბამისი",
+      "moreThan3": "3 საათზე მეტი",
+      "eligibleForClaim": "მოთხოვნის უფლება აქვს",
+      "cancelled": "ფრენა გაუქმდა",
+      "specialRights": "სპეციალური უფლებები",
+      "scheduledDepartureDate": "როდის იყო დაგეგმილი გაფრენა?",
+      "directFlight": "იყო პირდაპირი ფრენა?",
+      "directYes": "დიახ, პირდაპირი იყო",
+      "directNo": "არა, პირდაპირი არ იყო"
+    },
+    "contact": {
+      "title": "გთხოვთ შეიყვანოთ საკონტაქტო ინფორმაცია.",
+      "fullName": "სრული სახელი",
+      "fullNamePlaceholder": "შეიყვანეთ სრული სახელი",
+      "email": "ელფოსტა",
+      "emailPlaceholder": "შეიყვანეთ ელფოსტა",
+      "address": "მისამართი",
+      "addressPlaceholder": "შეიყვანეთ ქალაქი",
+      "optional": "არასავალდებულო",
+      "phone": "საკონტაქტო ნომერი (სასურველია WhatsApp)",
+      "phonePlaceholder": "მაგ.: +995 5xx xxx xxx",
+      "hasWhatsapp": "დიახ, ამ ნომერს აქვს WhatsApp.",
+      "requiredToProceed": "გაგრძელებისთვის აუცილებელია."
+    },
+    "documents": {
+      "title": "უსაფრთხო დოკუმენტების ატვირთვა",
+      "subtitle": "გთხოვთ ატვირთოთ პასპორტი და ჩასხდომის ბარათი.",
+      "passport": "პასპორტი",
+      "boardingPass": "ჩასხდომის ბარათი",
+      "dragAndDrop": "გადმოიტანეთ ფაილი",
+      "or": "ან",
+      "uploadFile": "ფაილის ატვირთვა",
+      "uploadHint": "ატვირთეთ PNG, JPG ან PDF. მაქს. 25MB",
+      "reasonTitle": "რა იყო ფრენის დაგვიანების ან გაუქმების ოფიციალური მიზეზი?",
+      "reasonPlaceholder": "მაგ., ეკიპაჟის პრობლემა",
+      "signatureNote": "თქვენი ხელმოწერა გვაძლევს თანხმობას ავიაკომპანიიდან კომპენსაციის მისაღებად."
+    },
+    "finish": {
+      "title": "დასრულება და ხელმოწერა",
+      "subtitle": "გთხოვთ გადახედოთ პირობებს და მოაწეროთ ხელი.",
+      "digitalSignature": "ციფრული ხელმოწერა",
+      "clear": "გასუფთავება",
+      "signatureHint": "* მოაწერეთ ხელი ყუთში მაუსით ან თითით.",
+      "terms": "ვეთანხმები <termsLink>წესებსა და პირობებს</termsLink> და ვადასტურებ, რომ ინფორმაცია სწორია."
+    },
+    "denied": {
+      "title": "Unfortunately, there's no compensation for this flight.",
+      "text": "We help customers under several air passenger regulations, but unfortunately, this flight isn't covered by any of them.",
+      "noteTitle": "Note: This data is not shared publicly.",
+      "noteText": "We use this information strictly to personalize your experience and improve our service.",
+      "protectTitle": "Stay protected next time - instantly.",
+      "protectText": "Perfect for frequent travelers and smart planners",
+      "protectItems": [
+        "Unlimited flight searches",
+        "Real-time fare updates",
+        "Saved trips & favorites",
+        "Multi-city trip planner",
+        "Early access to travel deals"
+      ]
+    },
+    "approved": {
+      "title": "Thank you, your claim is on its way!",
+      "text": "Thanks for trusting Fly Friendly, your request has safely landed in our system. Our flight compensation team is now reviewing your case and will keep you informed as it progresses.",
+      "leadId": "Lead ID",
+      "pending": "Pending",
+      "nextTitle": "What happens next",
+      "nextText": "Every claim is handled by a dedicated team, specialists, negotiators, and legal pros who know air travel inside out.",
+      "nextSteps": [
+        [
+          "We check your flight history",
+          "Our specialists confirm all flight data, from departure records to delay reasons."
+        ],
+        [
+          "We build your case smartly",
+          "AI-assisted tools help us gather the strongest arguments, so airlines can't ignore your rights."
+        ],
+        [
+          "We talk to the airline",
+          "Our negotiation team contacts the airline directly, speeding up responses and ensuring fair compensation."
+        ],
+        [
+          "If things get complicated",
+          "Sometimes airlines resist. That's when our legal network steps in to take it further, still no fee unless you win."
+        ],
+        [
+          "Payment takes off",
+          "When your claim is approved, we transfer the money straight to your account."
+        ]
+      ]
+    },
+    "status": {
+      "notEligible": "დაგვიანების ხანგრძლივობის მიხედვით ეს ფრენა კომპენსაციას არ ექვემდებარება.",
+      "supabaseMissing": "Supabase env აკლია. ფორმა მხოლოდ ლოკალურად ინახება.",
+      "saveLeadError": "Lead მონაცემების შენახვა ვერ მოხერხდა.",
+      "saveClaimError": "Claim მონაცემების შენახვა ვერ მოხერხდა.",
+      "signatureRequired": "გთხოვთ მოაწეროთ ხელი და დაეთანხმოთ პირობებს.",
+      "emailAlreadySent": "მოთხოვნა გაგზავნილია. დადასტურება უკვე გაიგზავნა {{email}}-ზე.",
+      "emailSent": "მოთხოვნა გაგზავნილია. დადასტურება გაიგზავნა {{email}}-ზე.",
+      "emailFailed": "მოთხოვნა გაგზავნილია, მაგრამ დადასტურების ელფოსტა ავტომატურად ვერ გაიგზავნა.",
+      "customerFallback": "მომხმარებელი",
+      "removeFile": "{{file}} წაშლა"
+    }
+  },
+  "legal": {
+    "label": "იურიდიული",
+    "updated": "ბოლო განახლება: 16 აპრილი, 2026",
+    "privacy": {
+      "title": "კონფიდენციალურობის პოლიტიკა",
+      "intro": "ეს პოლიტიკა განმარტავს, როგორ აგროვებს, იყენებს, ინახავს და იცავს Fly Friendly ინფორმაციას.",
+      "sections": [
+        {
+          "title": "1. Who we are",
+          "text": "Fly Friendly is a flight compensation support service. We help passengers check potential eligibility, submit flight disruption details, upload supporting documents, and track claim progress."
+        },
+        {
+          "title": "2. Information we collect",
+          "text": "Depending on how you use the website, we may collect:",
+          "items": [
+            "Contact details such as name, email address, phone number, and message content.",
+            "Flight and claim details such as airline, route, dates, delay length, cancellation details, booking reference, and case status.",
+            "Documents you choose to upload, such as booking confirmations, boarding passes, airline notices, or identity information if required for a claim.",
+            "Technical information such as device type, browser, IP address, pages visited, and cookie identifiers.",
+            "Newsletter and marketing preferences if you subscribe to updates."
+          ]
+        },
+        {
+          "title": "3. How we use information",
+          "items": [
+            "To assess and manage flight compensation claims.",
+            "To communicate with you about your case, support request, or submitted message.",
+            "To prepare claim documentation and communicate with airlines or relevant parties when needed.",
+            "To improve website performance, user experience, fraud prevention, and security.",
+            "To send newsletters or updates only when you have subscribed or otherwise permitted this."
+          ]
+        },
+        {
+          "title": "4. Sharing information",
+          "text": "We may share information with airlines, legal or operational partners, payment providers, analytics providers, hosting providers, and other service providers only when necessary for claim handling, website operation, compliance, or support."
+        },
+        {
+          "title": "5. Retention and security",
+          "text": "We keep information only as long as reasonably needed for the purpose it was collected, including claim handling, record keeping, legal obligations, dispute resolution, and fraud prevention. We use reasonable organizational and technical measures to protect personal information."
+        },
+        {
+          "title": "6. Your rights",
+          "text": "Depending on your location, you may have rights to access, correct, delete, restrict, or object to certain processing of your personal information. You may also withdraw marketing consent. To make a request, contact <emailLink>info@fly-friendly.com</emailLink>."
+        },
+        {
+          "title": "7. Contact",
+          "text": "Questions about privacy can be sent to <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "This page is a practical website policy draft based on the Fly Friendly service model. It should be reviewed by counsel before production use."
+    },
+    "terms": {
+      "title": "გამოყენების პირობები",
+      "intro": "ეს პირობები არეგულირებს Fly Friendly ვებგვერდისა და ონლაინ სერვისების გამოყენებას.",
+      "sections": [
+        {
+          "title": "1. Use of the website",
+          "text": "You may use the website to learn about passenger rights, check potential compensation, submit contact requests, and begin a claim. You agree to use the website lawfully and not interfere with its operation, security, or availability."
+        },
+        {
+          "title": "2. Claim information",
+          "text": "You are responsible for providing accurate, complete, and up-to-date flight, passenger, contact, and document information. Inaccurate information may delay review or prevent claim handling."
+        },
+        {
+          "title": "3. No guarantee of compensation",
+          "text": "Eligibility depends on route, disruption type, delay length, airline responsibility, evidence, applicable law, and other factors. Fly Friendly may help assess and pursue claims, but we do not guarantee that every submitted case will succeed."
+        },
+        {
+          "title": "4. Fees and payments",
+          "text": "The website describes a success-based approach such as no win, no fee. Any final fee, commission, or payment arrangement should be confirmed in the claim agreement or service terms presented during the claim process."
+        },
+        {
+          "title": "5. User conduct",
+          "items": [
+            "Do not submit false, misleading, or fraudulent information.",
+            "Do not upload files that contain malware, illegal material, or information you are not authorized to share.",
+            "Do not copy, scrape, disrupt, reverse engineer, or misuse the website."
+          ]
+        },
+        {
+          "title": "6. Content and intellectual property",
+          "text": "The Fly Friendly name, website design, text, graphics, and brand assets belong to Fly Friendly or its licensors. You may not reuse them commercially without permission."
+        },
+        {
+          "title": "7. Limitation of liability",
+          "text": "The website is provided for general information and service access. To the fullest extent permitted by law, Fly Friendly is not liable for indirect losses, unavailable website access, third-party actions, airline decisions, or consequences of inaccurate information submitted by users."
+        },
+        {
+          "title": "8. Contact",
+          "text": "For questions about these terms, contact <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "This Terms of Use page is a draft based on the site functionality and should be reviewed by counsel before production use."
+    },
+    "cookies": {
+      "title": "ქუქი-ფაილების პოლიტიკა",
+      "intro": "ეს პოლიტიკა განმარტავს, როგორ ვიყენებთ ქუქი-ფაილებსა და მსგავს ტექნოლოგიებს.",
+      "sections": [
+        {
+          "title": "1. What cookies are",
+          "text": "Cookies are small text files stored on your device when you visit a website. Similar technologies include local storage, pixels, tags, and analytics identifiers."
+        },
+        {
+          "title": "2. Types of cookies we may use",
+          "items": [
+            "Essential cookies: Required for navigation, security, forms, and core website functions.",
+            "Preference cookies: Remember choices such as language or display settings.",
+            "Analytics cookies: Help us understand page visits, traffic sources, and how users interact with the website.",
+            "Marketing cookies: May help measure campaigns, referral activity, or newsletter performance."
+          ]
+        },
+        {
+          "title": "3. Why we use cookies",
+          "text": "Cookies help us keep the site reliable, improve the claim journey, understand which pages are useful, detect technical issues, and measure the performance of content such as referral and newsletter campaigns."
+        },
+        {
+          "title": "4. Third-party tools",
+          "text": "We may use third-party providers for analytics, hosting, forms, security, and marketing measurement. These providers may set cookies or collect technical data according to their own policies."
+        },
+        {
+          "title": "5. Managing cookies",
+          "text": "You can block, delete, or restrict cookies through your browser settings. Some essential website functions may not work correctly if cookies are disabled."
+        },
+        {
+          "title": "6. Contact",
+          "text": "Questions about cookies can be sent to <emailLink>info@fly-friendly.com</emailLink>."
+        }
+      ],
+      "note": "This Cookies Policy is a draft based on the Fly Friendly website model and should be reviewed before production use."
+    }
+  },
+  "blog": {
+    "searchPlaceholder": "მოძებნეთ მოგზაურობის გზამკვლევები",
+    "searchAria": "ბლოგის ძიება",
+    "readArticle": "მაკალის წაკითხვა",
+    "noResultsLabel": "შედეგი არ არის",
+    "noResultsTitle": "შესაბამისი გზამკვლევი ვერ მოიძებნა",
+    "noResultsText": "სცადეთ სხვა სიტყვა ან გაეცანით ავიამგზავრის უფლებების რესურსებს.",
+    "backToBlog": "ბლოგში დაბრუნება",
+    "relatedLabel": "კითხვის გაგრძელება",
+    "relatedTitle": "მეტი მოგზაურობის გზამკვლევი",
+    "articleDetails": [
+      {
+        "readTime": "5 წთ წასაკითხად",
+        "sections": [
+          {
+            "title": "რას მოიცავს მგზავრის უფლებები",
+            "body": "როცა ფრენა დაგვიანებულია, გაუქმებულია, ზედმეტად დაჯავშნილია ან იწვევს გადაჯდომის გამოტოვებას, მგზავრს შეიძლება ჰქონდეს კომპენსაციის უფლება მარშრუტის, ავიაკომპანიის პასუხისმგებლობისა და ჩამოსვლის დაგვიანების მიხედვით."
+          },
+          {
+            "title": "რატომ არის დრო მნიშვნელოვანი",
+            "body": "უფლება ხშირად საბოლოო დანიშნულებაზე რეალურ ჩამოსვლის დროს უკავშირდება და არა მხოლოდ გაფრენის დაგვიანებას."
+          },
+          {
+            "title": "როგორ გეხმარებათ Fly Friendly",
+            "body": "Fly Friendly ამოწმებს დეტალებს, ალაგებს მტკიცებულებებს და მართავს ავიაკომპანიასთან კომუნიკაციას."
+          }
+        ]
+      },
+      {
+        "readTime": "4 წთ წასაკითხად",
+        "sections": [
+          {
+            "title": "ავიაკომპანიები მოთხოვნებს ყურადღებით ამოწმებენ",
+            "body": "კომპენსაციის მოთხოვნას დრო სჭირდება, რადგან ავიაკომპანიები ოპერაციულ ჩანაწერებს, ამინდის ანგარიშებს და შიდა შენიშვნებს ამოწმებენ."
+          },
+          {
+            "title": "დოკუმენტების ნაკლებობა პროცესს ანელებს",
+            "body": "ყველაზე ხშირი შეფერხებები არასრული მგზავრის მონაცემებიდან, დაკარგული ჯავშნის ნომრებიდან ან გაურკვეველი ფრენის ქრონოლოგიიდან მოდის."
+          },
+          {
+            "title": "როგორ ვაჩქარებთ პროცესს",
+            "body": "მოთხოვნას ნათლად ვამზადებთ, სწორ მტკიცებულებებს ვგზავნით, პასუხებს ვაკვირდებით და საჭიროებისას ხელახლა ვუკავშირდებით ავიაკომპანიას."
+          }
+        ]
+      },
+      {
+        "readTime": "6 წთ წასაკითხად",
+        "sections": [
+          {
+            "title": "დაჯავშნეთ შეფერხების რისკის გათვალისწინებით",
+            "body": "პირდაპირი ფრენები, რეალისტური გადაჯდომები და დილის გაფრენები ამცირებს რისკს, რომ ერთი დაგვიანება მთელ მოგზაურობას გააფუჭებს."
+          },
+          {
+            "title": "შეინახეთ მარტივი მოგზაურობის ჩანაწერები",
+            "body": "შეინახეთ ჩასხდომის ბარათები, დაგვიანების შეტყობინებების სქრინშოთები, ჯავშნის დადასტურებები და ჩამოსვლის დროები."
+          },
+          {
+            "title": "იცოდეთ როდის შეამოწმოთ კომპენსაცია",
+            "body": "თუ რამდენიმე საათით გვიან ჩახვედით, ფრენა გამგზავრებამდე გაუქმდა ან ჩასხდომაზე უარი გითხრეს, ღირს უფლების შემოწმება."
+          }
+        ]
+      }
+    ],
+    "loading": "სტატიები იტვირთება..."
+  }
+}

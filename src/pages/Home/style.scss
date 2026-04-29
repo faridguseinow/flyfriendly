@@ -21,8 +21,6 @@
   flex-direction: column;
   justify-content: center;
   border-radius: 40px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.985) 0%, rgba(249, 252, 255, 0.995) 56%, rgba(242, 249, 255, 0.985) 100%);
   isolation: isolate;
 
   > :not(.hero__ambient) {
@@ -125,17 +123,38 @@
   overflow: hidden;
 }
 
+.disruptions {
+  width: min(1032px, calc(100% - 48px));
+  padding-top: 92px;
+
+  > .section-label {
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    margin-bottom: 6px;
+    font-size: 48px;
+    line-height: 58px;
+  }
+
+  .section-copy {
+    margin-bottom: 34px;
+    font-size: 18px;
+    line-height: 26px;
+  }
+}
+
 .disruption-grid {
   display: grid;
-  grid-template-columns: minmax(0, 340fr) minmax(0, 429fr) minmax(0, 367fr);
-  grid-template-rows: 392px 392px;
+  grid-template-columns: 300px minmax(0, 378px) 315px;
+  grid-template-rows: 375px 343px;
   gap: 12px;
   text-align: left;
 }
 
 .issue-card,
 .wide-cta {
-  padding: 24px;
+  padding: 26px;
 }
 
 .issue-card {
@@ -143,11 +162,16 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-start;
 
   h3 {
-    margin: 24px 0 8px;
-    font-size: 28px;
-    line-height: 36px;
+    margin: 18px 0 6px;
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  p {
+    margin-bottom: 0;
   }
 }
 
@@ -156,15 +180,15 @@
   overflow: hidden;
   grid-column: 2 / 4;
   min-height: 0;
-  padding: 24px;
+  padding: 26px 28px;
 
   &::before {
     content: "";
     position: absolute;
     right: 34px;
     bottom: 0;
-    width: 470px;
-    height: 205px;
+    width: 435px;
+    height: 168px;
     border-radius: 999px 999px 0 0;
     background: radial-gradient(ellipse at 62% 100%, rgba(5, 164, 255, 0.12) 0 54%, rgba(5, 164, 255, 0.07) 55% 68%, transparent 69%);
     pointer-events: none;
@@ -182,11 +206,13 @@
   }
 
   h3 {
-    margin-top: 26px;
+    margin-top: 18px;
+    font-size: 24px;
+    line-height: 32px;
   }
 
   p {
-    max-width: 720px;
+    max-width: 620px;
   }
 }
 
@@ -216,30 +242,35 @@
 
 .missed-plane {
   position: absolute;
-  right: 54px;
-  bottom: -6px;
+  right: 62px;
+  bottom: -74px;
   z-index: 1;
   opacity: 0.82;
-  width: 415px;
+  width: 365px;
   height: auto;
   pointer-events: none;
 }
 
 .issue-card ul {
   padding: 0;
-  margin: 24px 0 0;
+  margin: 22px 0 0;
   display: grid;
-  gap: 14px;
+  gap: 8px;
   color: var(--muted);
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 17px;
+  line-height: 24px;
   letter-spacing: 0.5px;
   list-style: none;
 
   li {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
   }
 
   svg {
@@ -280,12 +311,12 @@
   &::after {
     content: "";
     position: absolute;
-    right: 28px;
-    bottom: -42px;
-    width: 300px;
-    height: 300px;
-    border: 70px solid rgba(5, 164, 255, 0.08);
-    border-radius: 50%;
+    right: -75px;
+    bottom: -20px;
+    width: 342px;
+    height: 342px;
+    background: url("../../assets/icons/logo-image.svg") center / contain no-repeat;
+    opacity: 0.08;
     pointer-events: none;
   }
 
@@ -298,9 +329,10 @@
   h3 {
     position: relative;
     z-index: 1;
-    max-width: 720px;
-    font-size: 52px;
-    line-height: 64px;
+    max-width: 620px;
+    margin-bottom: 14px;
+    font-size: 46px;
+    line-height: 56px;
   }
 
   p,
@@ -310,11 +342,15 @@
   }
 
   p {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
 
   .btn {
-    min-width: 251px;
+    min-width: 220px;
+    min-height: 44px;
+    padding: 0 20px;
+    font-size: 18px;
+    line-height: 24px;
   }
 }
 
@@ -357,7 +393,7 @@
 
   > div {
     position: absolute;
-    inset: 34px 24px 24px;
+    inset: 24px 18px 18px;
     z-index: 1;
     display: flex;
     flex-direction: column;
@@ -373,9 +409,9 @@
   }
 
   h3 {
-    margin: 0 0 auto 60px;
-    font-size: 24px;
-    line-height: 32px;
+    margin: 0 0 auto 56px;
+    font-size: 23px;
+    line-height: 30px;
   }
 
   h3,
@@ -385,7 +421,7 @@
 
   p {
     margin: auto 0 18px;
-    max-width: 288px;
+    max-width: 270px;
   }
 
   .btn-small {
@@ -395,8 +431,8 @@
     gap: 8px;
     border-color: transparent;
     color: var(--grey-500);
-    font-size: 18px;
-    line-height: 24px;
+    font-size: 16px;
+    line-height: 22px;
   }
 }
 
@@ -492,6 +528,11 @@
   position: relative;
   overflow: hidden;
   text-align: center;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
 
   &::before {
     content: "";
@@ -547,6 +588,7 @@
     height: 64px;
     border-radius: 50%;
     background: #fff;
+    transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
   }
 }
 
@@ -640,6 +682,115 @@
   }
 }
 
+.step-card-process:hover {
+  .step-node-main {
+    transform: translateX(-50%) translateY(-8px) scale(1.08);
+    box-shadow: 0 18px 34px rgba(5, 164, 255, 0.16);
+  }
+
+  .step-node-left {
+    transform: translate(-10px, 8px) rotate(-10deg) scale(1.06);
+    box-shadow: 0 16px 30px rgba(5, 164, 255, 0.14);
+  }
+
+  .step-node-right {
+    transform: translate(10px, 8px) rotate(10deg) scale(1.06);
+    box-shadow: 0 16px 30px rgba(5, 164, 255, 0.14);
+  }
+
+  .step-line-left {
+    transform: rotate(126deg) scaleX(1.12);
+  }
+
+  .step-line-right {
+    transform: rotate(54deg) scaleX(1.12);
+  }
+}
+
+.step-card-docs:hover {
+  .document-icon:nth-child(1) {
+    transform: translateY(-18px) scale(0.86);
+    opacity: 0.58;
+  }
+
+  .document-icon:nth-child(2) {
+    transform: translateY(-8px) scale(0.96);
+    opacity: 0.78;
+  }
+
+  .document-icon:nth-child(3) {
+    transform: translateY(8px) scale(1.03);
+    box-shadow: 0 20px 34px rgba(5, 164, 255, 0.13);
+  }
+
+  .document-icon .icon {
+    color: var(--primary);
+    background: #f7fbff;
+  }
+
+  .document-icon span {
+    background: #cfd6e2;
+  }
+}
+
+.step-card-money:hover {
+  .money-node-main {
+    transform: translateX(-50%) translateY(-10px) scale(1.08);
+    box-shadow: 0 18px 34px rgba(5, 164, 255, 0.16);
+  }
+
+  .money-node-left {
+    transform: translate(-12px, 8px) rotate(-4deg) scale(1.04);
+    box-shadow: 0 16px 28px rgba(5, 164, 255, 0.12);
+  }
+
+  .money-node-right {
+    transform: translate(12px, 8px) rotate(4deg) scale(1.04);
+    box-shadow: 0 16px 28px rgba(5, 164, 255, 0.12);
+  }
+}
+
+.step-line,
+.document-icon,
+.document-icon span {
+  transition: transform 260ms ease, opacity 260ms ease, background 260ms ease, box-shadow 260ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-card,
+  .step-cluster .icon,
+  .money-visual .icon,
+  .step-line,
+  .document-icon,
+  .document-icon span {
+    transition: none;
+  }
+
+  .step-card:hover,
+  .step-card-process:hover .step-node-left,
+  .step-card-process:hover .step-node-right,
+  .step-card-docs:hover .document-icon:nth-child(1),
+  .step-card-docs:hover .document-icon:nth-child(2),
+  .step-card-docs:hover .document-icon:nth-child(3),
+  .step-card-money:hover .money-node-left,
+  .step-card-money:hover .money-node-right {
+    transform: none;
+  }
+
+  .step-card-process:hover .step-node-main,
+  .step-card-money:hover .money-node-main {
+    transform: translateX(-50%);
+  }
+
+  .step-card-process:hover .step-line-left {
+    transform: rotate(122deg);
+  }
+
+  .step-card-process:hover .step-line-right {
+    transform: rotate(58deg);
+  }
+}
+
 .money-visual {
   .money-node-main {
     left: 50%;
@@ -681,14 +832,47 @@
 }
 
 .testimonial-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   text-align: left;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: auto -8px -6px;
+    height: 132px;
+    z-index: 2;
+    border-radius: 0 0 40px 40px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(252, 252, 252, 0.92) 72%, var(--soft));
+    pointer-events: none;
+  }
 }
 
 .testimonial-card {
   padding: 28px;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+
+  .person img,
+  .stars {
+    transition: transform 220ms ease, filter 220ms ease;
+  }
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: #e8f4ff;
+    box-shadow: inset 0 0 0 8px #fff, 0 18px 36px rgba(5, 164, 255, 0.1);
+  }
+
+  &:hover .person img {
+    transform: scale(1.05);
+  }
+
+  &:hover .stars {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 6px 10px rgba(5, 164, 255, 0.18));
+  }
 }
 
 .person {
@@ -985,7 +1169,6 @@
 
   .missed-plane {
     right: 24px;
-    bottom: 0;
     width: min(380px, 70%);
   }
 
@@ -1049,7 +1232,6 @@
 
   .missed-plane {
     right: -16px;
-    bottom: 0;
     width: min(330px, 88%);
   }
 

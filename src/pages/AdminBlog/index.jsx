@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, Newspaper, Save, Search, Tags } from "lucide-react";
 import { createBlogPost, fetchBlogModuleData, updateBlogPost } from "../../services/adminService.js";
 import { useSearchParams } from "react-router-dom";
+import { languages } from "../../i18n/languages.js";
+import { GLOBAL_BLOG_LOCALE } from "../../services/blogService.js";
 import "../AdminContent/style.scss";
+
+const blogLanguageOptions = [
+  { code: GLOBAL_BLOG_LOCALE, nativeLabel: "All languages", label: "Shown on every language" },
+  ...languages,
+];
 
 function MetricCard({ icon: Icon, label, value }) {
   return (
@@ -20,7 +27,7 @@ function slugify(value) {
   return String(value || "")
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
 }
 
@@ -31,18 +38,40 @@ function parseList(value) {
     .filter(Boolean);
 }
 
+function stringifySections(sections) {
+  return (sections || [])
+    .map((section) => [section.title, section.body].filter(Boolean).join("\n"))
+    .join("\n\n");
+}
+
+function parseSections(value) {
+  return String(value || "")
+    .split(/\n{2,}/)
+    .map((block) => {
+      const [title = "", ...bodyLines] = block.split("\n");
+      return {
+        title: title.trim(),
+        body: bodyLines.join("\n").trim(),
+      };
+    })
+    .filter((section) => section.title && section.body);
+}
+
 const emptyDraft = {
   id: null,
   title: "",
   slug: "",
   excerpt: "",
   content: "",
+  content_sections_input: "",
   cover_image: "",
   categories_input: "",
   tags_input: "",
   author_name: "",
   status: "draft",
   published_at: "",
+  locale: GLOBAL_BLOG_LOCALE,
+  read_time: "",
   seo_title: "",
   seo_description: "",
 };
@@ -54,6 +83,7 @@ export default function AdminBlog() {
   const [draft, setDraft] = useState(emptyDraft);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [localeFilter, setLocaleFilter] = useState("all");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -89,12 +119,13 @@ export default function AdminBlog() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return posts.filter((item) => {
-      const matchesSearch = !q || [item.title, item.slug, item.excerpt, item.author_name, ...(item.categories || []), ...(item.tags || [])]
+      const matchesSearch = !q || [item.title, item.slug, item.excerpt, item.author_name, item.locale, ...(item.categories || []), ...(item.tags || [])]
         .some((value) => String(value || "").toLowerCase().includes(q));
       const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesLocale = localeFilter === "all" || item.locale === localeFilter;
+      return matchesSearch && matchesStatus && matchesLocale;
     });
-  }, [posts, search, statusFilter]);
+  }, [posts, search, statusFilter, localeFilter]);
 
   const selected = useMemo(
     () => filtered.find((item) => item.id === selectedId) || posts.find((item) => item.id === selectedId) || null,
@@ -109,12 +140,15 @@ export default function AdminBlog() {
       slug: selected.slug,
       excerpt: selected.excerpt || "",
       content: selected.content || "",
+      content_sections_input: stringifySections(selected.content_sections),
       cover_image: selected.cover_image || "",
       categories_input: (selected.categories || []).join(", "),
       tags_input: (selected.tags || []).join(", "),
       author_name: selected.author_name || "",
       status: selected.status,
       published_at: selected.published_at ? new Date(selected.published_at).toISOString().slice(0, 16) : "",
+      locale: selected.locale || "en",
+      read_time: selected.read_time || "",
       seo_title: selected.seo_title || "",
       seo_description: selected.seo_description || "",
     });
@@ -136,12 +170,15 @@ export default function AdminBlog() {
         slug: slugify(draft.slug || draft.title),
         excerpt: draft.excerpt,
         content: draft.content,
+        content_sections: parseSections(draft.content_sections_input),
         cover_image: draft.cover_image,
         categories: parseList(draft.categories_input),
         tags: parseList(draft.tags_input),
         author_name: draft.author_name,
         status: draft.status,
         published_at: draft.published_at ? new Date(draft.published_at).toISOString() : null,
+        locale: draft.locale,
+        read_time: draft.read_time,
         seo_title: draft.seo_title,
         seo_description: draft.seo_description,
       };
@@ -177,7 +214,7 @@ export default function AdminBlog() {
 
       {error && <p className="admin-message is-error">{error}</p>}
       {moduleData && !moduleData.supportsBlogModuleV1 && (
-        <p className="admin-message">Run `010_content_system_v1.sql` in Supabase to enable the Blog module.</p>
+        <p className="admin-message">Run `010_content_system_v1.sql`, then `011_public_blog_management.sql` in Supabase to enable the Blog module.</p>
       )}
 
       {isLoading ? (
@@ -209,6 +246,11 @@ export default function AdminBlog() {
                 <option value="scheduled">scheduled</option>
                 <option value="archived">archived</option>
               </select>
+              <select value={localeFilter} onChange={(event) => setLocaleFilter(event.target.value)}>
+                <option value="all">All languages</option>
+                <option value={GLOBAL_BLOG_LOCALE}>Global posts</option>
+                {languages.map((language) => <option value={language.code} key={language.code}>{language.nativeLabel}</option>)}
+              </select>
             </div>
 
             <div className="admin-content-system__layout">
@@ -218,6 +260,7 @@ export default function AdminBlog() {
                     <strong>{item.title}</strong>
                     <div className="admin-content-system__badges">
                       <span className="admin-content-system__badge">{item.status}</span>
+                      <span className="admin-content-system__badge">{item.locale || "en"}</span>
                       {item.author_name && <span className="admin-content-system__badge">{item.author_name}</span>}
                     </div>
                     <p>{item.excerpt || item.slug}</p>
@@ -246,6 +289,17 @@ export default function AdminBlog() {
                       <input value={draft.author_name} onChange={(event) => setDraft((state) => ({ ...state, author_name: event.target.value }))} />
                     </div>
                     <div className="admin-content-system__field">
+                      <label>Language</label>
+                      <select value={draft.locale} onChange={(event) => setDraft((state) => ({ ...state, locale: event.target.value }))}>
+                        {blogLanguageOptions.map((language) => (
+                          <option value={language.code} key={language.code}>
+                            {language.nativeLabel}
+                            {language.label ? ` - ${language.label}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="admin-content-system__field">
                       <label>Status</label>
                       <select value={draft.status} onChange={(event) => setDraft((state) => ({ ...state, status: event.target.value }))}>
                         <option value="draft">draft</option>
@@ -258,6 +312,10 @@ export default function AdminBlog() {
                       <label>Publish at</label>
                       <input type="datetime-local" value={draft.published_at} onChange={(event) => setDraft((state) => ({ ...state, published_at: event.target.value }))} />
                     </div>
+                    <div className="admin-content-system__field">
+                      <label>Read time</label>
+                      <input value={draft.read_time} onChange={(event) => setDraft((state) => ({ ...state, read_time: event.target.value }))} placeholder="5 min read" />
+                    </div>
                     <div className="admin-content-system__field is-wide">
                       <label>Excerpt</label>
                       <textarea value={draft.excerpt} onChange={(event) => setDraft((state) => ({ ...state, excerpt: event.target.value }))} />
@@ -265,6 +323,10 @@ export default function AdminBlog() {
                     <div className="admin-content-system__field is-wide">
                       <label>Content</label>
                       <textarea value={draft.content} onChange={(event) => setDraft((state) => ({ ...state, content: event.target.value }))} />
+                    </div>
+                    <div className="admin-content-system__field is-wide">
+                      <label>Article sections</label>
+                      <textarea value={draft.content_sections_input} onChange={(event) => setDraft((state) => ({ ...state, content_sections_input: event.target.value }))} placeholder={"Section title\nSection body\n\nAnother section title\nAnother section body"} />
                     </div>
                     <div className="admin-content-system__field is-wide">
                       <label>Cover image URL</label>

@@ -1,11 +1,12 @@
 import { useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { DEFAULT_LANGUAGE } from "./languages.js";
-import { localizePath } from "./path.js";
+import { getCurrentLanguageFromPath, localizePath } from "./path.js";
 
 export function useLocalizedPath() {
   const { lang } = useParams();
-  const currentLanguage = lang || DEFAULT_LANGUAGE;
+  const location = useLocation();
+  const currentLanguage = lang || getCurrentLanguageFromPath(location.pathname) || DEFAULT_LANGUAGE;
 
   return useMemo(
     () => (pathname) => localizePath(pathname, currentLanguage),
