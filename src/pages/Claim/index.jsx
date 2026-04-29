@@ -5,6 +5,8 @@ import {
   BadgeCheck,
   Calendar,
   Check,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
   CircleAlert,
   CircleCheck,
@@ -46,6 +48,20 @@ import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
 const emailPattern = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+const languageToLocale = {
+  az: "az-AZ",
+  ru: "ru-RU",
+  en: "en-GB",
+  es: "es-ES",
+  fr: "fr-FR",
+  pt: "pt-PT",
+  de: "de-DE",
+  it: "it-IT",
+  tr: "tr-TR",
+  ka: "ka-GE",
+  uk: "uk-UA",
+  pl: "pl-PL",
+};
 
 function getEmailError(value, t) {
   const email = String(value || "").trim();
@@ -67,6 +83,59 @@ function formatFileSize(bytes) {
 
   const megabytes = bytes / (1024 * 1024);
   return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`;
+}
+
+function getLocale(language) {
+  return languageToLocale[language] || "en-GB";
+}
+
+function parseDateInputValue(value) {
+  if (!value) return null;
+
+  const [year, month, day] = String(value).split("-").map(Number);
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day);
+  if (
+    Number.isNaN(date.getTime())
+    || date.getFullYear() !== year
+    || date.getMonth() !== month - 1
+    || date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function formatDateInputValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getMonthStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addMonths(date, amount) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+}
+
+function buildCalendarDays(viewDate) {
+  const monthStart = getMonthStart(viewDate);
+  const startDay = (monthStart.getDay() + 6) % 7;
+  const calendarStart = new Date(monthStart);
+  calendarStart.setDate(monthStart.getDate() - startDay);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(calendarStart);
+    day.setDate(calendarStart.getDate() + index);
+    return day;
+  });
 }
 
 function ClaimHeader() {
@@ -149,6 +218,122 @@ function Field({
         aria-invalid={Boolean(error)}
       />
     </label>
+  );
+}
+
+function DatePickerField({ icon: Icon, name, value, onChange }) {
+  const rootRef = useRef(null);
+  const { t, i18n } = useTranslation();
+  const locale = getLocale(i18n.resolvedLanguage || i18n.language);
+  const selectedDate = parseDateInputValue(value);
+  const [isOpen, setIsOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+
+  useEffect(() => {
+    if (selectedDate) {
+      setViewDate(selectedDate);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
+  const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
+  const valueFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
+  const weekdays = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(2024, 0, 1 + index);
+    return weekdayFormatter.format(day);
+  });
+  const days = buildCalendarDays(viewDate);
+  const today = new Date();
+  const todayValue = formatDateInputValue(today);
+  const selectedValue = selectedDate ? formatDateInputValue(selectedDate) : "";
+  const currentMonth = viewDate.getMonth();
+
+  const commitValue = (nextValue) => {
+    onChange({ target: { name, type: "text", value: nextValue } });
+    setIsOpen(false);
+  };
+
+  return (
+    <div className={`claim-date-picker${isOpen ? " is-open" : ""}`} ref={rootRef}>
+      <button type="button" className="claim-field claim-date-picker__trigger" onClick={() => setIsOpen((current) => !current)}>
+        <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+        <span className={`claim-date-picker__value${selectedValue ? "" : " is-placeholder"}`}>
+          {selectedValue ? valueFormatter.format(selectedDate) : (t("claim.datePicker.placeholder", { defaultValue: "Select date" }))}
+        </span>
+        <Calendar size={18} strokeWidth={1.8} aria-hidden="true" />
+      </button>
+
+      {isOpen ? (
+        <div className="claim-date-picker__panel">
+          <div className="claim-date-picker__header">
+            <button type="button" className="claim-date-picker__nav" onClick={() => setViewDate((current) => addMonths(current, -1))} aria-label={t("claim.datePicker.previousMonth", { defaultValue: "Previous month" })}>
+              <ChevronLeft size={18} strokeWidth={2.2} />
+            </button>
+            <strong>{monthFormatter.format(viewDate)}</strong>
+            <button type="button" className="claim-date-picker__nav" onClick={() => setViewDate((current) => addMonths(current, 1))} aria-label={t("claim.datePicker.nextMonth", { defaultValue: "Next month" })}>
+              <ChevronRight size={18} strokeWidth={2.2} />
+            </button>
+          </div>
+
+          <div className="claim-date-picker__weekdays">
+            {weekdays.map((label) => <span key={label}>{label.slice(0, 2)}</span>)}
+          </div>
+
+          <div className="claim-date-picker__grid">
+            {days.map((day) => {
+              const dayValue = formatDateInputValue(day);
+              const isCurrentMonth = day.getMonth() === currentMonth;
+              const isSelected = dayValue === selectedValue;
+              const isToday = dayValue === todayValue;
+
+              return (
+                <button
+                  type="button"
+                  key={dayValue}
+                  className={`claim-date-picker__day${isCurrentMonth ? "" : " is-outside"}${isSelected ? " is-selected" : ""}${isToday ? " is-today" : ""}`}
+                  onClick={() => commitValue(dayValue)}
+                >
+                  {day.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="claim-date-picker__footer">
+            <button type="button" onClick={() => commitValue("")}>
+              {t("claim.datePicker.clear", { defaultValue: "Clear" })}
+            </button>
+            <button type="button" onClick={() => {
+              setViewDate(today);
+              commitValue(todayValue);
+            }}>
+              {t("claim.datePicker.today", { defaultValue: "Today" })}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -451,7 +636,7 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
       </section>
       <section className="claim-question">
         <h3>{t("claim.eligibility.scheduledDepartureDate")}</h3>
-        <Field icon={Calendar} name="date" value={data.date} onChange={onChange} type="date" placeholder="dd.mm.yyyy" />
+        <DatePickerField icon={Calendar} name="date" value={data.date} onChange={onChange} />
       </section>
       <section className="claim-question">
         <h3>{t("claim.eligibility.directFlight")}</h3>
@@ -806,8 +991,8 @@ function ApprovedResult({ data }) {
 function ClaimFlow() {
   const navigate = useNavigate();
   const toLocalizedPath = useLocalizedPath();
-  const { t } = useTranslation();
-  const { stage = "eligibility" } = useParams();
+  const { t, i18n } = useTranslation();
+  const { stage = "eligibility", lang } = useParams();
   const [searchParams] = useSearchParams();
   const [data, setData] = useState(() => ({
     ...JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}"),
@@ -823,6 +1008,13 @@ function ClaimFlow() {
   const [syncNotice, setSyncNotice] = useState("");
   const [emailError, setEmailError] = useState("");
   const activeIndex = Math.max(0, stages.indexOf(stage));
+  const currentLanguageCode = getLanguageByCode(lang || i18n.resolvedLanguage || i18n.language).code;
+
+  const withCurrentLanguage = (payload = data) => ({
+    ...payload,
+    language: currentLanguageCode,
+    preferredLanguage: currentLanguageCode,
+  });
 
   useEffect(() => {
     localStorage.setItem("flyFriendlyClaim", JSON.stringify(data));
@@ -990,7 +1182,7 @@ function ClaimFlow() {
       return data.leadId;
     }
 
-    const lead = await createLead(data);
+    const lead = await createLead(withCurrentLanguage());
     setData((current) => ({ ...current, leadId: lead.id, leadCode: lead.lead_code }));
     return lead.id;
   };
@@ -1006,7 +1198,7 @@ function ClaimFlow() {
       if (isSupabaseConfigured) {
         try {
           const leadId = await ensureLead();
-          await submitLead(leadId, data, "not_eligible");
+          await submitLead(leadId, withCurrentLanguage(), "not_eligible");
         } catch (error) {
           setSyncError(error.message || t("claim.status.saveLeadError"));
           return;
@@ -1040,15 +1232,15 @@ function ClaimFlow() {
       const leadId = await ensureLead();
 
       if (stage === "eligibility") {
-        await saveLeadStep(leadId, "contact", data);
+        await saveLeadStep(leadId, "contact", withCurrentLanguage());
       }
 
       if (stage === "contact") {
-        await saveLeadStep(leadId, "documents", data);
+        await saveLeadStep(leadId, "documents", withCurrentLanguage());
       }
 
       if (stage === "documents") {
-        await saveLeadDocuments(leadId, data, files);
+        await saveLeadDocuments(leadId, withCurrentLanguage(), files);
       }
 
       if (stage === "finish") {
@@ -1056,8 +1248,8 @@ function ClaimFlow() {
           throw new Error(t("claim.status.signatureRequired"));
         }
 
-        await saveLeadSignature(leadId, data);
-        await submitLead(leadId, data, "eligible");
+        await saveLeadSignature(leadId, withCurrentLanguage());
+        await submitLead(leadId, withCurrentLanguage(), "eligible");
 
         try {
           const emailResult = await sendLeadConfirmationEmail(leadId);

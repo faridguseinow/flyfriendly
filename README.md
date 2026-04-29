@@ -8,7 +8,7 @@ The project now supports a transactional confirmation email after an eligible le
 
 - The frontend saves the lead in Supabase as before.
 - After the final submit step, the client invokes the Supabase Edge Function `send-claim-confirmation`.
-- The Edge Function reads the lead from Supabase, sends the email through Resend, and stores delivery metadata on the lead record to avoid duplicate sends.
+- The Edge Function reads the lead from Supabase, sends the email through Resend, stores delivery metadata on the lead record to avoid duplicate sends, and can notify your internal inbox about each new claim.
 
 ### Required setup
 
@@ -31,6 +31,7 @@ supabase secrets set RESEND_API_KEY=your_resend_api_key
 supabase secrets set SITE_URL=https://fly-friendly.com
 supabase secrets set MAIL_FROM="Fly Friendly <info@fly-friendly.com>"
 supabase secrets set MAIL_REPLY_TO=info@fly-friendly.com
+supabase secrets set LEAD_ALERT_TO=info@fly-friendly.com
 ```
 
 4. Verify the `fly-friendly.com` domain in Resend and add the DNS records Resend provides.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
@@ -11,23 +11,11 @@ import { getLanguageByCode, languages } from "../../i18n/languages.js";
 import { replaceLanguageInPath } from "../../i18n/path.js";
 import "./style.scss";
 
-function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose }) {
-  const navigate = useNavigate();
-  const location = useLocation();
+function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLanguage }) {
   const { t } = useTranslation();
   const currentLanguageOption = getLanguageByCode(currentLanguage);
   const mainLanguages = useMemo(() => languages.filter((language) => language.group === "main"), []);
   const additionalLanguages = useMemo(() => languages.filter((language) => language.group === "additional"), []);
-
-  const selectLanguage = (languageCode) => {
-    if (languageCode === currentLanguage) {
-      onClose();
-      return;
-    }
-
-    navigate(replaceLanguageInPath(`${location.pathname}${location.search}${location.hash}`, languageCode));
-    onClose();
-  };
 
   return (
     <div className="language-switcher">
@@ -68,7 +56,7 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose }) {
                     type="button"
                     key={language.code}
                     className={`language-option${language.code === currentLanguage ? " is-active" : ""}`}
-                    onClick={() => selectLanguage(language.code)}
+                    onClick={() => onSelectLanguage(language.code)}
                   >
                     <span className="language-option__flag" aria-hidden="true">{language.flag}</span>
                     <span className="language-option__copy">
@@ -89,7 +77,7 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose }) {
                     type="button"
                     key={language.code}
                     className={`language-option${language.code === currentLanguage ? " is-active" : ""}`}
-                    onClick={() => selectLanguage(language.code)}
+                    onClick={() => onSelectLanguage(language.code)}
                   >
                     <span className="language-option__flag" aria-hidden="true">{language.flag}</span>
                     <span className="language-option__copy">
@@ -108,7 +96,74 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose }) {
   );
 }
 
+function MobileLanguagePicker({ currentLanguage, isOpen, onToggle, onSelectLanguage }) {
+  const { t } = useTranslation();
+  const currentLanguageOption = getLanguageByCode(currentLanguage);
+  const mainLanguages = useMemo(() => languages.filter((language) => language.group === "main"), []);
+  const additionalLanguages = useMemo(() => languages.filter((language) => language.group === "additional"), []);
+
+  return (
+    <section className={`mobile-language-picker${isOpen ? " is-open" : ""}`} aria-label={t("languageSwitcher.title")}>
+      <button className="mobile-language-picker__trigger" type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <span className="mobile-language-picker__label">{t("languageSwitcher.title")}</span>
+        <span className="mobile-language-picker__current">
+          <span aria-hidden="true">{currentLanguageOption.flag}</span>
+          <strong>{currentLanguageOption.code.toUpperCase()}</strong>
+          <ChevronDown size={16} strokeWidth={2.2} />
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div className="mobile-language-picker__panel">
+          <div className="mobile-language-picker__section">
+            <h3>{t("languageSwitcher.suggestedLanguages")}</h3>
+            <div className="mobile-language-picker__list">
+              {mainLanguages.map((language) => (
+                <button
+                  key={language.code}
+                  type="button"
+                  className={`mobile-language-picker__option${language.code === currentLanguage ? " is-active" : ""}`}
+                  onClick={() => onSelectLanguage(language.code)}
+                >
+                  <span className="mobile-language-picker__flag" aria-hidden="true">{language.flag}</span>
+                  <span className="mobile-language-picker__copy">
+                    <strong>{language.label}</strong>
+                    <small>{language.nativeLabel}</small>
+                  </span>
+                  <span className="mobile-language-picker__code">{language.code.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mobile-language-picker__section">
+            <h3>{t("languageSwitcher.additionalLanguages")}</h3>
+            <div className="mobile-language-picker__list">
+              {additionalLanguages.map((language) => (
+                <button
+                  key={language.code}
+                  type="button"
+                  className={`mobile-language-picker__option${language.code === currentLanguage ? " is-active" : ""}`}
+                  onClick={() => onSelectLanguage(language.code)}
+                >
+                  <span className="mobile-language-picker__flag" aria-hidden="true">{language.flag}</span>
+                  <span className="mobile-language-picker__copy">
+                    <strong>{language.label}</strong>
+                    <small>{language.nativeLabel}</small>
+                  </span>
+                  <span className="mobile-language-picker__code">{language.code.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function Navbar() {
+  const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
   const currentLanguage = location.pathname.split("/").filter(Boolean)[0] || "en";
@@ -153,6 +208,14 @@ function Navbar() {
 
   const openLanguageModal = () => setIsLanguageOpen(true);
   const closeLanguageModal = () => setIsLanguageOpen(false);
+  const selectLanguage = (languageCode) => {
+    if (languageCode !== currentLanguage) {
+      navigate(replaceLanguageInPath(`${location.pathname}${location.search}${location.hash}`, languageCode));
+    }
+
+    setIsLanguageOpen(false);
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className={`site-header${isMenuOpen ? " is-menu-open" : ""}`}>
@@ -167,7 +230,7 @@ function Navbar() {
           ))}
         </div>
         <div className="nav-actions">
-          <LanguageSwitcher currentLanguage={currentLanguage} isOpen={isLanguageOpen} onOpen={openLanguageModal} onClose={closeLanguageModal} />
+          <LanguageSwitcher currentLanguage={currentLanguage} isOpen={isLanguageOpen} onOpen={openLanguageModal} onClose={closeLanguageModal} onSelectLanguage={selectLanguage} />
           <LocalizedLink className="btn btn-primary" to="/claim/eligibility" onClick={startClaim}>{t("common.startYourClaim")}</LocalizedLink>
         </div>
         <button
@@ -200,10 +263,12 @@ function Navbar() {
             {t("common.startYourClaim")}
           </LocalizedLink>
 
-          <button className="mobile-menu__language" type="button" onClick={openLanguageModal}>
-            <span>{getLanguageByCode(currentLanguage).flag}</span>
-            <span>{currentLanguage.toUpperCase()}</span>
-          </button>
+          <MobileLanguagePicker
+            currentLanguage={currentLanguage}
+            isOpen={isLanguageOpen}
+            onToggle={() => setIsLanguageOpen((current) => !current)}
+            onSelectLanguage={selectLanguage}
+          />
 
           <div className="mobile-menu__socials" aria-label={t("footer.socialAria")}>
             {socialLinks.map((item) => (

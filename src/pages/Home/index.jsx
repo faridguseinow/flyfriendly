@@ -19,6 +19,7 @@ import {
   Globe2,
   Infinity,
   Landmark,
+  Luggage,
   Mail,
   Newspaper,
   OctagonAlert,
@@ -266,7 +267,12 @@ function Home() {
           <article className="membership-photo">
             <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80&quot" alt="Traveler packing luggage for a trip" />
             <h3>{t("home.membershipPhotoTitle")}</h3>
-            <span>{t("home.membershipPhotoTag")}</span>
+            <div className="membership-photo__footer">
+              <span className="membership-photo__badge" aria-hidden="true">
+                <Luggage size={24} strokeWidth={2.05} />
+              </span>
+              <span className="membership-photo__tag">{t("home.membershipPhotoTag")}</span>
+            </div>
           </article>
         </div>
       </section>

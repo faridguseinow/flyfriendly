@@ -1,5 +1,5 @@
 .blog-hero {
-  padding-top: 160px;
+  padding-top: 120px !important;
 
   h1 {
     max-width: 980px;
@@ -139,7 +139,7 @@
 
 .article-back {
   width: fit-content;
-  margin: 0 0 28px;
+  margin: 0 25px 0 28px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -293,7 +293,7 @@
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1140px) {
   .blog-hero {
     padding-top: 150px;
   }

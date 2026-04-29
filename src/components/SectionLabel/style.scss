@@ -14,6 +14,7 @@
   font-size: 16px;
   line-height: 20px;
   letter-spacing: 0.1px;
+  overflow: hidden;
 
   svg {
     flex: 0 0 auto;
@@ -21,13 +22,106 @@
   }
 
   &.is-primary {
+    position: relative;
     color: #fff;
     border: 2px solid #c9e7fb;
-    background: var(--primary);
-    box-shadow: 0 2px 10px 1px rgba(0, 0, 0, 0.08);
+    background: linear-gradient(180deg, #2cb1ff 0%, #0797f0 100%);
+    box-shadow: 0 2px 10px 1px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+    }
+
+    &::before {
+      inset: -18% auto -18% -42%;
+      width: 44%;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.18) 38%, rgba(255, 255, 255, 0.62) 50%, rgba(255, 255, 255, 0.16) 62%, rgba(255, 255, 255, 0));
+      transform: skewX(-18deg);
+      animation: sectionLabelShimmer 3.2s ease-in-out infinite;
+    }
+
+    &::after {
+      top: 50%;
+      left: 14px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.12) 42%, rgba(255, 255, 255, 0) 72%);
+      transform: translateY(-50%);
+      filter: blur(1px);
+      animation: sectionLabelGlowPulse 2.6s ease-in-out infinite;
+    }
 
     svg {
+      position: relative;
+      z-index: 1;
       color: currentColor;
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+      animation: sectionLabelStarSparkle 2s ease-in-out infinite;
     }
+  }
+}
+
+@keyframes sectionLabelShimmer {
+  0% {
+    transform: translateX(0) skewX(-18deg);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  52% {
+    transform: translateX(360%) skewX(-18deg);
+    opacity: 1;
+  }
+
+  68%,
+  100% {
+    transform: translateX(420%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes sectionLabelGlowPulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  50% {
+    opacity: 0.88;
+    transform: translateY(-50%) scale(1.16);
+  }
+}
+
+@keyframes sectionLabelStarSparkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.96;
+  }
+
+  30% {
+    transform: scale(1.14) rotate(-8deg);
+    opacity: 1;
+  }
+
+  58% {
+    transform: scale(0.98) rotate(6deg);
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-label.is-primary::before,
+  .section-label.is-primary::after,
+  .section-label.is-primary svg {
+    animation: none !important;
   }
 }

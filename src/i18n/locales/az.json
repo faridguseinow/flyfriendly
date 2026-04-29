@@ -84,7 +84,7 @@
     "authError": "Doğrulamaq mümkün olmadı. Yenidən cəhd edin."
   },
   "about": {
-    "heroLabel": "Təxminən Fly Friendly",
+    "heroLabel": "Bizim haqqımızda",
     "heroTitle": "Uçuşun pozulması ilə bağlı iddiaları idarə etməyin daha sadə yolu",
     "heroText": "Fly Friendly səyahətçilərə iddia məlumatlarını təşkil etməyə, tələb olunan sənədləri yükləməyə və bir aydın, addım-addım gedişatını izləməyə kömək edir.",
     "startClaim": "İddiaya başlayın",
@@ -193,7 +193,7 @@
     "claimBoxFree": "Pulsuzdur",
     "claimBoxMinutes": "dəqiqə çəkir",
     "claimBoxRightText": "Biz sizin təzminat hüququnuz üçün mübarizə aparırıq.",
-    "heroLabel": "Real Travels tərəfindən təsdiq edilmişdir",
+    "heroLabel": "Real səyahətçilər tərəfindən təsdiq edilmişdir",
     "heroTitle": "Uçuş gecikdi və ya ləğv edildi?",
     "heroTitleStrong": "İndi €600-a qədər iddia edin.",
     "heroText": "Biz sizin təzminat hüququnuz üçün mübarizə aparırıq. İddianızı bir neçə dəqiqə ərzində təqdim edin və bizə hava yolu ilə baxmağa icazə verin.",
@@ -480,7 +480,7 @@
     "promoIssueText": "3+ saat gec gəldiniz? Siz uyğunsunuz.",
     "allAirlines": "Bütün aviaşirkətlər",
     "allCountries": "Bütün ölkələr",
-    "noWinNoFee": "Qələbə yoxdur, ödəniş yoxdur",
+    "noWinNoFee": "Qələbə olmasa, ödəniş yoxdur",
     "stages": [
       "Uyğunluq yoxlanışı",
       "Əlaqə məlumatı",
@@ -489,14 +489,14 @@
     ],
     "emailError": "Düzəliş e-poçt ünvanına daxil olun",
     "eligibility": {
-      "whereDidYouFly": "hara uçmusan?",
+      "whereDidYouFly": "Haraya uçmusunuz?",
       "departurePlaceholder": "Gediş hava limanı, şəhər və ya ölkə",
       "arrivalPlaceholder": "Gəliş hava limanı, şəhər və ya ölkə",
       "noAirportsFound": "Heç bir hava limanı tapılmadı",
       "whichAirline": "Hansı aviaşirkətlə uçmusunuz?",
       "searchAirline": "Aviaşirkət axtarın",
       "noAirlinesFound": "Heç bir aviaşirkət tapılmadı",
-      "delayTitle": "Uçuş gecikmə müddəti",
+      "delayTitle": "Uçuşun gecikmə müddəti",
       "lessThan3": "3 saatdan az",
       "notEligible": "Uyğun deyil",
       "moreThan3": "3 saatdan çox",

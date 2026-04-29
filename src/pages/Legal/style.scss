@@ -76,7 +76,7 @@
   line-height: 28px;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1140px) {
   .legal-page {
     width: min(100% - 28px, var(--site-max-width));
     padding-top: 160px;

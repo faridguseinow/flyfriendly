@@ -38,6 +38,7 @@ function baseLeadPayload(data = {}) {
     email: data.email || null,
     phone: data.phone || null,
     city: data.city || null,
+    preferred_language: data.preferredLanguage || data.language || null,
     has_whatsapp: Boolean(data.whatsapp),
     reason: data.reason || null,
     payload: data,

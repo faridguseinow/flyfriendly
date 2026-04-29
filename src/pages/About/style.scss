@@ -1,6 +1,6 @@
 .about-hero,
 .contact-hero {
-  padding-top: 160px;
+  padding-top: 120px !important;
 
   h1 {
     max-width: 980px;
@@ -21,6 +21,7 @@
 .about-hero__actions {
   margin-top: 34px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 14px;
 }
@@ -59,6 +60,7 @@
     border-radius: 40px;
     background: #fff;
     box-shadow: inset 0 0 0 8px #fff, 0 0 6px 2px rgba(0, 0, 0, 0.05);
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
   }
 
   article:first-child {
@@ -112,6 +114,7 @@
     border-radius: 40px;
     background: #fff;
     box-shadow: inset 0 0 0 8px #fff, 0 0 6px 2px rgba(0, 0, 0, 0.05);
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
   }
 
   span {
@@ -124,6 +127,7 @@
     border-radius: 14px;
     color: var(--primary);
     font-size: 25px;
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
   }
 
   p {
@@ -131,6 +135,20 @@
     font-size: 20px;
     line-height: 28px;
     letter-spacing: 0.5px;
+  }
+
+  article:hover {
+    transform: translateY(-10px);
+    border-color: #d8ebff;
+    background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+    box-shadow: inset 0 0 0 8px #fff, 0 24px 42px rgba(20, 58, 110, 0.14);
+  }
+
+  article:hover span {
+    transform: translateY(-3px) scale(1.06);
+    border-color: #cde3fb;
+    background: #f7fbff;
+    box-shadow: 0 14px 24px rgba(5, 164, 255, 0.14);
   }
 }
 
@@ -145,6 +163,7 @@
     border-radius: 32px;
     background: #fff;
     box-shadow: 0 0 6px 2px rgba(0, 0, 0, 0.04);
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
   }
 
   h3 {
@@ -156,6 +175,13 @@
     font-size: 20px;
     line-height: 28px;
     letter-spacing: 0.5px;
+  }
+
+  article:hover {
+    transform: translateY(-8px);
+    border-color: #d9ebff;
+    background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+    box-shadow: 0 22px 38px rgba(20, 58, 110, 0.12);
   }
 }
 
@@ -177,6 +203,7 @@
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 32px;
     background: rgba(255, 255, 255, 0.72);
+    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
   }
 
   span {
@@ -187,6 +214,7 @@
     border-radius: 12px;
     color: #fff;
     background: var(--primary);
+    transition: transform 240ms ease, box-shadow 240ms ease, background 240ms ease;
   }
 
   h3 {
@@ -198,6 +226,28 @@
     font-size: 20px;
     line-height: 28px;
     letter-spacing: 0.5px;
+  }
+
+  article:hover {
+    transform: translateY(-10px);
+    border-color: rgba(255, 255, 255, 1);
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 24px 42px rgba(50, 96, 144, 0.14);
+  }
+
+  article:hover span {
+    transform: translateY(-3px) scale(1.08);
+    box-shadow: 0 14px 24px rgba(5, 164, 255, 0.18);
+  }
+}
+
+.about-mission__inner {
+  article:first-child:hover,
+  .about-stat-card:hover {
+    transform: translateY(-8px);
+    border-color: #d8ebff;
+    background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+    box-shadow: inset 0 0 0 8px #fff, 0 24px 42px rgba(20, 58, 110, 0.12);
   }
 }
 
@@ -216,10 +266,10 @@
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1140px) {
   .about-hero,
   .contact-hero {
-    padding-top: 160px;
+    padding-top: 120px;
   }
 
   .about-mission__inner,
@@ -235,8 +285,24 @@
   }
 }
 
-@media (max-width: 620px) {
-  .about-hero__actions {
-    display: grid;
+@media (prefers-reduced-motion: reduce) {
+  .about-mission__inner article:first-child,
+  .about-stat-card,
+  .about-feature-grid article,
+  .about-feature-grid span,
+  .about-value-grid article,
+  .about-step-grid article,
+  .about-step-grid span {
+    transition: none !important;
+  }
+
+  .about-mission__inner article:first-child:hover,
+  .about-stat-card:hover,
+  .about-feature-grid article:hover,
+  .about-feature-grid article:hover span,
+  .about-value-grid article:hover,
+  .about-step-grid article:hover,
+  .about-step-grid article:hover span {
+    transform: none !important;
   }
 }
