@@ -240,8 +240,10 @@ function Navbar() {
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen((current) => !current)}
         >
-          <span />
-          <span />
+          <span className="menu-toggle__icon" aria-hidden="true">
+            <span />
+            <span />
+          </span>
         </button>
       </nav>
       <div className="mobile-menu" aria-hidden={!isMenuOpen}>

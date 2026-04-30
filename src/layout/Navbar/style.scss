@@ -299,43 +299,56 @@
   }
 
   .menu-toggle {
+    position: relative;
+    flex: 0 0 48px;
     width: 48px;
     height: 48px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: inline-flex;
     align-items: center;
-    justify-items: center;
+    justify-content: center;
     border: 0;
     border-radius: 50%;
     background: var(--primary);
     box-shadow: 0 0 0 4px #e0f3ff, 0 8px 18px rgba(5, 164, 255, 0.2);
     cursor: pointer;
+    overflow: hidden;
+  }
+
+  .menu-toggle__icon {
+    position: relative;
+    width: 22px;
+    height: 14px;
+    display: block;
 
     span {
       position: absolute;
+      top: 50%;
+      left: 50%;
+      display: block;
       width: 22px;
       height: 2px;
       border-radius: 999px;
       background: #fff;
       transition: transform 220ms ease;
+      transform-origin: center;
 
       &:first-child {
-        transform: translateY(-5px);
+        transform: translate(-50%, calc(-50% - 5px));
       }
 
       &:last-child {
-        transform: translateY(5px);
+        transform: translate(-50%, calc(-50% + 5px));
       }
     }
   }
 
   .is-menu-open .menu-toggle {
-    span:first-child {
-      transform: rotate(45deg);
+    .menu-toggle__icon span:first-child {
+      transform: translate(-50%, -50%) rotate(45deg);
     }
 
-    span:last-child {
-      transform: rotate(-45deg);
+    .menu-toggle__icon span:last-child {
+      transform: translate(-50%, -50%) rotate(-45deg);
     }
   }
 
