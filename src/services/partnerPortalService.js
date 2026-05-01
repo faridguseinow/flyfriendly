@@ -82,7 +82,6 @@ export async function fetchPartnerPortalData() {
       ...item,
       clientLabel: buildClientLabel(meta) || item.referral_code || "-",
       routeLabel: buildRouteLabel(meta),
-      flightNumber: meta.flight_number || "",
       caseCode: meta.case_code || item.case_id || "",
       leadCode: meta.lead_code || item.lead_id || "",
       caseStatus: meta.case_status || item.status,
@@ -103,7 +102,6 @@ export async function fetchPartnerPortalData() {
       ...item,
       clientLabel: buildClientLabel(meta) || meta.case_code || item.case_id || item.lead_id || "-",
       routeLabel: buildRouteLabel(meta),
-      flightNumber: meta.flight_number || "",
       caseCode: meta.case_code || item.case_id || "",
       caseStatus: meta.case_status || "",
     };

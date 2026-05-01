@@ -161,7 +161,7 @@ export function PartnerDashboardPage() {
               <div key={item.id} className="portal-row is-static">
                 <div>
                   <strong>{item.clientLabel}</strong>
-                  <span>{[item.caseCode || item.leadCode, item.routeLabel, item.flightNumber].filter(Boolean).join(" · ") || "-"}</span>
+                  <span>{[item.caseCode || item.leadCode, item.routeLabel].filter(Boolean).join(" · ") || "-"}</span>
                 </div>
                 <div>
                   <span>{item.caseStatus || item.status}</span>
@@ -238,7 +238,7 @@ export function PartnerReferralsPage() {
             <div key={item.id} className="portal-row is-static">
               <div>
                 <strong>{item.clientLabel}</strong>
-                <span>{[item.caseCode || item.leadCode, item.routeLabel, item.flightNumber, item.source_path || item.source_url].filter(Boolean).join(" · ") || "-"}</span>
+                <span>{[item.caseCode || item.leadCode, item.routeLabel, item.source_path || item.source_url].filter(Boolean).join(" · ") || "-"}</span>
               </div>
               <div>
                 <span>{item.caseStatus || item.status}</span>
@@ -282,7 +282,7 @@ export function PartnerEarningsPage() {
             <div key={item.id} className="portal-row is-static">
               <div>
                 <strong>{formatCurrency(item.amount, item.currency)}</strong>
-                <span>{[item.clientLabel, item.caseCode, item.routeLabel, item.flightNumber].filter(Boolean).join(" · ") || "-"}</span>
+                <span>{[item.clientLabel, item.caseCode, item.routeLabel].filter(Boolean).join(" · ") || "-"}</span>
               </div>
               <div>
                 <span>{item.status}</span>

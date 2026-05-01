@@ -58,13 +58,12 @@ function daysBetween(start, end) {
 }
 
 function exportCasesCsv(rows) {
-  const headers = ["Case Code", "Status", "Payout Status", "Airline", "Flight Number", "Route", "Compensation", "Created At"];
+  const headers = ["Case Code", "Status", "Payout Status", "Airline", "Route", "Compensation", "Created At"];
   const lines = rows.map((item) => [
     item.case_code,
     item.status,
     item.payout_status,
     item.airline,
-    item.flight_number,
     `${item.route_from || "-"} -> ${item.route_to || "-"}`,
     item.estimated_compensation,
     item.created_at,
@@ -359,7 +358,7 @@ function AdminCases() {
             <div className="admin-cases__filters">
               <label className="admin-search">
                 <Search size={16} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search case, airline, route, flight number" />
+                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search case, airline, route" />
               </label>
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
                 <option value="all">All statuses</option>
@@ -424,7 +423,7 @@ function AdminCases() {
                     <div className="admin-cases__summary">
                       <article><strong>Lead link</strong><span>{selectedLead?.lead_code || selectedCase.lead_id || "-"}</span></article>
                       <article><strong>Customer</strong><span>{selectedCustomer?.full_name || selectedCase.customer_id || "-"}</span></article>
-                      <article><strong>Flight</strong><span>{selectedCase.airline || "-"}{selectedCase.flight_number ? ` · ${selectedCase.flight_number}` : ""}</span></article>
+                      <article><strong>Airline</strong><span>{selectedCase.airline || "-"}</span></article>
                       <article><strong>Route</strong><span>{selectedCase.route_from || "-"} → {selectedCase.route_to || "-"}</span></article>
                     </div>
 

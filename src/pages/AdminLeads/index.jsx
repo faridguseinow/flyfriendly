@@ -344,8 +344,8 @@ function AdminLeads() {
                       <span>{selectedLead.departure_airport || "-"} → {selectedLead.arrival_airport || "-"}</span>
                     </article>
                     <article>
-                      <strong>Flight</strong>
-                      <span>{selectedLead.airline || "-"}{selectedLead.flight_number ? ` · ${selectedLead.flight_number}` : ""}</span>
+                      <strong>Airline</strong>
+                      <span>{selectedLead.airline || "-"}</span>
                     </article>
                     <article>
                       <strong>Contact</strong>

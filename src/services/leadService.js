@@ -49,7 +49,6 @@ function baseLeadPayload(data = {}) {
     arrival_airport: data.destination || null,
     airline_id: data.airlineSource === "supabase" ? data.airlineId || null : null,
     airline: data.airline || null,
-    flight_number: data.flightNumber || null,
     scheduled_departure_date: parseFlightDate(data.date),
     delay_duration: data.delayDuration || null,
     disruption_type: data.delayDuration === "cancelled" ? "cancellation" : "delay",

@@ -311,7 +311,7 @@ export async function fetchAdminOverview() {
 async function fetchLeadsWithFallback(client) {
   const extended = await client
     .from("leads")
-    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, country, preferred_language, has_whatsapp, issue_type, assigned_user_id, customer_id, duplicate_of_lead_id, reason, payload, created_at, updated_at, submitted_at")
+    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, country, preferred_language, has_whatsapp, issue_type, assigned_user_id, customer_id, duplicate_of_lead_id, reason, payload, created_at, updated_at, submitted_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -325,7 +325,7 @@ async function fetchLeadsWithFallback(client) {
 
   const fallback = await client
     .from("leads")
-    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, reason, payload, created_at, updated_at, submitted_at")
+    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, reason, payload, created_at, updated_at, submitted_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -410,7 +410,7 @@ async function fetchCasesWithFallback(client, page, pageSize, filters = {}) {
 
   const baseQuery = client
     .from("cases")
-    .select("id, case_code, lead_id, customer_id, airline, flight_number, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, company_fee, status, payout_status, priority, assigned_manager_id, submission_date, response_date, deadline_at, referral_partner_label, created_at, updated_at, approved_at, rejected_at, paid_at, closed_at", { count: "exact" })
+    .select("id, case_code, lead_id, customer_id, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, company_fee, status, payout_status, priority, assigned_manager_id, submission_date, response_date, deadline_at, referral_partner_label, created_at, updated_at, approved_at, rejected_at, paid_at, closed_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -445,7 +445,7 @@ function applyCaseFilters(query, filters) {
 
   if (filters.search?.trim()) {
     const q = filters.search.trim();
-    nextQuery = nextQuery.or(`case_code.ilike.%${q}%,airline.ilike.%${q}%,route_from.ilike.%${q}%,route_to.ilike.%${q}%,flight_number.ilike.%${q}%`);
+    nextQuery = nextQuery.or(`case_code.ilike.%${q}%,airline.ilike.%${q}%,route_from.ilike.%${q}%,route_to.ilike.%${q}%`);
   }
 
   return nextQuery;
@@ -788,7 +788,6 @@ async function syncCaseReferralAttribution(client, { lead, caseRow, financeRow }
     client_email: lead?.email || null,
     client_phone: lead?.phone || null,
     airline: caseRow?.airline || lead?.airline || null,
-    flight_number: caseRow?.flight_number || lead?.flight_number || null,
     route_from: caseRow?.route_from || lead?.departure_airport || null,
     route_to: caseRow?.route_to || lead?.arrival_airport || null,
     issue_type: caseRow?.issue_type || lead?.issue_type || lead?.disruption_type || null,
@@ -913,7 +912,7 @@ export async function convertLeadToCase(leadId) {
 
   const { data: lead, error: leadError } = await client
     .from("leads")
-    .select("id, lead_code, status, customer_id, profile_id, referral_partner_id, source, source_details, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, issue_type, disruption_type, full_name, email, phone, country, preferred_language, city, reason, payload")
+    .select("id, lead_code, status, customer_id, profile_id, referral_partner_id, source, source_details, departure_airport, arrival_airport, airline, scheduled_departure_date, issue_type, disruption_type, full_name, email, phone, country, preferred_language, city, reason, payload")
     .eq("id", leadId)
     .maybeSingle();
 
@@ -1031,7 +1030,6 @@ export async function convertLeadToCase(leadId) {
       customer_id: customerId,
       profile_id: lead.profile_id || null,
       airline: lead.airline || null,
-      flight_number: lead.flight_number || null,
       route_from: lead.departure_airport || null,
       route_to: lead.arrival_airport || null,
       flight_date: lead.scheduled_departure_date || null,

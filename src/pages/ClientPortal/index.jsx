@@ -149,7 +149,7 @@ export function ClientDashboardPage() {
         {latestLead ? (
           <div className="portal-summary">
             <strong>{latestLead.lead_code}</strong>
-            <span>{[latestLead.airline, latestLead.flight_number].filter(Boolean).join(" ") || t("clientPortal.recent.noFlight", { defaultValue: "Flight details pending" })}</span>
+            <span>{latestLead.airline || t("clientPortal.recent.noFlight", { defaultValue: "Airline pending" })}</span>
             <span>{latestLead.status} / {latestLead.stage}</span>
           </div>
         ) : (
@@ -206,7 +206,7 @@ export function ClientClaimsPage() {
               <LocalizedLink key={`${item.kind}-${item.id}`} to={`/client/claims/${item.id}`} className="portal-row">
                 <div>
                   <strong>{item.code || item.id}</strong>
-                  <span>{item.flight || t("clientPortal.claims.noFlight", { defaultValue: "Flight details pending" })}</span>
+                  <span>{item.flight || t("clientPortal.claims.noFlight", { defaultValue: "Airline pending" })}</span>
                 </div>
                 <div>
                   <span>{item.route || "-"}</span>
@@ -269,7 +269,7 @@ export function ClientClaimDetailsPage() {
         <div className="portal-card__head">
           <div>
             <h2>{base.case_code || base.lead_code || id}</h2>
-            <p>{[base.airline, base.flight_number].filter(Boolean).join(" ") || t("clientPortal.claimDetails.noFlight", { defaultValue: "Flight details pending" })}</p>
+            <p>{base.airline || t("clientPortal.claimDetails.noFlight", { defaultValue: "Airline pending" })}</p>
           </div>
         </div>
         <div className="portal-detail-grid">

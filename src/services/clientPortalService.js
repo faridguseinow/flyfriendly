@@ -14,12 +14,12 @@ export async function fetchClientDashboardData() {
     getCurrentProfile(),
     client
       .from("leads")
-      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, flight_number, created_at, submitted_at")
+      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, created_at, submitted_at")
       .order("created_at", { ascending: false })
       .limit(20),
     client
       .from("cases")
-      .select("id, case_code, status, payout_status, airline, flight_number, route_from, route_to, estimated_compensation, created_at, approved_at, paid_at")
+      .select("id, case_code, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at, approved_at, paid_at")
       .order("created_at", { ascending: false })
       .limit(20),
     client
@@ -59,7 +59,7 @@ export async function fetchClientClaims() {
         code: item.lead_code,
         status: item.status,
         substatus: item.stage,
-        flight: [item.airline, item.flight_number].filter(Boolean).join(" "),
+        flight: item.airline || "",
         route: [item.departure_airport, item.arrival_airport].filter(Boolean).join(" -> "),
         kind: "lead",
         created_at: item.created_at,
@@ -69,7 +69,7 @@ export async function fetchClientClaims() {
         code: item.case_code,
         status: item.status,
         substatus: item.payout_status,
-        flight: [item.airline, item.flight_number].filter(Boolean).join(" "),
+        flight: item.airline || "",
         route: [item.route_from, item.route_to].filter(Boolean).join(" -> "),
         kind: "case",
         created_at: item.created_at,
@@ -83,7 +83,7 @@ export async function fetchClientClaimDetails(claimId) {
 
   const caseResponse = await client
     .from("cases")
-    .select("id, case_code, status, payout_status, airline, flight_number, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, created_at, approved_at, paid_at, notes")
+    .select("id, case_code, status, payout_status, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, created_at, approved_at, paid_at, notes")
     .eq("id", claimId)
     .maybeSingle();
 
@@ -113,7 +113,7 @@ export async function fetchClientClaimDetails(claimId) {
 
   const leadResponse = await client
     .from("leads")
-    .select("id, lead_code, status, stage, eligibility_status, airline, flight_number, departure_airport, arrival_airport, scheduled_departure_date, disruption_type, created_at, submitted_at")
+    .select("id, lead_code, status, stage, eligibility_status, airline, departure_airport, arrival_airport, scheduled_departure_date, disruption_type, created_at, submitted_at")
     .eq("id", claimId)
     .maybeSingle();
 

@@ -88,7 +88,6 @@ export async function saveEligibilityCheck(claimId, data) {
     departure_airport: data.departure || null,
     arrival_airport: data.destination || null,
     airline_code: data.airline || null,
-    flight_number: data.flightNumber || null,
     scheduled_departure_date: parseFlightDate(data.date),
     is_direct: data.direct ? data.direct === "yes" : null,
     raw_user_input: {
