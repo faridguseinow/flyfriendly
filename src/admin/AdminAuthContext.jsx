@@ -11,7 +11,7 @@ function isMissingTableError(error) {
 async function fetchProfile(client, userId) {
   const { data, error } = await client
     .from("profiles")
-    .select("id, full_name, email, phone, role, created_at")
+    .select("id, full_name, email, phone, role, deleted_at, purge_after, created_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -79,7 +79,7 @@ export function AdminAuthProvider({ children }) {
 
         const fallbackRole = normalizeRoleCode(profile?.role);
         const roleSet = new Set(assignedRoles);
-        if (fallbackRole) {
+        if (fallbackRole && !profile?.deleted_at) {
           roleSet.add(fallbackRole);
         }
 
@@ -87,7 +87,7 @@ export function AdminAuthProvider({ children }) {
           isLoading: false,
           user,
           profile,
-          roles: Array.from(roleSet),
+          roles: profile?.deleted_at ? [] : Array.from(roleSet),
         });
       } catch {
         setState({
@@ -120,6 +120,7 @@ export function AdminAuthProvider({ children }) {
       primaryRole,
       primaryRoleLabel: primaryRole ? getRoleDefinition(primaryRole).label : null,
       roleLabels,
+      isSuperAdmin: state.roles.includes("super_admin"),
       permissions,
       hasPermission: (permission) => hasPermission(state.roles, permission),
       isAdminUser: state.roles.length > 0,
@@ -142,7 +143,7 @@ export function AdminAuthProvider({ children }) {
         ]);
         const fallbackRole = normalizeRoleCode(profile?.role);
         const roleSet = new Set(assignedRoles);
-        if (fallbackRole) {
+        if (fallbackRole && !profile?.deleted_at) {
           roleSet.add(fallbackRole);
         }
 
@@ -150,7 +151,7 @@ export function AdminAuthProvider({ children }) {
           isLoading: false,
           user: data.session.user,
           profile,
-          roles: Array.from(roleSet),
+          roles: profile?.deleted_at ? [] : Array.from(roleSet),
         });
       },
     };

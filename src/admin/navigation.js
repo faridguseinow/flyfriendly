@@ -12,6 +12,7 @@ import {
   Settings,
   ShieldCheck,
   SquareCheckBig,
+  Trash2,
   Users,
   UserSquare2,
   Wallet,
@@ -32,6 +33,7 @@ export const adminNavigation = [
   { label: "Blog", path: "/admin/blog", icon: Newspaper, permission: "blog.view" },
   { label: "FAQ", path: "/admin/faq", icon: CircleHelp, permission: "faq.view" },
   { label: "Users & Roles", path: "/admin/access", icon: ShieldCheck, permission: "users.view" },
+  { label: "Trash", path: "/admin/trash", icon: Trash2, permission: "users.manage" },
   { label: "Settings", path: "/admin/settings", icon: Settings, permission: "settings.view" },
   { label: "Activity Logs", path: "/admin/activity", icon: Activity, permission: "activity.view" },
 ];

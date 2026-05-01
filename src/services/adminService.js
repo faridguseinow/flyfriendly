@@ -10,6 +10,50 @@ function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.message?.includes("column") || error?.message?.includes("schema cache");
 }
 
+function getTrashPurgeAfterDate() {
+  return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function getDocumentEntityType(document) {
+  if (document.kind === "signature") {
+    return "lead_signature";
+  }
+
+  if (document.owner_type === "case") {
+    return "case_document";
+  }
+
+  if (document.owner_type === "claim") {
+    return "claim_document";
+  }
+
+  return "lead_document";
+}
+
+function getTrashSourceConfig(entityType) {
+  if (entityType === "lead_document") {
+    return { table: "lead_documents", statusField: "status" };
+  }
+
+  if (entityType === "case_document") {
+    return { table: "case_documents", statusField: "status" };
+  }
+
+  if (entityType === "claim_document") {
+    return { table: "documents", statusField: "status" };
+  }
+
+  if (entityType === "lead_signature") {
+    return { table: "lead_signatures", statusField: null };
+  }
+
+  if (entityType === "profile") {
+    return { table: "profiles", statusField: "status" };
+  }
+
+  return null;
+}
+
 const AIRPORTS_REFRESH_URL = "https://davidmegginson.github.io/ourairports-data/airports.csv";
 const AIRLINES_REFRESH_URL = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat";
 const regionNames = typeof Intl !== "undefined"
@@ -528,13 +572,326 @@ function deriveIssueType(lead) {
   return "Other";
 }
 
+function roundMoney(value) {
+  return Number(Number(value || 0).toFixed(2));
+}
+
+function deriveReferralLifecycleStatus(caseRow, financeRow) {
+  const caseStatus = String(caseRow?.status || "").toLowerCase();
+  const payoutStatus = String(caseRow?.payout_status || "").toLowerCase();
+  const paymentStatus = String(financeRow?.payment_status || "").toLowerCase();
+
+  if (caseStatus === "rejected") {
+    return "cancelled";
+  }
+
+  if (
+    ["approved", "paid", "closed"].includes(caseStatus)
+    || ["customer_paid", "referral_paid", "completed"].includes(payoutStatus)
+    || ["customer_paid", "referral_paid", "completed"].includes(paymentStatus)
+  ) {
+    return "converted";
+  }
+
+  return caseRow?.id ? "case_created" : "lead_created";
+}
+
+function deriveCommissionStatus(caseRow, financeRow) {
+  const caseStatus = String(caseRow?.status || "").toLowerCase();
+  const payoutStatus = String(caseRow?.payout_status || "").toLowerCase();
+  const paymentStatus = String(financeRow?.payment_status || "").toLowerCase();
+
+  if (caseStatus === "rejected") {
+    return "cancelled";
+  }
+
+  if (financeRow?.referral_paid_at || ["referral_paid", "completed"].includes(payoutStatus) || ["referral_paid", "completed"].includes(paymentStatus)) {
+    return "paid";
+  }
+
+  if (["approved", "paid", "closed"].includes(caseStatus)) {
+    return "approved";
+  }
+
+  return "pending";
+}
+
+function isCommissionTriggerState(caseRow, financeRow) {
+  return deriveCommissionStatus(caseRow, financeRow) !== "pending"
+    || Number(financeRow?.referral_commission || 0) > 0;
+}
+
+function calculateCommissionAmount(partner, caseRow, financeRow) {
+  const explicitAmount = Number(financeRow?.referral_commission || 0);
+  if (explicitAmount > 0) {
+    return roundMoney(explicitAmount);
+  }
+
+  const rate = Number(partner?.commission_rate || 0);
+  if (!rate) {
+    return 0;
+  }
+
+  if (partner?.commission_type === "fixed") {
+    return roundMoney(rate);
+  }
+
+  const sourceAmount = Number(financeRow?.company_fee || caseRow?.company_fee || 0);
+  if (!sourceAmount) {
+    return 0;
+  }
+
+  return roundMoney(sourceAmount * (rate / 100));
+}
+
+async function findReferralPartnerByField(client, field, value) {
+  if (!value) {
+    return null;
+  }
+
+  const result = await client
+    .from("referral_partners")
+    .select("id, name, public_name, referral_code, commission_type, commission_rate")
+    .eq(field, value)
+    .limit(1)
+    .maybeSingle();
+
+  if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
+    throw result.error;
+  }
+
+  return result.data || null;
+}
+
+async function findReferralPartnerForContext(client, lead, caseRow) {
+  const directPartnerId = lead?.referral_partner_id || caseRow?.referral_partner_id || null;
+  const referralCode = lead?.source_details?.referral_code || null;
+  const label = lead?.source_details?.referral_partner || lead?.payload?.referralPartner || caseRow?.referral_partner_label || null;
+
+  if (directPartnerId) {
+    const result = await findReferralPartnerByField(client, "id", directPartnerId);
+    if (result?.id) {
+      return result;
+    }
+  }
+
+  if (referralCode) {
+    const result = await findReferralPartnerByField(client, "referral_code", referralCode);
+    if (result?.id) {
+      return result;
+    }
+  }
+
+  if (label) {
+    const byCode = await findReferralPartnerByField(client, "referral_code", label);
+    if (byCode?.id) {
+      return byCode;
+    }
+
+    const byName = await findReferralPartnerByField(client, "name", label);
+    if (byName?.id) {
+      return byName;
+    }
+  }
+
+  return null;
+}
+
+async function syncPartnerTotals(client, partnerId) {
+  if (!partnerId) return;
+
+  const [commissions, payouts] = await Promise.all([
+    client
+      .from("partner_commissions")
+      .select("amount, status")
+      .eq("partner_id", partnerId),
+    client
+      .from("referral_partner_payouts")
+      .select("amount, status")
+      .eq("partner_id", partnerId),
+  ]);
+
+  if (commissions.error && !isMissingOptionalTable(commissions.error) && !isMissingColumnError(commissions.error)) {
+    throw commissions.error;
+  }
+
+  if (payouts.error && !isMissingOptionalTable(payouts.error) && !isMissingColumnError(payouts.error)) {
+    throw payouts.error;
+  }
+
+  const totalEarned = roundMoney((commissions.data || [])
+    .filter((item) => item.status !== "cancelled")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0));
+  const totalPaid = roundMoney((payouts.data || [])
+    .filter((item) => item.status === "paid")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0));
+
+  await client
+    .from("referral_partners")
+    .update({
+      total_earned: totalEarned,
+      total_paid: totalPaid,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", partnerId);
+}
+
+async function syncCaseReferralAttribution(client, { lead, caseRow, financeRow }) {
+  const partner = await findReferralPartnerForContext(client, lead, caseRow);
+  if (!partner?.id) {
+    return null;
+  }
+
+  const referralStatus = deriveReferralLifecycleStatus(caseRow, financeRow);
+  const commissionStatus = deriveCommissionStatus(caseRow, financeRow);
+  const commissionAmount = calculateCommissionAmount(partner, caseRow, financeRow);
+  const existingReferral = lead?.id
+    ? await client.from("referrals").select("id, attribution_meta").eq("lead_id", lead.id).maybeSingle()
+    : caseRow?.id
+      ? await client.from("referrals").select("id, attribution_meta").eq("case_id", caseRow.id).maybeSingle()
+      : { data: null, error: null };
+
+  if (existingReferral.error && !isMissingOptionalTable(existingReferral.error) && !isMissingColumnError(existingReferral.error)) {
+    throw existingReferral.error;
+  }
+
+  const previousMeta = existingReferral.data?.attribution_meta || {};
+  const attributionMeta = {
+    ...previousMeta,
+    partner_name: partner.public_name || partner.name || null,
+    partner_referral_code: partner.referral_code || null,
+    lead_code: lead?.lead_code || null,
+    case_code: caseRow?.case_code || null,
+    client_name: lead?.full_name || null,
+    client_email: lead?.email || null,
+    client_phone: lead?.phone || null,
+    airline: caseRow?.airline || lead?.airline || null,
+    flight_number: caseRow?.flight_number || lead?.flight_number || null,
+    route_from: caseRow?.route_from || lead?.departure_airport || null,
+    route_to: caseRow?.route_to || lead?.arrival_airport || null,
+    issue_type: caseRow?.issue_type || lead?.issue_type || lead?.disruption_type || null,
+    case_status: caseRow?.status || null,
+    payout_status: caseRow?.payout_status || null,
+    finance_payment_status: financeRow?.payment_status || null,
+    company_fee: Number(financeRow?.company_fee || caseRow?.company_fee || 0) || 0,
+    referral_commission_amount: commissionAmount,
+    referral_commission_status: commissionStatus,
+  };
+
+  if (lead?.id || caseRow?.id) {
+    const conflictTarget = lead?.id ? "lead_id" : "case_id";
+    const { error } = await client
+      .from("referrals")
+      .upsert({
+        id: existingReferral.data?.id || undefined,
+        partner_id: partner.id,
+        client_profile_id: lead?.profile_id || null,
+        customer_id: caseRow?.customer_id || lead?.customer_id || null,
+        lead_id: lead?.id || null,
+        case_id: caseRow?.id || null,
+        referral_code: lead?.source_details?.referral_code || partner.referral_code || null,
+        source_url: lead?.source_details?.referral_source_url || null,
+        source_path: lead?.source_details?.referral_source_path || null,
+        status: referralStatus,
+        attribution_meta: attributionMeta,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: conflictTarget });
+
+    if (error && !isMissingOptionalTable(error) && !isMissingColumnError(error)) {
+      throw error;
+    }
+  }
+
+  const updatePayload = {
+    referral_partner_id: partner.id,
+    referral_partner_label: partner.referral_code || partner.public_name || partner.name || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (caseRow?.id) {
+    await client
+      .from("cases")
+      .update(updatePayload)
+      .eq("id", caseRow.id);
+  }
+
+  if (lead?.id) {
+    await client
+      .from("leads")
+      .update({
+        referral_partner_id: partner.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", lead.id);
+  }
+
+  return partner;
+}
+
+async function syncPartnerCommissionForCase(client, { lead, caseRow, financeRow }) {
+  const partner = await syncCaseReferralAttribution(client, { lead, caseRow, financeRow });
+  if (!partner?.id || !caseRow?.id) {
+    return null;
+  }
+
+  const nextStatus = deriveCommissionStatus(caseRow, financeRow);
+  const amount = calculateCommissionAmount(partner, caseRow, financeRow);
+  const existing = await client
+    .from("partner_commissions")
+    .select("*")
+    .eq("partner_id", partner.id)
+    .eq("case_id", caseRow.id)
+    .maybeSingle();
+
+  if (existing.error && !isMissingOptionalTable(existing.error) && !isMissingColumnError(existing.error)) {
+    throw existing.error;
+  }
+
+  if (!existing.data && !isCommissionTriggerState(caseRow, financeRow) && amount <= 0) {
+    return null;
+  }
+
+  const previous = existing.data || null;
+  const approvedAt = nextStatus === "approved" || nextStatus === "paid"
+    ? previous?.approved_at || new Date().toISOString()
+    : null;
+  const paidAt = nextStatus === "paid"
+    ? previous?.paid_at || financeRow?.referral_paid_at || new Date().toISOString()
+    : null;
+
+  const payload = {
+    partner_id: partner.id,
+    lead_id: lead?.id || null,
+    case_id: caseRow.id,
+    amount,
+    currency: financeRow?.currency || "EUR",
+    commission_rate: Number(partner.commission_rate || 0),
+    source_amount: Number(financeRow?.company_fee || caseRow?.company_fee || 0) || null,
+    status: nextStatus,
+    approved_at: approvedAt,
+    paid_at: paidAt,
+    notes: existing.data?.notes || null,
+  };
+
+  const result = existing.data
+    ? await client.from("partner_commissions").update(payload).eq("id", existing.data.id)
+    : await client.from("partner_commissions").insert({ id: crypto.randomUUID(), ...payload });
+
+  if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
+    throw result.error;
+  }
+
+  await syncPartnerTotals(client, partner.id);
+  return partner.id;
+}
+
 export async function convertLeadToCase(leadId) {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
 
   const { data: lead, error: leadError } = await client
     .from("leads")
-    .select("id, lead_code, status, customer_id, source, source_details, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, issue_type, disruption_type, full_name, email, phone, country, preferred_language, city, reason, payload")
+    .select("id, lead_code, status, customer_id, profile_id, referral_partner_id, source, source_details, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, issue_type, disruption_type, full_name, email, phone, country, preferred_language, city, reason, payload")
     .eq("id", leadId)
     .maybeSingle();
 
@@ -605,6 +962,7 @@ export async function convertLeadToCase(leadId) {
           phone: lead.phone || undefined,
           country: lead.country || undefined,
           preferred_language: lead.preferred_language || undefined,
+          profile_id: lead.profile_id || undefined,
           updated_at: new Date().toISOString(),
         })
         .eq("id", customerId);
@@ -623,6 +981,7 @@ export async function convertLeadToCase(leadId) {
           phone: lead.phone || null,
           country: lead.country || null,
           preferred_language: lead.preferred_language || null,
+          profile_id: lead.profile_id || null,
           notes: lead.reason || null,
         });
 
@@ -639,6 +998,7 @@ export async function convertLeadToCase(leadId) {
   const caseId = crypto.randomUUID();
   const caseCode = buildCaseCode();
   const now = new Date().toISOString();
+  const partner = await findReferralPartnerForContext(client, lead, null).catch(() => null);
 
   const { error: caseError } = await client
     .from("cases")
@@ -647,6 +1007,7 @@ export async function convertLeadToCase(leadId) {
       case_code: caseCode,
       lead_id: lead.id,
       customer_id: customerId,
+      profile_id: lead.profile_id || null,
       airline: lead.airline || null,
       flight_number: lead.flight_number || null,
       route_from: lead.departure_airport || null,
@@ -657,7 +1018,8 @@ export async function convertLeadToCase(leadId) {
       payout_status: "not_started",
       priority: "normal",
       notes: lead.reason || lead.payload?.reason || null,
-      referral_partner_label: lead.source_details?.referral_partner || lead.payload?.referralPartner || lead.source || null,
+      referral_partner_id: partner?.id || lead.referral_partner_id || null,
+      referral_partner_label: partner?.referral_code || lead.source_details?.referral_partner || lead.payload?.referralPartner || lead.source || null,
       created_by: user?.id || null,
     });
 
@@ -674,6 +1036,7 @@ export async function convertLeadToCase(leadId) {
     .update({
       status: "converted",
       customer_id: customerId,
+      referral_partner_id: partner?.id || lead.referral_partner_id || null,
       updated_at: now,
     })
     .eq("id", lead.id);
@@ -754,6 +1117,27 @@ export async function convertLeadToCase(leadId) {
   if (historyLead.error && !isMissingOptionalTable(historyLead.error)) {
     throw historyLead.error;
   }
+
+  await syncPartnerCommissionForCase(client, {
+    lead,
+    caseRow: {
+      id: caseId,
+      case_code: caseCode,
+      customer_id: customerId,
+      company_fee: 0,
+      status: "documents_pending",
+      payout_status: "not_started",
+      referral_partner_id: partner?.id || lead.referral_partner_id || null,
+      referral_partner_label: partner?.referral_code || null,
+    },
+    financeRow: {
+      case_id: caseId,
+      company_fee: 0,
+      referral_commission: 0,
+      currency: "EUR",
+      payment_status: "not_started",
+    },
+  }).catch(() => null);
 
   await syncCustomerStats(client, customerId);
   await recordActivity(client, {
@@ -1165,22 +1549,26 @@ export async function fetchDocumentsCenterData() {
   const [leadDocuments, caseDocuments, claimDocuments, leadSignatures, leads, cases, claims, customers] = await Promise.all([
     client
       .from("lead_documents")
-      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, deleted_at, purge_after, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(500),
     client
       .from("case_documents")
-      .select("id, case_id, document_type, file_path, file_name, mime_type, file_size, status, source_document_id, created_at")
+      .select("id, case_id, document_type, file_path, file_name, mime_type, file_size, status, source_document_id, deleted_at, purge_after, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(500),
     client
       .from("documents")
-      .select("id, claim_id, user_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+      .select("id, claim_id, user_id, document_type, file_path, file_name, mime_type, file_size, status, deleted_at, purge_after, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(500),
     client
       .from("lead_signatures")
-      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
+      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, deleted_at, purge_after, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(300),
     client
@@ -1316,6 +1704,25 @@ export async function updateCaseFinance(financeId, updates) {
     throw error;
   }
 
+  if (current.data?.case_id) {
+    const [caseResponse, updatedFinance] = await Promise.all([
+      client.from("cases").select("*").eq("id", current.data.case_id).maybeSingle(),
+      client.from("case_finance").select("*").eq("id", financeId).maybeSingle(),
+    ]);
+
+    const caseRow = caseResponse.data || null;
+    const leadId = caseRow?.lead_id || null;
+    const leadRow = leadId
+      ? (await client.from("leads").select("*").eq("id", leadId).maybeSingle()).data || null
+      : null;
+
+    await syncPartnerCommissionForCase(client, {
+      lead: leadRow,
+      caseRow,
+      financeRow: updatedFinance.data || { ...current.data, ...payload },
+    }).catch(() => null);
+  }
+
   await recordActivity(client, {
     userId: user?.id,
     action: "update",
@@ -1339,15 +1746,15 @@ function matchPartnerForRow(row, partners = []) {
 export async function fetchReferralPartnersModuleData() {
   const client = requireSupabase();
 
-  const [partners, payouts, leads, cases, finance] = await Promise.all([
+  const [partners, payouts, leads, cases, finance, commissions] = await Promise.all([
     client
       .from("referral_partners")
-      .select("id, name, contact_name, contact_email, contact_phone, referral_code, referral_link, commission_type, commission_rate, status, notes, created_at, updated_at")
+      .select("id, profile_id, name, public_name, contact_name, contact_email, contact_phone, referral_code, referral_link, commission_type, commission_rate, status, portal_status, application_reason, website_url, instagram_url, tiktok_url, youtube_url, total_earned, total_paid, notes, created_at, updated_at, approved_at, rejected_at, suspended_at")
       .order("created_at", { ascending: false })
       .limit(300),
     client
       .from("referral_partner_payouts")
-      .select("id, partner_id, case_id, amount, currency, status, payout_method, note, paid_at, created_at, updated_at")
+      .select("id, partner_id, case_id, amount, currency, status, payout_method, payment_reference, note, paid_at, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(500),
     client
@@ -1365,6 +1772,11 @@ export async function fetchReferralPartnersModuleData() {
       .select("id, case_id, referral_commission, payment_status, referral_paid_at, currency, updated_at")
       .order("updated_at", { ascending: false })
       .limit(600),
+    client
+      .from("partner_commissions")
+      .select("id, partner_id, lead_id, case_id, amount, currency, commission_rate, source_amount, status, created_at, approved_at, paid_at")
+      .order("created_at", { ascending: false })
+      .limit(600),
   ]);
 
   const baseErrors = [leads, cases].map((result) => result.error).filter(Boolean);
@@ -1372,7 +1784,7 @@ export async function fetchReferralPartnersModuleData() {
     throw baseErrors[0];
   }
 
-  const optionalErrors = [partners, payouts, finance].map((result) => result.error).filter(Boolean);
+  const optionalErrors = [partners, payouts, finance, commissions].map((result) => result.error).filter(Boolean);
   if (optionalErrors.some((error) => !isMissingOptionalTable(error) && !isMissingColumnError(error))) {
     throw optionalErrors.find((error) => !isMissingOptionalTable(error) && !isMissingColumnError(error));
   }
@@ -1383,6 +1795,7 @@ export async function fetchReferralPartnersModuleData() {
     leads: leads.data || [],
     cases: cases.data || [],
     finance: finance.data || [],
+    commissions: commissions.data || [],
     supportsPartnersModuleV1: !partners.error,
   };
 }
@@ -1399,6 +1812,7 @@ export async function createReferralPartner(input) {
   const payload = {
     id: crypto.randomUUID(),
     name: input.name,
+    public_name: input.public_name || input.name,
     contact_name: input.contact_name || null,
     contact_email: input.contact_email || null,
     contact_phone: input.contact_phone || null,
@@ -1407,6 +1821,9 @@ export async function createReferralPartner(input) {
     commission_type: input.commission_type || "percentage",
     commission_rate: Number(input.commission_rate || 0),
     status: input.status || "active",
+    portal_status: input.portal_status || "approved",
+    profile_id: input.profile_id || null,
+    application_reason: input.application_reason || null,
     notes: input.notes || null,
   };
 
@@ -1470,6 +1887,7 @@ export async function createReferralPartnerPayout(input) {
     currency: input.currency || "EUR",
     status: input.status || "pending",
     payout_method: input.payout_method || null,
+    payment_reference: input.payment_reference || null,
     note: input.note || null,
     paid_at: input.status === "paid" ? new Date().toISOString() : null,
   };
@@ -1493,6 +1911,8 @@ export async function createReferralPartnerPayout(input) {
     newValue: payload,
     meta: { partner_id: input.partner_id, case_id: input.case_id || null },
   });
+
+  await syncPartnerTotals(client, input.partner_id).catch(() => null);
 
   return data;
 }
@@ -1914,7 +2334,8 @@ export async function fetchAccessModuleData() {
   const [profiles, roles, permissions, userRoles, rolePermissions] = await Promise.all([
     client
       .from("profiles")
-      .select("id, full_name, email, phone, role, created_at")
+      .select("id, full_name, email, phone, role, status, deleted_at, purge_after, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(500),
     client
@@ -2033,6 +2454,363 @@ export async function updateUserAdminRoles(userId, roleCodes = []) {
       admin_roles: normalized,
     },
   });
+}
+
+export async function moveDocumentToTrash(document, note = "") {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const entityType = getDocumentEntityType(document);
+  const source = getTrashSourceConfig(entityType);
+
+  if (!source?.table || !document?.id) {
+    throw new Error("Trash action is not available for this document.");
+  }
+
+  const deletedAt = new Date().toISOString();
+  const purgeAfter = getTrashPurgeAfterDate();
+  const updatePayload = {
+    deleted_at: deletedAt,
+    deleted_by: actor?.id || null,
+    purge_after: purgeAfter,
+  };
+
+  if (source.statusField) {
+    updatePayload[source.statusField] = "deleted";
+  }
+
+  const updateResult = await client
+    .from(source.table)
+    .update(updatePayload)
+    .eq("id", document.id);
+
+  if (updateResult.error) {
+    throw updateResult.error;
+  }
+
+  const trashPayload = {
+    entity_type: entityType,
+    entity_id: document.id,
+    label: document.file_name || document.signer_name || document.id,
+    owner_type: document.owner_type || null,
+    owner_id: document.owner_id || null,
+    storage_bucket: document.kind === "document" ? document.bucket || null : null,
+    storage_path: document.kind === "document" ? document.file_path || null : null,
+    deleted_by: actor?.id || null,
+    deleted_at: deletedAt,
+    purge_after: purgeAfter,
+    metadata: {
+      kind: document.kind || "document",
+      document_type: document.document_type || null,
+      owner_label: document.ownerLabel || null,
+      signer_name: document.signer_name || null,
+      signer_email: document.signer_email || null,
+      note: note || null,
+      status: document.status || null,
+    },
+  };
+
+  const trashResult = await client
+    .from("trash_items")
+    .upsert(trashPayload, { onConflict: "entity_type,entity_id" })
+    .select("id")
+    .single();
+
+  if (trashResult.error) {
+    throw trashResult.error;
+  }
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "trash",
+    module: "documents",
+    targetEntityType: entityType,
+    targetEntityId: document.id,
+    newValue: trashPayload,
+  });
+
+  return trashResult.data;
+}
+
+async function isCurrentUserSuperAdmin(client, userId) {
+  if (!userId) {
+    return false;
+  }
+
+  const response = await client
+    .from("user_admin_roles")
+    .select("role_code")
+    .eq("user_id", userId)
+    .eq("role_code", "super_admin")
+    .limit(1)
+    .maybeSingle();
+
+  if (response.error && !isMissingOptionalTable(response.error)) {
+    throw response.error;
+  }
+
+  return Boolean(response.data);
+}
+
+export async function moveUserToTrash(profileId, note = "") {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+
+  if (!actor?.id) {
+    throw new Error("You need to be signed in.");
+  }
+
+  const isSuperAdmin = await isCurrentUserSuperAdmin(client, actor.id);
+  if (!isSuperAdmin) {
+    throw new Error("Only super admins can delete users.");
+  }
+
+  if (profileId === actor.id) {
+    throw new Error("You cannot delete your own account.");
+  }
+
+  const currentProfile = await client
+    .from("profiles")
+    .select("id, full_name, email, phone, role, status, deleted_at")
+    .eq("id", profileId)
+    .maybeSingle();
+
+  if (currentProfile.error) {
+    throw currentProfile.error;
+  }
+
+  if (!currentProfile.data?.id) {
+    throw new Error("User profile was not found.");
+  }
+
+  const deletedAt = new Date().toISOString();
+  const purgeAfter = getTrashPurgeAfterDate();
+
+  const updateProfile = await client
+    .from("profiles")
+    .update({
+      deleted_at: deletedAt,
+      deleted_by: actor.id,
+      purge_after: purgeAfter,
+      deletion_note: note || null,
+      status: "blocked",
+    })
+    .eq("id", profileId);
+
+  if (updateProfile.error) {
+    throw updateProfile.error;
+  }
+
+  await client
+    .from("user_admin_roles")
+    .delete()
+    .eq("user_id", profileId);
+
+  const trashPayload = {
+    entity_type: "profile",
+    entity_id: profileId,
+    label: currentProfile.data.full_name || currentProfile.data.email || profileId,
+    owner_type: "profile",
+    owner_id: profileId,
+    deleted_by: actor.id,
+    deleted_at: deletedAt,
+    purge_after: purgeAfter,
+    metadata: {
+      email: currentProfile.data.email || null,
+      phone: currentProfile.data.phone || null,
+      role: currentProfile.data.role || null,
+      previous_status: currentProfile.data.status || null,
+      note: note || null,
+    },
+  };
+
+  const trashResult = await client
+    .from("trash_items")
+    .upsert(trashPayload, { onConflict: "entity_type,entity_id" })
+    .select("id")
+    .single();
+
+  if (trashResult.error) {
+    throw trashResult.error;
+  }
+
+  await recordActivity(client, {
+    userId: actor.id,
+    action: "trash_user",
+    module: "users",
+    targetEntityType: "profile",
+    targetEntityId: profileId,
+    previousValue: currentProfile.data,
+    newValue: trashPayload,
+  });
+
+  return trashResult.data;
+}
+
+export async function fetchTrashModuleData() {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("trash_items")
+    .select("id, entity_type, entity_id, label, owner_type, owner_id, storage_bucket, storage_path, deleted_by, deleted_at, purge_after, metadata")
+    .order("deleted_at", { ascending: false })
+    .limit(1000);
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    items: data || [],
+  };
+}
+
+export async function restoreTrashItem(item) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const source = getTrashSourceConfig(item?.entity_type);
+
+  if (!source?.table || !item?.entity_id) {
+    throw new Error("Restore is not available for this trash item.");
+  }
+
+  const payload = {
+    deleted_at: null,
+    deleted_by: null,
+    purge_after: null,
+  };
+
+  if (item.entity_type === "profile") {
+    payload.deletion_note = null;
+    payload.status = "active";
+  } else if (source.statusField) {
+    payload[source.statusField] = item?.metadata?.status || "uploaded";
+  }
+
+  const restoreResult = await client
+    .from(source.table)
+    .update(payload)
+    .eq("id", item.entity_id);
+
+  if (restoreResult.error) {
+    throw restoreResult.error;
+  }
+
+  const deleteTrashResult = await client
+    .from("trash_items")
+    .delete()
+    .eq("id", item.id);
+
+  if (deleteTrashResult.error) {
+    throw deleteTrashResult.error;
+  }
+
+  await recordActivity(client, {
+    userId: actor?.id || null,
+    action: "restore",
+    module: "trash",
+    targetEntityType: item.entity_type,
+    targetEntityId: item.entity_id,
+    previousValue: item,
+    newValue: payload,
+  });
+}
+
+async function removeStorageAsset(client, item) {
+  if (!item?.storage_bucket || !item?.storage_path) {
+    return;
+  }
+
+  const result = await client.storage
+    .from(item.storage_bucket)
+    .remove([item.storage_path]);
+
+  if (result.error) {
+    throw result.error;
+  }
+}
+
+export async function permanentlyDeleteTrashItem(item) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+
+  if (item.entity_type === "profile") {
+    const rpcResult = await client.rpc("admin_permanently_delete_user", {
+      target_user_id: item.entity_id,
+    });
+
+    if (rpcResult.error) {
+      throw rpcResult.error;
+    }
+
+    await recordActivity(client, {
+      userId: actor?.id || null,
+      action: "purge_user",
+      module: "trash",
+      targetEntityType: item.entity_type,
+      targetEntityId: item.entity_id,
+      previousValue: item,
+      newValue: rpcResult.data || null,
+    });
+
+    return rpcResult.data;
+  }
+
+  const source = getTrashSourceConfig(item.entity_type);
+  if (!source?.table) {
+    throw new Error("Permanent deletion is not supported for this trash item.");
+  }
+
+  await removeStorageAsset(client, item);
+
+  const deleteSourceResult = await client
+    .from(source.table)
+    .delete()
+    .eq("id", item.entity_id);
+
+  if (deleteSourceResult.error) {
+    throw deleteSourceResult.error;
+  }
+
+  const deleteTrashResult = await client
+    .from("trash_items")
+    .delete()
+    .eq("id", item.id);
+
+  if (deleteTrashResult.error) {
+    throw deleteTrashResult.error;
+  }
+
+  await recordActivity(client, {
+    userId: actor?.id || null,
+    action: "purge",
+    module: "trash",
+    targetEntityType: item.entity_type,
+    targetEntityId: item.entity_id,
+    previousValue: item,
+  });
+
+  return { deleted: true };
+}
+
+export async function purgeExpiredTrashItems() {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("trash_items")
+    .select("id, entity_type, entity_id, label, owner_type, owner_id, storage_bucket, storage_path, deleted_by, deleted_at, purge_after, metadata")
+    .lte("purge_after", new Date().toISOString())
+    .order("purge_after", { ascending: true })
+    .limit(100);
+
+  if (error) {
+    throw error;
+  }
+
+  let purged = 0;
+  for (const item of data || []) {
+    await permanentlyDeleteTrashItem(item);
+    purged += 1;
+  }
+
+  return { purged };
 }
 
 export async function fetchAdminSearchData() {
@@ -2297,6 +3075,21 @@ export async function updateCaseWorkflow(caseId, updates) {
       throw history.error;
     }
   }
+
+  const [updatedCase, financeResponse] = await Promise.all([
+    client.from("cases").select("*").eq("id", caseId).maybeSingle(),
+    client.from("case_finance").select("*").eq("case_id", caseId).maybeSingle(),
+  ]);
+  const leadId = updatedCase.data?.lead_id || current.data?.lead_id || null;
+  const leadRow = leadId
+    ? (await client.from("leads").select("*").eq("id", leadId).maybeSingle()).data || null
+    : null;
+
+  await syncPartnerCommissionForCase(client, {
+    lead: leadRow,
+    caseRow: updatedCase.data || { ...current.data, ...payload },
+    financeRow: financeResponse.data || null,
+  }).catch(() => null);
 
   await recordActivity(client, {
     userId: user?.id,

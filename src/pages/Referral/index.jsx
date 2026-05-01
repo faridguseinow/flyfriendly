@@ -1,8 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
-import ClaimStartModal from "../../components/ClaimStartModal/index.jsx";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   BadgeCheck,
   BookOpen,
@@ -19,6 +18,8 @@ import {
   Users,
   Camera,
 } from "lucide-react";
+import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import { useAuth } from "../../auth/AuthContext.jsx";
 import "./style.scss";
 
 const partnerImage = "https://images.unsplash.com/photo-1713946598491-4f85decbeaaf?q=80&w=2064&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
@@ -84,20 +85,30 @@ function FaqItem({ item, isOpen, onToggle }) {
 
 function Referral() {
   const { t } = useTranslation();
-  const [authMode, setAuthMode] = useState("signup");
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const { isAuthenticated, partnerProfile } = useAuth();
   const [openFaq, setOpenFaq] = useState("");
   const accessItems = t("referral.accessItems", { returnObjects: true });
   const benefits = t("referral.benefits", { returnObjects: true });
   const steps = t("referral.steps", { returnObjects: true }).map((item, index) => ({ ...item, image: stepImages[index] }));
   const creatorStories = t("referral.stories", { returnObjects: true }).map((item, index) => ({ ...item, image: storyImages[index] }));
   const faqs = t("home.faqs", { returnObjects: true });
+  const partnerTarget = useMemo(() => {
+    if (partnerProfile?.id) {
+      return partnerProfile.portal_status === "approved"
+        ? "/partner/dashboard"
+        : `/partner/${partnerProfile.portal_status || "pending"}`;
+    }
 
-  const openPartnerAuth = (mode) => (event) => {
-    event.preventDefault();
-    setAuthMode(mode);
-    setIsAuthOpen(true);
-  };
+    if (isAuthenticated) {
+      return "/partner/apply";
+    }
+
+    return "/auth/register?returnTo=%2Fpartner%2Fapply";
+  }, [isAuthenticated, partnerProfile]);
+
+  const loginTarget = isAuthenticated
+    ? partnerTarget
+    : "/auth/login?returnTo=%2Fpartner%2Fapply";
 
   return (
     <>
@@ -108,8 +119,8 @@ function Referral() {
           <h1>{t("referral.heroTitle")}</h1>
           <p>{t("referral.heroText")}</p>
           <div className="ref-hero__actions">
-            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>{t("referral.joinAsPartner")}</a>
-            <a href="#partner-login" className="btn ref-btn-secondary" onClick={openPartnerAuth("login")}>{t("referral.logIn")}</a>
+            <LocalizedLink to={partnerTarget} className="btn btn-primary">{t("referral.joinAsPartner")}</LocalizedLink>
+            <LocalizedLink to={loginTarget} className="btn ref-btn-secondary">{t("referral.logIn")}</LocalizedLink>
           </div>
         </div>
       </section>
@@ -213,7 +224,7 @@ function Referral() {
             <span>{t("referral.ctaHash")}</span>
             <h2>{t("referral.ctaTitle")}</h2>
             <p>{t("referral.ctaText")}</p>
-            <a href="#partner-signup" className="btn btn-primary" onClick={openPartnerAuth("signup")}>{t("referral.applyNow")} <span>›</span></a>
+            <LocalizedLink to={partnerTarget} className="btn btn-primary">{t("referral.applyNow")} <span>›</span></LocalizedLink>
           </article>
         </div>
       </section>
@@ -233,14 +244,6 @@ function Referral() {
           ))}
         </div>
       </section>
-
-      <ClaimStartModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        initialMode={authMode}
-        redirectTo="/referralProgram"
-        purpose="partner"
-      />
     </>
   );
 }

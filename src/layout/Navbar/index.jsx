@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, CircleUserRound, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
@@ -9,6 +9,7 @@ import logoText from "../../assets/icons/fly-friendly.svg";
 import { socialLinks } from "../../constants/site.js";
 import { getLanguageByCode, languages } from "../../i18n/languages.js";
 import { replaceLanguageInPath } from "../../i18n/path.js";
+import { useAuth } from "../../auth/AuthContext.jsx";
 import "./style.scss";
 
 function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLanguage }) {
@@ -166,6 +167,7 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { isAuthenticated, dashboardPath } = useAuth();
   const currentLanguage = location.pathname.split("/").filter(Boolean)[0] || "en";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
@@ -230,6 +232,16 @@ function Navbar() {
           ))}
         </div>
         <div className="nav-actions">
+          {isAuthenticated ? (
+            <LocalizedLink
+              to={dashboardPath}
+              className="account-entry"
+              aria-label={t("nav.account", { defaultValue: "My account" })}
+              onClick={closeMenu}
+            >
+              <CircleUserRound size={20} strokeWidth={1.9} />
+            </LocalizedLink>
+          ) : null}
           <LanguageSwitcher currentLanguage={currentLanguage} isOpen={isLanguageOpen} onOpen={openLanguageModal} onClose={closeLanguageModal} onSelectLanguage={selectLanguage} />
           <LocalizedLink className="btn btn-primary" to="/claim/eligibility" onClick={startClaim}>{t("common.startYourClaim")}</LocalizedLink>
         </div>
@@ -264,6 +276,13 @@ function Navbar() {
           <LocalizedLink className="mobile-menu__claim" to="/claim/eligibility" onClick={startClaim}>
             {t("common.startYourClaim")}
           </LocalizedLink>
+
+          {isAuthenticated ? (
+            <LocalizedLink className="mobile-menu__account" to={dashboardPath} onClick={closeMenu}>
+              <CircleUserRound size={18} strokeWidth={1.9} />
+              <span>{t("nav.account", { defaultValue: "My account" })}</span>
+            </LocalizedLink>
+          ) : null}
 
           <MobileLanguagePicker
             currentLanguage={currentLanguage}

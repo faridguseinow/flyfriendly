@@ -7,6 +7,7 @@ import Navbar from "./layout/Navbar/index.jsx";
 import Footer from "./layout/Footer/index.jsx";
 import AnimatedRoutes from "./routes/index.jsx";
 import { getPathWithoutLanguage } from "./i18n/path.js";
+import { captureReferralFromQueryString } from "./services/referralService.js";
 
 function App() {
   const location = useLocation();
@@ -14,9 +15,14 @@ function App() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const normalizedPath = getPathWithoutLanguage(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin") || location.pathname.startsWith("/control-dashboard");
+  const isPortalPage = normalizedPath.startsWith("/client") || normalizedPath.startsWith("/partner") || normalizedPath.startsWith("/auth");
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    captureReferralFromQueryString(location.search, location.pathname).catch(() => null);
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -52,7 +58,7 @@ function App() {
           <AnimatedRoutes location={location} />
         </motion.main>
       </AnimatePresence>
-      {!normalizedPath.startsWith("/claim") && <Footer />}
+      {!normalizedPath.startsWith("/claim") && !isPortalPage && <Footer />}
       <AnimatePresence>
         {showScrollTop ? (
           <motion.button

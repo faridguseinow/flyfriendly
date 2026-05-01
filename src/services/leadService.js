@@ -1,4 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
+import { getCurrentUser } from "./authService.js";
+import { attachReferralToLead, getStoredReferralData } from "./referralService.js";
 
 const LEAD_DOCUMENT_BUCKET = "claim-lead-documents";
 
@@ -47,6 +49,8 @@ function baseLeadPayload(data = {}) {
 
 export async function createLead(data = {}, source = "claim_flow") {
   const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+  const referral = getStoredReferralData();
   const id = crypto.randomUUID();
   const lead_code = leadCode();
   const payload = {
@@ -55,6 +59,13 @@ export async function createLead(data = {}, source = "claim_flow") {
     source,
     status: "new",
     stage: "eligibility",
+    profile_id: user?.id || null,
+    referral_partner_id: referral?.partnerId || null,
+    source_details: referral ? {
+      referral_code: referral.referralCode,
+      referral_source_url: referral.sourceUrl || null,
+      referral_source_path: referral.sourcePath || null,
+    } : undefined,
     ...baseLeadPayload(data),
   };
 
@@ -66,7 +77,49 @@ export async function createLead(data = {}, source = "claim_flow") {
     throw error;
   }
 
+  if (referral?.partnerId) {
+    attachReferralToLead(id).catch((attachError) => {
+      console.warn("Referral attribution could not be attached to lead.", attachError);
+    });
+  }
+
   return { id, lead_code };
+}
+
+export async function linkLeadToCurrentProfile(leadId, data = {}) {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+
+  if (!user) {
+    return false;
+  }
+
+  const { error } = await client
+    .from("leads")
+    .update({
+      profile_id: user.id,
+      full_name: data.fullName || null,
+      email: data.email || user.email || null,
+      phone: data.phone || null,
+      preferred_language: data.preferredLanguage || data.language || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", leadId);
+
+  if (error) {
+    throw error;
+  }
+
+  await client
+    .from("referrals")
+    .update({
+      client_profile_id: user.id,
+      status: "lead_created",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("lead_id", leadId);
+
+  return true;
 }
 
 export async function saveLeadStep(leadId, stage, data = {}) {

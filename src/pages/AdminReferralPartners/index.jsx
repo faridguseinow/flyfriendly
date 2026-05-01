@@ -11,6 +11,7 @@ import { useSearchParams } from "react-router-dom";
 import "./style.scss";
 
 const partnerStatuses = ["active", "paused", "archived"];
+const portalStatuses = ["pending", "approved", "rejected", "suspended"];
 const commissionTypes = ["percentage", "fixed"];
 const payoutStatuses = ["pending", "approved", "paid", "cancelled"];
 
@@ -130,14 +131,17 @@ function AdminReferralPartners() {
   const partnerRows = useMemo(() => {
     const cases = moduleData?.cases || [];
     const leads = moduleData?.leads || [];
-    const finance = new Map((moduleData?.finance || []).map((item) => [item.case_id, item]));
+    const commissions = moduleData?.commissions || [];
     const payouts = moduleData?.payouts || [];
 
     return (moduleData?.partners || []).map((partner) => {
       const linkedCases = cases.filter((item) => normalizePartnerMatch(item, partner));
       const linkedLeads = leads.filter((item) => item.referral_partner_id === partner.id);
+      const linkedCommissions = commissions.filter((item) => item.partner_id === partner.id);
       const linkedPayouts = payouts.filter((item) => item.partner_id === partner.id);
-      const earnedCommission = linkedCases.reduce((sum, item) => sum + Number(finance.get(item.id)?.referral_commission || 0), 0);
+      const earnedCommission = linkedCommissions
+        .filter((item) => item.status !== "cancelled")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const paidCommission = linkedPayouts
         .filter((item) => item.status === "paid")
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -146,10 +150,12 @@ function AdminReferralPartners() {
         ...partner,
         linkedCases,
         linkedLeads,
+        linkedCommissions,
         linkedPayouts,
         leadsGenerated: linkedLeads.length,
         casesConverted: linkedCases.length,
-        approvedCases: linkedCases.filter((item) => ["approved", "paid", "closed"].includes(item.status)).length,
+        approvedCases: linkedCommissions.filter((item) => ["approved", "paid"].includes(item.status)).length
+          || linkedCases.filter((item) => ["approved", "paid", "closed"].includes(item.status)).length,
         earnedCommission,
         paidCommission,
         pendingCommission: earnedCommission - paidCommission,
@@ -181,6 +187,7 @@ function AdminReferralPartners() {
 
   const metrics = useMemo(() => ({
     totalPartners: partnerRows.length,
+    pendingApplications: partnerRows.filter((item) => item.portal_status === "pending").length,
     leadsGenerated: partnerRows.reduce((sum, item) => sum + item.leadsGenerated, 0),
     casesConverted: partnerRows.reduce((sum, item) => sum + item.casesConverted, 0),
     approvedCases: partnerRows.reduce((sum, item) => sum + item.approvedCases, 0),
@@ -189,7 +196,33 @@ function AdminReferralPartners() {
   }), [partnerRows]);
 
   const selectedPartnerCases = selectedPartner?.linkedCases || [];
+  const selectedPartnerCommissions = selectedPartner?.linkedCommissions || [];
   const selectedPartnerPayouts = selectedPartner?.linkedPayouts || [];
+
+  const updatePartnerAccess = async (nextPortalStatus) => {
+    if (!selectedPartner) return;
+
+    const statusMap = {
+      approved: "active",
+      pending: "paused",
+      rejected: "archived",
+      suspended: "paused",
+    };
+
+    const timeField = nextPortalStatus === "approved"
+      ? { approved_at: new Date().toISOString(), rejected_at: null, suspended_at: null }
+      : nextPortalStatus === "rejected"
+        ? { rejected_at: new Date().toISOString() }
+        : nextPortalStatus === "suspended"
+          ? { suspended_at: new Date().toISOString() }
+          : {};
+
+    await savePartner({
+      portal_status: nextPortalStatus,
+      status: statusMap[nextPortalStatus] || selectedPartner.status,
+      ...timeField,
+    });
+  };
 
   const createPartner = async (event) => {
     event.preventDefault();
@@ -289,6 +322,7 @@ function AdminReferralPartners() {
         <>
           <section className="admin-metrics">
             <MetricCard icon={Users} label="Total partners" value={metrics.totalPartners} />
+            <MetricCard icon={HandCoins} label="Pending applications" value={metrics.pendingApplications} />
             <MetricCard icon={Link2} label="Leads generated" value={metrics.leadsGenerated} />
             <MetricCard icon={HandCoins} label="Cases converted" value={metrics.casesConverted} />
             <MetricCard icon={Wallet} label="Approved cases" value={metrics.approvedCases} />
@@ -327,7 +361,7 @@ function AdminReferralPartners() {
                       <tr>
                         <th>Partner</th>
                         <th>Code</th>
-                        <th>Status</th>
+                        <th>Portal</th>
                         <th>Leads</th>
                         <th>Cases</th>
                         <th>Commission</th>
@@ -336,9 +370,9 @@ function AdminReferralPartners() {
                     <tbody>
                       {filteredRows.map((item) => (
                         <tr key={item.id} className={selectedPartner?.id === item.id ? "is-selected" : ""} onClick={() => setSelectedPartnerId(item.id)}>
-                          <td>{item.name}</td>
+                          <td>{item.public_name || item.name}</td>
                           <td>{item.referral_code}</td>
-                          <td>{item.status}</td>
+                          <td>{item.portal_status || item.status}</td>
                           <td>{item.leadsGenerated}</td>
                           <td>{item.casesConverted}</td>
                           <td>{formatCurrency(item.earnedCommission)}</td>
@@ -394,6 +428,8 @@ function AdminReferralPartners() {
                       <article><strong>Contact</strong><span>{selectedPartner.contact_name || selectedPartner.contact_email || "-"}</span></article>
                       <article><strong>Rate</strong><span>{selectedPartner.commission_rate} {selectedPartner.commission_type === "percentage" ? "%" : "fixed"}</span></article>
                       <article><strong>Link</strong><span>{selectedPartner.referral_link || "-"}</span></article>
+                      <article><strong>Portal status</strong><span>{selectedPartner.portal_status || "-"}</span></article>
+                      <article><strong>Profile link</strong><span>{selectedPartner.profile_id || "-"}</span></article>
                     </div>
 
                     <div className="admin-referral__actions">
@@ -407,7 +443,35 @@ function AdminReferralPartners() {
                         <span>Commission rate</span>
                         <input type="number" value={selectedPartner.commission_rate} onChange={(event) => savePartner({ commission_rate: Number(event.target.value || 0) })} disabled={!hasPermission("partners.edit") || isSaving} />
                       </label>
+                      <label>
+                        <span>Portal status</span>
+                        <select value={selectedPartner.portal_status || "pending"} onChange={(event) => updatePartnerAccess(event.target.value)} disabled={!hasPermission("partners.edit") || isSaving}>
+                          {portalStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
+                        </select>
+                      </label>
                     </div>
+
+                    <div className="admin-access__actions">
+                      <button className="btn btn--primary" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("approved")}>
+                        Approve application
+                      </button>
+                      <button className="admin-link-button" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("rejected")}>
+                        Reject
+                      </button>
+                      <button className="admin-link-button" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("suspended")}>
+                        Suspend
+                      </button>
+                      <button className="admin-link-button" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("pending")}>
+                        Return to pending
+                      </button>
+                    </div>
+
+                    {selectedPartner.application_reason ? (
+                      <section className="admin-referral__section">
+                        <h3>Application reason</h3>
+                        <p>{selectedPartner.application_reason}</p>
+                      </section>
+                    ) : null}
 
                     <section className="admin-referral__section">
                       <h3>Linked cases</h3>
@@ -418,6 +482,18 @@ function AdminReferralPartners() {
                             <p>{item.status} · {formatCurrency(item.estimated_compensation)}</p>
                           </article>
                         )) : <p>No linked cases yet.</p>}
+                      </div>
+                    </section>
+
+                    <section className="admin-referral__section">
+                      <h3>Commissions</h3>
+                      <div className="admin-referral__timeline">
+                        {selectedPartnerCommissions.length ? selectedPartnerCommissions.map((item) => (
+                          <article key={item.id}>
+                            <strong>{formatCurrency(item.amount, item.currency)}</strong>
+                            <p>{item.status} · {item.case_id || item.lead_id || "-"} · {formatDate(item.paid_at || item.approved_at || item.created_at)}</p>
+                          </article>
+                        )) : <p>No commissions yet.</p>}
                       </div>
                     </section>
 

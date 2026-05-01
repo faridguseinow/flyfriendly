@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { KeyRound, Search, ShieldCheck, UsersRound } from "lucide-react";
+import { KeyRound, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import { ADMIN_ROLES } from "../../admin/rbac.js";
-import { fetchAccessModuleData, updateUserAdminRoles } from "../../services/adminService.js";
+import { fetchAccessModuleData, moveUserToTrash, updateUserAdminRoles } from "../../services/adminService.js";
 import { useSearchParams } from "react-router-dom";
+import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import "./style.scss";
 
 function MetricCard({ icon: Icon, label, value }) {
@@ -18,6 +19,7 @@ function MetricCard({ icon: Icon, label, value }) {
 }
 
 export default function AdminAccess() {
+  const { isSuperAdmin } = useAdminAuth();
   const [searchParams] = useSearchParams();
   const [moduleData, setModuleData] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -143,6 +145,24 @@ export default function AdminAccess() {
     }
   };
 
+  const trashUser = async () => {
+    if (!selectedProfile || !isSuperAdmin) return;
+    const confirmed = window.confirm(`Move ${selectedProfile.full_name || selectedProfile.email || "this user"} to trash? Only a super admin will be able to permanently purge the account.`);
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    setError("");
+    try {
+      await moveUserToTrash(selectedProfile.id);
+      setSelectedUserId(null);
+      await loadModule(false);
+    } catch (nextError) {
+      setError(nextError.message || "Could not move the user to trash.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="admin-page admin-access-page">
       <header className="admin-hero">
@@ -254,6 +274,12 @@ export default function AdminAccess() {
                           <button className="btn btn--primary" type="button" disabled={isSaving} onClick={saveRoles}>
                             Save roles
                           </button>
+                          {isSuperAdmin ? (
+                            <button className="admin-link-button" type="button" disabled={isSaving} onClick={trashUser}>
+                              <Trash2 size={14} />
+                              <span>Delete user</span>
+                            </button>
+                          ) : null}
                         </div>
 
                         <div className="admin-access__permissions">

@@ -81,6 +81,17 @@
   border-radius: 32px;
 }
 
+.account-entry {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: #1f2937;
+  background: #fff;
+}
+
 .language-switcher {
   position: relative;
 }
@@ -465,6 +476,20 @@
     font-size: 20px;
     line-height: 28px;
     letter-spacing: 0;
+  }
+
+  .mobile-menu__account {
+    min-height: 54px;
+    margin-top: 14px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    color: var(--grey-500);
+    background: #fff;
   }
 
   .mobile-language-picker {

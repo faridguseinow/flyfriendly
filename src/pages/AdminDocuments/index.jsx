@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileCheck2, FileText, Search, Signature, ShieldCheck } from "lucide-react";
-import { downloadSignaturePng, fetchDocumentsCenterData, getDocumentDownloadUrl } from "../../services/adminService.js";
+import { Download, FileCheck2, FileText, Search, Signature, ShieldCheck, Trash2 } from "lucide-react";
+import { downloadSignaturePng, fetchDocumentsCenterData, getDocumentDownloadUrl, moveDocumentToTrash } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import "./style.scss";
 
@@ -67,6 +67,7 @@ function AdminDocuments() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [activeDownloadId, setActiveDownloadId] = useState("");
+  const [activeTrashId, setActiveTrashId] = useState("");
 
   const loadDocuments = async () => {
     setError("");
@@ -165,6 +166,25 @@ function AdminDocuments() {
       setError(nextError.message || "Could not download file.");
     } finally {
       setActiveDownloadId("");
+    }
+  };
+
+  const handleTrash = async (item) => {
+    if (!item || !hasPermission("documents.manage")) return;
+    const confirmed = window.confirm(`Move "${item.file_name || item.signer_name || "this item"}" to trash? It will be purged after 30 days unless restored.`);
+    if (!confirmed) return;
+
+    setError("");
+    setActiveTrashId(item.id);
+
+    try {
+      await moveDocumentToTrash(item);
+      await loadDocuments();
+      setSelectedDocumentId(null);
+    } catch (nextError) {
+      setError(nextError.message || "Could not move the document to trash.");
+    } finally {
+      setActiveTrashId("");
     }
   };
 
@@ -295,6 +315,10 @@ function AdminDocuments() {
                       <button className="admin-link-button" type="button" onClick={() => handleDownload(selectedDocument)} disabled={!hasPermission("documents.download") || activeDownloadId === selectedDocument.id}>
                         <Download size={14} />
                         <span>{activeDownloadId === selectedDocument.id ? "Loading..." : selectedDocument.kind === "signature" ? "Download PNG" : "Download file"}</span>
+                      </button>
+                      <button className="admin-link-button" type="button" onClick={() => handleTrash(selectedDocument)} disabled={!hasPermission("documents.manage") || activeTrashId === selectedDocument.id}>
+                        <Trash2 size={14} />
+                        <span>{activeTrashId === selectedDocument.id ? "Moving..." : "Move to trash"}</span>
                       </button>
                     </div>
                   </div>

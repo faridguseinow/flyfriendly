@@ -27,6 +27,7 @@ import logoText from "../../assets/icons/fly-friendly.svg";
 import claimImage from "../../assets/media/Image-4.png";
 import CountryFlag from "../../components/CountryFlag/index.jsx";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import { useAuth } from "../../auth/AuthContext.jsx";
 import { getLanguageByCode } from "../../i18n/languages.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
@@ -37,6 +38,7 @@ import {
   searchAirports,
 } from "../../services/catalogService.js";
 import {
+  linkLeadToCurrentProfile,
   createLead,
   saveLeadDocuments,
   saveLeadSignature,
@@ -44,6 +46,7 @@ import {
   saveLeadStep,
   submitLead,
 } from "../../services/leadService.js";
+import { ensureClaimAccount } from "../../services/authService.js";
 import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
@@ -953,6 +956,7 @@ function DeniedResult({ data }) {
 
 function ApprovedResult({ data }) {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const nextSteps = t("claim.approved.nextSteps", { returnObjects: true });
 
   return (
@@ -982,7 +986,11 @@ function ApprovedResult({ data }) {
       </section>
       <div className="claim-actions">
         <LocalizedLink className="claim-back" to="/claim/finish">{t("common.back")}</LocalizedLink>
-        <LocalizedLink className="btn btn-primary" to="/">{t("common.mainPage")}</LocalizedLink>
+        <LocalizedLink className="btn btn-primary" to={isAuthenticated ? "/client/dashboard" : "/"}>
+          {isAuthenticated
+            ? t("claim.approved.accountCta", { defaultValue: "Open my account" })
+            : t("common.mainPage")}
+        </LocalizedLink>
       </div>
     </div>
   );
@@ -992,6 +1000,7 @@ function ClaimFlow() {
   const navigate = useNavigate();
   const toLocalizedPath = useLocalizedPath();
   const { t, i18n } = useTranslation();
+  const { refreshProfile } = useAuth();
   const { stage = "eligibility", lang } = useParams();
   const [searchParams] = useSearchParams();
   const [data, setData] = useState(() => ({
@@ -1248,19 +1257,43 @@ function ClaimFlow() {
           throw new Error(t("claim.status.signatureRequired"));
         }
 
+        const finishNotices = [];
+        try {
+          const accountResult = await ensureClaimAccount(withCurrentLanguage());
+
+          if (accountResult?.authenticated) {
+            await refreshProfile().catch(() => {});
+            await linkLeadToCurrentProfile(leadId, withCurrentLanguage()).catch(() => {});
+          }
+
+          if (accountResult?.created && accountResult.authenticated) {
+            finishNotices.push(t("claim.account.created", { defaultValue: "Your Fly Friendly account was created automatically, and this claim is now visible in your dashboard." }));
+          } else if (accountResult?.requiresEmailConfirmation) {
+            finishNotices.push(t("claim.account.confirm", { defaultValue: "Your account has been created. Check your email to confirm access to your dashboard." }));
+          } else if (accountResult?.existingAccount && accountResult.resetSent) {
+            finishNotices.push(t("claim.account.existing", { defaultValue: "This email already has an account. We sent a password reset link so you can access your dashboard." }));
+          }
+        } catch (accountError) {
+          console.error("Automatic account creation error:", accountError);
+        }
+
         await saveLeadSignature(leadId, withCurrentLanguage());
         await submitLead(leadId, withCurrentLanguage(), "eligible");
 
         try {
           const emailResult = await sendLeadConfirmationEmail(leadId);
           if (emailResult?.already_sent) {
-            setSyncNotice(t("claim.status.emailAlreadySent", { email: data.email || t("claim.status.customerFallback") }));
+            finishNotices.push(t("claim.status.emailAlreadySent", { email: data.email || t("claim.status.customerFallback") }));
           } else if (emailResult?.sent) {
-            setSyncNotice(t("claim.status.emailSent", { email: data.email || t("claim.status.customerFallback") }));
+            finishNotices.push(t("claim.status.emailSent", { email: data.email || t("claim.status.customerFallback") }));
           }
         } catch (emailError) {
           console.error("Confirmation email error:", emailError);
-          setSyncNotice(t("claim.status.emailFailed"));
+          finishNotices.push(t("claim.status.emailFailed"));
+        }
+
+        if (finishNotices.length) {
+          setSyncNotice(finishNotices.join(" "));
         }
       }
 

@@ -26,11 +26,38 @@ import AdminFaq from "../pages/AdminFaq/index.jsx";
 import AdminBlog from "../pages/AdminBlog/index.jsx";
 import AdminCms from "../pages/AdminCms/index.jsx";
 import AdminAccess from "../pages/AdminAccess/index.jsx";
+import AdminTrash from "../pages/AdminTrash/index.jsx";
 import AdminLayout, { AdminForbiddenPage, AdminLoginPage } from "../admin/AdminLayout.jsx";
 import { AdminRouteGuard } from "../admin/AdminGuards.jsx";
+import { GuestRoute, ProtectedRoute, RoleRoute } from "../auth/AuthGuards.jsx";
 import i18n from "../i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "../i18n/languages.js";
 import { getPreferredLanguage, localizePath } from "../i18n/path.js";
+import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from "../pages/Auth/index.jsx";
+import {
+  ClientClaimDetailsPage,
+  ClientClaimsPage,
+  ClientDashboardPage,
+  ClientDocumentsPage,
+  ClientPaymentsPage,
+  ClientPortalLayout,
+  ClientProfilePage,
+} from "../pages/ClientPortal/index.jsx";
+import PartnerApplyPage from "../pages/PartnerApply/index.jsx";
+import ReferralCapturePage from "../pages/ReferralCapture/index.jsx";
+import {
+  PartnerAssetsPage,
+  PartnerDashboardPage,
+  PartnerEarningsPage,
+  PartnerLinkPage,
+  PartnerPendingPage,
+  PartnerPortalLayout,
+  PartnerProfilePage,
+  PartnerPayoutsPage,
+  PartnerRejectedPage,
+  PartnerReferralsPage,
+  PartnerSuspendedPage,
+} from "../pages/PartnerPortal/index.jsx";
 
 function RedirectToPreferredLanguage() {
   const location = useLocation();
@@ -69,6 +96,7 @@ function AnimatedRoutes({ location }) {
   return (
     <Routes location={location}>
       <Route path="/" element={<RedirectToPreferredLanguage />} />
+      <Route path="/r/:referralCode" element={<ReferralCapturePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin/forbidden" element={<AdminForbiddenPage />} />
       <Route element={<AdminRouteGuard permission="dashboard.view" />}>
@@ -87,6 +115,7 @@ function AnimatedRoutes({ location }) {
           <Route path="blog" element={<AdminBlog />} />
           <Route path="faq" element={<AdminFaq />} />
           <Route path="access" element={<AdminAccess />} />
+          <Route path="trash" element={<AdminTrash />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="activity" element={<AdminActivity />} />
         </Route>
@@ -96,8 +125,15 @@ function AnimatedRoutes({ location }) {
       <Route path="/:lang/control-dashboard/*" element={<Navigate to="/admin" replace />} />
       <Route path="/referral" element={<RedirectToPreferredLanguage />} />
       <Route path="/referralProgram" element={<RedirectToPreferredLanguage />} />
+      <Route path="/partner-program" element={<RedirectToPreferredLanguage />} />
       <Route path="/claim" element={<RedirectToPreferredLanguage />} />
       <Route path="/claim/:stage" element={<RedirectToPreferredLanguage />} />
+      <Route path="/auth/login" element={<RedirectToPreferredLanguage />} />
+      <Route path="/auth/register" element={<RedirectToPreferredLanguage />} />
+      <Route path="/auth/forgot-password" element={<RedirectToPreferredLanguage />} />
+      <Route path="/auth/reset-password" element={<RedirectToPreferredLanguage />} />
+      <Route path="/client/*" element={<RedirectToPreferredLanguage />} />
+      <Route path="/partner/*" element={<RedirectToPreferredLanguage />} />
       <Route path="/contact" element={<RedirectToPreferredLanguage />} />
       <Route path="/blog" element={<RedirectToPreferredLanguage />} />
       <Route path="/blog/:slug" element={<RedirectToPreferredLanguage />} />
@@ -108,9 +144,44 @@ function AnimatedRoutes({ location }) {
       <Route path="/termsOfUse" element={<RedirectToPreferredLanguage />} />
       <Route path="/cookies" element={<RedirectToPreferredLanguage />} />
       <Route path="/:lang" element={<LanguageBoundary />}>
+        <Route path="r/:referralCode" element={<ReferralCapturePage />} />
+        <Route element={<GuestRoute />}>
+          <Route path="auth/login" element={<LoginPage />} />
+          <Route path="auth/register" element={<RegisterPage />} />
+          <Route path="auth/forgot-password" element={<ForgotPasswordPage />} />
+        </Route>
+        <Route element={<ProtectedRoute />}>
+          <Route path="auth/reset-password" element={<ResetPasswordPage />} />
+          <Route element={<RoleRoute allowedRoles={["client", "partner"]} ignorePartnerStatus />}>
+            <Route path="client" element={<ClientPortalLayout />}>
+              <Route path="dashboard" element={<ClientDashboardPage />} />
+              <Route path="claims" element={<ClientClaimsPage />} />
+              <Route path="claims/:id" element={<ClientClaimDetailsPage />} />
+              <Route path="documents" element={<ClientDocumentsPage />} />
+              <Route path="profile" element={<ClientProfilePage />} />
+              <Route path="payments" element={<ClientPaymentsPage />} />
+            </Route>
+            <Route path="partner/apply" element={<PartnerApplyPage />} />
+          </Route>
+          <Route path="partner/pending" element={<PartnerPendingPage />} />
+          <Route path="partner/rejected" element={<PartnerRejectedPage />} />
+          <Route path="partner/suspended" element={<PartnerSuspendedPage />} />
+          <Route element={<RoleRoute allowedRoles={["partner"]} />}>
+            <Route path="partner" element={<PartnerPortalLayout />}>
+              <Route path="dashboard" element={<PartnerDashboardPage />} />
+              <Route path="link" element={<PartnerLinkPage />} />
+              <Route path="referrals" element={<PartnerReferralsPage />} />
+              <Route path="earnings" element={<PartnerEarningsPage />} />
+              <Route path="payouts" element={<PartnerPayoutsPage />} />
+              <Route path="profile" element={<PartnerProfilePage />} />
+              <Route path="assets" element={<PartnerAssetsPage />} />
+            </Route>
+          </Route>
+        </Route>
         <Route index element={<Home />} />
         <Route path="referral" element={<Referral />} />
         <Route path="referralProgram" element={<Referral />} />
+        <Route path="partner-program" element={<Referral />} />
         <Route path="claim" element={<Claim />} />
         <Route path="claim/:stage" element={<Claim />} />
         <Route path="contact" element={<Contact />} />
