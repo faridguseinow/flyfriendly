@@ -195,8 +195,16 @@ export async function sendLeadConfirmationEmail(leadId) {
 export async function submitClaimServerSide(leadId, data = {}) {
   const client = requireSupabase();
   const referral = getStoredReferralData();
-  const { data: response, error } = await client.functions.invoke("submit-claim", {
-    body: {
+  const supabaseUrl = client.supabaseUrl;
+  const publishableKey = client.supabaseKey;
+  const response = await fetch(`${supabaseUrl}/functions/v1/submit-claim`, {
+    method: "POST",
+    headers: {
+      apikey: publishableKey,
+      Authorization: `Bearer ${publishableKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
       leadId,
       data,
       referral: referral
@@ -207,18 +215,21 @@ export async function submitClaimServerSide(leadId, data = {}) {
             storedAt: referral.storedAt || null,
           }
         : null,
-    },
+    }),
   });
 
-  if (error) {
-    throw mapEdgeFunctionError(error, "submit-claim");
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const details = [payload?.error, payload?.code, payload?.details].filter(Boolean).join(" | ");
+    throw new Error(details || "submit-claim failed.");
   }
 
-  if (response?.error) {
-    throw new Error(response.error);
+  if (payload?.error) {
+    throw new Error(payload.error);
   }
 
-  return response;
+  return payload;
 }
 
 export async function saveLeadSignature(leadId, data = {}) {
