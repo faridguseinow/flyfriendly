@@ -141,10 +141,6 @@ function validateClaimInput(data: ClaimPayload) {
     throw new Error("Email is required.");
   }
 
-  if (!String(data.flightNumber || "").trim()) {
-    throw new Error("Flight number is required.");
-  }
-
   if (!String(data.date || "").trim()) {
     throw new Error("Flight date is required.");
   }

@@ -612,17 +612,6 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
         />
       </section>
       <section className="claim-question">
-        <h3>{t("claim.eligibility.flightNumber", { defaultValue: "What was your flight number?" })}</h3>
-        <Field
-          icon={Plane}
-          name="flightNumber"
-          value={data.flightNumber}
-          onChange={onChange}
-          placeholder={t("claim.eligibility.flightNumberPlaceholder", { defaultValue: "For example: AZ123 or BA2490" })}
-          required
-        />
-      </section>
-      <section className="claim-question">
         <div className="claim-question-title">
           <span>4</span>
           <h3>{t("claim.eligibility.delayTitle")}</h3>
