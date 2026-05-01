@@ -23,6 +23,13 @@ type LeadRecord = {
   customer_confirmation_sent_at: string | null;
 };
 
+type ClaimConfirmationRequest = {
+  leadId?: string;
+  portalActionUrl?: string;
+  portalActionLabel?: string;
+  portalLoginUrl?: string;
+};
+
 type ResendResponsePayload = {
   id?: string;
   message?: string;
@@ -383,6 +390,93 @@ const emailCopy = {
   },
 } as const;
 
+const portalCopy = {
+  en: {
+    title: "Access your client portal",
+    text: "You can create your password and follow your claim in your personal Fly Friendly account.",
+    createPassword: "Create password",
+    accessPortal: "Access your portal",
+    loginLabel: "Client portal login",
+  },
+  ru: {
+    title: "Доступ в личный кабинет",
+    text: "Вы можете создать пароль и отслеживать статус заявки в личном кабинете Fly Friendly.",
+    createPassword: "Создать пароль",
+    accessPortal: "Открыть кабинет",
+    loginLabel: "Вход в личный кабинет",
+  },
+  az: {
+    title: "Müştəri kabinetinə giriş",
+    text: "Şəxsi Fly Friendly hesabınızda parol yarada və müraciətinizin statusunu izləyə bilərsiniz.",
+    createPassword: "Parol yarat",
+    accessPortal: "Kabinetə keç",
+    loginLabel: "Müştəri kabinetinə giriş",
+  },
+  es: {
+    title: "Accede a tu portal de cliente",
+    text: "Puedes crear tu contraseña y seguir tu reclamación en tu cuenta personal de Fly Friendly.",
+    createPassword: "Crear contraseña",
+    accessPortal: "Abrir portal",
+    loginLabel: "Acceso al portal",
+  },
+  fr: {
+    title: "Accédez à votre portail client",
+    text: "Vous pouvez créer votre mot de passe et suivre votre dossier dans votre compte Fly Friendly.",
+    createPassword: "Créer un mot de passe",
+    accessPortal: "Ouvrir le portail",
+    loginLabel: "Connexion au portail",
+  },
+  pt: {
+    title: "Aceda ao seu portal de cliente",
+    text: "Pode criar a sua palavra-passe e acompanhar o pedido na sua conta Fly Friendly.",
+    createPassword: "Criar palavra-passe",
+    accessPortal: "Abrir portal",
+    loginLabel: "Login do portal",
+  },
+  de: {
+    title: "Zugang zu Ihrem Kundenportal",
+    text: "Sie können ein Passwort erstellen und Ihren Anspruch in Ihrem Fly Friendly Konto verfolgen.",
+    createPassword: "Passwort erstellen",
+    accessPortal: "Portal öffnen",
+    loginLabel: "Portal-Anmeldung",
+  },
+  it: {
+    title: "Accedi al tuo portale cliente",
+    text: "Puoi creare la tua password e seguire la richiesta nel tuo account Fly Friendly.",
+    createPassword: "Crea password",
+    accessPortal: "Apri il portale",
+    loginLabel: "Accesso al portale",
+  },
+  tr: {
+    title: "Müşteri portalınıza erişin",
+    text: "Şifrenizi oluşturabilir ve talebinizi Fly Friendly hesabınızdan takip edebilirsiniz.",
+    createPassword: "Şifre oluştur",
+    accessPortal: "Portala git",
+    loginLabel: "Portal girişi",
+  },
+  ka: {
+    title: "შედით თქვენს კლიენტის პორტალში",
+    text: "შეგიძლიათ შექმნათ პაროლი და თქვენს Fly Friendly ანგარიშში მოთხოვნის სტატუსი აკონტროლოთ.",
+    createPassword: "პაროლის შექმნა",
+    accessPortal: "პორტალის გახსნა",
+    loginLabel: "პორტალში შესვლა",
+  },
+  uk: {
+    title: "Доступ до клієнтського кабінету",
+    text: "Ви можете створити пароль і відстежувати заявку у своєму акаунті Fly Friendly.",
+    createPassword: "Створити пароль",
+    accessPortal: "Відкрити кабінет",
+    loginLabel: "Вхід до кабінету",
+  },
+  pl: {
+    title: "Uzyskaj dostęp do portalu klienta",
+    text: "Możesz utworzyć hasło i śledzić zgłoszenie na swoim koncie Fly Friendly.",
+    createPassword: "Utwórz hasło",
+    accessPortal: "Otwórz portal",
+    loginLabel: "Logowanie do portalu",
+  },
+} as const;
+
 function json(body: unknown, init: ResponseInit = {}) {
   return Response.json(body, {
     ...init,
@@ -424,6 +518,10 @@ function getCopy(language: string) {
   return emailCopy[language as keyof typeof emailCopy] || emailCopy.en;
 }
 
+function getPortalCopy(language: string) {
+  return portalCopy[language as keyof typeof portalCopy] || portalCopy.en;
+}
+
 function buildBrandHeader() {
   return `
     <div style="display:inline-flex;align-items:center;gap:12px;padding:10px 18px;border-radius:999px;background:#ffffff;border:1px solid #d9e7ff;box-shadow:0 12px 30px rgba(31,122,224,0.10);">
@@ -433,8 +531,18 @@ function buildBrandHeader() {
   `.trim();
 }
 
-function buildEmailHtml(lead: LeadRecord, siteUrl: string, language: string) {
+function buildEmailHtml(
+  lead: LeadRecord,
+  siteUrl: string,
+  language: string,
+  options: {
+    portalActionUrl?: string | null;
+    portalActionLabel?: string | null;
+    portalLoginUrl?: string | null;
+  } = {},
+) {
   const copy = getCopy(language);
+  const portal = getPortalCopy(language);
   const greetingName = escapeHtml(lead.full_name || "");
   const greetingLine = greetingName ? `${escapeHtml(copy.greeting)} ${greetingName},` : `${escapeHtml(copy.greeting)},`;
   const claimId = escapeHtml(lead.lead_code);
@@ -451,6 +559,19 @@ function buildEmailHtml(lead: LeadRecord, siteUrl: string, language: string) {
   const contactsText = escapeHtml(copy.contactsText);
   const missionTitle = escapeHtml(copy.missionTitle);
   const missionText = escapeHtml(copy.missionText);
+  const portalActionUrl = options.portalActionUrl ? escapeHtml(options.portalActionUrl) : "";
+  const portalActionLabel = escapeHtml(options.portalActionLabel || portal.createPassword);
+  const portalLoginUrl = options.portalLoginUrl ? escapeHtml(options.portalLoginUrl) : "";
+  const portalBlock = portalActionUrl
+    ? `
+            <div style="margin:0 0 28px;padding:24px;border-radius:22px;background:linear-gradient(180deg,#f2f8ff 0%,#f8fbff 100%);border:1px solid #dce9ff;">
+              <p style="margin:0 0 10px;font-size:22px;line-height:1.35;font-weight:700;color:#172033;">${escapeHtml(portal.title)}</p>
+              <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:#55627a;">${escapeHtml(portal.text)}</p>
+              <a href="${portalActionUrl}" style="display:inline-block;padding:14px 22px;border-radius:14px;background:#1187eb;color:#ffffff;text-decoration:none;font-weight:700;">${portalActionLabel}</a>
+              ${portalLoginUrl ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.7;color:#55627a;">${escapeHtml(portal.loginLabel)}: <a href="${portalLoginUrl}" style="color:#1187eb;text-decoration:none;">${portalLoginUrl}</a></p>` : ""}
+            </div>
+    `.trim()
+    : "";
 
   return `
 <!DOCTYPE html>
@@ -479,6 +600,8 @@ function buildEmailHtml(lead: LeadRecord, siteUrl: string, language: string) {
             <p style="margin:0 0 24px;font-size:18px;line-height:1.7;color:#55627a;">
               ${escapeHtml(copy.intro)}
             </p>
+
+            ${portalBlock}
 
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 28px;background:linear-gradient(180deg,#f8fbff 0%,#f4f9ff 100%);border:1px solid #dce9ff;border-radius:22px;">
               <tr>
@@ -558,8 +681,18 @@ function buildEmailHtml(lead: LeadRecord, siteUrl: string, language: string) {
   `.trim();
 }
 
-function buildEmailText(lead: LeadRecord, siteUrl: string, language: string) {
+function buildEmailText(
+  lead: LeadRecord,
+  siteUrl: string,
+  language: string,
+  options: {
+    portalActionUrl?: string | null;
+    portalActionLabel?: string | null;
+    portalLoginUrl?: string | null;
+  } = {},
+) {
   const copy = getCopy(language);
+  const portal = getPortalCopy(language);
   const name = lead.full_name || "";
   const claimId = lead.lead_code;
   const route = lead.departure_airport?.trim() && lead.arrival_airport?.trim()
@@ -567,11 +700,21 @@ function buildEmailText(lead: LeadRecord, siteUrl: string, language: string) {
     : lead.departure_airport?.trim() || lead.arrival_airport?.trim() || copy.routePending;
   const airline = lead.airline || copy.airlineFallback;
   const contactUrl = `${siteUrl.replace(/\/$/, "")}/${language}/contact`;
+  const portalLines = options.portalActionUrl
+    ? [
+      "",
+      portal.title,
+      portal.text,
+      `${options.portalActionLabel || portal.createPassword}: ${options.portalActionUrl}`,
+      options.portalLoginUrl ? `${portal.loginLabel}: ${options.portalLoginUrl}` : "",
+    ].filter(Boolean)
+    : [];
 
   return [
     name ? `${copy.greeting} ${name},` : `${copy.greeting},`,
     "",
     copy.intro,
+    ...portalLines,
     "",
     `${copy.claimReference}: ${claimId}`,
     `${copy.route}: ${route}`,
@@ -691,7 +834,7 @@ Deno.serve(async (request) => {
     return json({ error: "RESEND_API_KEY is missing." }, { status: 500 });
   }
 
-  let body: { leadId?: string };
+  let body: ClaimConfirmationRequest;
   try {
     body = await request.json();
   } catch {
@@ -699,6 +842,9 @@ Deno.serve(async (request) => {
   }
 
   const leadId = body.leadId?.trim();
+  const portalActionUrl = body.portalActionUrl?.trim() || null;
+  const portalActionLabel = body.portalActionLabel?.trim() || null;
+  const portalLoginUrl = body.portalLoginUrl?.trim() || null;
   if (!leadId) {
     return json({ error: "leadId is required." }, { status: 400 });
   }
@@ -746,8 +892,8 @@ Deno.serve(async (request) => {
       to: [lead.email],
       reply_to: replyTo,
       subject,
-      html: buildEmailHtml(lead, siteUrl, language),
-      text: buildEmailText(lead, siteUrl, language),
+      html: buildEmailHtml(lead, siteUrl, language, { portalActionUrl, portalActionLabel, portalLoginUrl }),
+      text: buildEmailText(lead, siteUrl, language, { portalActionUrl, portalActionLabel, portalLoginUrl }),
     }),
   });
 

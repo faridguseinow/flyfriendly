@@ -143,6 +143,16 @@ function AdminLeads() {
     [moduleData, selectedLead],
   );
 
+  const selectedDocuments = useMemo(
+    () => (moduleData?.documents || []).filter((entry) => entry.lead_id === selectedLead?.id),
+    [moduleData, selectedLead],
+  );
+
+  const selectedSignatures = useMemo(
+    () => (moduleData?.signatures || []).filter((entry) => entry.lead_id === selectedLead?.id),
+    [moduleData, selectedLead],
+  );
+
   const stats = useMemo(() => {
     const leads = moduleData?.leads || [];
     return {
@@ -339,7 +349,7 @@ function AdminLeads() {
                     </article>
                     <article>
                       <strong>Contact</strong>
-                      <span>{selectedLead.full_name || "-"} · {selectedLead.email || selectedLead.phone || "-"}</span>
+                      <span>{selectedLead.full_name || "-"} · {selectedLead.email || "-"} · {selectedLead.phone || "-"}</span>
                     </article>
                     <article>
                       <strong>Timing</strong>
@@ -369,6 +379,28 @@ function AdminLeads() {
                     </label>
                   </div>
 
+                  <section className="admin-leads__section">
+                    <h3>Customer details</h3>
+                    <div className="admin-documents__meta">
+                      <article><strong>Full name</strong><span>{selectedLead.full_name || "-"}</span></article>
+                      <article><strong>Email</strong><span>{selectedLead.email || "-"}</span></article>
+                      <article><strong>Phone</strong><span>{selectedLead.phone || "-"}</span></article>
+                      <article><strong>City / Country</strong><span>{[selectedLead.city, selectedLead.country].filter(Boolean).join(", ") || "-"}</span></article>
+                      <article><strong>Language</strong><span>{selectedLead.preferred_language || selectedLead.payload?.preferredLanguage || "-"}</span></article>
+                      <article><strong>WhatsApp</strong><span>{selectedLead.has_whatsapp ? "Yes" : "No"}</span></article>
+                    </div>
+                  </section>
+
+                  <section className="admin-leads__section">
+                    <h3>Lead linkage</h3>
+                    <div className="admin-documents__meta">
+                      <article><strong>Profile ID</strong><span>{selectedLead.profile_id || "-"}</span></article>
+                      <article><strong>Customer ID</strong><span>{selectedLead.customer_id || "-"}</span></article>
+                      <article><strong>Referral</strong><span>{selectedLead.source_details?.referral_code || selectedLead.referral_partner_id || "-"}</span></article>
+                      <article><strong>Source</strong><span>{selectedLead.source || "-"}</span></article>
+                    </div>
+                  </section>
+
                   <div className="admin-leads__note-actions">
                     <button
                       className="admin-link-button"
@@ -384,6 +416,30 @@ function AdminLeads() {
                   <section className="admin-leads__section">
                     <h3>Customer note</h3>
                     <p>{selectedLead.reason || selectedLead.payload?.reason || "No reason submitted."}</p>
+                  </section>
+
+                  <section className="admin-leads__section">
+                    <h3>Uploaded documents</h3>
+                    <div className="admin-leads__timeline">
+                      {selectedDocuments.length ? selectedDocuments.map((document) => (
+                        <article key={document.id}>
+                          <strong>{document.file_name || document.document_type || document.id}</strong>
+                          <p>{document.document_type || "-"} · {document.status || "-"} · {formatDate(document.created_at)}</p>
+                        </article>
+                      )) : <p>No lead documents uploaded yet.</p>}
+                    </div>
+                  </section>
+
+                  <section className="admin-leads__section">
+                    <h3>Signatures</h3>
+                    <div className="admin-leads__timeline">
+                      {selectedSignatures.length ? selectedSignatures.map((signature) => (
+                        <article key={signature.id}>
+                          <strong>{signature.signer_name || signature.signer_email || "Signature"}</strong>
+                          <p>{signature.terms_accepted ? "Signed" : "Pending"} · {formatDate(signature.signed_at || signature.created_at)}</p>
+                        </article>
+                      )) : <p>No signatures saved yet.</p>}
+                    </div>
                   </section>
 
                   <section className="admin-leads__section">
@@ -425,6 +481,11 @@ function AdminLeads() {
                         </article>
                       )) : <p>No status changes recorded yet.</p>}
                     </div>
+                  </section>
+
+                  <section className="admin-leads__section">
+                    <h3>Submitted payload</h3>
+                    <pre className="admin-code-block">{JSON.stringify(selectedLead.payload || {}, null, 2)}</pre>
                   </section>
                 </div>
               ) : (

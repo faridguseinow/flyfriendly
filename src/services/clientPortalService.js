@@ -1,5 +1,5 @@
 import { requireSupabase } from "../lib/supabase.js";
-import { getCurrentProfile, updateCurrentProfile } from "./authService.js";
+import { getCurrentProfile, syncCurrentUserClaimData, updateCurrentProfile } from "./authService.js";
 
 function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.code === "42703" || error?.message?.includes("column");
@@ -7,6 +7,8 @@ function isMissingColumnError(error) {
 
 export async function fetchClientDashboardData() {
   const client = requireSupabase();
+
+  await syncCurrentUserClaimData().catch(() => null);
 
   const [profile, leads, cases, finance] = await Promise.all([
     getCurrentProfile(),

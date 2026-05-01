@@ -98,10 +98,10 @@ export async function linkLeadToCurrentProfile(leadId, data = {}) {
     .from("leads")
     .update({
       profile_id: user.id,
-      full_name: data.fullName || null,
+      full_name: data.fullName || undefined,
       email: data.email || user.email || null,
-      phone: data.phone || null,
-      preferred_language: data.preferredLanguage || data.language || null,
+      phone: data.phone || undefined,
+      preferred_language: data.preferredLanguage || data.language || undefined,
       updated_at: new Date().toISOString(),
     })
     .eq("id", leadId);
@@ -172,6 +172,35 @@ export async function sendLeadConfirmationEmail(leadId) {
   }
 
   return data;
+}
+
+export async function submitClaimServerSide(leadId, data = {}) {
+  const client = requireSupabase();
+  const referral = getStoredReferralData();
+  const { data: response, error } = await client.functions.invoke("submit-claim", {
+    body: {
+      leadId,
+      data,
+      referral: referral
+        ? {
+            referralCode: referral.referralCode,
+            sourceUrl: referral.sourceUrl || null,
+            sourcePath: referral.sourcePath || null,
+            storedAt: referral.storedAt || null,
+          }
+        : null,
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (response?.error) {
+    throw new Error(response.error);
+  }
+
+  return response;
 }
 
 export async function saveLeadSignature(leadId, data = {}) {

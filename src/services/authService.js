@@ -17,6 +17,13 @@ function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.code === "42703" || error?.message?.includes("column");
 }
 
+function isMissingRpcError(error) {
+  return error?.code === "PGRST202"
+    || error?.code === "42883"
+    || error?.message?.includes("Could not find the function")
+    || error?.message?.includes("sync_current_profile_claim_data");
+}
+
 function cleanObject(input) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
@@ -165,6 +172,7 @@ export async function signUpWithEmail(email, password, metadata = {}) {
       role: "client",
       status: "active",
     });
+    await syncCurrentUserClaimData().catch(() => null);
   }
 
   return data;
@@ -183,6 +191,7 @@ export async function signInWithEmail(email, password) {
 
   if (data.session?.user) {
     await ensureCurrentUserProfile({ email });
+    await syncCurrentUserClaimData().catch(() => null);
   }
 
   return data;
@@ -234,6 +243,26 @@ export async function getCurrentProfile() {
   return fetchProfileById(client, user.id);
 }
 
+export async function syncCurrentUserClaimData() {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+
+  if (!user) {
+    return null;
+  }
+
+  const { data, error } = await client.rpc("sync_current_profile_claim_data");
+  if (error) {
+    if (isMissingRpcError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
+
+  return data || null;
+}
+
 export async function createProfileForCurrentUser(input = {}) {
   const client = requireSupabase();
   const user = await getCurrentUser();
@@ -265,13 +294,16 @@ export async function ensureCurrentUserProfile(input = {}) {
 
   const existing = await getCurrentProfile();
   if (existing) {
+    await syncCurrentUserClaimData().catch(() => null);
     return existing;
   }
 
-  return createProfileForCurrentUser({
+  const createdProfile = await createProfileForCurrentUser({
     ...input,
     email: input.email || user.email || null,
   });
+  await syncCurrentUserClaimData().catch(() => null);
+  return createdProfile;
 }
 
 export async function updateCurrentProfile(input = {}) {
@@ -344,8 +376,10 @@ export async function ensureClaimAccount(input = {}) {
   if (user) {
     await updateCurrentProfile({
       full_name: input.fullName || input.full_name,
+      email: input.email || user.email || null,
       phone: input.phone,
     }).catch(() => null);
+    await syncCurrentUserClaimData().catch(() => null);
 
     return {
       created: false,
@@ -370,11 +404,21 @@ export async function ensureClaimAccount(input = {}) {
       phone: input.phone,
     });
 
+    let resetSent = false;
+    if (!result.session) {
+      try {
+        await resetPassword(input.email);
+        resetSent = true;
+      } catch {
+        resetSent = false;
+      }
+    }
+
     return {
       created: true,
       authenticated: Boolean(result.session),
       existingAccount: false,
-      resetSent: false,
+      resetSent,
       requiresEmailConfirmation: !result.session,
     };
   } catch (error) {

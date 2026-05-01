@@ -38,15 +38,12 @@ import {
   searchAirports,
 } from "../../services/catalogService.js";
 import {
-  linkLeadToCurrentProfile,
   createLead,
   saveLeadDocuments,
-  saveLeadSignature,
-  sendLeadConfirmationEmail,
   saveLeadStep,
+  submitClaimServerSide,
   submitLead,
 } from "../../services/leadService.js";
-import { ensureClaimAccount } from "../../services/authService.js";
 import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
@@ -1000,7 +997,6 @@ function ClaimFlow() {
   const navigate = useNavigate();
   const toLocalizedPath = useLocalizedPath();
   const { t, i18n } = useTranslation();
-  const { refreshProfile } = useAuth();
   const { stage = "eligibility", lang } = useParams();
   const [searchParams] = useSearchParams();
   const [data, setData] = useState(() => ({
@@ -1258,37 +1254,27 @@ function ClaimFlow() {
         }
 
         const finishNotices = [];
-        try {
-          const accountResult = await ensureClaimAccount(withCurrentLanguage());
+        const result = await submitClaimServerSide(leadId, withCurrentLanguage());
 
-          if (accountResult?.authenticated) {
-            await refreshProfile().catch(() => {});
-            await linkLeadToCurrentProfile(leadId, withCurrentLanguage()).catch(() => {});
-          }
-
-          if (accountResult?.created && accountResult.authenticated) {
-            finishNotices.push(t("claim.account.created", { defaultValue: "Your Fly Friendly account was created automatically, and this claim is now visible in your dashboard." }));
-          } else if (accountResult?.requiresEmailConfirmation) {
-            finishNotices.push(t("claim.account.confirm", { defaultValue: "Your account has been created. Check your email to confirm access to your dashboard." }));
-          } else if (accountResult?.existingAccount && accountResult.resetSent) {
-            finishNotices.push(t("claim.account.existing", { defaultValue: "This email already has an account. We sent a password reset link so you can access your dashboard." }));
-          }
-        } catch (accountError) {
-          console.error("Automatic account creation error:", accountError);
+        if (result?.account?.isNewUser) {
+          finishNotices.push(
+            t("claim.account.confirmWithReset", {
+              defaultValue: "Your account has been created. Check your inbox and use the password setup link to access your dashboard.",
+            }),
+          );
+        } else {
+          finishNotices.push(
+            t("claim.account.existing", {
+              defaultValue: "We linked this claim to your existing Fly Friendly account and emailed you a secure access link.",
+            }),
+          );
         }
 
-        await saveLeadSignature(leadId, withCurrentLanguage());
-        await submitLead(leadId, withCurrentLanguage(), "eligible");
-
-        try {
-          const emailResult = await sendLeadConfirmationEmail(leadId);
-          if (emailResult?.already_sent) {
-            finishNotices.push(t("claim.status.emailAlreadySent", { email: data.email || t("claim.status.customerFallback") }));
-          } else if (emailResult?.sent) {
-            finishNotices.push(t("claim.status.emailSent", { email: data.email || t("claim.status.customerFallback") }));
-          }
-        } catch (emailError) {
-          console.error("Confirmation email error:", emailError);
+        if (result?.email?.already_sent) {
+          finishNotices.push(t("claim.status.emailAlreadySent", { email: data.email || t("claim.status.customerFallback") }));
+        } else if (result?.email?.sent) {
+          finishNotices.push(t("claim.status.emailSent", { email: data.email || t("claim.status.customerFallback") }));
+        } else {
           finishNotices.push(t("claim.status.emailFailed"));
         }
 

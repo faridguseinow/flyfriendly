@@ -182,3 +182,4 @@ end;
 $$;
 
 grant execute on function public.admin_permanently_delete_user(uuid) to authenticated;
+`

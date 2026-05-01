@@ -311,7 +311,7 @@ export async function fetchAdminOverview() {
 async function fetchLeadsWithFallback(client) {
   const extended = await client
     .from("leads")
-    .select("id, lead_code, source, status, stage, eligibility_status, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, country, preferred_language, issue_type, assigned_user_id, customer_id, duplicate_of_lead_id, reason, payload, created_at, updated_at, submitted_at")
+    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, country, preferred_language, has_whatsapp, issue_type, assigned_user_id, customer_id, duplicate_of_lead_id, reason, payload, created_at, updated_at, submitted_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -325,7 +325,7 @@ async function fetchLeadsWithFallback(client) {
 
   const fallback = await client
     .from("leads")
-    .select("id, lead_code, source, status, stage, eligibility_status, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, reason, payload, created_at, updated_at, submitted_at")
+    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, flight_number, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, reason, payload, created_at, updated_at, submitted_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -339,7 +339,7 @@ async function fetchLeadsWithFallback(client) {
 export async function fetchLeadsModuleData() {
   const client = requireSupabase();
 
-  const [leadsResponse, profiles, leadNotes, leadStatusHistory] = await Promise.all([
+  const [leadsResponse, profiles, leadNotes, leadStatusHistory, leadDocuments, leadSignatures] = await Promise.all([
     fetchLeadsWithFallback(client),
     client
       .from("profiles")
@@ -354,6 +354,16 @@ export async function fetchLeadsModuleData() {
     client
       .from("lead_status_history")
       .select("id, lead_id, previous_status, next_status, changed_by, note, created_at")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    client
+      .from("lead_documents")
+      .select("id, lead_id, document_type, file_name, mime_type, file_size, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(800),
+    client
+      .from("lead_signatures")
+      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, created_at")
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
@@ -371,14 +381,26 @@ export async function fetchLeadsModuleData() {
     throw leadStatusHistory.error;
   }
 
+  if (leadDocuments.error && !isMissingOptionalTable(leadDocuments.error) && !isMissingColumnError(leadDocuments.error)) {
+    throw leadDocuments.error;
+  }
+
+  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error)) {
+    throw leadSignatures.error;
+  }
+
   return {
     leads: leadsResponse.data,
     assignableUsers: (profiles.data || []).filter((profile) => profile.role !== "customer"),
     notes: leadNotes.data || [],
     statusHistory: leadStatusHistory.data || [],
+    documents: leadDocuments.data || [],
+    signatures: leadSignatures.data || [],
     supportsCoreSchemaV1: leadsResponse.supportsCoreSchemaV1,
     supportsNotes: !leadNotes.error,
     supportsHistory: !leadStatusHistory.error,
+    supportsLeadDocuments: !leadDocuments.error,
+    supportsLeadSignatures: !leadSignatures.error,
   };
 }
 
