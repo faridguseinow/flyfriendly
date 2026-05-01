@@ -53,6 +53,35 @@ type PortalAccountResult = {
   accessLink: string | null;
 };
 
+function errorPayload(error: unknown) {
+  if (error instanceof Error) {
+    const source = error as Error & { code?: string; details?: string; hint?: string };
+    return {
+      message: source.message,
+      code: source.code || null,
+      details: source.details || null,
+      hint: source.hint || null,
+    };
+  }
+
+  if (error && typeof error === "object") {
+    const source = error as { message?: string; code?: string; details?: string; hint?: string };
+    return {
+      message: source.message || "Claim submission failed.",
+      code: source.code || null,
+      details: source.details || null,
+      hint: source.hint || null,
+    };
+  }
+
+  return {
+    message: String(error || "Claim submission failed."),
+    code: null,
+    details: null,
+    hint: null,
+  };
+}
+
 function json(body: unknown, init: ResponseInit = {}) {
   return Response.json(body, {
     ...init,
@@ -140,6 +169,7 @@ function randomPassword() {
 function isUserMissingError(error: unknown) {
   const message = String((error as { message?: string })?.message || "").toLowerCase();
   return message.includes("user not found")
+    || message.includes("user with this email not found")
     || message.includes("not_found")
     || message.includes("no user")
     || message.includes("user does not exist");
@@ -219,7 +249,9 @@ async function upsertClientProfile(
     email: account.email,
     full_name: String(data.fullName || "").trim() || null,
     phone: String(data.phone || "").trim() || null,
-    role: "client",
+    // Legacy production schema still enforces the old customer/admin role constraint.
+    // The frontend normalizes any non-internal profile without a partner profile as a client.
+    role: "customer",
     status: "active",
   };
 
@@ -514,8 +546,16 @@ Deno.serve(async (request) => {
       email: emailResult,
     });
   } catch (error) {
+    const payload = errorPayload(error);
+    console.error("submit-claim failed", {
+      leadId,
+      payload,
+    });
     return json({
-      error: error instanceof Error ? error.message : "Claim submission failed.",
+      error: payload.message,
+      code: payload.code,
+      details: payload.details,
+      hint: payload.hint,
     }, { status: 500 });
   }
 });

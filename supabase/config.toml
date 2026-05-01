@@ -1,0 +1,10 @@
+project_id = "pvmqazykyvkmtdjgwpsg"
+
+[functions.catalog-search]
+verify_jwt = false
+
+[functions.send-claim-confirmation]
+verify_jwt = false
+
+[functions.submit-claim]
+verify_jwt = false

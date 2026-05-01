@@ -8,6 +8,24 @@ function isMissingTableError(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
 }
 
+function mapEdgeFunctionError(error, functionName) {
+  const message = String(error?.message || "");
+
+  if (message.includes("Failed to send a request to the Edge Function")) {
+    return new Error(
+      `The ${functionName} Edge Function is not reachable. Deploy the function in Supabase and verify its secrets.`,
+    );
+  }
+
+  if (message.includes("non-2xx status code")) {
+    return new Error(
+      `The ${functionName} Edge Function returned an error. Check Supabase Function logs and secrets.`,
+    );
+  }
+
+  return error instanceof Error ? error : new Error(message || `${functionName} failed.`);
+}
+
 function leadCode() {
   return `FL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
@@ -168,7 +186,7 @@ export async function sendLeadConfirmationEmail(leadId) {
   });
 
   if (error) {
-    throw error;
+    throw mapEdgeFunctionError(error, "send-claim-confirmation");
   }
 
   return data;
@@ -193,7 +211,7 @@ export async function submitClaimServerSide(leadId, data = {}) {
   });
 
   if (error) {
-    throw error;
+    throw mapEdgeFunctionError(error, "submit-claim");
   }
 
   if (response?.error) {
