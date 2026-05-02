@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Lock, Mail, Phone, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import logoImage from "../../assets/icons/logo-image.svg";
@@ -14,6 +14,8 @@ import {
 } from "../../services/authService.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { resolveDashboardPath } from "../../auth/routeUtils.js";
+import { ensureCurrentUserProfile } from "../../services/authService.js";
+import { isSupabaseConfigured, requireSupabase } from "../../lib/supabase.js";
 import "./style.scss";
 
 function AuthShell({ eyebrow, title, text, children }) {
@@ -291,21 +293,113 @@ export function ForgotPasswordPage() {
 
 export function ResetPasswordPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const navigate = useNavigate();
   const toLocalizedPath = useLocalizedPath();
-  const { isAuthenticated, refreshProfile } = useAuth();
+  const { refreshProfile } = useAuth();
   const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRecoveryLoading, setIsRecoveryLoading] = useState(true);
+  const [isRecoveryReady, setIsRecoveryReady] = useState(false);
+
+  const recoveryErrorFromUrl = useMemo(() => {
+    const search = new URLSearchParams(location.search);
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+    return (
+      hash.get("error_description")
+      || hash.get("error")
+      || search.get("error_description")
+      || search.get("error")
+      || ""
+    );
+  }, [location.hash, location.search]);
+
+  const hasRecoveryArtifacts = useMemo(() => {
+    const search = new URLSearchParams(location.search);
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+    return Boolean(
+      hash.get("access_token")
+      || hash.get("refresh_token")
+      || hash.get("type")
+      || search.get("access_token")
+      || search.get("refresh_token")
+      || search.get("type"),
+    );
+  }, [location.hash, location.search]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isSupabaseConfigured) {
+      setError(t("auth.reset.configError", { defaultValue: "Supabase auth is not configured." }));
+      setIsRecoveryLoading(false);
       return;
     }
 
-    refreshProfile().catch(() => {});
-  }, [isAuthenticated, refreshProfile]);
+    if (recoveryErrorFromUrl) {
+      setError(recoveryErrorFromUrl);
+      setIsRecoveryLoading(false);
+      return;
+    }
+
+    const client = requireSupabase();
+    let active = true;
+    let fallbackTimer = null;
+
+    const markReady = () => {
+      if (!active) return;
+      setError("");
+      setIsRecoveryReady(true);
+      setIsRecoveryLoading(false);
+    };
+
+    const markInvalid = (message) => {
+      if (!active) return;
+      setIsRecoveryReady(false);
+      setIsRecoveryLoading(false);
+      setError(message);
+    };
+
+    const load = async () => {
+      try {
+        const { data } = await client.auth.getSession();
+        if (data.session?.user) {
+          markReady();
+          return;
+        }
+
+        if (!hasRecoveryArtifacts) {
+          markInvalid(t("auth.reset.invalidLink", { defaultValue: "This password setup link is invalid or has expired. Request a new reset email." }));
+          return;
+        }
+
+        fallbackTimer = window.setTimeout(() => {
+          markInvalid(t("auth.reset.invalidLink", { defaultValue: "This password setup link is invalid or has expired. Request a new reset email." }));
+        }, 2500);
+      } catch (authError) {
+        markInvalid(authError.message || t("auth.reset.invalidLink", { defaultValue: "This password setup link is invalid or has expired. Request a new reset email." }));
+      }
+    };
+
+    const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session?.user)) {
+        if (fallbackTimer) {
+          window.clearTimeout(fallbackTimer);
+        }
+        markReady();
+      }
+    });
+
+    load();
+
+    return () => {
+      active = false;
+      if (fallbackTimer) {
+        window.clearTimeout(fallbackTimer);
+      }
+      authListener.subscription.unsubscribe();
+    };
+  }, [hasRecoveryArtifacts, recoveryErrorFromUrl, t]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -326,6 +420,7 @@ export function ResetPasswordPage() {
 
     try {
       await updatePassword(form.password);
+      await ensureCurrentUserProfile().catch(() => null);
       setNotice(t("auth.reset.notice", { defaultValue: "Password updated. Redirecting to your account..." }));
       const nextAuth = await refreshProfile();
       window.setTimeout(() => {
@@ -338,8 +433,32 @@ export function ResetPasswordPage() {
     }
   };
 
-  if (!isAuthenticated) {
-    return <Navigate to={toLocalizedPath("/auth/login")} replace />;
+  if (isRecoveryLoading) {
+    return (
+      <AuthShell
+        eyebrow={t("auth.reset.label", { defaultValue: "New Password" })}
+        title={t("auth.reset.loadingTitle", { defaultValue: "Preparing secure access" })}
+        text={t("auth.reset.loadingText", { defaultValue: "Please wait while we verify your password setup link." })}
+      >
+        <p className="auth-message is-notice">{t("auth.reset.loading", { defaultValue: "Loading..." })}</p>
+      </AuthShell>
+    );
+  }
+
+  if (!isRecoveryReady) {
+    return (
+      <AuthShell
+        eyebrow={t("auth.reset.label", { defaultValue: "New Password" })}
+        title={t("auth.reset.invalidTitle", { defaultValue: "Link unavailable" })}
+        text={t("auth.reset.invalidText", { defaultValue: "This password setup link could not be verified." })}
+      >
+        <p className="auth-message is-error">{error || t("auth.reset.invalidLink", { defaultValue: "This password setup link is invalid or has expired. Request a new reset email." })}</p>
+        <div className="auth-links">
+          <LocalizedLink to="/auth/forgot-password">{t("auth.reset.requestAnother", { defaultValue: "Request another reset link" })}</LocalizedLink>
+          <LocalizedLink to="/auth/login">{t("auth.reset.backToLogin", { defaultValue: "Back to sign in" })}</LocalizedLink>
+        </div>
+      </AuthShell>
+    );
   }
 
   return (
