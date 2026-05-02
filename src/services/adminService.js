@@ -311,7 +311,7 @@ export async function fetchAdminOverview() {
 async function fetchLeadsWithFallback(client) {
   const extended = await client
     .from("leads")
-    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, country, preferred_language, has_whatsapp, issue_type, assigned_user_id, customer_id, duplicate_of_lead_id, reason, payload, created_at, updated_at, submitted_at")
+    .select("id, lead_code, source, source_details, status, stage, eligibility_status, profile_id, referral_partner_id, departure_airport, arrival_airport, airline, scheduled_departure_date, delay_duration, disruption_type, is_direct, full_name, email, phone, city, country, preferred_language, has_whatsapp, issue_type, assigned_user_id, customer_id, duplicate_of_lead_id, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation, reason, payload, created_at, updated_at, submitted_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -334,6 +334,34 @@ async function fetchLeadsWithFallback(client) {
   }
 
   return { data: fallback.data || [], supportsCoreSchemaV1: false };
+}
+
+async function fetchCaseLeadsWithEstimateFallback(client) {
+  const extended = await client
+    .from("leads")
+    .select("id, lead_code, full_name, email, phone, departure_airport, arrival_airport, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (!extended.error) {
+    return extended.data || [];
+  }
+
+  if (!isMissingColumnError(extended.error)) {
+    throw extended.error;
+  }
+
+  const fallback = await client
+    .from("leads")
+    .select("id, lead_code, full_name, email, phone, departure_airport, arrival_airport")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (fallback.error) {
+    throw fallback.error;
+  }
+
+  return fallback.data || [];
 }
 
 export async function fetchLeadsModuleData() {
@@ -461,11 +489,7 @@ export async function fetchCasesModuleData({ page = 1, pageSize = 12, filters = 
       .select("id, full_name, email, role")
       .order("full_name", { ascending: true })
       .limit(200),
-    client
-      .from("leads")
-      .select("id, lead_code, full_name, email, phone, departure_airport, arrival_airport")
-      .order("created_at", { ascending: false })
-      .limit(500),
+    fetchCaseLeadsWithEstimateFallback(client),
     client
       .from("customers")
       .select("id, full_name, email, phone, country, preferred_language, total_cases, total_compensation")

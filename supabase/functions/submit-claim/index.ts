@@ -1,5 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  buildEstimateExplanation,
+  calculateDistanceCompensationEstimate,
+} from "../_shared/compensation-distance.ts";
 import { buildPublicAuthUrl, getPublicSiteUrl } from "../_shared/site-url.ts";
 
 const corsHeaders = {
@@ -51,6 +55,19 @@ type PortalAccountResult = {
   email: string;
   isNewUser: boolean;
   accessLink: string | null;
+};
+
+type AirportRow = {
+  id: number;
+  ident: string | null;
+  name: string | null;
+  municipality: string | null;
+  iso_country: string | null;
+  country_name?: string | null;
+  iata_code: string | null;
+  icao_code: string | null;
+  latitude_deg: number | null;
+  longitude_deg: number | null;
 };
 
 function normalizeRecoveryActionLink(actionLink: string | null | undefined, language: string) {
@@ -145,6 +162,75 @@ function normalizeLeadPayload(data: ClaimPayload) {
     reason: data.reason || null,
     payload: data,
   };
+}
+
+function buildPendingReviewEstimate(
+  fromAirport: AirportRow | null,
+  toAirport: AirportRow | null,
+  reasonCodes: string[],
+) {
+  return {
+    distanceKm: null,
+    distanceBand: "unknown",
+    estimatedCompensationEur: null,
+    currency: "EUR",
+    estimateStatus: "pending_review",
+    reasonCodes,
+    estimateExplanation: buildEstimateExplanation({
+      fromAirport,
+      toAirport,
+      distanceKm: null,
+      band: "unknown",
+      amount: null,
+      reasonCodes,
+    }),
+  };
+}
+
+async function calculateLeadEstimate(
+  supabase: ReturnType<typeof createClient>,
+  data: ClaimPayload,
+) {
+  const departureAirportId = data.departureAirportSource === "supabase" ? data.departureAirportId || null : null;
+  const arrivalAirportId = data.destinationAirportSource === "supabase" ? data.destinationAirportId || null : null;
+
+  if (!departureAirportId || !arrivalAirportId) {
+    return buildPendingReviewEstimate(null, null, [
+      !departureAirportId ? "missing_departure_airport_id" : null,
+      !arrivalAirportId ? "missing_arrival_airport_id" : null,
+    ].filter(Boolean) as string[]);
+  }
+
+  const airportLookup = await supabase
+    .from("airports")
+    .select("id, ident, name, municipality, iso_country, country_name, iata_code, icao_code, latitude_deg, longitude_deg")
+    .in("id", [departureAirportId, arrivalAirportId]);
+
+  if (airportLookup.error) {
+    console.warn("submit-claim estimate_airport_lookup_failed", {
+      departureAirportId,
+      arrivalAirportId,
+      error: airportLookup.error.message,
+    });
+
+    return buildPendingReviewEstimate(null, null, ["airport_lookup_failed"]);
+  }
+
+  const airports = Array.isArray(airportLookup.data) ? airportLookup.data as AirportRow[] : [];
+  const fromAirport = airports.find((airport) => airport.id === departureAirportId) || null;
+  const toAirport = airports.find((airport) => airport.id === arrivalAirportId) || null;
+
+  if (!fromAirport || !toAirport) {
+    return buildPendingReviewEstimate(fromAirport, toAirport, [
+      !fromAirport ? "departure_airport_not_found" : null,
+      !toAirport ? "arrival_airport_not_found" : null,
+    ].filter(Boolean) as string[]);
+  }
+
+  return calculateDistanceCompensationEstimate({
+    fromAirport,
+    toAirport,
+  });
 }
 
 function validateClaimInput(data: ClaimPayload) {
@@ -513,11 +599,18 @@ Deno.serve(async (request) => {
   try {
     const account = await createOrRecoverPortalAccount(supabase, siteUrl, language, data);
     await upsertClientProfile(supabase, account, data);
+    const estimate = await calculateLeadEstimate(supabase, data);
 
     const leadUpdate = await supabase
       .from("leads")
       .update({
         ...normalizedLead,
+        distance_km: estimate.distanceKm,
+        distance_band: estimate.distanceBand,
+        estimated_compensation_eur: estimate.estimatedCompensationEur,
+        compensation_currency: estimate.currency,
+        estimate_status: estimate.estimateStatus,
+        estimate_explanation: estimate.estimateExplanation,
         profile_id: account.userId,
         status: "submitted",
         stage: "approved",
@@ -553,6 +646,13 @@ Deno.serve(async (request) => {
       account: {
         isNewUser: account.isNewUser,
         accessLinkSent: Boolean(account.accessLink),
+      },
+      estimate: {
+        distanceKm: estimate.distanceKm,
+        distanceBand: estimate.distanceBand,
+        estimatedCompensationEur: estimate.estimatedCompensationEur,
+        currency: estimate.currency,
+        estimateStatus: estimate.estimateStatus,
       },
       email: emailResult,
     });

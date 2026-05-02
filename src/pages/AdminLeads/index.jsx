@@ -31,6 +31,35 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+function formatEstimateStatus(status) {
+  if (status === "calculated") return "Calculated";
+  if (status === "manual_override") return "Manual override";
+  return "Pending review";
+}
+
+function formatDistanceBand(band) {
+  if (band === "short") return "Short";
+  if (band === "medium") return "Medium";
+  if (band === "long") return "Long";
+  return "Unknown";
+}
+
+function formatCurrency(value, currency = "EUR") {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
+}
+
+function extractReasonCodes(explanation) {
+  if (!explanation || typeof explanation !== "object") {
+    return [];
+  }
+
+  return Array.isArray(explanation.reason_codes) ? explanation.reason_codes.filter(Boolean) : [];
+}
+
 function downloadCsv(rows) {
   const headers = ["Lead Code", "Status", "Stage", "Source", "Name", "Email", "Phone", "Airline", "Route From", "Route To", "Created At"];
   const lines = rows.map((lead) => [
@@ -355,6 +384,12 @@ function AdminLeads() {
                       <strong>Timing</strong>
                       <span>{selectedLead.scheduled_departure_date || "-"} · {selectedLead.delay_duration || selectedLead.payload?.delayDuration || "-"}</span>
                     </article>
+                    <article>
+                      <strong>Estimate status</strong>
+                      <span className={selectedLead.estimate_status === "pending_review" ? "admin-estimate-status is-pending" : "admin-estimate-status"}>
+                        {formatEstimateStatus(selectedLead.estimate_status)}
+                      </span>
+                    </article>
                   </div>
 
                   <div className="admin-leads__actions">
@@ -378,6 +413,23 @@ function AdminLeads() {
                       </select>
                     </label>
                   </div>
+
+                  <section className="admin-leads__section">
+                    <h3>Compensation estimate</h3>
+                    <div className="admin-documents__meta">
+                      <article><strong>Calculated distance</strong><span>{selectedLead.distance_km ? `${Math.round(Number(selectedLead.distance_km))} km` : "-"}</span></article>
+                      <article><strong>Distance band</strong><span>{formatDistanceBand(selectedLead.distance_band)}</span></article>
+                      <article><strong>Estimated compensation</strong><span>{formatCurrency(selectedLead.estimated_compensation_eur, selectedLead.compensation_currency)}</span></article>
+                      <article><strong>Estimate status</strong><span className={selectedLead.estimate_status === "pending_review" ? "admin-estimate-status is-pending" : "admin-estimate-status"}>{formatEstimateStatus(selectedLead.estimate_status)}</span></article>
+                    </div>
+                    {extractReasonCodes(selectedLead.estimate_explanation).length ? (
+                      <div className="admin-leads__reason-codes">
+                        {extractReasonCodes(selectedLead.estimate_explanation).map((code) => (
+                          <span key={code}>{code}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </section>
 
                   <section className="admin-leads__section">
                     <h3>Customer details</h3>

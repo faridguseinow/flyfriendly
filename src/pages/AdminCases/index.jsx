@@ -50,6 +50,35 @@ function formatCurrency(value) {
   return `${Number(value || 0).toFixed(0)} EUR`;
 }
 
+function formatEstimateCurrency(value, currency = "EUR") {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
+}
+
+function formatEstimateStatus(status) {
+  if (status === "calculated") return "Calculated";
+  if (status === "manual_override") return "Manual override";
+  return "Pending review";
+}
+
+function formatDistanceBand(band) {
+  if (band === "short") return "Short";
+  if (band === "medium") return "Medium";
+  if (band === "long") return "Long";
+  return "Unknown";
+}
+
+function extractReasonCodes(explanation) {
+  if (!explanation || typeof explanation !== "object") {
+    return [];
+  }
+
+  return Array.isArray(explanation.reason_codes) ? explanation.reason_codes.filter(Boolean) : [];
+}
+
 function daysBetween(start, end) {
   if (!start || !end) return null;
   const diff = new Date(end).getTime() - new Date(start).getTime();
@@ -175,6 +204,11 @@ function AdminCases() {
   const selectedFinance = useMemo(
     () => moduleData?.finance?.find((item) => item.case_id === selectedCase?.id) || null,
     [moduleData, selectedCase],
+  );
+
+  const leadById = useMemo(
+    () => new Map((moduleData?.leads || []).map((lead) => [lead.id, lead])),
+    [moduleData],
   );
 
   const selectedDocuments = useMemo(
@@ -397,7 +431,12 @@ function AdminCases() {
                           <td>{item.payout_status}</td>
                           <td>{item.airline || "-"}</td>
                           <td>{item.route_from || "-"} → {item.route_to || "-"}</td>
-                          <td>{formatCurrency(item.estimated_compensation)}</td>
+                          <td>
+                            <div className="admin-case-estimate-cell">
+                              <span>{formatCurrency(item.estimated_compensation)}</span>
+                              {leadById.get(item.lead_id)?.estimate_status === "pending_review" ? <small>Pending review</small> : null}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -450,6 +489,27 @@ function AdminCases() {
                         </select>
                       </label>
                     </div>
+
+                    <section className="admin-cases__section">
+                      <h3>Compensation estimate</h3>
+                      {selectedLead ? (
+                        <>
+                          <div className="admin-cases__stack">
+                            <article><strong>Calculated distance</strong><span>{selectedLead.distance_km ? `${Math.round(Number(selectedLead.distance_km))} km` : "-"}</span></article>
+                            <article><strong>Distance band</strong><span>{formatDistanceBand(selectedLead.distance_band)}</span></article>
+                            <article><strong>Estimated compensation</strong><span>{formatEstimateCurrency(selectedLead.estimated_compensation_eur, selectedLead.compensation_currency)}</span></article>
+                            <article><strong>Estimate status</strong><span className={selectedLead.estimate_status === "pending_review" ? "admin-estimate-status is-pending" : "admin-estimate-status"}>{formatEstimateStatus(selectedLead.estimate_status)}</span></article>
+                          </div>
+                          {extractReasonCodes(selectedLead.estimate_explanation).length ? (
+                            <div className="admin-cases__reason-codes">
+                              {extractReasonCodes(selectedLead.estimate_explanation).map((code) => (
+                                <span key={code}>{code}</span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : <p>No linked lead estimate is available for this case yet.</p>}
+                    </section>
 
                     <section className="admin-cases__section">
                       <h3>Finance</h3>

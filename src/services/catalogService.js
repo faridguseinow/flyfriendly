@@ -1,6 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
 
-const AIRPORT_FIELDS = "id, ident, name, municipality, iso_country, country_name, keywords, search_text, scheduled_service, iata_code, icao_code";
+const AIRPORT_FIELDS = "id, ident, type, name, municipality, iso_country, country_name, latitude_deg, longitude_deg, keywords, search_text, scheduled_service, iata_code, icao_code";
 const AIRLINE_FIELDS = "id, name, iata_code, icao_code, country, active";
 let fallbackAirportsPromise;
 let fallbackAirlinesPromise;

@@ -156,6 +156,35 @@
   }
 }
 
+.admin-estimate-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+
+  &.is-pending {
+    color: #b26a00;
+  }
+}
+
+.admin-leads__reason-codes {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  span {
+    padding: 6px 10px;
+    border: 1px solid #dbe6f4;
+    border-radius: 999px;
+    color: #516171;
+    background: #f8fbff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+  }
+}
+
 .admin-leads-page {
   .admin-table-wrap tbody tr {
     cursor: pointer;
