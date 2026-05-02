@@ -53,6 +53,22 @@ type PortalAccountResult = {
   accessLink: string | null;
 };
 
+function normalizeRecoveryActionLink(actionLink: string | null | undefined, language: string) {
+  const canonicalUrl = buildPublicAuthUrl(language, "/auth/reset-password");
+  const rawLink = String(actionLink || "").trim();
+
+  if (!rawLink) {
+    return canonicalUrl;
+  }
+
+  try {
+    const parsed = new URL(rawLink);
+    return `${canonicalUrl}${parsed.search || ""}${parsed.hash || ""}`;
+  } catch {
+    return canonicalUrl;
+  }
+}
+
 function errorPayload(error: unknown) {
   if (error instanceof Error) {
     const source = error as Error & { code?: string; details?: string; hint?: string };
@@ -192,7 +208,7 @@ async function createOrRecoverPortalAccount(
       userId: recoveryAttempt.data.user.id,
       email,
       isNewUser: false,
-      accessLink: recoveryAttempt.data.properties?.action_link || null,
+      accessLink: normalizeRecoveryActionLink(recoveryAttempt.data.properties?.action_link || null, language),
     };
   }
 
@@ -230,7 +246,7 @@ async function createOrRecoverPortalAccount(
     userId: newRecoveryAttempt.data.user.id,
     email,
     isNewUser: true,
-    accessLink: newRecoveryAttempt.data.properties?.action_link || null,
+    accessLink: normalizeRecoveryActionLink(newRecoveryAttempt.data.properties?.action_link || null, language),
   };
 }
 
