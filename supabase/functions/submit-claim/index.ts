@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildPublicAuthUrl, getPublicSiteUrl } from "../_shared/site-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -176,7 +177,7 @@ async function createOrRecoverPortalAccount(
   data: ClaimPayload,
 ): Promise<PortalAccountResult> {
   const email = String(data.email || "").trim().toLowerCase();
-  const redirectTo = `${siteUrl.replace(/\/$/, "")}/${language}/auth/reset-password`;
+  const redirectTo = buildPublicAuthUrl(language, "/auth/reset-password");
 
   const recoveryAttempt = await supabase.auth.admin.generateLink({
     type: "recovery",
@@ -415,7 +416,7 @@ async function sendConfirmationEmail(
     leadId,
     portalActionUrl: accessLink,
     portalActionLabel: isNewUser ? "Create password" : "Access your portal",
-    portalLoginUrl: `${(Deno.env.get("SITE_URL") || "https://fly-friendly.com").replace(/\/$/, "")}/${language}/auth/login`,
+    portalLoginUrl: buildPublicAuthUrl(language, "/auth/login"),
   };
 
   const response = await fetch(`${supabaseUrl.replace(/\/$/, "")}/functions/v1/send-claim-confirmation`, {
@@ -447,7 +448,7 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const siteUrl = Deno.env.get("SITE_URL") || "https://fly-friendly.com";
+  const siteUrl = getPublicSiteUrl();
 
   if (!supabaseUrl || !serviceRoleKey) {
     return json({ error: "Supabase server environment is not configured." }, { status: 500 });

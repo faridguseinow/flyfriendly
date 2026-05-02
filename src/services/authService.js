@@ -1,4 +1,5 @@
 import { requireSupabase } from "../lib/supabase.js";
+import { buildPublicAuthUrl } from "../lib/siteUrl.js";
 
 const PROFILE_SELECTS = [
   "id, full_name, email, phone, role, status, deleted_at, purge_after, created_at, updated_at",
@@ -208,9 +209,10 @@ export async function signOut() {
 
 export async function resetPassword(email) {
   const client = requireSupabase();
-  const redirectTo = typeof window !== "undefined"
-    ? `${window.location.origin}/auth/reset-password`
-    : undefined;
+  const preferredLanguage = typeof window !== "undefined"
+    ? document.documentElement.lang || localStorage.getItem("fly-friendly-language") || "en"
+    : "en";
+  const redirectTo = buildPublicAuthUrl(preferredLanguage, "/auth/reset-password");
 
   const { data, error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
 

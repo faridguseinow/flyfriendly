@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPublicSiteUrl } from "../_shared/site-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -821,7 +822,7 @@ Deno.serve(async (request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
-  const siteUrl = Deno.env.get("SITE_URL") || "https://fly-friendly.com";
+  const siteUrl = getPublicSiteUrl();
   const mailFrom = Deno.env.get("MAIL_FROM") || "Fly Friendly <info@fly-friendly.com>";
   const replyTo = Deno.env.get("MAIL_REPLY_TO") || "info@fly-friendly.com";
   const leadAlertTo = Deno.env.get("LEAD_ALERT_TO") || replyTo;
