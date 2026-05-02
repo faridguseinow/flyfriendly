@@ -304,30 +304,49 @@ export function ResetPasswordPage() {
   const [isRecoveryLoading, setIsRecoveryLoading] = useState(true);
   const [isRecoveryReady, setIsRecoveryReady] = useState(false);
 
+  const recoverySearchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const recoveryHashParams = useMemo(() => new URLSearchParams(location.hash.replace(/^#/, "")), [location.hash]);
+
   const recoveryErrorFromUrl = useMemo(() => {
-    const search = new URLSearchParams(location.search);
-    const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
     return (
-      hash.get("error_description")
-      || hash.get("error")
-      || search.get("error_description")
-      || search.get("error")
+      recoveryHashParams.get("error_description")
+      || recoveryHashParams.get("error")
+      || recoverySearchParams.get("error_description")
+      || recoverySearchParams.get("error")
       || ""
     );
-  }, [location.hash, location.search]);
+  }, [recoveryHashParams, recoverySearchParams]);
+
+  const recoveryType = useMemo(
+    () => recoverySearchParams.get("type") || recoveryHashParams.get("type") || "",
+    [recoveryHashParams, recoverySearchParams],
+  );
+
+  const recoveryTokenHash = useMemo(
+    () => recoverySearchParams.get("token_hash")
+      || recoverySearchParams.get("token")
+      || recoveryHashParams.get("token_hash")
+      || "",
+    [recoveryHashParams, recoverySearchParams],
+  );
+
+  const recoveryCode = useMemo(
+    () => recoverySearchParams.get("code") || "",
+    [recoverySearchParams],
+  );
 
   const hasRecoveryArtifacts = useMemo(() => {
-    const search = new URLSearchParams(location.search);
-    const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
     return Boolean(
-      hash.get("access_token")
-      || hash.get("refresh_token")
-      || hash.get("type")
-      || search.get("access_token")
-      || search.get("refresh_token")
-      || search.get("type"),
+      recoveryHashParams.get("access_token")
+      || recoveryHashParams.get("refresh_token")
+      || recoveryHashParams.get("type")
+      || recoverySearchParams.get("access_token")
+      || recoverySearchParams.get("refresh_token")
+      || recoverySearchParams.get("type")
+      || recoveryTokenHash
+      || recoveryCode,
     );
-  }, [location.hash, location.search]);
+  }, [recoveryCode, recoveryHashParams, recoverySearchParams, recoveryTokenHash]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -368,6 +387,36 @@ export function ResetPasswordPage() {
           return;
         }
 
+        if (recoveryCode) {
+          const { data: codeSession, error: codeError } = await client.auth.exchangeCodeForSession(recoveryCode);
+          if (codeError) {
+            markInvalid(codeError.message || t("auth.reset.invalidLink", { defaultValue: "This password setup link is invalid or has expired. Request a new reset email." }));
+            return;
+          }
+
+          if (codeSession?.session?.user) {
+            markReady();
+            return;
+          }
+        }
+
+        if (recoveryTokenHash && recoveryType === "recovery") {
+          const { data: otpSession, error: otpError } = await client.auth.verifyOtp({
+            token_hash: recoveryTokenHash,
+            type: "recovery",
+          });
+
+          if (otpError) {
+            markInvalid(otpError.message || t("auth.reset.invalidLink", { defaultValue: "This password setup link is invalid or has expired. Request a new reset email." }));
+            return;
+          }
+
+          if (otpSession?.session?.user) {
+            markReady();
+            return;
+          }
+        }
+
         if (!hasRecoveryArtifacts) {
           markInvalid(t("auth.reset.invalidLink", { defaultValue: "This password setup link is invalid or has expired. Request a new reset email." }));
           return;
@@ -399,7 +448,7 @@ export function ResetPasswordPage() {
       }
       authListener.subscription.unsubscribe();
     };
-  }, [hasRecoveryArtifacts, recoveryErrorFromUrl, t]);
+  }, [hasRecoveryArtifacts, recoveryCode, recoveryErrorFromUrl, recoveryTokenHash, recoveryType, t]);
 
   const submit = async (event) => {
     event.preventDefault();
