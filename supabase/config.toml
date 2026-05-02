@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.submit-claim]
 verify_jwt = false
+
+[functions.submit-partner-application]
+verify_jwt = false

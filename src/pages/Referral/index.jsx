@@ -99,12 +99,8 @@ function Referral() {
         : `/partner/${partnerProfile.portal_status || "pending"}`;
     }
 
-    if (isAuthenticated) {
-      return "/partner/apply";
-    }
-
-    return "/auth/register?returnTo=%2Fpartner%2Fapply";
-  }, [isAuthenticated, partnerProfile]);
+    return "/partner/apply";
+  }, [partnerProfile]);
 
   const loginTarget = isAuthenticated
     ? partnerTarget

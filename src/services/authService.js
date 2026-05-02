@@ -365,7 +365,12 @@ export async function getPartnerByReferralCode(referralCode) {
   }
 
   const directLookup = await selectMaybeSingleWithFallback(
-    (fields) => client.from("referral_partners").select(fields).eq("referral_code", code).maybeSingle(),
+    (fields) => client
+      .from("referral_partners")
+      .select(fields)
+      .eq("referral_code", code)
+      .eq("portal_status", "approved")
+      .maybeSingle(),
     PARTNER_SELECTS,
   ).catch(() => null);
 

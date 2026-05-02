@@ -26,6 +26,7 @@ export const adminNavigation = [
   { label: "Tasks", path: "/admin/tasks", icon: SquareCheckBig, permission: "tasks.view" },
   { label: "Communication", path: "/admin/communication", icon: MessageSquareText, permission: "communications.view" },
   { label: "Documents", path: "/admin/documents", icon: FolderOpen, permission: "documents.view" },
+  { label: "Partner Applications", path: "/admin/partner-applications", icon: HandCoins, permission: "partners.view" },
   { label: "Referral Partners", path: "/admin/referral-partners", icon: HandCoins, permission: "partners.view" },
   { label: "Finance", path: "/admin/finance", icon: Wallet, permission: "finance.view" },
   { label: "Reports", path: "/admin/reports", icon: BarChart3, permission: "reports.view" },

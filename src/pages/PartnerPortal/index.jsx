@@ -4,7 +4,8 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
-import { fetchPartnerPortalData, updateCurrentPartnerPublicProfile } from "../../services/partnerPortalService.js";
+import { getPublicSiteUrl } from "../../lib/siteUrl.js";
+import { fetchPartnerPortalData, normalizePortalError, updateCurrentPartnerPublicProfile } from "../../services/partnerPortalService.js";
 import "../ClientPortal/style.scss";
 
 function PortalNavLink({ to, icon: Icon, label }) {
@@ -28,6 +29,14 @@ function MetricCard({ label, value, hint }) {
 
 function formatCurrency(value, currency = "EUR") {
   return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
+}
+
+function PortalErrorState({ message }) {
+  return <p className="portal-message is-error">{message}</p>;
+}
+
+function PortalEmptyState({ message }) {
+  return <p className="portal-empty">{message}</p>;
 }
 
 export function PartnerPortalLayout() {
@@ -80,16 +89,16 @@ function usePartnerPortalState() {
   useEffect(() => {
     let active = true;
     fetchPartnerPortalData()
-      .then((data) => {
-        if (active) {
-          setState({ isLoading: false, error: "", data });
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load partner portal.", data: null });
-        }
-      });
+        .then((data) => {
+          if (active) {
+            setState({ isLoading: false, error: "", data });
+          }
+        })
+        .catch((error) => {
+          if (active) {
+            setState({ isLoading: false, error: normalizePortalError(error), data: null });
+          }
+        });
 
     return () => {
       active = false;
@@ -108,7 +117,7 @@ export function PartnerDashboardPage() {
   }
 
   if (state.error) {
-    return <p className="portal-message is-error">{state.error}</p>;
+    return <PortalErrorState message={state.error} />;
   }
 
   const data = state.data || { partnerProfile: null, summary: null, referralRecords: [] };
@@ -122,7 +131,7 @@ export function PartnerDashboardPage() {
     pendingEarnings: 0,
   };
   const recentReferrals = (data.referralRecords || []).slice(0, 4);
-  const referralLink = data.partnerProfile?.referral_code ? `${window.location.origin}/r/${data.partnerProfile.referral_code}` : "";
+  const referralLink = data.partnerProfile?.referral_code ? `${getPublicSiteUrl()}/r/${data.partnerProfile.referral_code}` : "";
 
   return (
     <div className="portal-stack">
@@ -142,9 +151,9 @@ export function PartnerDashboardPage() {
           </div>
         </div>
         <div className="portal-summary">
-          <strong>{referralLink || "-"}</strong>
-          <span>{data.partnerProfile?.referral_code || "-"}</span>
-          <span>{data.partnerProfile?.portal_status || "-"}</span>
+          <strong>{referralLink || t("partnerPortal.link.missing", { defaultValue: "Referral link will appear after approval." })}</strong>
+          <span>{data.partnerProfile?.referral_code || t("partnerPortal.link.codePending", { defaultValue: "Code pending" })}</span>
+          <span>{data.partnerProfile?.portal_status || t("partnerPortal.status.pending", { defaultValue: "pending" })}</span>
         </div>
       </section>
 
@@ -171,7 +180,7 @@ export function PartnerDashboardPage() {
             ))}
           </div>
         ) : (
-          <p className="portal-empty">{t("partnerPortal.activity.empty", { defaultValue: "No captured referrals or claim updates yet." })}</p>
+          <PortalEmptyState message={t("partnerPortal.activity.empty", { defaultValue: "No captured referrals or claim updates yet." })} />
         )}
       </section>
     </div>
@@ -181,7 +190,7 @@ export function PartnerDashboardPage() {
 export function PartnerLinkPage() {
   const { t } = useTranslation();
   const { partnerProfile } = useAuth();
-  const referralLink = partnerProfile?.referral_code ? `${window.location.origin}/r/${partnerProfile.referral_code}` : "";
+  const referralLink = partnerProfile?.referral_code ? `${getPublicSiteUrl()}/r/${partnerProfile.referral_code}` : "";
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -200,12 +209,15 @@ export function PartnerLinkPage() {
         </div>
       </div>
       <div className="portal-summary">
-        <strong>{referralLink || "-"}</strong>
-        <span>{partnerProfile?.referral_code || "-"}</span>
+        <strong>{referralLink || t("partnerPortal.link.missing", { defaultValue: "Referral link will appear after approval." })}</strong>
+        <span>{partnerProfile?.referral_code || t("partnerPortal.link.codePending", { defaultValue: "Code pending" })}</span>
         <button className="btn btn-primary" type="button" onClick={copy}>
           {copied ? t("partnerPortal.link.copied", { defaultValue: "Copied" }) : t("partnerPortal.link.copy", { defaultValue: "Copy link" })}
         </button>
       </div>
+      {!referralLink ? (
+        <PortalEmptyState message={t("partnerPortal.link.empty", { defaultValue: "Your referral code is not available yet. Once your partner access is fully approved, your shareable link will appear here." })} />
+      ) : null}
     </section>
   );
 }
@@ -219,7 +231,7 @@ export function PartnerReferralsPage() {
   }
 
   if (state.error) {
-    return <p className="portal-message is-error">{state.error}</p>;
+    return <PortalErrorState message={state.error} />;
   }
 
   const referrals = state.data?.referralRecords || [];
@@ -238,7 +250,7 @@ export function PartnerReferralsPage() {
             <div key={item.id} className="portal-row is-static">
               <div>
                 <strong>{item.clientLabel}</strong>
-                <span>{[item.caseCode || item.leadCode, item.routeLabel, item.source_path || item.source_url].filter(Boolean).join(" · ") || "-"}</span>
+                <span>{[item.caseCode || item.leadCode, item.routeLabel, item.source_path].filter(Boolean).join(" · ") || "-"}</span>
               </div>
               <div>
                 <span>{item.caseStatus || item.status}</span>
@@ -248,7 +260,7 @@ export function PartnerReferralsPage() {
           ))}
         </div>
       ) : (
-        <p className="portal-empty">{t("partnerPortal.referrals.empty", { defaultValue: "No referral records yet." })}</p>
+        <PortalEmptyState message={t("partnerPortal.referrals.empty", { defaultValue: "No referral records yet." })} />
       )}
     </section>
   );
@@ -263,7 +275,7 @@ export function PartnerEarningsPage() {
   }
 
   if (state.error) {
-    return <p className="portal-message is-error">{state.error}</p>;
+    return <PortalErrorState message={state.error} />;
   }
 
   const commissions = state.data?.commissionRecords || [];
@@ -292,7 +304,7 @@ export function PartnerEarningsPage() {
           ))}
         </div>
       ) : (
-        <p className="portal-empty">{t("partnerPortal.earnings.empty", { defaultValue: "No commissions yet." })}</p>
+        <PortalEmptyState message={t("partnerPortal.earnings.empty", { defaultValue: "No commissions yet." })} />
       )}
     </section>
   );
@@ -307,7 +319,7 @@ export function PartnerPayoutsPage() {
   }
 
   if (state.error) {
-    return <p className="portal-message is-error">{state.error}</p>;
+    return <PortalErrorState message={state.error} />;
   }
 
   const payouts = state.data?.payoutRecords || [];
@@ -336,7 +348,7 @@ export function PartnerPayoutsPage() {
           ))}
         </div>
       ) : (
-        <p className="portal-empty">{t("partnerPortal.payouts.empty", { defaultValue: "No payout history yet." })}</p>
+        <PortalEmptyState message={t("partnerPortal.payouts.empty", { defaultValue: "No payout history yet." })} />
       )}
     </section>
   );
@@ -381,7 +393,7 @@ export function PartnerProfilePage() {
       await refreshProfile();
       setMessage(t("partnerPortal.profile.saved", { defaultValue: "Partner profile updated." }));
     } catch (saveError) {
-      setError(saveError.message || t("partnerPortal.profile.error", { defaultValue: "Could not update the partner profile." }));
+      setError(normalizePortalError(saveError) || t("partnerPortal.profile.error", { defaultValue: "Could not update the partner profile." }));
     } finally {
       setIsSaving(false);
     }
@@ -396,6 +408,7 @@ export function PartnerProfilePage() {
         </div>
       </div>
       <form className="portal-form" onSubmit={submit}>
+        {!partnerProfile ? <PortalEmptyState message={t("partnerPortal.profile.empty", { defaultValue: "Partner profile details are not available yet." })} /> : null}
         <label><span>{t("partnerPortal.profile.publicName", { defaultValue: "Public name" })}</span><input value={form.public_name} onChange={(event) => setForm((current) => ({ ...current, public_name: event.target.value }))} /></label>
         <label><span>{t("partnerPortal.profile.website", { defaultValue: "Website URL" })}</span><input value={form.website_url} onChange={(event) => setForm((current) => ({ ...current, website_url: event.target.value }))} /></label>
         <label><span>{t("partnerPortal.profile.instagram", { defaultValue: "Instagram URL" })}</span><input value={form.instagram_url} onChange={(event) => setForm((current) => ({ ...current, instagram_url: event.target.value }))} /></label>
@@ -424,7 +437,7 @@ export function PartnerAssetsPage() {
           <p>{t("partnerPortal.assets.text", { defaultValue: "A fuller asset library can be added later. For now, share your referral link in your normal content and brand placements." })}</p>
         </div>
       </div>
-      <p className="portal-empty">{t("partnerPortal.assets.empty", { defaultValue: "No managed assets have been uploaded yet." })}</p>
+      <PortalEmptyState message={t("partnerPortal.assets.empty", { defaultValue: "No managed assets have been uploaded yet." })} />
     </section>
   );
 }

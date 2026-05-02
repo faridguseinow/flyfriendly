@@ -1,93 +1,182 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentPartnerProfile, getCurrentProfile } from "./authService.js";
 
-function slugify(value = "") {
-  return String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
+const APPLICATION_SELECT = [
+  "id",
+  "profile_id",
+  "email",
+  "full_name",
+  "phone",
+  "country",
+  "preferred_language",
+  "public_name",
+  "website_url",
+  "instagram_url",
+  "tiktok_url",
+  "youtube_url",
+  "primary_platform",
+  "audience_size",
+  "audience_countries",
+  "niche",
+  "content_links",
+  "motivation",
+  "consent_accepted",
+  "status",
+  "rejection_reason",
+  "reviewed_by",
+  "reviewed_at",
+  "created_at",
+  "updated_at",
+].join(", ");
+
+function normalizeString(value) {
+  const normalized = String(value || "").trim();
+  return normalized || null;
 }
 
-function isUniqueViolation(error) {
-  return error?.code === "23505" || String(error?.message || "").toLowerCase().includes("duplicate");
+function parseListInput(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
-function buildCandidate(base, index, limit) {
-  const normalized = String(base || "partner").replace(/^-+|-+$/g, "") || "partner";
-  return (index === 0 ? normalized : `${normalized}-${index + 1}`).slice(0, limit);
+function buildApplicationPayload(input = {}, profile) {
+  const fullName = normalizeString(input.full_name || input.fullName) || normalizeString(profile?.full_name);
+  const email = normalizeString(input.email) || normalizeString(profile?.email);
+  const preferredLanguage = normalizeString(input.preferred_language || input.preferredLanguage || input.language);
+
+  return {
+    profile_id: profile?.id || null,
+    email,
+    full_name: fullName,
+    phone: normalizeString(input.phone) || normalizeString(profile?.phone),
+    country: normalizeString(input.country),
+    preferred_language: preferredLanguage,
+    public_name: normalizeString(input.public_name || input.publicName),
+    website_url: normalizeString(input.website_url),
+    instagram_url: normalizeString(input.instagram_url),
+    tiktok_url: normalizeString(input.tiktok_url),
+    youtube_url: normalizeString(input.youtube_url),
+    primary_platform: normalizeString(input.primary_platform || input.primaryPlatform),
+    audience_size: normalizeString(input.audience_size || input.audienceSize),
+    audience_countries: parseListInput(input.audience_countries || input.audienceCountries),
+    niche: normalizeString(input.niche),
+    content_links: parseListInput(input.content_links || input.contentLinks),
+    motivation: normalizeString(input.motivation || input.reason),
+    consent_accepted: Boolean(input.consent_accepted),
+    status: "pending",
+  };
+}
+
+function validateApplicationPayload(payload) {
+  if (!payload.full_name) {
+    throw new Error("Full name is required.");
+  }
+
+  if (!payload.email) {
+    throw new Error("Email is required.");
+  }
+
+  if (!payload.country) {
+    throw new Error("Country is required.");
+  }
+
+  if (!payload.preferred_language) {
+    throw new Error("Preferred language is required.");
+  }
+
+  if (!payload.public_name) {
+    throw new Error("Public name is required.");
+  }
+
+  if (!payload.primary_platform) {
+    throw new Error("Primary platform is required.");
+  }
+
+  if (!payload.audience_size) {
+    throw new Error("Audience size is required.");
+  }
+
+  if (!payload.motivation) {
+    throw new Error("Motivation is required.");
+  }
+
+  if (!payload.consent_accepted) {
+    throw new Error("You must accept the partner program terms before submitting.");
+  }
+}
+
+async function getLatestApplicationForProfile(client, profileId) {
+  if (!profileId) {
+    return null;
+  }
+
+  const { data, error } = await client
+    .from("partner_applications")
+    .select(APPLICATION_SELECT)
+    .eq("profile_id", profileId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data || null;
 }
 
 export async function getPartnerApplicationState() {
+  const client = requireSupabase();
   const [profile, partnerProfile] = await Promise.all([
     getCurrentProfile(),
     getCurrentPartnerProfile(),
   ]);
 
-  return { profile, partnerProfile };
+  const application = profile?.id
+    ? await getLatestApplicationForProfile(client, profile.id)
+    : null;
+
+  return { profile, partnerProfile, application };
 }
 
 export async function applyForPartner(input = {}) {
   const client = requireSupabase();
-  const profile = await getCurrentProfile();
-
-  if (!profile?.id) {
-    throw new Error("Please sign in before applying for partner access.");
-  }
+  const profile = await getCurrentProfile().catch(() => null);
 
   const existing = await getCurrentPartnerProfile();
   if (existing?.id) {
     return existing;
   }
 
-  const publicName = String(input.public_name || input.publicName || "").trim();
-  if (!publicName) {
-    throw new Error("Public name is required.");
+  const existingApplication = profile?.id
+    ? await getLatestApplicationForProfile(client, profile.id)
+    : null;
+
+  if (existingApplication?.status && existingApplication.status !== "cancelled" && existingApplication.status !== "rejected") {
+    return existingApplication;
   }
 
-  const slugSeed = slugify(publicName) || "partner";
-  const codeSeed = slugSeed.toUpperCase().slice(0, 24) || "PARTNER";
-  let lastError = null;
+  const payload = buildApplicationPayload(input, profile);
+  validateApplicationPayload(payload);
 
-  for (let index = 0; index < 12; index += 1) {
-    const slug = buildCandidate(slugSeed, index, 40);
-    const referralCode = buildCandidate(codeSeed, index, 24).toUpperCase();
-    const payload = {
-      id: crypto.randomUUID(),
-      profile_id: profile.id,
-      name: publicName,
-      public_name: publicName,
-      contact_name: profile.full_name || publicName,
-      contact_email: profile.email || input.email || null,
-      contact_phone: profile.phone || input.phone || null,
-      slug,
-      referral_code: referralCode,
-      referral_link: `/r/${referralCode}`,
-      commission_type: "percentage",
-      commission_rate: 20,
-      status: "paused",
-      portal_status: "pending",
-      application_reason: input.reason || null,
-      bio: input.bio || null,
-      website_url: input.website_url || null,
-      instagram_url: input.instagram_url || null,
-      tiktok_url: input.tiktok_url || null,
-      youtube_url: input.youtube_url || null,
-      notes: input.reason || null,
-    };
-
-    const { error } = await client.from("referral_partners").insert(payload);
-    if (!error) {
-      return getCurrentPartnerProfile();
-    }
-
-    if (!isUniqueViolation(error)) {
-      throw error;
-    }
-
-    lastError = error;
+  const { data, error } = await client.functions.invoke("submit-partner-application", {
+    body: payload,
+  });
+  if (error) {
+    throw error;
   }
 
-  throw lastError || new Error("Could not generate a unique referral code.");
+  if (data?.error?.message) {
+    throw new Error(data.error.message);
+  }
+
+  return data?.application || data?.existing || null;
 }

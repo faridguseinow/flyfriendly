@@ -48,7 +48,7 @@ export function getNormalizedRole(profile, partnerProfile) {
     return "admin";
   }
 
-  if (partnerProfile) {
+  if (role === "partner") {
     return "partner";
   }
 
@@ -67,6 +67,10 @@ export function resolveDashboardPath(profile, partnerProfile) {
   }
 
   if (normalizedRole === "partner") {
+    if (!partnerProfile) {
+      return "/partner/pending";
+    }
+
     const partnerState = getPartnerAccessState(partnerProfile);
 
     if (partnerState === "approved") {

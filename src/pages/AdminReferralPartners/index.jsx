@@ -4,6 +4,7 @@ import {
   createReferralPartner,
   createReferralPartnerPayout,
   fetchReferralPartnersModuleData,
+  updatePartnerPortalStatus,
   updateReferralPartner,
 } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
@@ -201,27 +202,16 @@ function AdminReferralPartners() {
 
   const updatePartnerAccess = async (nextPortalStatus) => {
     if (!selectedPartner) return;
-
-    const statusMap = {
-      approved: "active",
-      pending: "paused",
-      rejected: "archived",
-      suspended: "paused",
-    };
-
-    const timeField = nextPortalStatus === "approved"
-      ? { approved_at: new Date().toISOString(), rejected_at: null, suspended_at: null }
-      : nextPortalStatus === "rejected"
-        ? { rejected_at: new Date().toISOString() }
-        : nextPortalStatus === "suspended"
-          ? { suspended_at: new Date().toISOString() }
-          : {};
-
-    await savePartner({
-      portal_status: nextPortalStatus,
-      status: statusMap[nextPortalStatus] || selectedPartner.status,
-      ...timeField,
-    });
+    setError("");
+    setIsSaving(true);
+    try {
+      await updatePartnerPortalStatus(selectedPartner.id, nextPortalStatus);
+      await loadPartners();
+    } catch (nextError) {
+      setError(nextError.message || "Could not update partner access.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const createPartner = async (event) => {

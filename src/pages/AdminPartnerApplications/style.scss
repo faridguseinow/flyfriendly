@@ -1,0 +1,117 @@
+.admin-partner-applications__grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-partner-applications__detail {
+  position: sticky;
+  top: 0;
+
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    color: #20242e;
+    background: #fff;
+    font: inherit;
+    resize: vertical;
+  }
+}
+
+.admin-partner-applications__links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  article {
+    min-height: 90px;
+    padding: 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    background: #fcfcfc;
+  }
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    margin-bottom: 6px;
+    color: #20242e;
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 600;
+  }
+
+  span {
+    color: #767c87;
+    font-size: 14px;
+    line-height: 22px;
+    word-break: break-word;
+  }
+}
+
+.admin-partner-applications__subnote {
+  margin: 0;
+  color: #767c87;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.admin-partner-applications__toast {
+  position: sticky;
+  top: 16px;
+  z-index: 20;
+  margin: 0 0 16px auto;
+  width: min(420px, 100%);
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+
+  &.is-success {
+    color: #15613e;
+    background: #ebfff5;
+    border: 1px solid #b7edd0;
+  }
+
+  &.is-error {
+    color: #a23737;
+    background: #fff2f2;
+    border: 1px solid #f2c9c9;
+  }
+}
+
+.admin-partner-applications-page {
+  .admin-table-wrap tbody tr {
+    cursor: pointer;
+  }
+
+  .admin-table-wrap tbody tr.is-selected td {
+    background: #eef8ff;
+  }
+}
+
+@media (max-width: 1320px) {
+  .admin-partner-applications__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-partner-applications__detail {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-partner-applications__links {
+    grid-template-columns: 1fr;
+  }
+}

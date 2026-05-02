@@ -1820,6 +1820,145 @@ export async function fetchReferralPartnersModuleData() {
   };
 }
 
+export async function fetchPartnerApplicationsModuleData() {
+  const client = requireSupabase();
+
+  const { data, error } = await client
+    .from("partner_applications")
+    .select("id, profile_id, email, full_name, phone, country, preferred_language, public_name, website_url, instagram_url, tiktok_url, youtube_url, primary_platform, audience_size, audience_countries, niche, content_links, motivation, consent_accepted, status, rejection_reason, reviewed_by, reviewed_at, created_at, updated_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) {
+    throw error;
+  }
+
+  const reviewerIds = Array.from(new Set((data || []).map((item) => item.reviewed_by).filter(Boolean)));
+  let reviewersById = new Map();
+
+  if (reviewerIds.length) {
+    const reviewers = await client
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", reviewerIds);
+
+    if (reviewers.error && !isMissingColumnError(reviewers.error)) {
+      throw reviewers.error;
+    }
+
+    reviewersById = new Map((reviewers.data || []).map((item) => [item.id, item]));
+  }
+
+  return {
+    applications: (data || []).map((item) => ({
+      ...item,
+      reviewer: item.reviewed_by ? reviewersById.get(item.reviewed_by) || null : null,
+    })),
+  };
+}
+
+export async function reviewPartnerApplication(applicationId, input = {}) {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+  const nextStatus = String(input.status || "").trim().toLowerCase();
+
+  if (!["approved", "rejected"].includes(nextStatus)) {
+    throw new Error("A valid review status is required.");
+  }
+
+  if (nextStatus === "rejected" && !String(input.rejection_reason || "").trim()) {
+    throw new Error("Rejection reason is required.");
+  }
+
+  const current = await client
+    .from("partner_applications")
+    .select("*")
+    .eq("id", applicationId)
+    .maybeSingle();
+
+  if (current.error) {
+    throw current.error;
+  }
+
+  const payload = {
+    status: nextStatus,
+    rejection_reason: nextStatus === "rejected" ? String(input.rejection_reason || "").trim() : null,
+    reviewed_by: user?.id || null,
+    reviewed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await client
+    .from("partner_applications")
+    .update(payload)
+    .eq("id", applicationId);
+
+  if (error) {
+    throw error;
+  }
+
+  await recordActivity(client, {
+    userId: user?.id,
+    action: "review",
+    module: "partners",
+    targetEntityType: "partner_application",
+    targetEntityId: applicationId,
+    previousValue: current.data || null,
+    newValue: payload,
+  });
+}
+
+async function invokePartnerApplicationReviewFunction(functionName, body) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke(functionName, {
+    body,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (data?.error?.message) {
+    throw new Error(data.error.message);
+  }
+
+  return data;
+}
+
+export async function approvePartnerApplication(applicationId, input = {}) {
+  return invokePartnerApplicationReviewFunction("approve-partner-application", {
+    application_id: applicationId,
+    commission_rate: input.commission_rate,
+    referral_code: input.referral_code,
+    notes: input.notes,
+  });
+}
+
+export async function rejectPartnerApplication(applicationId, rejectionReason) {
+  const normalizedReason = String(rejectionReason || "").trim();
+  if (!normalizedReason) {
+    throw new Error("Rejection reason is required.");
+  }
+
+  return invokePartnerApplicationReviewFunction("reject-partner-application", {
+    application_id: applicationId,
+    rejection_reason: normalizedReason,
+  });
+}
+
+export async function updatePartnerPortalStatus(partnerId, portalStatus, notes) {
+  const normalizedStatus = String(portalStatus || "").trim().toLowerCase();
+  if (!["pending", "approved", "rejected", "suspended"].includes(normalizedStatus)) {
+    throw new Error("A valid portal status is required.");
+  }
+
+  return invokePartnerApplicationReviewFunction("update-partner-portal-status", {
+    partner_id: partnerId,
+    portal_status: normalizedStatus,
+    notes: String(notes || "").trim() || null,
+  });
+}
+
 export async function createReferralPartner(input) {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);

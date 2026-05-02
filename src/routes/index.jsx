@@ -19,6 +19,7 @@ import AdminCommunication from "../pages/AdminCommunication/index.jsx";
 import AdminDocuments from "../pages/AdminDocuments/index.jsx";
 import AdminFinance from "../pages/AdminFinance/index.jsx";
 import AdminReferralPartners from "../pages/AdminReferralPartners/index.jsx";
+import AdminPartnerApplications from "../pages/AdminPartnerApplications/index.jsx";
 import AdminActivity from "../pages/AdminActivity/index.jsx";
 import AdminReports from "../pages/AdminReports/index.jsx";
 import AdminSettings from "../pages/AdminSettings/index.jsx";
@@ -29,7 +30,7 @@ import AdminAccess from "../pages/AdminAccess/index.jsx";
 import AdminTrash from "../pages/AdminTrash/index.jsx";
 import AdminLayout, { AdminForbiddenPage, AdminLoginPage } from "../admin/AdminLayout.jsx";
 import { AdminRouteGuard } from "../admin/AdminGuards.jsx";
-import { GuestRoute, ProtectedRoute, RoleRoute } from "../auth/AuthGuards.jsx";
+import { GuestRoute, PartnerRoute, ProtectedRoute, RoleRoute } from "../auth/AuthGuards.jsx";
 import i18n from "../i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "../i18n/languages.js";
 import { getPreferredLanguage, localizePath } from "../i18n/path.js";
@@ -108,6 +109,7 @@ function AnimatedRoutes({ location }) {
           <Route path="tasks" element={<AdminTasks />} />
           <Route path="communication" element={<AdminCommunication />} />
           <Route path="documents" element={<AdminDocuments />} />
+          <Route path="partner-applications" element={<AdminPartnerApplications />} />
           <Route path="referral-partners" element={<AdminReferralPartners />} />
           <Route path="finance" element={<AdminFinance />} />
           <Route path="reports" element={<AdminReports />} />
@@ -151,6 +153,7 @@ function AnimatedRoutes({ location }) {
           <Route path="auth/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
         <Route path="auth/reset-password" element={<ResetPasswordPage />} />
+        <Route path="partner/apply" element={<PartnerApplyPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<RoleRoute allowedRoles={["client", "partner"]} ignorePartnerStatus />}>
             <Route path="client" element={<ClientPortalLayout />}>
@@ -161,12 +164,11 @@ function AnimatedRoutes({ location }) {
               <Route path="profile" element={<ClientProfilePage />} />
               <Route path="payments" element={<ClientPaymentsPage />} />
             </Route>
-            <Route path="partner/apply" element={<PartnerApplyPage />} />
           </Route>
           <Route path="partner/pending" element={<PartnerPendingPage />} />
           <Route path="partner/rejected" element={<PartnerRejectedPage />} />
           <Route path="partner/suspended" element={<PartnerSuspendedPage />} />
-          <Route element={<RoleRoute allowedRoles={["partner"]} />}>
+          <Route element={<PartnerRoute />}>
             <Route path="partner" element={<PartnerPortalLayout />}>
               <Route path="dashboard" element={<PartnerDashboardPage />} />
               <Route path="link" element={<PartnerLinkPage />} />

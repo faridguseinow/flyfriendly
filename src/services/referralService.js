@@ -60,6 +60,11 @@ export function clearReferralCode() {
   writeStoredReferral(null);
 }
 
+function isApprovedPartnerRecord(partner) {
+  const status = String(partner?.portal_status || partner?.status || "").trim().toLowerCase();
+  return status === "approved";
+}
+
 export function storeReferralCode(input) {
   const record = cleanReferralRecord(
     typeof input === "string"
@@ -80,11 +85,13 @@ export async function validateReferralCode(referralCode, context = {}) {
   const code = String(referralCode || "").trim();
 
   if (!code) {
+    clearReferralCode();
     return null;
   }
 
   const partner = await getPartnerByReferralCode(code);
-  if (!partner?.id) {
+  if (!partner?.id || !isApprovedPartnerRecord(partner)) {
+    clearReferralCode();
     return null;
   }
 
@@ -117,22 +124,32 @@ export async function captureReferralFromQueryString(search = "", pathname = "")
 
 export async function attachReferralToLead(leadId) {
   const referral = getStoredReferralData();
-  if (!referral?.partnerId || !leadId) {
+  if (!referral?.referralCode || !leadId) {
+    return null;
+  }
+
+  const validatedReferral = await validateReferralCode(referral.referralCode, {
+    sourceUrl: referral.sourceUrl || null,
+    sourcePath: referral.sourcePath || null,
+  }).catch(() => null);
+
+  if (!validatedReferral?.partnerId) {
+    clearReferralCode();
     return null;
   }
 
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const payload = {
-    partner_id: referral.partnerId,
+    partner_id: validatedReferral.partnerId,
     client_profile_id: user?.id || null,
     lead_id: leadId,
-    referral_code: referral.referralCode,
-    source_url: referral.sourceUrl || null,
-    source_path: referral.sourcePath || null,
+    referral_code: validatedReferral.referralCode,
+    source_url: validatedReferral.sourceUrl || null,
+    source_path: validatedReferral.sourcePath || null,
     status: "lead_created",
     attribution_meta: {
-      stored_at: referral.storedAt,
+      stored_at: validatedReferral.storedAt,
     },
   };
 
@@ -149,11 +166,11 @@ export async function attachReferralToLead(leadId) {
   await client
     .from("leads")
     .update({
-      referral_partner_id: referral.partnerId,
+      referral_partner_id: validatedReferral.partnerId,
       source_details: {
-        referral_code: referral.referralCode,
-        referral_source_url: referral.sourceUrl || null,
-        referral_source_path: referral.sourcePath || null,
+        referral_code: validatedReferral.referralCode,
+        referral_source_url: validatedReferral.sourceUrl || null,
+        referral_source_path: validatedReferral.sourcePath || null,
       },
       updated_at: new Date().toISOString(),
     })

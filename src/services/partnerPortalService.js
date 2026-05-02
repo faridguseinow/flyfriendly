@@ -15,8 +15,50 @@ function buildRouteLabel(meta = {}) {
   return [from, to].filter(Boolean).join(" -> ");
 }
 
-function buildClientLabel(meta = {}) {
-  return meta.client_name || meta.client_email || meta.lead_code || meta.case_code || "";
+function maskReference(reference = "") {
+  const value = String(reference || "").trim();
+  if (!value) {
+    return "";
+  }
+
+  if (value.length <= 6) {
+    return value;
+  }
+
+  return `${value.slice(0, 4)}...${value.slice(-2)}`;
+}
+
+function buildPartnerSafeLabel(meta = {}, item = {}) {
+  if (meta.case_code) {
+    return `Case ${meta.case_code}`;
+  }
+
+  if (meta.lead_code) {
+    return `Lead ${meta.lead_code}`;
+  }
+
+  if (item.case_id) {
+    return `Case ${maskReference(item.case_id)}`;
+  }
+
+  if (item.lead_id) {
+    return `Lead ${maskReference(item.lead_id)}`;
+  }
+
+  return "Referred claim";
+}
+
+function normalizePortalError(error) {
+  const message = String(error?.message || "").trim();
+  if (!message) {
+    return "Could not load partner portal.";
+  }
+
+  if (/permission|forbidden|not authorized|row-level security/i.test(message)) {
+    return "You do not have access to this partner data.";
+  }
+
+  return message;
 }
 
 export async function fetchPartnerPortalData() {
@@ -40,16 +82,19 @@ export async function fetchPartnerPortalData() {
     client
       .from("referrals")
       .select("id, client_profile_id, customer_id, lead_id, case_id, referral_code, source_url, source_path, status, attribution_meta, created_at, updated_at")
+      .eq("partner_id", partnerProfile.id)
       .order("created_at", { ascending: false })
       .limit(500),
     client
       .from("partner_commissions")
       .select("id, lead_id, case_id, claim_id, amount, currency, commission_rate, source_amount, status, notes, created_at, approved_at, paid_at")
+      .eq("partner_id", partnerProfile.id)
       .order("created_at", { ascending: false })
       .limit(500),
     client
       .from("referral_partner_payouts")
       .select("id, case_id, amount, currency, status, payout_method, payment_reference, note, paid_at, created_at, updated_at")
+      .eq("partner_id", partnerProfile.id)
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
@@ -80,7 +125,7 @@ export async function fetchPartnerPortalData() {
 
     return {
       ...item,
-      clientLabel: buildClientLabel(meta) || item.referral_code || "-",
+      clientLabel: buildPartnerSafeLabel(meta, item),
       routeLabel: buildRouteLabel(meta),
       caseCode: meta.case_code || item.case_id || "",
       leadCode: meta.lead_code || item.lead_id || "",
@@ -100,7 +145,7 @@ export async function fetchPartnerPortalData() {
 
     return {
       ...item,
-      clientLabel: buildClientLabel(meta) || meta.case_code || item.case_id || item.lead_id || "-",
+      clientLabel: buildPartnerSafeLabel(meta, item),
       routeLabel: buildRouteLabel(meta),
       caseCode: meta.case_code || item.case_id || "",
       caseStatus: meta.case_status || "",
@@ -113,7 +158,7 @@ export async function fetchPartnerPortalData() {
 
     return {
       ...item,
-      clientLabel: buildClientLabel(meta) || meta.case_code || item.case_id || "-",
+      clientLabel: buildPartnerSafeLabel(meta, item),
       routeLabel: buildRouteLabel(meta),
       caseCode: meta.case_code || item.case_id || "",
     };
@@ -155,6 +200,8 @@ export async function fetchPartnerPortalData() {
     payouts: payoutsList,
   };
 }
+
+export { normalizePortalError };
 
 export async function updateCurrentPartnerPublicProfile(input = {}) {
   const client = requireSupabase();
