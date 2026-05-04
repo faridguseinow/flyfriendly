@@ -2,10 +2,9 @@ import { requireSupabase } from "../lib/supabase.js";
 import { buildPublicAuthUrl } from "../lib/siteUrl.js";
 
 const PROFILE_SELECTS = [
-  "id, full_name, email, phone, role, status, deleted_at, purge_after, created_at, updated_at",
-  "id, full_name, email, phone, role, deleted_at, purge_after, created_at, updated_at",
-  "id, full_name, email, phone, role, deleted_at, created_at",
+  "id, full_name, email, phone, role, created_at, updated_at",
   "id, full_name, email, phone, role, created_at",
+  "id, full_name, email, phone, role",
 ];
 
 const PARTNER_SELECTS = [

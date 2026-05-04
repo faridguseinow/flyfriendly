@@ -1,8 +1,67 @@
 import { requireSupabase } from "../lib/supabase.js";
+import { calculateDistanceCompensationEstimate } from "../lib/compensationDistance.js";
+import { searchAirports } from "./catalogService.js";
 import { getCurrentProfile, syncCurrentUserClaimData, updateCurrentProfile } from "./authService.js";
 
 function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.code === "42703" || error?.message?.includes("column");
+}
+
+function extractAirportCode(value) {
+  const input = String(value || "").trim();
+  if (!input) {
+    return "";
+  }
+
+  const match = input.match(/^([A-Z0-9]{3,4})\b/);
+  return match ? match[1] : "";
+}
+
+async function resolveAirportFromRouteLabel(value) {
+  const code = extractAirportCode(value);
+  if (!code) {
+    return null;
+  }
+
+  const matches = await searchAirports(code, 5).catch(() => []);
+  return Array.isArray(matches)
+    ? matches.find((airport) => String(airport.iata_code || airport.icao_code || airport.ident || "").toUpperCase() === code)
+      || matches[0]
+      || null
+    : null;
+}
+
+async function withEstimateFallback(record) {
+  if (!record) {
+    return record;
+  }
+
+  const existingAmount = record.estimated_compensation_eur ?? record.estimatedCompensationEur;
+  const existingStatus = String(record.estimate_status ?? record.estimateStatus ?? "").toLowerCase();
+
+  if (Number.isFinite(Number(existingAmount)) || existingStatus === "calculated") {
+    return record;
+  }
+
+  const [fromAirport, toAirport] = await Promise.all([
+    resolveAirportFromRouteLabel(record.departure_airport || record.route_from),
+    resolveAirportFromRouteLabel(record.arrival_airport || record.route_to),
+  ]);
+
+  if (!fromAirport || !toAirport) {
+    return record;
+  }
+
+  const estimate = calculateDistanceCompensationEstimate({ fromAirport, toAirport });
+  return {
+    ...record,
+    distance_km: record.distance_km ?? estimate.distanceKm,
+    distance_band: record.distance_band ?? estimate.distanceBand,
+    estimated_compensation_eur: record.estimated_compensation_eur ?? estimate.estimatedCompensationEur,
+    compensation_currency: record.compensation_currency ?? estimate.currency,
+    estimate_status: estimate.estimateStatus,
+    estimate_explanation: record.estimate_explanation ?? estimate.estimateExplanation ?? null,
+  };
 }
 
 export async function fetchClientDashboardData() {
@@ -41,9 +100,11 @@ export async function fetchClientDashboardData() {
     throw finance.error;
   }
 
+  const enrichedLeads = await Promise.all((leads.data || []).map((item) => withEstimateFallback(item)));
+
   return {
     profile,
-    leads: leads.data || [],
+    leads: enrichedLeads,
     cases: cases.data || [],
     finance: finance.data || [],
   };
@@ -118,7 +179,7 @@ export async function fetchClientClaimDetails(claimId) {
     return {
       type: "case",
       case: caseResponse.data,
-      leadEstimate: leadEstimate.data || null,
+      leadEstimate: await withEstimateFallback(leadEstimate.data || null),
       documents: documents.data || [],
       history: history.data || [],
       finance: finance.data || null,
@@ -148,7 +209,7 @@ export async function fetchClientClaimDetails(claimId) {
 
   return {
     type: "lead",
-    lead: leadResponse.data,
+    lead: await withEstimateFallback(leadResponse.data),
     documents: documents.data || [],
     history: [],
     finance: null,
