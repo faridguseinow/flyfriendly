@@ -1,6 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { calculateDistanceCompensationEstimate } from "../lib/compensationDistance.js";
-import { searchAirports } from "./catalogService.js";
+import { findAirportByCode } from "./catalogService.js";
 import { getCurrentProfile, syncCurrentUserClaimData, updateCurrentProfile } from "./authService.js";
 
 function isMissingColumnError(error) {
@@ -23,12 +23,7 @@ async function resolveAirportFromRouteLabel(value) {
     return null;
   }
 
-  const matches = await searchAirports(code, 5).catch(() => []);
-  return Array.isArray(matches)
-    ? matches.find((airport) => String(airport.iata_code || airport.icao_code || airport.ident || "").toUpperCase() === code)
-      || matches[0]
-      || null
-    : null;
+  return findAirportByCode(code).catch(() => null);
 }
 
 async function withEstimateFallback(record) {

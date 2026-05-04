@@ -530,6 +530,52 @@ export async function searchAirports(query, limit = 8) {
   ).map((item) => ({ ...item, source: "fallback" }));
 }
 
+export async function findAirportByCode(code) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+
+  if (!normalizedCode) {
+    return null;
+  }
+
+  try {
+    const client = requireSupabase();
+    const { data, error } = await client
+      .from("airports")
+      .select(AIRPORT_FIELDS)
+      .or(`iata_code.eq.${normalizedCode},icao_code.eq.${normalizedCode},ident.eq.${normalizedCode}`)
+      .limit(5);
+
+    if (!error && data?.length) {
+      const exact = data.find((airport) =>
+        [airport.iata_code, airport.icao_code, airport.ident]
+          .filter(Boolean)
+          .map((value) => String(value).toUpperCase())
+          .includes(normalizedCode)
+      );
+
+      if (exact && isPassengerAirport(exact)) {
+        return { ...exact, source: "supabase" };
+      }
+    }
+  } catch {
+    // fallback below
+  }
+
+  const fallbackRows = await loadFallbackAirports();
+  const exactFallback = fallbackRows.find((airport) =>
+    [airport.iata_code, airport.icao_code, airport.ident]
+      .filter(Boolean)
+      .map((value) => String(value).toUpperCase())
+      .includes(normalizedCode)
+  );
+
+  if (exactFallback && isPassengerAirport(exactFallback)) {
+    return { ...exactFallback, source: "fallback" };
+  }
+
+  return null;
+}
+
 export async function searchAirlines(query, limit = 8) {
   const term = normalizeSearch(query);
 
