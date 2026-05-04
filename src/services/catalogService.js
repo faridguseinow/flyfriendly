@@ -3,6 +3,7 @@ import { requireSupabase } from "../lib/supabase.js";
 const AIRPORT_FIELDS = "id, ident, type, name, municipality, iso_country, country_name, latitude_deg, longitude_deg, keywords, search_text, scheduled_service, iata_code, icao_code";
 const AIRLINE_FIELDS = "id, name, iata_code, icao_code, country, active";
 let fallbackAirportsPromise;
+let fallbackAirportCoordinatesPromise;
 let fallbackAirlinesPromise;
 const AIRLINE_NAME_ALIASES = {
   "azerbaijan airlines": ["azal"],
@@ -57,6 +58,25 @@ function formatAirportDisplay(airport) {
     city,
     country,
   };
+}
+
+function mergeFallbackAirportCoordinates(rows = [], coordinatesMap = {}) {
+  return rows.map((airport) => {
+    if (airport.latitude_deg !== undefined && airport.longitude_deg !== undefined) {
+      return airport;
+    }
+
+    const pair = coordinatesMap?.[airport.id];
+    if (!Array.isArray(pair) || pair.length < 2) {
+      return airport;
+    }
+
+    return {
+      ...airport,
+      latitude_deg: pair[0],
+      longitude_deg: pair[1],
+    };
+  });
 }
 
 function isPassengerAirport(airport) {
@@ -408,10 +428,23 @@ function searchLocalCatalog(rows, term, config, limit) {
 
 async function loadFallbackAirports() {
   if (!fallbackAirportsPromise) {
-    fallbackAirportsPromise = import("../data/airports-fallback.json").then((module) => module.default || []);
+    fallbackAirportsPromise = Promise.all([
+      import("../data/airports-fallback.json").then((module) => module.default || []),
+      loadFallbackAirportCoordinates(),
+    ]).then(([rows, coordinatesMap]) => mergeFallbackAirportCoordinates(rows, coordinatesMap));
   }
 
   return fallbackAirportsPromise;
+}
+
+async function loadFallbackAirportCoordinates() {
+  if (!fallbackAirportCoordinatesPromise) {
+    fallbackAirportCoordinatesPromise = import("../data/airports-fallback-coordinates.json")
+      .then((module) => module.default || {})
+      .catch(() => ({}));
+  }
+
+  return fallbackAirportCoordinatesPromise;
 }
 
 async function loadFallbackAirlines() {

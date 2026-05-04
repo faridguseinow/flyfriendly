@@ -160,6 +160,35 @@
   border-radius: 18px;
 }
 
+.portal-estimate {
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+
+  strong,
+  span,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+  }
+
+  span,
+  small {
+    color: var(--muted);
+  }
+
+  small {
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
 .portal-summary {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

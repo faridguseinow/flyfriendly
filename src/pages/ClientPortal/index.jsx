@@ -22,6 +22,63 @@ import {
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import "./style.scss";
 
+function formatEstimateBand(distanceBand, t) {
+  if (distanceBand === "short") {
+    return t("clientPortal.estimate.short", { defaultValue: "Short haul" });
+  }
+
+  if (distanceBand === "medium") {
+    return t("clientPortal.estimate.medium", { defaultValue: "Medium haul" });
+  }
+
+  if (distanceBand === "long") {
+    return t("clientPortal.estimate.long", { defaultValue: "Long haul" });
+  }
+
+  return t("clientPortal.estimate.unknown", { defaultValue: "Pending review" });
+}
+
+function formatEstimateAmount(amount, currency = "EUR", t) {
+  if (!Number.isFinite(Number(amount))) {
+    return t("clientPortal.estimate.pending", { defaultValue: "Estimate pending review" });
+  }
+
+  return t("clientPortal.estimate.upTo", {
+    defaultValue: "Up to {{currencySymbol}}{{amount}}",
+    currencySymbol: currency === "EUR" ? "€" : `${currency} `,
+    amount: Number(amount).toFixed(0),
+  });
+}
+
+function EstimateSummary({ estimate, t }) {
+  if (!estimate) {
+    return null;
+  }
+
+  const hasDistance = Number.isFinite(Number(estimate.distance_km ?? estimate.distanceKm));
+  const amount = estimate.estimated_compensation_eur ?? estimate.estimatedCompensationEur;
+  const currency = estimate.compensation_currency ?? estimate.currency ?? "EUR";
+  const status = estimate.estimate_status ?? estimate.estimateStatus ?? "pending_review";
+
+  return (
+    <div className="portal-estimate">
+      <strong>{formatEstimateAmount(amount, currency, t)}</strong>
+      <span>
+        {hasDistance
+          ? t("clientPortal.estimate.distanceBand", {
+            defaultValue: "{{distance}} km approx. • {{band}}",
+            distance: Math.round(Number(estimate.distance_km ?? estimate.distanceKm)),
+            band: formatEstimateBand(estimate.distance_band ?? estimate.distanceBand, t),
+          })
+          : formatEstimateBand(estimate.distance_band ?? estimate.distanceBand, t)}
+      </span>
+      {status === "pending_review" ? (
+        <small>{t("clientPortal.estimate.pendingNote", { defaultValue: "This route still needs a manual review by our team." })}</small>
+      ) : null}
+    </div>
+  );
+}
+
 function PortalNavLink({ to, icon: Icon, label }) {
   return (
     <NavLink to={to} end={to.endsWith("/dashboard")} className={({ isActive }) => `portal-nav__link${isActive ? " is-active" : ""}`}>
@@ -150,7 +207,10 @@ export function ClientDashboardPage() {
           <div className="portal-summary">
             <strong>{latestLead.lead_code}</strong>
             <span>{latestLead.airline || t("clientPortal.recent.noFlight", { defaultValue: "Airline pending" })}</span>
-            <span>{latestLead.status} / {latestLead.stage}</span>
+            <div>
+              <span>{latestLead.status} / {latestLead.stage}</span>
+              <EstimateSummary estimate={latestLead} t={t} />
+            </div>
           </div>
         ) : (
           <p className="portal-empty">{t("clientPortal.recent.empty", { defaultValue: "No claims yet. Start your first claim to build your case history." })}</p>
@@ -207,6 +267,7 @@ export function ClientClaimsPage() {
                 <div>
                   <strong>{item.code || item.id}</strong>
                   <span>{item.flight || t("clientPortal.claims.noFlight", { defaultValue: "Airline pending" })}</span>
+                  {item.kind === "lead" ? <EstimateSummary estimate={item} t={t} /> : null}
                 </div>
                 <div>
                   <span>{item.route || "-"}</span>
@@ -258,6 +319,7 @@ export function ClientClaimDetailsPage() {
 
   const data = state.data;
   const base = data?.type === "case" ? data.case : data?.lead;
+  const estimate = data?.type === "case" ? data?.leadEstimate : data?.lead;
 
   if (!base) {
     return <p className="portal-empty">{t("clientPortal.claimDetails.empty", { defaultValue: "This claim is not available in your account." })}</p>;
@@ -277,7 +339,10 @@ export function ClientClaimDetailsPage() {
           <article><strong>{t("clientPortal.claimDetails.route", { defaultValue: "Route" })}</strong><span>{[base.route_from || base.departure_airport, base.route_to || base.arrival_airport].filter(Boolean).join(" -> ") || "-"}</span></article>
           <article><strong>{t("clientPortal.claimDetails.kind", { defaultValue: "Record type" })}</strong><span>{data.type}</span></article>
           <article><strong>{t("clientPortal.claimDetails.payout", { defaultValue: "Payout status" })}</strong><span>{base.payout_status || data.finance?.payment_status || "-"}</span></article>
+          <article><strong>{t("clientPortal.claimDetails.estimate", { defaultValue: "Estimated compensation" })}</strong><span>{formatEstimateAmount(estimate?.estimated_compensation_eur ?? estimate?.estimatedCompensationEur, estimate?.compensation_currency ?? estimate?.currency ?? "EUR", t)}</span></article>
+          <article><strong>{t("clientPortal.claimDetails.distance", { defaultValue: "Calculated distance" })}</strong><span>{Number.isFinite(Number(estimate?.distance_km ?? estimate?.distanceKm)) ? `${Math.round(Number(estimate.distance_km ?? estimate.distanceKm))} km` : t("clientPortal.estimate.pending", { defaultValue: "Estimate pending review" })}</span></article>
         </div>
+        {estimate ? <EstimateSummary estimate={estimate} t={t} /> : null}
       </section>
 
       <section className="portal-card">

@@ -136,8 +136,8 @@ async function getLatestApplicationForProfile(client, profileId) {
 export async function getPartnerApplicationState() {
   const client = requireSupabase();
   const [profile, partnerProfile] = await Promise.all([
-    getCurrentProfile(),
-    getCurrentPartnerProfile(),
+    getCurrentProfile().catch(() => null),
+    getCurrentPartnerProfile().catch(() => null),
   ]);
 
   const application = profile?.id
@@ -151,7 +151,7 @@ export async function applyForPartner(input = {}) {
   const client = requireSupabase();
   const profile = await getCurrentProfile().catch(() => null);
 
-  const existing = await getCurrentPartnerProfile();
+  const existing = await getCurrentPartnerProfile().catch(() => null);
   if (existing?.id) {
     return existing;
   }

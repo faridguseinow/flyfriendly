@@ -122,6 +122,11 @@ function isExistingUserError(error) {
     || message.includes("already exists");
 }
 
+function isMissingAuthSessionError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("auth session missing");
+}
+
 function generateClaimPassword() {
   return `FlyFriendly!${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
 }
@@ -131,6 +136,10 @@ export async function getCurrentUser() {
   const { data, error } = await client.auth.getUser();
 
   if (error) {
+    if (isMissingAuthSessionError(error)) {
+      return null;
+    }
+
     throw error;
   }
 
@@ -142,6 +151,10 @@ export async function getCurrentSession() {
   const { data, error } = await client.auth.getSession();
 
   if (error) {
+    if (isMissingAuthSessionError(error)) {
+      return null;
+    }
+
     throw error;
   }
 

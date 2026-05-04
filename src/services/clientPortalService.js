@@ -14,12 +14,12 @@ export async function fetchClientDashboardData() {
     getCurrentProfile(),
     client
       .from("leads")
-      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, created_at, submitted_at")
+      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, created_at, submitted_at, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
       .order("created_at", { ascending: false })
       .limit(20),
     client
       .from("cases")
-      .select("id, case_code, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at, approved_at, paid_at")
+      .select("id, case_code, lead_id, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at, approved_at, paid_at")
       .order("created_at", { ascending: false })
       .limit(20),
     client
@@ -63,6 +63,11 @@ export async function fetchClientClaims() {
         route: [item.departure_airport, item.arrival_airport].filter(Boolean).join(" -> "),
         kind: "lead",
         created_at: item.created_at,
+        distance_km: item.distance_km,
+        distance_band: item.distance_band,
+        estimated_compensation_eur: item.estimated_compensation_eur,
+        compensation_currency: item.compensation_currency,
+        estimate_status: item.estimate_status,
       })),
       ...(data.cases || []).map((item) => ({
         id: item.id,
@@ -83,7 +88,7 @@ export async function fetchClientClaimDetails(claimId) {
 
   const caseResponse = await client
     .from("cases")
-    .select("id, case_code, status, payout_status, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, created_at, approved_at, paid_at, notes")
+    .select("id, case_code, lead_id, status, payout_status, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, created_at, approved_at, paid_at, notes")
     .eq("id", claimId)
     .maybeSingle();
 
@@ -92,19 +97,28 @@ export async function fetchClientClaimDetails(claimId) {
   }
 
   if (caseResponse.data) {
-    const [documents, history, finance] = await Promise.all([
+    const [documents, history, finance, leadEstimate] = await Promise.all([
       client.from("case_documents").select("id, document_type, file_name, status, created_at").eq("case_id", claimId).is("deleted_at", null).order("created_at", { ascending: false }),
       client.from("case_status_history").select("id, previous_status, next_status, note, created_at").eq("case_id", claimId).order("created_at", { ascending: false }),
       client.from("case_finance").select("id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at").eq("case_id", claimId).maybeSingle(),
+      caseResponse.data.lead_id
+        ? client
+          .from("leads")
+          .select("id, lead_code, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
+          .eq("id", caseResponse.data.lead_id)
+          .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
     if (documents.error) throw documents.error;
     if (history.error) throw history.error;
     if (finance.error && !isMissingColumnError(finance.error)) throw finance.error;
+    if (leadEstimate.error && !isMissingColumnError(leadEstimate.error)) throw leadEstimate.error;
 
     return {
       type: "case",
       case: caseResponse.data,
+      leadEstimate: leadEstimate.data || null,
       documents: documents.data || [],
       history: history.data || [],
       finance: finance.data || null,
@@ -113,7 +127,7 @@ export async function fetchClientClaimDetails(claimId) {
 
   const leadResponse = await client
     .from("leads")
-    .select("id, lead_code, status, stage, eligibility_status, airline, departure_airport, arrival_airport, scheduled_departure_date, disruption_type, created_at, submitted_at")
+    .select("id, lead_code, status, stage, eligibility_status, airline, departure_airport, arrival_airport, scheduled_departure_date, disruption_type, created_at, submitted_at, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
     .eq("id", claimId)
     .maybeSingle();
 
