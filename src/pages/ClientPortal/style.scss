@@ -165,6 +165,15 @@
   display: grid;
   gap: 4px;
 
+  .portal-estimate__label {
+    color: #1187eb;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   strong,
   span,
   small {

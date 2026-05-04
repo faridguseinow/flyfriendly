@@ -62,6 +62,9 @@ function EstimateSummary({ estimate, t }) {
 
   return (
     <div className="portal-estimate">
+      <small className="portal-estimate__label">
+        {t("clientPortal.estimate.label", { defaultValue: "Possible compensation" })}
+      </small>
       <strong>{formatEstimateAmount(amount, currency, t)}</strong>
       <span>
         {hasDistance

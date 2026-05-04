@@ -394,6 +394,7 @@ const emailCopy = {
 const portalCopy = {
   en: {
     title: "Access your client portal",
+    amountPrompt: "To find out your compensation amount, log in to your personal account.",
     text: "You can create your password and follow your claim in your personal Fly Friendly account.",
     createPassword: "Create password",
     accessPortal: "Access your portal",
@@ -401,6 +402,7 @@ const portalCopy = {
   },
   ru: {
     title: "Доступ в личный кабинет",
+    amountPrompt: "Чтобы узнать сумму компенсации, войдите в свой личный кабинет.",
     text: "Вы можете создать пароль и отслеживать статус заявки в личном кабинете Fly Friendly.",
     createPassword: "Создать пароль",
     accessPortal: "Открыть кабинет",
@@ -408,6 +410,7 @@ const portalCopy = {
   },
   az: {
     title: "Müştəri kabinetinə giriş",
+    amountPrompt: "Kompensasiya məbləğini öyrənmək üçün şəxsi kabinetinizə daxil olun.",
     text: "Şəxsi Fly Friendly hesabınızda parol yarada və müraciətinizin statusunu izləyə bilərsiniz.",
     createPassword: "Parol yarat",
     accessPortal: "Kabinetə keç",
@@ -567,6 +570,7 @@ function buildEmailHtml(
     ? `
             <div style="margin:0 0 28px;padding:24px;border-radius:22px;background:linear-gradient(180deg,#f2f8ff 0%,#f8fbff 100%);border:1px solid #dce9ff;">
               <p style="margin:0 0 10px;font-size:22px;line-height:1.35;font-weight:700;color:#172033;">${escapeHtml(portal.title)}</p>
+              <p style="margin:0 0 12px;font-size:16px;line-height:1.7;font-weight:700;color:#172033;">${escapeHtml(portal.amountPrompt || portalCopy.en.amountPrompt)}</p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:#55627a;">${escapeHtml(portal.text)}</p>
               <a href="${portalActionUrl}" style="display:inline-block;padding:14px 22px;border-radius:14px;background:#1187eb;color:#ffffff;text-decoration:none;font-weight:700;">${portalActionLabel}</a>
               ${portalLoginUrl ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.7;color:#55627a;">${escapeHtml(portal.loginLabel)}: <a href="${portalLoginUrl}" style="color:#1187eb;text-decoration:none;">${portalLoginUrl}</a></p>` : ""}
@@ -705,6 +709,7 @@ function buildEmailText(
     ? [
       "",
       portal.title,
+      portal.amountPrompt || portalCopy.en.amountPrompt,
       portal.text,
       `${options.portalActionLabel || portal.createPassword}: ${options.portalActionUrl}`,
       options.portalLoginUrl ? `${portal.loginLabel}: ${options.portalLoginUrl}` : "",
