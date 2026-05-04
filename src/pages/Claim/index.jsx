@@ -1200,14 +1200,14 @@ function ClaimFlow() {
 
     if (name === "departure") {
       nextData.departure = selectedOption.label;
-      nextData.departureAirportId = selectedOption.source === "supabase" ? selectedOption.id || null : null;
+      nextData.departureAirportId = selectedOption.id || null;
       nextData.departureAirportSource = selectedOption.source || null;
       setSelectedDepartureAirport(selectedOption);
     }
 
     if (name === "destination") {
       nextData.destination = selectedOption.label;
-      nextData.destinationAirportId = selectedOption.source === "supabase" ? selectedOption.id || null : null;
+      nextData.destinationAirportId = selectedOption.id || null;
       nextData.destinationAirportSource = selectedOption.source || null;
       setSelectedDestinationAirport(selectedOption);
     }
