@@ -30,7 +30,6 @@ import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getLanguageByCode } from "../../i18n/languages.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
-import { calculateDistanceCompensationEstimate } from "../../lib/compensationDistance.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import {
   describeAirlineOption,
@@ -477,78 +476,6 @@ function SelectField({ icon: Icon, placeholder, name, value, onChange }) {
   );
 }
 
-function formatDistanceBandLabel(distanceBand, t) {
-  if (distanceBand === "short") {
-    return t("claim.estimate.bandShort", { defaultValue: "Short haul" });
-  }
-
-  if (distanceBand === "medium") {
-    return t("claim.estimate.bandMedium", { defaultValue: "Medium haul" });
-  }
-
-  if (distanceBand === "long") {
-    return t("claim.estimate.bandLong", { defaultValue: "Long haul" });
-  }
-
-  return t("claim.estimate.bandUnknown", { defaultValue: "Pending review" });
-}
-
-function CompensationPreviewCard({ data, estimate }) {
-  const { t } = useTranslation();
-
-  if (!estimate) {
-    return null;
-  }
-
-  const routeLabel = [data.departure, data.destination].filter(Boolean).join(" → ");
-  const hasCalculatedEstimate = estimate.estimateStatus === "calculated" && Number.isFinite(estimate.distanceKm);
-  const distanceLabel = hasCalculatedEstimate
-    ? t("claim.estimate.distanceValue", {
-      defaultValue: "{{distance}} km approx.",
-      distance: Math.round(estimate.distanceKm),
-    })
-    : t("claim.estimate.pendingReview", { defaultValue: "Estimate pending review" });
-
-  return (
-    <section className="claim-estimate-card" aria-live="polite">
-      <div className="claim-estimate-card__header">
-        <span className="claim-estimate-card__eyebrow">
-          {t("claim.estimate.eyebrow", { defaultValue: "Compensation preview" })}
-        </span>
-        <strong>{routeLabel || t("claim.estimate.routeFallback", { defaultValue: "Selected route" })}</strong>
-      </div>
-
-      <div className="claim-estimate-card__grid">
-        <div>
-          <span>{t("claim.estimate.distanceLabel", { defaultValue: "Approx distance" })}</span>
-          <strong>{distanceLabel}</strong>
-        </div>
-        <div>
-          <span>{t("claim.estimate.categoryLabel", { defaultValue: "Distance category" })}</span>
-          <strong>{formatDistanceBandLabel(estimate.distanceBand, t)}</strong>
-        </div>
-        <div className="claim-estimate-card__payout">
-          <span>{t("claim.estimate.payoutLabel", { defaultValue: "Possible compensation" })}</span>
-          <strong>
-            {estimate.estimatedCompensationEur
-              ? t("claim.estimate.upToAmount", {
-                defaultValue: "Up to €{{amount}}",
-                amount: estimate.estimatedCompensationEur,
-              })
-              : t("claim.estimate.pendingReview", { defaultValue: "Estimate pending review" })}
-          </strong>
-        </div>
-      </div>
-
-      <p className="claim-estimate-card__note">
-        {t("claim.estimate.note", {
-          defaultValue: "This is an indicative estimate only. It is not a guaranteed payout and will be reviewed by our team.",
-        })}
-      </p>
-    </section>
-  );
-}
-
 function PromoCard() {
   const { t } = useTranslation();
   const { lang } = useParams();
@@ -622,7 +549,7 @@ function FileRow({ file, done, onRemove }) {
   );
 }
 
-function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions, estimate }) {
+function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions }) {
   const { t } = useTranslation();
 
   return (
@@ -666,7 +593,6 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
           />
         </div>
       </section>
-      {data.departureAirportId && data.destinationAirportId ? <CompensationPreviewCard data={data} estimate={estimate} /> : null}
       <section className="claim-question">
         <h3>{t("claim.eligibility.whichAirline")}</h3>
         <SearchCombobox
@@ -1082,9 +1008,6 @@ function ClaimFlow() {
   const [departureMatches, setDepartureMatches] = useState([]);
   const [destinationMatches, setDestinationMatches] = useState([]);
   const [airlineMatches, setAirlineMatches] = useState([]);
-  const [selectedDepartureAirport, setSelectedDepartureAirport] = useState(null);
-  const [selectedDestinationAirport, setSelectedDestinationAirport] = useState(null);
-  const [distanceEstimate, setDistanceEstimate] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [syncError, setSyncError] = useState("");
   const [syncNotice, setSyncNotice] = useState("");
@@ -1164,37 +1087,6 @@ function ClaimFlow() {
     return () => window.clearTimeout(timeout);
   }, [data.airline, stage]);
 
-  useEffect(() => {
-    if (!data.departureAirportId || !data.destinationAirportId) {
-      setDistanceEstimate(null);
-      return;
-    }
-
-    if (!selectedDepartureAirport || !selectedDestinationAirport) {
-      setDistanceEstimate({
-        distanceKm: null,
-        distanceBand: "unknown",
-        estimatedCompensationEur: null,
-        currency: "EUR",
-        estimateStatus: "pending_review",
-        reasonCodes: ["selected_airports_missing_coordinates"],
-      });
-      return;
-    }
-
-    setDistanceEstimate(
-      calculateDistanceCompensationEstimate({
-        fromAirport: selectedDepartureAirport,
-        toAirport: selectedDestinationAirport,
-      }),
-    );
-  }, [
-    data.departureAirportId,
-    data.destinationAirportId,
-    selectedDepartureAirport,
-    selectedDestinationAirport,
-  ]);
-
   const onSelectOption = (name, selectedOption) => {
     const nextData = { ...data };
 
@@ -1202,14 +1094,12 @@ function ClaimFlow() {
       nextData.departure = selectedOption.label;
       nextData.departureAirportId = selectedOption.id || null;
       nextData.departureAirportSource = selectedOption.source || null;
-      setSelectedDepartureAirport(selectedOption);
     }
 
     if (name === "destination") {
       nextData.destination = selectedOption.label;
       nextData.destinationAirportId = selectedOption.id || null;
       nextData.destinationAirportSource = selectedOption.source || null;
-      setSelectedDestinationAirport(selectedOption);
     }
 
     if (name === "airline") {
@@ -1227,13 +1117,11 @@ function ClaimFlow() {
     if (name === "departure") {
       nextData.departureAirportId = null;
       nextData.departureAirportSource = null;
-      setSelectedDepartureAirport(null);
     }
 
     if (name === "destination") {
       nextData.destinationAirportId = null;
       nextData.destinationAirportSource = null;
-      setSelectedDestinationAirport(null);
     }
 
     if (name === "airline") {
@@ -1259,13 +1147,11 @@ function ClaimFlow() {
     if (name === "departure") {
       nextData.departureAirportId = null;
       nextData.departureAirportSource = null;
-      setSelectedDepartureAirport(null);
     }
 
     if (name === "destination") {
       nextData.destinationAirportId = null;
       nextData.destinationAirportSource = null;
-      setSelectedDestinationAirport(null);
     }
 
     if (name === "airline") {
@@ -1433,7 +1319,6 @@ function ClaimFlow() {
         onNext={(event) => submit("contact", event)}
         airportOptions={{ departure: departureMatches, destination: destinationMatches }}
         airlineOptions={airlineMatches}
-        estimate={distanceEstimate}
       />
     );
   };
