@@ -1,8 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, BarChart3, Briefcase, CircleAlert, Clock3, Download, Search, Wallet } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { fetchCasesModuleData, getDocumentDownloadUrl, updateCaseWorkflow } from "../../services/adminService.js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Download, FilterX, Plus, Search, X } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  createTask,
+  fetchCasesModuleData,
+  getDocumentDownloadUrl,
+  logAdminActivity,
+  updateCaseWorkflow,
+} from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
+import { AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
 
 const caseStatuses = [
@@ -29,39 +36,38 @@ const payoutStatuses = [
   "completed",
 ];
 
-function MetricCard({ icon: Icon, label, value }) {
-  return (
-    <article className="admin-metric">
-      <span><Icon size={22} strokeWidth={1.8} /></span>
-      <div>
-        <strong>{value}</strong>
-        <small>{label}</small>
-      </div>
-    </article>
-  );
-}
+const taskPriorities = ["low", "medium", "high", "urgent"];
 
-function formatDate(value) {
-  if (!value) return "-";
+function formatDateTime(value) {
+  if (!value) return "—";
   return new Date(value).toLocaleString();
 }
 
-function formatCurrency(value) {
-  return `${Number(value || 0).toFixed(0)} EUR`;
+function formatDate(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString();
+}
+
+function formatCaseReference(caseRow) {
+  if (caseRow?.case_code) return caseRow.case_code;
+  if (caseRow?.id) return `Case ${String(caseRow.id).slice(0, 8)}`;
+  return "Case";
+}
+
+function formatCurrency(value, currency = "EUR") {
+  if (value === null || value === undefined || value === "") return "Pending review";
+  return `€${Number(value || 0).toFixed(0)}${currency && currency !== "EUR" ? ` ${currency}` : ""}`;
 }
 
 function formatEstimateCurrency(value, currency = "EUR") {
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
-
-  return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
+  if (value === null || value === undefined || value === "") return "Estimate pending review";
+  return `Up to €${Number(value || 0).toFixed(0)}${currency && currency !== "EUR" ? ` ${currency}` : ""}`;
 }
 
 function formatEstimateStatus(status) {
   if (status === "calculated") return "Calculated";
   if (status === "manual_override") return "Manual override";
-  return "Pending review";
+  return "Estimate pending review";
 }
 
 function formatDistanceBand(band) {
@@ -71,31 +77,104 @@ function formatDistanceBand(band) {
   return "Unknown";
 }
 
-function extractReasonCodes(explanation) {
-  if (!explanation || typeof explanation !== "object") {
-    return [];
-  }
-
-  return Array.isArray(explanation.reason_codes) ? explanation.reason_codes.filter(Boolean) : [];
+function normalizeLabel(value) {
+  return String(value || "unknown")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-function daysBetween(start, end) {
-  if (!start || !end) return null;
-  const diff = new Date(end).getTime() - new Date(start).getTime();
-  if (!Number.isFinite(diff) || diff < 0) return null;
-  return diff / (1000 * 60 * 60 * 24);
+function getStatusTone(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (["approved", "paid", "closed", "completed", "payment_received", "customer_paid", "company_fee_collected"].includes(normalized)) {
+    return "success";
+  }
+  if (["rejected"].includes(normalized)) return "danger";
+  if (["documents_pending", "awaiting_response", "awaiting_payment", "submitted_to_airline", "escalated", "ready_to_submit"].includes(normalized)) {
+    return "warning";
+  }
+  return "neutral";
+}
+
+function getPriorityTone(priority) {
+  if (priority === "urgent") return "danger";
+  if (priority === "high") return "warning";
+  if (priority === "low") return "neutral";
+  return "success";
+}
+
+function getTaskStatusTone(status) {
+  if (status === "done") return "success";
+  if (status === "cancelled") return "danger";
+  if (status === "in_progress") return "warning";
+  return "neutral";
+}
+
+function getEstimateTone(status) {
+  if (status === "calculated") return "success";
+  if (status === "manual_override") return "warning";
+  return "neutral";
+}
+
+function deriveNextAction(caseRow, lead, finance, documents = []) {
+  if (!caseRow) return "Review case";
+  if (caseRow.status === "documents_pending" || documents.some((item) => item.status === "missing" || item.status === "requested")) {
+    return "Collect documents";
+  }
+  if (lead?.estimate_status === "pending_review") {
+    return "Review estimate";
+  }
+  if (caseRow.status === "ready_to_submit") {
+    return "Submit to airline";
+  }
+  if (caseRow.status === "submitted_to_airline" || caseRow.status === "awaiting_response") {
+    return "Wait for airline";
+  }
+  if ((finance?.payment_status || caseRow.payout_status) === "awaiting_payment") {
+    return "Collect payment";
+  }
+  if (caseRow.status === "approved" && (finance?.payment_status || caseRow.payout_status) !== "completed") {
+    return "Prepare payout";
+  }
+  if (["paid", "closed"].includes(caseRow.status)) {
+    return "Completed";
+  }
+  return "Review case";
+}
+
+function formatRouteLabel(caseRow) {
+  return `${caseRow?.route_from || "—"} → ${caseRow?.route_to || "—"}`;
+}
+
+function getSortTimestamp(caseRow) {
+  if (caseRow?.updated_at) return new Date(caseRow.updated_at).getTime();
+  if (caseRow?.created_at) return new Date(caseRow.created_at).getTime();
+  return 0;
 }
 
 function exportCasesCsv(rows) {
-  const headers = ["Case Code", "Status", "Payout Status", "Airline", "Route", "Compensation", "Created At"];
+  const headers = [
+    "Case Reference",
+    "Customer",
+    "Email",
+    "Route",
+    "Airline",
+    "Status",
+    "Payout Status",
+    "Owner",
+    "Next Action",
+    "Updated At",
+  ];
   const lines = rows.map((item) => [
-    item.case_code,
-    item.status,
-    item.payout_status,
+    item.reference,
+    item.customerName,
+    item.customerEmail,
+    item.routeLabel,
     item.airline,
-    `${item.route_from || "-"} -> ${item.route_to || "-"}`,
-    item.estimated_compensation,
-    item.created_at,
+    item.status,
+    item.financeStatus,
+    item.ownerLabel,
+    item.nextAction,
+    item.updated_at || item.created_at,
   ]);
 
   const csv = [headers, ...lines]
@@ -113,68 +192,39 @@ function exportCasesCsv(rows) {
   URL.revokeObjectURL(url);
 }
 
-function StatusChart({ rows }) {
-  const counts = caseStatuses.map((status) => ({
-    status,
-    value: rows.filter((row) => row.status === status).length,
-  }));
-  const max = Math.max(1, ...counts.map((item) => item.value));
-
-  return (
-    <div className="admin-cases__chart">
-      {counts.map((item) => (
-        <article key={item.status}>
-          <div><span style={{ width: `${(item.value / max) * 100}%` }} /></div>
-          <strong>{item.status}</strong>
-          <small>{item.value}</small>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function AdminCases() {
+export default function AdminCases() {
   const { hasPermission } = useAdminAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [moduleData, setModuleData] = useState(null);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [payoutFilter, setPayoutFilter] = useState("all");
-  const [managerFilter, setManagerFilter] = useState("all");
-  const [page, setPage] = useState(1);
+  const [ownerFilter, setOwnerFilter] = useState("all");
+  const [airlineFilter, setAirlineFilter] = useState("all");
+  const [financeFilter, setFinanceFilter] = useState("all");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskForm, setTaskForm] = useState({
+    title: "",
+    description: "",
+    assigned_user_id: "",
+    priority: "medium",
+    due_date: "",
+  });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [downloadingDocumentId, setDownloadingDocumentId] = useState("");
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [activeDownloadId, setActiveDownloadId] = useState("");
+  const lastViewedCaseIdRef = useRef("");
 
-  const pageSize = 12;
-
-  const loadCases = async (nextPage = page) => {
+  const loadCases = async () => {
     setError("");
     setIsLoading(true);
-
     try {
-      const next = await fetchCasesModuleData({
-        page: nextPage,
-        pageSize,
-        filters: {
-          search,
-          status: statusFilter,
-          payoutStatus: payoutFilter,
-          managerId: managerFilter,
-        },
-      });
+      const next = await fetchCasesModuleData({ page: 1, pageSize: 500 });
       setModuleData(next);
-      setPage(nextPage);
-      const requestedCaseId = searchParams.get("case");
-      if (next.cases.length === 0) {
-        setSelectedCaseId(null);
-      } else if (requestedCaseId && next.cases.some((item) => item.id === requestedCaseId)) {
-        setSelectedCaseId(requestedCaseId);
-      } else if (!selectedCaseId || !next.cases.some((item) => item.id === selectedCaseId)) {
-        setSelectedCaseId(next.cases[0].id);
-      }
     } catch (nextError) {
       setError(nextError.message || "Could not load cases module.");
     } finally {
@@ -183,103 +233,185 @@ function AdminCases() {
   };
 
   useEffect(() => {
-    loadCases(1);
-  }, [search, statusFilter, payoutFilter, managerFilter]);
+    loadCases();
+  }, []);
 
-  const selectedCase = useMemo(
-    () => moduleData?.cases?.find((item) => item.id === selectedCaseId) || moduleData?.cases?.[0] || null,
-    [moduleData, selectedCaseId],
-  );
-
-  const selectedLead = useMemo(
-    () => moduleData?.leads?.find((lead) => lead.id === selectedCase?.lead_id) || null,
-    [moduleData, selectedCase],
-  );
-
-  const selectedCustomer = useMemo(
-    () => moduleData?.customers?.find((customer) => customer.id === selectedCase?.customer_id) || null,
-    [moduleData, selectedCase],
-  );
-
-  const selectedFinance = useMemo(
-    () => moduleData?.finance?.find((item) => item.case_id === selectedCase?.id) || null,
-    [moduleData, selectedCase],
-  );
+  useEffect(() => {
+    const deepLinkedCaseId = searchParams.get("case");
+    if (deepLinkedCaseId) {
+      setSelectedCaseId(deepLinkedCaseId);
+      setPreviewOpen(true);
+    }
+  }, [searchParams]);
 
   const leadById = useMemo(
     () => new Map((moduleData?.leads || []).map((lead) => [lead.id, lead])),
-    [moduleData],
+    [moduleData?.leads],
+  );
+  const customerById = useMemo(
+    () => new Map((moduleData?.customers || []).map((customer) => [customer.id, customer])),
+    [moduleData?.customers],
+  );
+  const managerById = useMemo(
+    () => new Map((moduleData?.managers || []).map((manager) => [manager.id, manager])),
+    [moduleData?.managers],
+  );
+  const financeByCaseId = useMemo(
+    () => new Map((moduleData?.finance || []).map((item) => [item.case_id, item])),
+    [moduleData?.finance],
+  );
+  const documentsByCaseId = useMemo(() => {
+    const map = new Map();
+    (moduleData?.documents || []).forEach((item) => {
+      const current = map.get(item.case_id) || [];
+      current.push(item);
+      map.set(item.case_id, current);
+    });
+    return map;
+  }, [moduleData?.documents]);
+  const taskIdsByCaseId = useMemo(() => {
+    const map = new Map();
+    (moduleData?.caseTasks || []).forEach((item) => {
+      const current = map.get(item.case_id) || [];
+      current.push(item.task_id);
+      map.set(item.case_id, current);
+    });
+    return map;
+  }, [moduleData?.caseTasks]);
+  const communicationIdsByCaseId = useMemo(() => {
+    const map = new Map();
+    (moduleData?.caseCommunications || []).forEach((item) => {
+      const current = map.get(item.case_id) || [];
+      current.push(item.communication_id);
+      map.set(item.case_id, current);
+    });
+    return map;
+  }, [moduleData?.caseCommunications]);
+  const taskById = useMemo(
+    () => new Map((moduleData?.tasks || []).map((task) => [task.id, task])),
+    [moduleData?.tasks],
+  );
+  const communicationById = useMemo(
+    () => new Map((moduleData?.communications || []).map((item) => [item.id, item])),
+    [moduleData?.communications],
+  );
+
+  const casesWithMeta = useMemo(() => (
+    (moduleData?.cases || []).map((caseRow) => {
+      const lead = leadById.get(caseRow.lead_id) || null;
+      const customer = customerById.get(caseRow.customer_id) || null;
+      const owner = managerById.get(caseRow.assigned_manager_id) || null;
+      const finance = financeByCaseId.get(caseRow.id) || null;
+      const documents = documentsByCaseId.get(caseRow.id) || [];
+      const nextAction = deriveNextAction(caseRow, lead, finance, documents);
+      const financeStatus = finance?.payment_status || caseRow.payout_status || "not_started";
+
+      return {
+        ...caseRow,
+        lead,
+        customer,
+        owner,
+        finance,
+        documents,
+        nextAction,
+        financeStatus,
+        reference: formatCaseReference(caseRow),
+        customerName: customer?.full_name || lead?.full_name || "Unknown customer",
+        customerEmail: customer?.email || lead?.email || "No email",
+        ownerLabel: owner?.full_name || owner?.email || "Unassigned",
+        routeLabel: formatRouteLabel(caseRow),
+        estimatedLabel: lead
+          ? formatEstimateCurrency(lead.estimated_compensation_eur, lead.compensation_currency)
+          : formatCurrency(caseRow.estimated_compensation),
+        sortTimestamp: getSortTimestamp(caseRow),
+      };
+    })
+  ), [customerById, documentsByCaseId, financeByCaseId, leadById, managerById, moduleData?.cases]);
+
+  const airlineOptions = useMemo(() => {
+    const values = Array.from(new Set(casesWithMeta.map((item) => item.airline).filter(Boolean)));
+    return values.sort((left, right) => String(left).localeCompare(String(right)));
+  }, [casesWithMeta]);
+
+  const filteredCases = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const fromMs = dateRange.from ? new Date(`${dateRange.from}T00:00:00`).getTime() : null;
+    const toMs = dateRange.to ? new Date(`${dateRange.to}T23:59:59`).getTime() : null;
+
+    return casesWithMeta.filter((item) => {
+      const matchesSearch = !query || [
+        item.reference,
+        item.customerName,
+        item.customerEmail,
+        item.routeLabel,
+        item.airline,
+        item.ownerLabel,
+      ].some((value) => String(value || "").toLowerCase().includes(query));
+
+      const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+      const matchesOwner = ownerFilter === "all" || String(item.assigned_manager_id || "") === ownerFilter;
+      const matchesAirline = airlineFilter === "all" || item.airline === airlineFilter;
+      const matchesFinance = financeFilter === "all" || item.financeStatus === financeFilter;
+      const updatedAtMs = item.sortTimestamp || 0;
+      const matchesDateFrom = !fromMs || (updatedAtMs && updatedAtMs >= fromMs);
+      const matchesDateTo = !toMs || (updatedAtMs && updatedAtMs <= toMs);
+
+      return matchesSearch && matchesStatus && matchesOwner && matchesAirline && matchesFinance && matchesDateFrom && matchesDateTo;
+    }).sort((left, right) => right.sortTimestamp - left.sortTimestamp);
+  }, [airlineFilter, casesWithMeta, dateRange.from, dateRange.to, financeFilter, ownerFilter, search, statusFilter]);
+
+  const selectedCase = useMemo(
+    () => filteredCases.find((item) => item.id === selectedCaseId)
+      || casesWithMeta.find((item) => item.id === selectedCaseId)
+      || null,
+    [casesWithMeta, filteredCases, selectedCaseId],
   );
 
   const selectedDocuments = useMemo(
-    () => (moduleData?.documents || []).filter((item) => item.case_id === selectedCase?.id),
-    [moduleData, selectedCase],
+    () => selectedCase?.documents || [],
+    [selectedCase],
   );
-
+  const selectedTasks = useMemo(() => {
+    const taskIds = taskIdsByCaseId.get(selectedCase?.id) || [];
+    return taskIds
+      .map((taskId) => taskById.get(taskId))
+      .filter(Boolean)
+      .sort((left, right) => {
+        const leftTs = left?.due_date ? new Date(left.due_date).getTime() : 0;
+        const rightTs = right?.due_date ? new Date(right.due_date).getTime() : 0;
+        return leftTs - rightTs;
+      });
+  }, [selectedCase?.id, taskById, taskIdsByCaseId]);
+  const selectedCommunications = useMemo(() => {
+    const ids = communicationIdsByCaseId.get(selectedCase?.id) || [];
+    return ids
+      .map((communicationId) => communicationById.get(communicationId))
+      .filter(Boolean)
+      .slice(0, 6);
+  }, [communicationById, communicationIdsByCaseId, selectedCase?.id]);
   const selectedStatusHistory = useMemo(
     () => (moduleData?.statusHistory || []).filter((item) => item.case_id === selectedCase?.id),
-    [moduleData, selectedCase],
+    [moduleData?.statusHistory, selectedCase?.id],
   );
 
-  const selectedTaskIds = useMemo(
-    () => new Set((moduleData?.caseTasks || []).filter((item) => item.case_id === selectedCase?.id).map((item) => item.task_id)),
-    [moduleData, selectedCase],
-  );
-
-  const selectedTasks = useMemo(
-    () => (moduleData?.tasks || []).filter((task) => selectedTaskIds.has(task.id)),
-    [moduleData, selectedTaskIds],
-  );
-
-  const selectedCommunicationIds = useMemo(
-    () => new Set((moduleData?.caseCommunications || []).filter((item) => item.case_id === selectedCase?.id).map((item) => item.communication_id)),
-    [moduleData, selectedCase],
-  );
-
-  const selectedCommunications = useMemo(
-    () => (moduleData?.communications || []).filter((item) => selectedCommunicationIds.has(item.id)),
-    [moduleData, selectedCommunicationIds],
-  );
-
-  const metrics = useMemo(() => {
-    const rows = moduleData?.metricsRows || [];
-    const total = rows.length;
-    const active = rows.filter((row) => !["approved", "rejected", "paid", "closed"].includes(row.status)).length;
-    const approved = rows.filter((row) => row.status === "approved").length;
-    const rejected = rows.filter((row) => row.status === "rejected").length;
-    const paid = rows.filter((row) => row.status === "paid").length;
-    const avgComp = total ? rows.reduce((sum, row) => sum + Number(row.estimated_compensation || 0), 0) / total : 0;
-    const resolutionRows = rows
-      .map((row) => daysBetween(row.created_at, row.closed_at || row.paid_at || row.approved_at || row.rejected_at))
-      .filter((value) => value !== null);
-    const avgResolution = resolutionRows.length ? resolutionRows.reduce((sum, value) => sum + value, 0) / resolutionRows.length : 0;
-
-    return {
-      total,
-      active,
-      approved,
-      rejected,
-      paid,
-      avgResolution,
-      approvalRate: total ? (approved / total) * 100 : 0,
-      avgComp,
-      avgDuration: avgResolution,
-    };
-  }, [moduleData]);
-
-  const pagination = useMemo(() => ({
-    page,
-    totalPages: Math.max(1, Math.ceil((moduleData?.totalCount || 0) / pageSize)),
-  }), [moduleData, page]);
+  useEffect(() => {
+    if (!selectedCase?.id || isLoading || lastViewedCaseIdRef.current === selectedCase.id) return;
+    lastViewedCaseIdRef.current = selectedCase.id;
+    void logAdminActivity("view_case", "case", selectedCase.id, {
+      module: "cases",
+      case_code: selectedCase.case_code || null,
+      status: selectedCase.status || null,
+      payout_status: selectedCase.payout_status || null,
+    });
+  }, [isLoading, selectedCase]);
 
   const updateCase = async (updates) => {
     if (!selectedCase) return;
     setError("");
     setIsSaving(true);
-
     try {
       await updateCaseWorkflow(selectedCase.id, updates);
-      await loadCases(page);
+      await loadCases();
     } catch (nextError) {
       setError(nextError.message || "Could not update case.");
     } finally {
@@ -287,320 +419,604 @@ function AdminCases() {
     }
   };
 
-  const selectCase = (caseId) => {
+  const openCase = (caseId) => {
     setSelectedCaseId(caseId);
+    setPreviewOpen(true);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("case", caseId);
     setSearchParams(nextParams, { replace: true });
   };
 
-  const downloadDocument = async (document) => {
-    if (!document?.file_path) return;
+  const closePreview = () => {
+    setPreviewOpen(false);
+    setTaskModalOpen(false);
+    setSelectedCaseId(null);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("case");
+    setSearchParams(nextParams, { replace: true });
+  };
 
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setOwnerFilter("all");
+    setAirlineFilter("all");
+    setFinanceFilter("all");
+    setDateRange({ from: "", to: "" });
+  };
+
+  const downloadDocument = async (file) => {
+    if (!file?.file_path) return;
     setError("");
-    setDownloadingDocumentId(document.id);
-
+    setActiveDownloadId(file.id);
     try {
-      const url = await getDocumentDownloadUrl({ ...document, bucket: "case-documents" });
+      const url = await getDocumentDownloadUrl({ ...file, bucket: "case-documents" });
       const link = document.createElement("a");
       link.href = url;
-      link.download = document.file_name || "case-document";
+      link.download = file.file_name || "case-document";
       link.rel = "noopener";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      void logAdminActivity("download_document", "case_document", file.id, {
+        module: "documents",
+        owner_type: "case",
+        owner_id: file.case_id || null,
+        document_type: file.document_type || null,
+      });
     } catch (nextError) {
       setError(nextError.message || "Could not download case document.");
     } finally {
-      setDownloadingDocumentId("");
+      setActiveDownloadId("");
     }
   };
 
+  const openTaskModal = () => {
+    if (!selectedCase) return;
+    setTaskForm({
+      title: `Follow up ${formatCaseReference(selectedCase)}`,
+      description: "",
+      assigned_user_id: selectedCase.assigned_manager_id || "",
+      priority: selectedCase.priority || "medium",
+      due_date: "",
+    });
+    setTaskModalOpen(true);
+  };
+
+  const closeTaskModal = () => {
+    setTaskModalOpen(false);
+  };
+
+  const submitTask = async (event) => {
+    event.preventDefault();
+    if (!selectedCase || !taskForm.title.trim()) {
+      setError("Task title is required.");
+      return;
+    }
+
+    setError("");
+    setIsCreatingTask(true);
+    try {
+      await createTask({
+        title: taskForm.title.trim(),
+        description: taskForm.description.trim() || null,
+        related_entity_type: "case",
+        related_entity_id: selectedCase.id,
+        assigned_user_id: taskForm.assigned_user_id || null,
+        priority: taskForm.priority,
+        due_date: taskForm.due_date || null,
+        status: "todo",
+      });
+      setTaskModalOpen(false);
+      await loadCases();
+    } catch (nextError) {
+      setError(nextError.message || "Could not create task.");
+    } finally {
+      setIsCreatingTask(false);
+    }
+  };
+
+  const listCountLabel = `${filteredCases.length} case${filteredCases.length === 1 ? "" : "s"}`;
+  const selectedFinanceStatus = selectedCase?.finance?.payment_status || selectedCase?.payout_status || "not_started";
+  const internalNotes = [selectedCase?.finance?.notes, selectedCase?.legal_basis].filter(Boolean);
+
   return (
     <div className="admin-page admin-cases-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><Briefcase size={16} /> Core Operations</span>
-          <h1>Cases</h1>
-          <p>
-            Manage compensation cases from submission through resolution, track financial outcomes, and inspect all linked
-            operational data in one place.
-          </p>
-        </div>
-      </header>
-
-      {error && <p className="admin-message is-error">{error}</p>}
-      {moduleData && !moduleData.supportsCaseModuleV1 && (
+      {error ? <p className="admin-message is-error">{error}</p> : null}
+      {moduleData && !moduleData.supportsCaseModuleV1 ? (
         <p className="admin-message">
           Cases schema is not available yet. Run `006_core_operations_schema_v1.sql` and `007_cases_module_v1.sql` in Supabase
           to unlock the full cases module.
         </p>
-      )}
+      ) : null}
 
-      {isLoading ? (
-        <p className="admin-message">Loading cases...</p>
-      ) : (
-        <>
-          <section className="admin-metrics">
-            <MetricCard icon={Briefcase} label="Total cases" value={metrics.total} />
-            <MetricCard icon={Clock3} label="Active cases" value={metrics.active} />
-            <MetricCard icon={BadgeCheck} label="Approved cases" value={metrics.approved} />
-            <MetricCard icon={CircleAlert} label="Rejected cases" value={metrics.rejected} />
-            <MetricCard icon={Wallet} label="Paid cases" value={metrics.paid} />
-            <MetricCard icon={BarChart3} label="Avg. resolution time" value={`${metrics.avgResolution.toFixed(1)} d`} />
-          </section>
+      <section className="admin-cases-page__toolbar">
+        <label className="admin-cases-page__search">
+          <Search size={16} />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search case, customer, email, route, airline"
+          />
+        </label>
 
-          <section className="admin-cases__widgets">
-            <section className="admin-panel">
-              <div className="admin-panel__head">
-                <div>
-                  <h2>Cases by status</h2>
-                  <p>Live distribution of the current case pipeline.</p>
-                </div>
-              </div>
-              <div className="admin-cases__widget-body">
-                <StatusChart rows={moduleData?.metricsRows || []} />
-              </div>
-            </section>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <option value="all">All case statuses</option>
+          {caseStatuses.map((status) => (
+            <option key={status} value={status}>{normalizeLabel(status)}</option>
+          ))}
+        </select>
 
-            <section className="admin-panel">
-              <div className="admin-panel__head">
-                <div>
-                  <h2>Case widgets</h2>
-                  <p>Operational performance indicators for the cases workflow.</p>
-                </div>
-              </div>
-              <div className="admin-cases__mini-stats">
-                <article><strong>{metrics.approvalRate.toFixed(1)}%</strong><span>Approval rate</span></article>
-                <article><strong>{formatCurrency(metrics.avgComp)}</strong><span>Average compensation</span></article>
-                <article><strong>{metrics.avgDuration.toFixed(1)} d</strong><span>Average case duration</span></article>
-              </div>
-            </section>
-          </section>
+        <select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}>
+          <option value="all">All owners</option>
+          {(moduleData?.managers || []).map((manager) => (
+            <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
+          ))}
+        </select>
 
-          <section className="admin-panel">
-            <div className="admin-panel__head">
-              <div>
-                <h2>Cases table</h2>
-                <p>Optimized list view with filters, paging, and quick actions.</p>
-              </div>
-              <button className="admin-link-button" type="button" onClick={() => exportCasesCsv(moduleData?.cases || [])}>
-                <Download size={14} />
-                <span>Export CSV</span>
-              </button>
+        <select value={airlineFilter} onChange={(event) => setAirlineFilter(event.target.value)}>
+          <option value="all">All airlines</option>
+          {airlineOptions.map((airline) => (
+            <option key={airline} value={airline}>{airline}</option>
+          ))}
+        </select>
+
+        <select value={financeFilter} onChange={(event) => setFinanceFilter(event.target.value)}>
+          <option value="all">All finance states</option>
+          {payoutStatuses.map((status) => (
+            <option key={status} value={status}>{normalizeLabel(status)}</option>
+          ))}
+        </select>
+
+        <label className="admin-cases-page__date-field">
+          <span>From</span>
+          <input
+            type="date"
+            value={dateRange.from}
+            onChange={(event) => setDateRange((current) => ({ ...current, from: event.target.value }))}
+          />
+        </label>
+
+        <label className="admin-cases-page__date-field">
+          <span>To</span>
+          <input
+            type="date"
+            value={dateRange.to}
+            onChange={(event) => setDateRange((current) => ({ ...current, to: event.target.value }))}
+          />
+        </label>
+
+        <button type="button" className="admin-cases-page__clear" onClick={clearFilters}>
+          <FilterX size={15} />
+          <span>Clear filters</span>
+        </button>
+
+        <button
+          type="button"
+          className="admin-cases-page__export"
+          onClick={() => exportCasesCsv(filteredCases)}
+          disabled={!filteredCases.length}
+        >
+          <Download size={15} />
+          <span>Export CSV</span>
+        </button>
+      </section>
+
+      <section className={`admin-cases-page__workspace${selectedCase ? " has-selection" : ""}${previewOpen ? " is-preview-open" : ""}`}>
+        <div className="admin-cases-page__list-pane">
+          <header className="admin-cases-page__list-header">
+            <div>
+              <span className="admin-cases-page__eyebrow">Case inbox</span>
+              <h2>{listCountLabel}</h2>
             </div>
-            <div className="admin-cases__filters">
-              <label className="admin-search">
-                <Search size={16} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search case, airline, route" />
-              </label>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                <option value="all">All statuses</option>
-                {caseStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-              </select>
-              <select value={payoutFilter} onChange={(event) => setPayoutFilter(event.target.value)}>
-                <option value="all">All payout statuses</option>
-                {payoutStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-              </select>
-              <select value={managerFilter} onChange={(event) => setManagerFilter(event.target.value)}>
-                <option value="all">All managers</option>
-                {(moduleData?.managers || []).map((manager) => (
-                  <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
-                ))}
-              </select>
-            </div>
-            <div className="admin-cases__grid">
-              <section className="admin-panel admin-cases__table">
-                <div className="admin-table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Case</th>
-                        <th>Status</th>
-                        <th>Payout</th>
-                        <th>Airline</th>
-                        <th>Route</th>
-                        <th>Compensation</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(moduleData?.cases || []).map((item) => (
-                        <tr key={item.id} className={selectedCase?.id === item.id ? "is-selected" : ""} onClick={() => selectCase(item.id)}>
-                          <td>{item.case_code || item.id.slice(0, 8)}</td>
-                          <td>{item.status}</td>
-                          <td>{item.payout_status}</td>
-                          <td>{item.airline || "-"}</td>
-                          <td>{item.route_from || "-"} → {item.route_to || "-"}</td>
-                          <td>
-                            <div className="admin-case-estimate-cell">
-                              <span>{formatCurrency(item.estimated_compensation)}</span>
-                              {leadById.get(item.lead_id)?.estimate_status === "pending_review" ? <small>Pending review</small> : null}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="admin-cases__pagination">
-                  <button className="admin-link-button" type="button" disabled={pagination.page <= 1} onClick={() => loadCases(page - 1)}>Previous</button>
-                  <span>Page {pagination.page} / {pagination.totalPages}</span>
-                  <button className="admin-link-button" type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => loadCases(page + 1)}>Next</button>
-                </div>
-              </section>
+            <p>Most recently updated cases first.</p>
+          </header>
 
-              <section className="admin-panel admin-cases__detail">
-                <div className="admin-panel__head">
+          <div className="admin-cases-page__list-scroll">
+            {isLoading ? (
+              <div className="admin-cases-page__state">Loading cases...</div>
+            ) : !filteredCases.length ? (
+              <div className="admin-cases-page__state">No cases yet</div>
+            ) : (
+              filteredCases.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`admin-cases-page__case-row${selectedCase?.id === item.id ? " is-active" : ""}`}
+                  onClick={() => openCase(item.id)}
+                >
+                  <div className="admin-cases-page__case-main">
+                    <div className="admin-cases-page__case-topline">
+                      <strong>{item.reference}</strong>
+                      <span>{formatDateTime(item.updated_at || item.created_at)}</span>
+                    </div>
+
+                    <div className="admin-cases-page__case-customer">
+                      <span>{item.customerName}</span>
+                      <small>{item.customerEmail}</small>
+                    </div>
+
+                    <div className="admin-cases-page__case-route">
+                      <span>{item.routeLabel}</span>
+                      <small>{item.airline || "No airline"}{item.flight_date ? ` • ${formatDate(item.flight_date)}` : ""}</small>
+                    </div>
+                  </div>
+
+                  <div className="admin-cases-page__case-side">
+                    <div className="admin-cases-page__case-badges">
+                      <AdminStatusBadge tone={getStatusTone(item.status)}>{normalizeLabel(item.status)}</AdminStatusBadge>
+                      <AdminStatusBadge tone={getStatusTone(item.financeStatus)}>{normalizeLabel(item.financeStatus)}</AdminStatusBadge>
+                      {item.priority ? <AdminStatusBadge tone={getPriorityTone(item.priority)}>{normalizeLabel(item.priority)}</AdminStatusBadge> : null}
+                    </div>
+
+                    <div className="admin-cases-page__case-meta">
+                      <span>{item.nextAction}</span>
+                      <span>{item.ownerLabel}</span>
+                      <span>{item.estimatedLabel}</span>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {selectedCase && previewOpen ? (
+          <button type="button" className="admin-cases-page__overlay" onClick={closePreview} aria-label="Close case preview" />
+        ) : null}
+
+        <aside className={`admin-cases-page__preview${selectedCase && previewOpen ? " is-open" : ""}`}>
+          {!selectedCase ? (
+            <div className="admin-cases-page__empty-preview">
+              <strong>Select a case to preview details</strong>
+              <p>Choose a case from the list to inspect customer, route, documents, finance, communications, tasks, and operational status.</p>
+            </div>
+          ) : (
+            <div className="admin-cases-page__preview-inner">
+              <header className="admin-cases-page__preview-header">
+                <div>
+                  <span className="admin-cases-page__eyebrow">Case preview</span>
+                  <h3>{formatCaseReference(selectedCase)}</h3>
+                  <p>{selectedCase.customerName} • Updated {formatDateTime(selectedCase.updated_at || selectedCase.created_at)}</p>
+                </div>
+                <div className="admin-cases-page__preview-actions">
+                  <button
+                    className="btn btn--primary"
+                    type="button"
+                    onClick={openTaskModal}
+                    disabled={!hasPermission("tasks.edit") || isCreatingTask}
+                    title={hasPermission("tasks.edit") ? "Create task" : "You do not have permission to create tasks."}
+                  >
+                    <Plus size={15} />
+                    <span>Create task</span>
+                  </button>
+                  <button type="button" className="admin-cases-page__close" onClick={closePreview} aria-label="Close preview">
+                    <X size={16} />
+                  </button>
+                </div>
+              </header>
+
+              <div className="admin-cases-page__preview-scroll">
+                <section className="admin-cases-page__identity">
                   <div>
-                    <h2>Case detail</h2>
-                    <p>{selectedCase ? `Case ${selectedCase.case_code || selectedCase.id.slice(0, 8)}` : "Select a case to inspect."}</p>
+                    <h4>{selectedCase.customerName}</h4>
+                    <p>{selectedCase.customerEmail}{selectedCase.customer?.phone ? ` • ${selectedCase.customer.phone}` : ""}</p>
                   </div>
-                </div>
+                  <div className="admin-cases-page__case-badges">
+                    <AdminStatusBadge tone={getStatusTone(selectedCase.status)}>{normalizeLabel(selectedCase.status)}</AdminStatusBadge>
+                    <AdminStatusBadge tone={getStatusTone(selectedFinanceStatus)}>{normalizeLabel(selectedFinanceStatus)}</AdminStatusBadge>
+                    {selectedCase.priority ? <AdminStatusBadge tone={getPriorityTone(selectedCase.priority)}>{normalizeLabel(selectedCase.priority)}</AdminStatusBadge> : null}
+                  </div>
+                </section>
 
-                {selectedCase ? (
-                  <div className="admin-cases__detail-body">
-                    <div className="admin-cases__summary">
-                      <article><strong>Lead link</strong><span>{selectedLead?.lead_code || selectedCase.lead_id || "-"}</span></article>
-                      <article><strong>Customer</strong><span>{selectedCustomer?.full_name || selectedCase.customer_id || "-"}</span></article>
-                      <article><strong>Airline</strong><span>{selectedCase.airline || "-"}</span></article>
-                      <article><strong>Route</strong><span>{selectedCase.route_from || "-"} → {selectedCase.route_to || "-"}</span></article>
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Customer</h4>
+                  </div>
+                  <div className="admin-cases-page__meta-grid">
+                    <article><strong>Full name</strong><span>{selectedCase.customerName}</span></article>
+                    <article><strong>Email</strong><span>{selectedCase.customerEmail}</span></article>
+                    <article><strong>Phone</strong><span>{selectedCase.customer?.phone || selectedCase.lead?.phone || "—"}</span></article>
+                    <article>
+                      <strong>Client record</strong>
+                      <span>
+                        {selectedCase.customer_id ? <Link to={`/admin/customers?customer=${selectedCase.customer_id}`}>Open customer</Link> : "Not linked"}
+                      </span>
+                    </article>
+                  </div>
+                </section>
+
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Route / Flight</h4>
+                  </div>
+                  <div className="admin-cases-page__meta-grid">
+                    <article><strong>Departure airport</strong><span>{selectedCase.route_from || selectedCase.lead?.departure_airport || "—"}</span></article>
+                    <article><strong>Arrival airport</strong><span>{selectedCase.route_to || selectedCase.lead?.arrival_airport || "—"}</span></article>
+                    <article><strong>Flight date</strong><span>{formatDate(selectedCase.flight_date)}</span></article>
+                    <article><strong>Airline</strong><span>{selectedCase.airline || "—"}</span></article>
+                    <article><strong>Flight number</strong><span>Not configured</span></article>
+                    <article><strong>Route type</strong><span>Not configured</span></article>
+                  </div>
+                </section>
+
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Case status</h4>
+                  </div>
+                  <div className="admin-cases-page__meta-grid">
+                    <article><strong>Current status</strong><span>{normalizeLabel(selectedCase.status)}</span></article>
+                    <article><strong>Owner</strong><span>{selectedCase.ownerLabel}</span></article>
+                    <article><strong>Next action</strong><span>{selectedCase.nextAction}</span></article>
+                    <article><strong>Priority</strong><span>{selectedCase.priority ? normalizeLabel(selectedCase.priority) : "Not configured"}</span></article>
+                  </div>
+
+                  <div className="admin-cases-page__workflow-grid">
+                    <label>
+                      <span>Case status</span>
+                      <select
+                        value={selectedCase.status || "draft"}
+                        onChange={(event) => updateCase({ status: event.target.value })}
+                        disabled={!hasPermission("cases.update") || isSaving}
+                      >
+                        {caseStatuses.map((status) => <option key={status} value={status}>{normalizeLabel(status)}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Finance status</span>
+                      <select
+                        value={selectedCase.payout_status || "not_started"}
+                        onChange={(event) => updateCase({ payout_status: event.target.value })}
+                        disabled={!hasPermission("cases.update") || isSaving}
+                      >
+                        {payoutStatuses.map((status) => <option key={status} value={status}>{normalizeLabel(status)}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Owner</span>
+                      <select
+                        value={selectedCase.assigned_manager_id || ""}
+                        onChange={(event) => updateCase({ assigned_manager_id: event.target.value || null })}
+                        disabled={!hasPermission("cases.update") || isSaving}
+                      >
+                        <option value="">Unassigned</option>
+                        {(moduleData?.managers || []).map((manager) => (
+                          <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </section>
+
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Compensation / Finance</h4>
+                  </div>
+                  <div className="admin-cases-page__meta-grid">
+                    <article><strong>Estimated compensation</strong><span>{selectedCase.lead ? formatEstimateCurrency(selectedCase.lead.estimated_compensation_eur, selectedCase.lead.compensation_currency) : formatCurrency(selectedCase.estimated_compensation)}</span></article>
+                    <article><strong>Distance</strong><span>{selectedCase.lead?.distance_km ? `${Math.round(Number(selectedCase.lead.distance_km))} km` : "Pending review"}</span></article>
+                    <article><strong>Distance band</strong><span>{selectedCase.lead ? formatDistanceBand(selectedCase.lead.distance_band) : "Pending review"}</span></article>
+                    <article><strong>Estimate status</strong><span>{selectedCase.lead ? formatEstimateStatus(selectedCase.lead.estimate_status) : "Estimate pending review"}</span></article>
+                    <article><strong>Recovered amount</strong><span>{selectedCase.finance ? formatCurrency(selectedCase.finance.compensation_amount, selectedCase.finance.currency) : "Finance details not configured yet"}</span></article>
+                    <article><strong>Payout status</strong><span>{normalizeLabel(selectedFinanceStatus)}</span></article>
+                    <article><strong>Company fee / revenue</strong><span>{selectedCase.finance ? formatCurrency(selectedCase.finance.company_fee, selectedCase.finance.currency) : "Not configured"}</span></article>
+                    <article><strong>Customer payout</strong><span>{selectedCase.finance ? formatCurrency(selectedCase.finance.customer_payout, selectedCase.finance.currency) : "Not configured"}</span></article>
+                  </div>
+                  {!selectedCase.finance && !selectedCase.lead ? (
+                    <p className="admin-cases-page__empty-copy">Finance details not configured yet</p>
+                  ) : null}
+                  {selectedCase.lead ? (
+                    <div className="admin-cases-page__finance-tags">
+                      <AdminStatusBadge tone={getEstimateTone(selectedCase.lead.estimate_status)}>{formatEstimateStatus(selectedCase.lead.estimate_status)}</AdminStatusBadge>
                     </div>
+                  ) : null}
+                </section>
 
-                    <div className="admin-cases__actions">
-                      <label>
-                        <span>Case status</span>
-                        <select value={selectedCase.status || "draft"} onChange={(event) => updateCase({ status: event.target.value })} disabled={!hasPermission("cases.edit") || isSaving}>
-                          {caseStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                        </select>
-                      </label>
-                      <label>
-                        <span>Payout status</span>
-                        <select value={selectedCase.payout_status || "not_started"} onChange={(event) => updateCase({ payout_status: event.target.value })} disabled={!hasPermission("cases.edit") || isSaving}>
-                          {payoutStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-                        </select>
-                      </label>
-                      <label>
-                        <span>Assigned manager</span>
-                        <select value={selectedCase.assigned_manager_id || ""} onChange={(event) => updateCase({ assigned_manager_id: event.target.value || null })} disabled={!hasPermission("cases.assign") || isSaving}>
-                          <option value="">Unassigned</option>
-                          {(moduleData?.managers || []).map((manager) => (
-                            <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <section className="admin-cases__section">
-                      <h3>Compensation estimate</h3>
-                      {selectedLead ? (
-                        <>
-                          <div className="admin-cases__stack">
-                            <article><strong>Calculated distance</strong><span>{selectedLead.distance_km ? `${Math.round(Number(selectedLead.distance_km))} km` : "-"}</span></article>
-                            <article><strong>Distance band</strong><span>{formatDistanceBand(selectedLead.distance_band)}</span></article>
-                            <article><strong>Estimated compensation</strong><span>{formatEstimateCurrency(selectedLead.estimated_compensation_eur, selectedLead.compensation_currency)}</span></article>
-                            <article><strong>Estimate status</strong><span className={selectedLead.estimate_status === "pending_review" ? "admin-estimate-status is-pending" : "admin-estimate-status"}>{formatEstimateStatus(selectedLead.estimate_status)}</span></article>
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Documents</h4>
+                  </div>
+                  {selectedDocuments.length ? (
+                    <div className="admin-cases-page__timeline">
+                      {selectedDocuments.map((item) => (
+                        <article key={item.id}>
+                          <div>
+                            <strong>{item.file_name || item.document_type || "Case document"}</strong>
+                            <p>{item.document_type || "—"} • {normalizeLabel(item.status || "uploaded")} • {formatDateTime(item.created_at)}</p>
                           </div>
-                          {extractReasonCodes(selectedLead.estimate_explanation).length ? (
-                            <div className="admin-cases__reason-codes">
-                              {extractReasonCodes(selectedLead.estimate_explanation).map((code) => (
-                                <span key={code}>{code}</span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </>
-                      ) : <p>No linked lead estimate is available for this case yet.</p>}
-                    </section>
+                          <button
+                            type="button"
+                            className="admin-link-button"
+                            onClick={() => downloadDocument(item)}
+                            disabled={!item.file_path || activeDownloadId === item.id}
+                            title={item.file_path ? "Open document" : "Document file path is not available."}
+                          >
+                            {activeDownloadId === item.id ? "Opening..." : "Open"}
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="admin-cases-page__empty-copy">No documents uploaded yet</p>
+                  )}
+                </section>
 
-                    <section className="admin-cases__section">
-                      <h3>Finance</h3>
-                      {selectedFinance ? (
-                        <div className="admin-cases__stack">
-                          <article><strong>Compensation</strong><span>{formatCurrency(selectedFinance.compensation_amount)}</span></article>
-                          <article><strong>Company fee</strong><span>{formatCurrency(selectedFinance.company_fee)}</span></article>
-                          <article><strong>Customer payout</strong><span>{formatCurrency(selectedFinance.customer_payout)}</span></article>
-                          <article><strong>Referral commission</strong><span>{formatCurrency(selectedFinance.referral_commission)}</span></article>
-                          <article><strong>Agent bonus</strong><span>{formatCurrency(selectedFinance.agent_bonus)}</span></article>
-                          <article><strong>Payment status</strong><span>{selectedFinance.payment_status}</span></article>
-                        </div>
-                      ) : <p>No finance record linked yet.</p>}
-                    </section>
-
-                    <section className="admin-cases__section">
-                      <h3>Documents</h3>
-                      <div className="admin-cases__timeline">
-                        {selectedDocuments.length ? selectedDocuments.map((item) => (
-                          <article key={item.id}>
-                            <div className="admin-cases__timeline-row">
-                              <div>
-                                <strong>{item.document_type}</strong>
-                                <p>{item.file_name} · {item.status}</p>
-                              </div>
-                              {item.file_path ? (
-                                <button
-                                  className="admin-link-button"
-                                  type="button"
-                                  onClick={() => downloadDocument(item)}
-                                  disabled={downloadingDocumentId === item.id}
-                                >
-                                  <Download size={14} />
-                                  <span>{downloadingDocumentId === item.id ? "Loading..." : "Download"}</span>
-                                </button>
-                              ) : null}
-                            </div>
-                          </article>
-                        )) : <p>No case documents linked yet.</p>}
-                      </div>
-                    </section>
-
-                    <section className="admin-cases__section">
-                      <h3>Tasks</h3>
-                      <div className="admin-cases__timeline">
-                        {selectedTasks.length ? selectedTasks.map((task) => (
-                          <article key={task.id}>
-                            <strong>{task.title}</strong>
-                            <p>{task.status} · {task.priority}{task.due_date ? ` · due ${formatDate(task.due_date)}` : ""}</p>
-                          </article>
-                        )) : <p>No linked tasks yet.</p>}
-                      </div>
-                    </section>
-
-                    <section className="admin-cases__section">
-                      <h3>Communications</h3>
-                      <div className="admin-cases__timeline">
-                        {selectedCommunications.length ? selectedCommunications.map((item) => (
-                          <article key={item.id}>
-                            <strong>{item.channel} · {formatDate(item.created_at)}</strong>
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Communications</h4>
+                  </div>
+                  {selectedCommunications.length ? (
+                    <div className="admin-cases-page__timeline">
+                      {selectedCommunications.map((item) => (
+                        <article key={item.id}>
+                          <div>
+                            <strong>{normalizeLabel(item.channel || "message")} • {formatDateTime(item.created_at)}</strong>
                             <p>{item.subject || item.body || "No content"}</p>
-                          </article>
-                        )) : <p>No linked communications yet.</p>}
-                      </div>
-                    </section>
+                          </div>
+                          <span className="admin-cases-page__signature-summary">{normalizeLabel(item.direction || "internal")}</span>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="admin-cases-page__empty-copy">No communications yet</p>
+                  )}
+                </section>
 
-                    <section className="admin-cases__section">
-                      <h3>Status history</h3>
-                      <div className="admin-cases__timeline">
-                        {selectedStatusHistory.length ? selectedStatusHistory.map((item) => (
-                          <article key={item.id}>
-                            <strong>{formatDate(item.created_at)}</strong>
-                            <p>{item.previous_status || "unknown"} → {item.next_status}</p>
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Tasks</h4>
+                    <button
+                      type="button"
+                      className="admin-link-button"
+                      onClick={openTaskModal}
+                      disabled={!hasPermission("tasks.edit") || isCreatingTask}
+                    >
+                      <Plus size={14} />
+                      <span>Create task</span>
+                    </button>
+                  </div>
+                  {selectedTasks.length ? (
+                    <div className="admin-cases-page__timeline">
+                      {selectedTasks.map((task) => {
+                        const assignee = managerById.get(task.assigned_user_id);
+                        return (
+                          <article key={task.id}>
+                            <div>
+                              <strong>{task.title || "Untitled task"}</strong>
+                              <p>
+                                {assignee?.full_name || assignee?.email || "Unassigned"}
+                                {" • "}
+                                {task.due_date ? `Due ${formatDate(task.due_date)}` : "No due date"}
+                              </p>
+                            </div>
+                            <div className="admin-cases-page__task-meta">
+                              <AdminStatusBadge tone={getTaskStatusTone(task.status)}>{normalizeLabel(task.status)}</AdminStatusBadge>
+                              <AdminStatusBadge tone={getPriorityTone(task.priority)}>{normalizeLabel(task.priority || "medium")}</AdminStatusBadge>
+                            </div>
                           </article>
-                        )) : <p>No status history yet.</p>}
-                      </div>
-                    </section>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="admin-cases-page__empty-copy">No tasks created for this case yet</p>
+                  )}
+                </section>
+
+                <section className="admin-cases-page__section">
+                  <div className="admin-cases-page__section-title">
+                    <h4>Internal notes / timeline</h4>
                   </div>
-                ) : (
-                  <div className="admin-empty admin-empty--module">
-                    <h2>No case selected</h2>
-                    <p>Select a case to review its workflow, linked data, and finance information.</p>
-                  </div>
-                )}
-              </section>
+                  {internalNotes.length || selectedStatusHistory.length ? (
+                    <div className="admin-cases-page__timeline">
+                      {internalNotes.map((note, index) => (
+                        <article key={`note-${index}`}>
+                          <div>
+                            <strong>Internal note</strong>
+                            <p>{note}</p>
+                          </div>
+                        </article>
+                      ))}
+                      {selectedStatusHistory.map((item) => (
+                        <article key={item.id}>
+                          <div>
+                            <strong>{normalizeLabel(item.previous_status || "unknown")} → {normalizeLabel(item.next_status || "unknown")}</strong>
+                            <p>{item.note || "No note"} • {formatDateTime(item.created_at)}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="admin-cases-page__empty-copy">No internal notes or timeline entries yet</p>
+                  )}
+                </section>
+              </div>
             </div>
+          )}
+        </aside>
+      </section>
+
+      {taskModalOpen && selectedCase ? (
+        <div className="admin-cases-page__task-modal-layer" role="presentation">
+          <button type="button" className="admin-cases-page__task-modal-backdrop" onClick={closeTaskModal} aria-label="Close task creator" />
+          <section className="admin-cases-page__task-modal" role="dialog" aria-modal="true" aria-labelledby="case-task-modal-title">
+            <header className="admin-cases-page__task-modal-header">
+              <div>
+                <span className="admin-cases-page__eyebrow">Task</span>
+                <h3 id="case-task-modal-title">Create task for {formatCaseReference(selectedCase)}</h3>
+                <p>The task will be linked to this case and appear in the case task list after refresh.</p>
+              </div>
+              <button type="button" className="admin-cases-page__close" onClick={closeTaskModal} aria-label="Close task creator">
+                <X size={16} />
+              </button>
+            </header>
+
+            <form className="admin-cases-page__task-form" onSubmit={submitTask}>
+              <label>
+                <span>Task title</span>
+                <input
+                  type="text"
+                  value={taskForm.title}
+                  onChange={(event) => setTaskForm((current) => ({ ...current, title: event.target.value }))}
+                  placeholder={`Follow up ${formatCaseReference(selectedCase)}`}
+                />
+              </label>
+
+              <label>
+                <span>Assignee</span>
+                <select
+                  value={taskForm.assigned_user_id}
+                  onChange={(event) => setTaskForm((current) => ({ ...current, assigned_user_id: event.target.value }))}
+                >
+                  <option value="">Unassigned</option>
+                  {(moduleData?.managers || []).map((manager) => (
+                    <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="admin-cases-page__task-form-grid">
+                <label>
+                  <span>Priority</span>
+                  <select
+                    value={taskForm.priority}
+                    onChange={(event) => setTaskForm((current) => ({ ...current, priority: event.target.value }))}
+                  >
+                    {taskPriorities.map((priority) => (
+                      <option key={priority} value={priority}>{normalizeLabel(priority)}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>Due date</span>
+                  <input
+                    type="date"
+                    value={taskForm.due_date}
+                    onChange={(event) => setTaskForm((current) => ({ ...current, due_date: event.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <label>
+                <span>Description</span>
+                <textarea
+                  value={taskForm.description}
+                  onChange={(event) => setTaskForm((current) => ({ ...current, description: event.target.value }))}
+                  placeholder="Add the next operational step for this case"
+                />
+              </label>
+
+              <div className="admin-cases-page__task-form-actions">
+                <button type="button" className="admin-link-button" onClick={closeTaskModal}>Cancel</button>
+                <button type="submit" className="btn btn--primary" disabled={!hasPermission("tasks.edit") || isCreatingTask}>
+                  <span>{isCreatingTask ? "Creating..." : "Create task"}</span>
+                </button>
+              </div>
+            </form>
           </section>
-        </>
-      )}
+        </div>
+      ) : null}
     </div>
   );
 }
-
-export default AdminCases;

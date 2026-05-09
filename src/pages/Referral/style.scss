@@ -176,7 +176,7 @@ body:has(.ref-hero) {
   position: relative;
   display: grid;
   grid-template-columns: 40px 1fr;
-  gap: 16px;
+  gap: 12px;
   padding: 0 0 16px;
   margin-bottom: 16px;
   border-bottom: 1px solid #edf1f5;
@@ -288,7 +288,7 @@ body:has(.ref-hero) {
   margin-top: 40px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .ref-benefit-card {
@@ -484,7 +484,7 @@ body:has(.ref-hero) {
   padding: 16px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
   text-align: left;
 }
 
@@ -517,7 +517,7 @@ body:has(.ref-hero) {
   div {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
   }
 
   img {
@@ -746,7 +746,7 @@ body:has(.ref-hero) {
     padding: 40px;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 12px;
     border-color: #f3f5fa;
     border-radius: 40px;
     background: #fff;

@@ -127,13 +127,6 @@ export default function AdminFaq() {
 
   return (
     <div className="admin-page admin-content-system-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><CircleHelp size={16} /> Content System</span>
-          <h1>FAQ</h1>
-          <p>Manage published questions, answers, categories, ordering, and locale-specific support content.</p>
-        </div>
-      </header>
 
       {error && <p className="admin-message is-error">{error}</p>}
       {moduleData && !moduleData.supportsFaqModuleV1 && (

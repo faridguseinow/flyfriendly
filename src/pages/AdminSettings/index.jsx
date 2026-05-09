@@ -146,13 +146,6 @@ export default function AdminSettings() {
 
   return (
     <div className="admin-page admin-content-system-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><SlidersHorizontal size={16} /> Content System</span>
-          <h1>Settings</h1>
-          <p>Manage global system behavior, claim defaults, notification targets, and operational configuration keys.</p>
-        </div>
-      </header>
 
       {error && <p className="admin-message is-error">{error}</p>}
       {moduleData && !moduleData.supportsSettingsModuleV1 && (

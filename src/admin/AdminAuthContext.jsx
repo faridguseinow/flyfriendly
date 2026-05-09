@@ -1,11 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, requireSupabase } from "../lib/supabase.js";
-import { getAvailablePermissions, getRoleDefinition, hasPermission, normalizeRoleCode } from "./rbac.js";
+import { ALL_PERMISSIONS, getAvailablePermissions, getRoleDefinition, hasPermission, normalizeRoleCode } from "./rbac.js";
 
 const AdminAuthContext = createContext(null);
 
 function isMissingTableError(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
+}
+
+function isMissingColumnError(error) {
+  return error?.code === "PGRST204" || error?.message?.includes("column") || error?.message?.includes("schema cache");
 }
 
 async function fetchProfile(client, userId) {
@@ -39,17 +43,199 @@ async function fetchAssignedRoles(client, userId) {
   return (response.data || []).map((item) => normalizeRoleCode(item.role_code)).filter(Boolean);
 }
 
+async function fetchAdminTeamMember(client, userId) {
+  const response = await client
+    .from("admin_team_members")
+    .select("id, profile_id, role_id, status, invited_by, last_login_at, created_at, updated_at")
+    .eq("profile_id", userId)
+    .maybeSingle();
+
+  if (response.error) {
+    if (isMissingTableError(response.error) || isMissingColumnError(response.error)) {
+      return null;
+    }
+
+    throw response.error;
+  }
+
+  return response.data || null;
+}
+
+async function fetchDynamicRole(client, teamMember, roleCodes = []) {
+  if (teamMember?.role_id) {
+    const response = await client
+      .from("admin_roles")
+      .select("id, code, label, name, is_owner_role, is_system_role, is_active, rank")
+      .eq("id", teamMember.role_id)
+      .maybeSingle();
+
+    if (response.error) {
+      if (isMissingTableError(response.error) || isMissingColumnError(response.error)) {
+        return null;
+      }
+
+      throw response.error;
+    }
+
+    return response.data || null;
+  }
+
+  if (!roleCodes.length) {
+    return null;
+  }
+
+  const response = await client
+    .from("admin_roles")
+    .select("id, code, label, name, is_owner_role, is_system_role, is_active, rank")
+    .in("code", roleCodes);
+
+  if (response.error) {
+    if (isMissingTableError(response.error) || isMissingColumnError(response.error)) {
+      return null;
+    }
+
+    throw response.error;
+  }
+
+  return (response.data || [])
+    .filter((item) => item?.is_active !== false)
+    .sort((left, right) => Number(right.rank || 0) - Number(left.rank || 0))[0] || null;
+}
+
+async function fetchDynamicPermissions(client, dynamicRole) {
+  if (!dynamicRole?.code && !dynamicRole?.id) {
+    return { permissions: [], loaded: false };
+  }
+
+  if (dynamicRole.is_owner_role || dynamicRole.code === "owner" || dynamicRole.code === "super_admin") {
+    return { permissions: ["*"], loaded: true };
+  }
+
+  const orParts = [];
+  if (dynamicRole.id) {
+    orParts.push(`role_id.eq.${dynamicRole.id}`);
+  }
+  if (dynamicRole.code) {
+    orParts.push(`role_code.eq.${dynamicRole.code}`);
+  }
+
+  if (!orParts.length) {
+    return { permissions: [], loaded: false };
+  }
+
+  const response = await client
+    .from("admin_role_permissions")
+    .select("permission_code, permission_id, is_allowed")
+    .or(orParts.join(","));
+
+  if (response.error) {
+    if (isMissingTableError(response.error) || isMissingColumnError(response.error)) {
+      return { permissions: [], loaded: false };
+    }
+
+    throw response.error;
+  }
+
+  const rows = response.data || [];
+  const permissionIds = rows.map((item) => item.permission_id).filter(Boolean);
+  let permissionsById = new Map();
+
+  if (permissionIds.length) {
+    const permissionsResponse = await client
+      .from("admin_permissions")
+      .select("id, code, key")
+      .in("id", permissionIds);
+
+    if (permissionsResponse.error) {
+      if (!isMissingTableError(permissionsResponse.error) && !isMissingColumnError(permissionsResponse.error)) {
+        throw permissionsResponse.error;
+      }
+    } else {
+      permissionsById = new Map((permissionsResponse.data || []).map((item) => [item.id, item.code || item.key]));
+    }
+  }
+
+  const permissions = Array.from(new Set(
+    rows
+      .filter((item) => item.is_allowed !== false)
+      .map((item) => item.permission_code || permissionsById.get(item.permission_id) || null)
+      .filter(Boolean),
+  ));
+
+  return { permissions, loaded: true };
+}
+
+async function loadAdminAccessState(client, user) {
+  const [profile, assignedRoles, teamMember] = await Promise.all([
+    fetchProfile(client, user.id),
+    fetchAssignedRoles(client, user.id),
+    fetchAdminTeamMember(client, user.id),
+  ]);
+
+  const fallbackRole = normalizeRoleCode(profile?.role);
+  const roleSet = new Set(assignedRoles);
+  if (fallbackRole && !profile?.deleted_at) {
+    roleSet.add(fallbackRole);
+  }
+
+  const staticRoles = profile?.deleted_at ? [] : Array.from(roleSet);
+  const dynamicRole = await fetchDynamicRole(client, teamMember, staticRoles);
+  const dynamicPermissions = await fetchDynamicPermissions(client, dynamicRole);
+  const dynamicRoleCode = normalizeRoleCode(dynamicRole?.code);
+  const roles = Array.from(new Set([
+    ...(dynamicRoleCode ? [dynamicRoleCode] : []),
+    ...staticRoles,
+  ]));
+  const roleLabels = roles.map((role) => getRoleDefinition(role).label);
+  const isOwner = roles.includes("owner") || roles.includes("super_admin") || !!dynamicRole?.is_owner_role;
+  const teamStatus = teamMember?.status || null;
+  const teamAccessBlocked = !!teamMember && teamStatus !== "active";
+  const permissionSource = dynamicPermissions.loaded ? "dynamic" : "static";
+  const permissions = teamAccessBlocked
+    ? []
+    : (isOwner
+      ? ["*"]
+      : (dynamicPermissions.loaded ? dynamicPermissions.permissions : getAvailablePermissions(roles)));
+
+  return {
+    profile,
+    assignedRoles: roles,
+    roleLabels,
+    teamMember,
+    dynamicRole,
+    permissions,
+    permissionSource,
+    teamAccessBlocked,
+    isOwner,
+  };
+}
+
 export function AdminAuthProvider({ children }) {
   const [state, setState] = useState({
     isLoading: true,
     user: null,
     profile: null,
     roles: [],
+    permissions: [],
+    permissionSource: "static",
+    teamMember: null,
+    dynamicRole: null,
+    teamAccessBlocked: false,
   });
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setState({ isLoading: false, user: null, profile: null, roles: [] });
+      setState({
+        isLoading: false,
+        user: null,
+        profile: null,
+        roles: [],
+        permissions: [],
+        permissionSource: "static",
+        teamMember: null,
+        dynamicRole: null,
+        teamAccessBlocked: false,
+      });
       return;
     }
 
@@ -60,34 +246,50 @@ export function AdminAuthProvider({ children }) {
 
       const { data: sessionData, error: sessionError } = await client.auth.getSession();
       if (sessionError) {
-        setState({ isLoading: false, user: null, profile: null, roles: [] });
+        setState({
+          isLoading: false,
+          user: null,
+          profile: null,
+          roles: [],
+          permissions: [],
+          permissionSource: "static",
+          teamMember: null,
+          dynamicRole: null,
+          teamAccessBlocked: false,
+        });
         return;
       }
 
       const user = sessionData.session?.user || null;
 
       if (!user) {
-        setState({ isLoading: false, user: null, profile: null, roles: [] });
+        setState({
+          isLoading: false,
+          user: null,
+          profile: null,
+          roles: [],
+          permissions: [],
+          permissionSource: "static",
+          teamMember: null,
+          dynamicRole: null,
+          teamAccessBlocked: false,
+        });
         return;
       }
 
       try {
-        const [profile, assignedRoles] = await Promise.all([
-          fetchProfile(client, user.id),
-          fetchAssignedRoles(client, user.id),
-        ]);
-
-        const fallbackRole = normalizeRoleCode(profile?.role);
-        const roleSet = new Set(assignedRoles);
-        if (fallbackRole && !profile?.deleted_at) {
-          roleSet.add(fallbackRole);
-        }
+        const accessState = await loadAdminAccessState(client, user);
 
         setState({
           isLoading: false,
           user,
-          profile,
-          roles: profile?.deleted_at ? [] : Array.from(roleSet),
+          profile: accessState.profile,
+          roles: accessState.assignedRoles,
+          permissions: accessState.permissions,
+          permissionSource: accessState.permissionSource,
+          teamMember: accessState.teamMember,
+          dynamicRole: accessState.dynamicRole,
+          teamAccessBlocked: accessState.teamAccessBlocked,
         });
       } catch {
         setState({
@@ -95,6 +297,11 @@ export function AdminAuthProvider({ children }) {
           user,
           profile: null,
           roles: [],
+          permissions: [],
+          permissionSource: "static",
+          teamMember: null,
+          dynamicRole: null,
+          teamAccessBlocked: false,
         });
       }
     };
@@ -112,46 +319,93 @@ export function AdminAuthProvider({ children }) {
 
   const value = useMemo(() => {
     const primaryRole = state.roles[0] || null;
-    const permissions = getAvailablePermissions(state.roles);
-    const roleLabels = state.roles.map((role) => getRoleDefinition(role).label);
+    const permissions = state.permissions || [];
+    const roleLabels = state.roleLabels || state.roles.map((role) => getRoleDefinition(role).label);
+    const permissionList = permissions.includes("*")
+      ? ALL_PERMISSIONS
+      : permissions;
+
+    const checkPermission = (permission) => {
+      if (!permission) {
+        return state.roles.length > 0 && !state.teamAccessBlocked;
+      }
+
+      if (state.teamAccessBlocked) {
+        return false;
+      }
+
+      if (permissions.includes("*") || permissionList.includes(permission)) {
+        return true;
+      }
+
+      if (state.permissionSource === "dynamic") {
+        return false;
+      }
+
+      return hasPermission(state.roles, permission);
+    };
 
     return {
       ...state,
       primaryRole,
       primaryRoleLabel: primaryRole ? getRoleDefinition(primaryRole).label : null,
       roleLabels,
+      isOwner: state.isOwner || state.roles.includes("owner"),
       isSuperAdmin: state.roles.includes("super_admin"),
-      permissions,
-      hasPermission: (permission) => hasPermission(state.roles, permission),
-      isAdminUser: state.roles.length > 0,
+      isOwnerOrSuperAdmin: state.isOwner || state.roles.includes("owner") || state.roles.includes("super_admin"),
+      permissions: permissionList,
+      permissionSource: state.permissionSource || "static",
+      hasPermission: checkPermission,
+      hasAnyPermission: (keys = []) => !keys?.length || keys.some((key) => checkPermission(key)),
+      hasAllPermissions: (keys = []) => !keys?.length || keys.every((key) => checkPermission(key)),
+      isAdminUser: state.roles.length > 0 && !state.teamAccessBlocked,
       refreshAuth: async () => {
         if (!isSupabaseConfigured) {
-          setState({ isLoading: false, user: null, profile: null, roles: [] });
+          setState({
+            isLoading: false,
+            user: null,
+            profile: null,
+            roles: [],
+            permissions: [],
+            permissionSource: "static",
+            teamMember: null,
+            dynamicRole: null,
+            teamAccessBlocked: false,
+          });
           return;
         }
 
         const client = requireSupabase();
         const { data } = await client.auth.getSession();
         if (!data.session?.user) {
-          setState({ isLoading: false, user: null, profile: null, roles: [] });
+          setState({
+            isLoading: false,
+            user: null,
+            profile: null,
+            roles: [],
+            permissions: [],
+            permissionSource: "static",
+            teamMember: null,
+            dynamicRole: null,
+            teamAccessBlocked: false,
+          });
           return;
         }
 
-        const [profile, assignedRoles] = await Promise.all([
-          fetchProfile(client, data.session.user.id),
-          fetchAssignedRoles(client, data.session.user.id),
-        ]);
-        const fallbackRole = normalizeRoleCode(profile?.role);
-        const roleSet = new Set(assignedRoles);
-        if (fallbackRole && !profile?.deleted_at) {
-          roleSet.add(fallbackRole);
-        }
+        const accessState = await loadAdminAccessState(client, data.session.user);
 
         setState({
           isLoading: false,
           user: data.session.user,
-          profile,
-          roles: profile?.deleted_at ? [] : Array.from(roleSet),
+          profile: accessState.profile,
+          roles: accessState.assignedRoles,
+          permissions: accessState.permissions,
+          permissionSource: accessState.permissionSource,
+          teamMember: accessState.teamMember,
+          dynamicRole: accessState.dynamicRole,
+          teamAccessBlocked: accessState.teamAccessBlocked,
+          roleLabels: accessState.roleLabels,
+          isOwner: accessState.isOwner,
         });
       },
     };
@@ -168,4 +422,22 @@ export function useAdminAuth() {
   }
 
   return context;
+}
+
+export function useAdminPermissions() {
+  const {
+    permissions,
+    permissionSource,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+  } = useAdminAuth();
+
+  return {
+    permissions,
+    permissionSource,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+  };
 }

@@ -204,13 +204,6 @@ export default function AdminBlog() {
 
   return (
     <div className="admin-page admin-content-system-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><Newspaper size={16} /> Content System</span>
-          <h1>Blog</h1>
-          <p>Publish articles, manage SEO metadata, schedule posts, and keep categories and tags structured.</p>
-        </div>
-      </header>
 
       {error && <p className="admin-message is-error">{error}</p>}
       {moduleData && !moduleData.supportsBlogModuleV1 && (

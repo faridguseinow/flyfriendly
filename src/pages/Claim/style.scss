@@ -786,7 +786,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 
   .btn {
     min-height: 48px;
@@ -1178,7 +1178,7 @@
 .claim-next article {
   display: grid;
   grid-template-columns: 44px 1fr;
-  gap: 16px;
+  gap: 12px;
   padding: 22px 0;
   border-bottom: 1px solid var(--line-strong);
 
@@ -1434,7 +1434,7 @@
   }
 
   .claim-date-picker__panel {
-    padding: 14px;
+    padding: 12px;
   }
 
   .claim-date-picker__header strong {

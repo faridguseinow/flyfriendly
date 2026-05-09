@@ -2,7 +2,6 @@ import { requireSupabase } from "../lib/supabase.js";
 import { buildPublicAuthUrl } from "../lib/siteUrl.js";
 
 const PROFILE_SELECTS = [
-  "id, full_name, email, phone, role, created_at, updated_at",
   "id, full_name, email, phone, role, created_at",
   "id, full_name, email, phone, role",
 ];

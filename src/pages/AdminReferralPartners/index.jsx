@@ -1,39 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, HandCoins, Link2, Search, Users, Wallet } from "lucide-react";
+import { Download, Link2, Users, Wallet } from "lucide-react";
 import {
-  createReferralPartner,
-  createReferralPartnerPayout,
   fetchReferralPartnersModuleData,
   updatePartnerPortalStatus,
   updateReferralPartner,
 } from "../../services/adminService.js";
+import {
+  AdminDataTable,
+  AdminDetailDrawer,
+  AdminFilterBar,
+  AdminKpiCard,
+  AdminPageHeader,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { useSearchParams } from "react-router-dom";
 import "./style.scss";
 
-const partnerStatuses = ["active", "paused", "archived"];
-const portalStatuses = ["pending", "approved", "rejected", "suspended"];
-const commissionTypes = ["percentage", "fixed"];
-const payoutStatuses = ["pending", "approved", "paid", "cancelled"];
-
-function MetricCard({ icon: Icon, label, value }) {
-  return (
-    <article className="admin-metric">
-      <span><Icon size={22} strokeWidth={1.8} /></span>
-      <div>
-        <strong>{value}</strong>
-        <small>{label}</small>
-      </div>
-    </article>
-  );
-}
+const portalStatuses = ["approved", "suspended", "rejected"];
+const legacyStatuses = ["active", "paused", "archived"];
 
 function formatCurrency(value, currency = "EUR") {
   return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
 }
 
 function formatDate(value) {
-  if (!value) return "-";
+  if (!value) return "—";
   return new Date(value).toLocaleString();
 }
 
@@ -45,22 +37,20 @@ function normalizePartnerMatch(row, partner) {
 }
 
 function exportPartnersCsv(rows) {
-  const headers = ["Partner", "Code", "Status", "Leads", "Cases", "Approved Cases", "Earned Commission", "Paid Commission"];
+  const headers = ["Partner", "Code", "Portal Status", "Leads", "Cases", "Approved Cases", "Earned Commission", "Paid Commission"];
   const lines = rows.map((item) => [
     item.name,
     item.referral_code,
-    item.status,
+    item.portal_status,
     item.leadsGenerated,
     item.casesConverted,
     item.approvedCases,
     item.earnedCommission,
     item.paidCommission,
   ]);
-
   const csv = [headers, ...lines]
     .map((row) => row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
     .join("\n");
-
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -72,39 +62,35 @@ function exportPartnersCsv(rows) {
   URL.revokeObjectURL(url);
 }
 
-function AdminReferralPartners() {
+function toneForPortalStatus(status) {
+  if (status === "approved") return "success";
+  if (status === "suspended") return "warning";
+  if (status === "rejected") return "danger";
+  return "neutral";
+}
+
+function toneForLegacyStatus(status) {
+  if (status === "active") return "success";
+  if (status === "paused") return "warning";
+  if (status === "archived") return "danger";
+  return "neutral";
+}
+
+export default function AdminReferralPartners() {
   const { hasPermission } = useAdminAuth();
   const [searchParams] = useSearchParams();
   const [moduleData, setModuleData] = useState(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [portalStatusFilter, setPortalStatusFilter] = useState("approved");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [partnerForm, setPartnerForm] = useState({
-    name: "",
-    contact_name: "",
-    contact_email: "",
-    contact_phone: "",
-    commission_type: "percentage",
-    commission_rate: 10,
-    referral_link: "",
-    notes: "",
-  });
-  const [payoutForm, setPayoutForm] = useState({
-    case_id: "",
-    amount: "",
-    currency: "EUR",
-    status: "pending",
-    payout_method: "",
-    note: "",
-  });
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const loadPartners = async () => {
     setError("");
     setIsLoading(true);
-
     try {
       const next = await fetchReferralPartnersModuleData();
       setModuleData(next);
@@ -126,6 +112,7 @@ function AdminReferralPartners() {
     const deepLinkedPartnerId = searchParams.get("partner");
     if (deepLinkedPartnerId) {
       setSelectedPartnerId(deepLinkedPartnerId);
+      setDrawerOpen(true);
     }
   }, [searchParams]);
 
@@ -146,7 +133,6 @@ function AdminReferralPartners() {
       const paidCommission = linkedPayouts
         .filter((item) => item.status === "paid")
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
       return {
         ...partner,
         linkedCases,
@@ -169,14 +155,15 @@ function AdminReferralPartners() {
     return partnerRows.filter((item) => {
       const matchesSearch = !query || [
         item.name,
+        item.public_name,
         item.referral_code,
         item.contact_name,
         item.contact_email,
       ].some((value) => String(value || "").toLowerCase().includes(query));
-      const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+      const matchesStatus = portalStatusFilter === "all" || (item.portal_status || "approved") === portalStatusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [partnerRows, search, statusFilter]);
+  }, [partnerRows, search, portalStatusFilter]);
 
   const selectedPartner = useMemo(
     () => filteredRows.find((item) => item.id === selectedPartnerId)
@@ -188,17 +175,11 @@ function AdminReferralPartners() {
 
   const metrics = useMemo(() => ({
     totalPartners: partnerRows.length,
-    pendingApplications: partnerRows.filter((item) => item.portal_status === "pending").length,
-    leadsGenerated: partnerRows.reduce((sum, item) => sum + item.leadsGenerated, 0),
-    casesConverted: partnerRows.reduce((sum, item) => sum + item.casesConverted, 0),
-    approvedCases: partnerRows.reduce((sum, item) => sum + item.approvedCases, 0),
+    approvedPartners: partnerRows.filter((item) => item.portal_status === "approved").length,
+    suspendedPartners: partnerRows.filter((item) => item.portal_status === "suspended").length,
     earnedCommission: partnerRows.reduce((sum, item) => sum + item.earnedCommission, 0),
     paidCommission: partnerRows.reduce((sum, item) => sum + item.paidCommission, 0),
   }), [partnerRows]);
-
-  const selectedPartnerCases = selectedPartner?.linkedCases || [];
-  const selectedPartnerCommissions = selectedPartner?.linkedCommissions || [];
-  const selectedPartnerPayouts = selectedPartner?.linkedPayouts || [];
 
   const updatePartnerAccess = async (nextPortalStatus) => {
     if (!selectedPartner) return;
@@ -209,35 +190,6 @@ function AdminReferralPartners() {
       await loadPartners();
     } catch (nextError) {
       setError(nextError.message || "Could not update partner access.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const createPartner = async (event) => {
-    event.preventDefault();
-    if (!partnerForm.name.trim()) {
-      setError("Partner name is required.");
-      return;
-    }
-
-    setError("");
-    setIsSaving(true);
-    try {
-      await createReferralPartner(partnerForm);
-      setPartnerForm({
-        name: "",
-        contact_name: "",
-        contact_email: "",
-        contact_phone: "",
-        commission_type: "percentage",
-        commission_rate: 10,
-        referral_link: "",
-        notes: "",
-      });
-      await loadPartners();
-    } catch (nextError) {
-      setError(nextError.message || "Could not create referral partner.");
     } finally {
       setIsSaving(false);
     }
@@ -257,285 +209,166 @@ function AdminReferralPartners() {
     }
   };
 
-  const submitPayout = async (event) => {
-    event.preventDefault();
-    if (!selectedPartner || !payoutForm.amount) {
-      setError("Payout amount is required.");
-      return;
-    }
-
-    setError("");
-    setIsSaving(true);
-    try {
-      await createReferralPartnerPayout({
-        ...payoutForm,
-        partner_id: selectedPartner.id,
-      });
-      setPayoutForm({
-        case_id: "",
-        amount: "",
-        currency: "EUR",
-        status: "pending",
-        payout_method: "",
-        note: "",
-      });
-      await loadPartners();
-    } catch (nextError) {
-      setError(nextError.message || "Could not create referral payout.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   return (
-    <div className="admin-page admin-referral-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><HandCoins size={16} /> Business Modules</span>
-          <h1>Referral Partners</h1>
-          <p>
-            Track affiliate performance, linked cases, earned commissions, and referral payouts in one partner workspace.
-          </p>
-        </div>
-      </header>
+    <div className="admin-page admin-partner-program-page">
+      <AdminPageHeader
+        title="Referral Partners"
+        subtitle="Approved partner registry, portal status, referral links, and performance"
+        breadcrumbs={[
+          { label: "Admin", path: "/admin" },
+          { label: "Referral Partners" },
+        ]}
+        secondaryActions={[
+          {
+            label: "Export CSV",
+            icon: Download,
+            onClick: () => exportPartnersCsv(filteredRows),
+            disabled: !filteredRows.length,
+          },
+        ]}
+      />
 
-      {error && <p className="admin-message is-error">{error}</p>}
-      {moduleData && !moduleData.supportsPartnersModuleV1 && (
+      {error ? <p className="admin-message is-error">{error}</p> : null}
+      {moduleData && !moduleData.supportsPartnersModuleV1 ? (
         <p className="admin-message">
           Referral partners schema is not available yet. Run `008_referral_partners_module_v1.sql` in Supabase to unlock this module.
         </p>
-      )}
+      ) : null}
 
-      {isLoading ? (
-        <p className="admin-message">Loading referral partners...</p>
-      ) : (
-        <>
-          <section className="admin-metrics">
-            <MetricCard icon={Users} label="Total partners" value={metrics.totalPartners} />
-            <MetricCard icon={HandCoins} label="Pending applications" value={metrics.pendingApplications} />
-            <MetricCard icon={Link2} label="Leads generated" value={metrics.leadsGenerated} />
-            <MetricCard icon={HandCoins} label="Cases converted" value={metrics.casesConverted} />
-            <MetricCard icon={Wallet} label="Approved cases" value={metrics.approvedCases} />
-            <MetricCard icon={Wallet} label="Earned commission" value={formatCurrency(metrics.earnedCommission)} />
-            <MetricCard icon={Wallet} label="Paid commission" value={formatCurrency(metrics.paidCommission)} />
-          </section>
+      <div className="admin-partner-program__kpis">
+        <AdminKpiCard label="Approved partners" value={isLoading ? "—" : metrics.approvedPartners} icon={Users} />
+        <AdminKpiCard label="Suspended" value={isLoading ? "—" : metrics.suspendedPartners} icon={Users} />
+        <AdminKpiCard label="Registry total" value={isLoading ? "—" : metrics.totalPartners} icon={Link2} />
+        <AdminKpiCard label="Earned commission" value={isLoading ? "—" : formatCurrency(metrics.earnedCommission)} icon={Wallet} />
+        <AdminKpiCard label="Paid commission" value={isLoading ? "—" : formatCurrency(metrics.paidCommission)} icon={Wallet} />
+      </div>
 
-          <section className="admin-panel">
-            <div className="admin-panel__head">
-              <div>
-                <h2>Partner registry</h2>
-                <p>Manage partner accounts, commission models, and payout tracking.</p>
-              </div>
-              <button className="admin-link-button" type="button" onClick={() => exportPartnersCsv(filteredRows)}>
-                <Download size={14} />
-                <span>Export CSV</span>
+      <AdminFilterBar
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search partner, code, contact"
+        statusFilter={portalStatusFilter}
+        onStatusFilterChange={setPortalStatusFilter}
+        statusOptions={[
+          { value: "all", label: "All partner states" },
+          ...portalStatuses.map((status) => ({ value: status, label: status[0].toUpperCase() + status.slice(1) })),
+        ]}
+      />
+
+      <AdminDataTable
+        title="Approved partner registry"
+        description={isLoading ? "" : `${filteredRows.length} partner records match the current filters.`}
+        columns={[
+          { key: "partner", label: "Partner" },
+          { key: "code", label: "Referral code" },
+          { key: "status", label: "Portal status" },
+          { key: "link", label: "Referral link" },
+          { key: "rate", label: "Commission rate" },
+          { key: "performance", label: "Performance" },
+          { key: "action", label: "Action" },
+        ]}
+        rows={filteredRows}
+        loading={isLoading}
+        error={!isLoading ? error : ""}
+        emptyLabel="No referral partners match the current filters."
+        renderRow={(item) => (
+          <tr key={item.id}>
+            <td>{item.public_name || item.name}</td>
+            <td>{item.referral_code}</td>
+            <td><AdminStatusBadge tone={toneForPortalStatus(item.portal_status || "approved")}>{item.portal_status || "approved"}</AdminStatusBadge></td>
+            <td className="admin-cell-wrap">{item.referral_link || "—"}</td>
+            <td>{item.commission_rate} {item.commission_type === "percentage" ? "%" : "fixed"}</td>
+            <td>{item.leadsGenerated} leads • {item.casesConverted} cases</td>
+            <td>
+              <button
+                type="button"
+                className="admin-link-button"
+                onClick={() => {
+                  setSelectedPartnerId(item.id);
+                  setDrawerOpen(true);
+                }}
+              >
+                Open
               </button>
-            </div>
+            </td>
+          </tr>
+        )}
+      />
 
-            <div className="admin-referral__filters">
-              <label className="admin-search">
-                <Search size={16} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search partner, code, contact" />
-              </label>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                <option value="all">All statuses</option>
-                {partnerStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
-              </select>
-            </div>
-
-            <div className="admin-referral__grid">
-              <section className="admin-panel">
-                <div className="admin-table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Partner</th>
-                        <th>Code</th>
-                        <th>Portal</th>
-                        <th>Leads</th>
-                        <th>Cases</th>
-                        <th>Commission</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRows.map((item) => (
-                        <tr key={item.id} className={selectedPartner?.id === item.id ? "is-selected" : ""} onClick={() => setSelectedPartnerId(item.id)}>
-                          <td>{item.public_name || item.name}</td>
-                          <td>{item.referral_code}</td>
-                          <td>{item.portal_status || item.status}</td>
-                          <td>{item.leadsGenerated}</td>
-                          <td>{item.casesConverted}</td>
-                          <td>{formatCurrency(item.earnedCommission)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section className="admin-panel admin-referral__detail">
-                <div className="admin-panel__head">
-                  <div>
-                    <h2>Create partner</h2>
-                    <p>Create a referral partner profile with commission settings.</p>
-                  </div>
-                </div>
-                <form className="admin-referral__form" onSubmit={createPartner}>
-                  <input value={partnerForm.name} onChange={(event) => setPartnerForm((current) => ({ ...current, name: event.target.value }))} placeholder="Partner name" />
-                  <div className="admin-referral__form-grid">
-                    <input value={partnerForm.contact_name} onChange={(event) => setPartnerForm((current) => ({ ...current, contact_name: event.target.value }))} placeholder="Contact name" />
-                    <input value={partnerForm.contact_email} onChange={(event) => setPartnerForm((current) => ({ ...current, contact_email: event.target.value }))} placeholder="Contact email" />
-                    <input value={partnerForm.contact_phone} onChange={(event) => setPartnerForm((current) => ({ ...current, contact_phone: event.target.value }))} placeholder="Contact phone" />
-                    <input value={partnerForm.referral_link} onChange={(event) => setPartnerForm((current) => ({ ...current, referral_link: event.target.value }))} placeholder="Referral link" />
-                    <select value={partnerForm.commission_type} onChange={(event) => setPartnerForm((current) => ({ ...current, commission_type: event.target.value }))}>
-                      {commissionTypes.map((item) => <option key={item} value={item}>{item}</option>)}
-                    </select>
-                    <input type="number" value={partnerForm.commission_rate} onChange={(event) => setPartnerForm((current) => ({ ...current, commission_rate: Number(event.target.value || 0) }))} placeholder="Commission rate" />
-                  </div>
-                  <textarea value={partnerForm.notes} onChange={(event) => setPartnerForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Internal notes" />
-                  <div className="admin-referral__form-actions">
-                    <button className="admin-link-button" type="submit" disabled={!hasPermission("partners.edit") || isSaving}>
-                      <span>{isSaving ? "Saving..." : "Create partner"}</span>
-                    </button>
-                  </div>
-                </form>
-              </section>
-            </div>
-
-            <section className="admin-referral__detail-grid">
-              <section className="admin-panel admin-referral__detail-panel">
-                <div className="admin-panel__head">
-                  <div>
-                    <h2>Partner detail</h2>
-                    <p>{selectedPartner ? selectedPartner.name : "Select a partner to inspect."}</p>
-                  </div>
-                </div>
-
-                {selectedPartner ? (
-                  <div className="admin-referral__detail-body">
-                    <div className="admin-referral__summary">
-                      <article><strong>Code</strong><span>{selectedPartner.referral_code}</span></article>
-                      <article><strong>Contact</strong><span>{selectedPartner.contact_name || selectedPartner.contact_email || "-"}</span></article>
-                      <article><strong>Rate</strong><span>{selectedPartner.commission_rate} {selectedPartner.commission_type === "percentage" ? "%" : "fixed"}</span></article>
-                      <article><strong>Link</strong><span>{selectedPartner.referral_link || "-"}</span></article>
-                      <article><strong>Portal status</strong><span>{selectedPartner.portal_status || "-"}</span></article>
-                      <article><strong>Profile link</strong><span>{selectedPartner.profile_id || "-"}</span></article>
-                    </div>
-
-                    <div className="admin-referral__actions">
-                      <label>
-                        <span>Status</span>
-                        <select value={selectedPartner.status} onChange={(event) => savePartner({ status: event.target.value })} disabled={!hasPermission("partners.edit") || isSaving}>
-                          {partnerStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
-                        </select>
-                      </label>
-                      <label>
-                        <span>Commission rate</span>
-                        <input type="number" value={selectedPartner.commission_rate} onChange={(event) => savePartner({ commission_rate: Number(event.target.value || 0) })} disabled={!hasPermission("partners.edit") || isSaving} />
-                      </label>
-                      <label>
-                        <span>Portal status</span>
-                        <select value={selectedPartner.portal_status || "pending"} onChange={(event) => updatePartnerAccess(event.target.value)} disabled={!hasPermission("partners.edit") || isSaving}>
-                          {portalStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="admin-access__actions">
-                      <button className="btn btn--primary" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("approved")}>
-                        Approve application
-                      </button>
-                      <button className="admin-link-button" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("rejected")}>
-                        Reject
-                      </button>
-                      <button className="admin-link-button" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("suspended")}>
-                        Suspend
-                      </button>
-                      <button className="admin-link-button" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={() => updatePartnerAccess("pending")}>
-                        Return to pending
-                      </button>
-                    </div>
-
-                    {selectedPartner.application_reason ? (
-                      <section className="admin-referral__section">
-                        <h3>Application reason</h3>
-                        <p>{selectedPartner.application_reason}</p>
-                      </section>
-                    ) : null}
-
-                    <section className="admin-referral__section">
-                      <h3>Linked cases</h3>
-                      <div className="admin-referral__timeline">
-                        {selectedPartnerCases.length ? selectedPartnerCases.map((item) => (
-                          <article key={item.id}>
-                            <strong>{item.case_code}</strong>
-                            <p>{item.status} · {formatCurrency(item.estimated_compensation)}</p>
-                          </article>
-                        )) : <p>No linked cases yet.</p>}
-                      </div>
-                    </section>
-
-                    <section className="admin-referral__section">
-                      <h3>Commissions</h3>
-                      <div className="admin-referral__timeline">
-                        {selectedPartnerCommissions.length ? selectedPartnerCommissions.map((item) => (
-                          <article key={item.id}>
-                            <strong>{formatCurrency(item.amount, item.currency)}</strong>
-                            <p>{item.status} · {item.case_id || item.lead_id || "-"} · {formatDate(item.paid_at || item.approved_at || item.created_at)}</p>
-                          </article>
-                        )) : <p>No commissions yet.</p>}
-                      </div>
-                    </section>
-
-                    <section className="admin-referral__section">
-                      <h3>Create payout</h3>
-                      <form className="admin-referral__payout-form" onSubmit={submitPayout}>
-                        <select value={payoutForm.case_id} onChange={(event) => setPayoutForm((current) => ({ ...current, case_id: event.target.value }))}>
-                          <option value="">No linked case</option>
-                          {selectedPartnerCases.map((item) => <option key={item.id} value={item.id}>{item.case_code}</option>)}
-                        </select>
-                        <div className="admin-referral__form-grid">
-                          <input type="number" value={payoutForm.amount} onChange={(event) => setPayoutForm((current) => ({ ...current, amount: event.target.value }))} placeholder="Amount" />
-                          <input value={payoutForm.currency} onChange={(event) => setPayoutForm((current) => ({ ...current, currency: event.target.value }))} placeholder="Currency" />
-                          <select value={payoutForm.status} onChange={(event) => setPayoutForm((current) => ({ ...current, status: event.target.value }))}>
-                            {payoutStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
-                          </select>
-                          <input value={payoutForm.payout_method} onChange={(event) => setPayoutForm((current) => ({ ...current, payout_method: event.target.value }))} placeholder="Payout method" />
-                        </div>
-                        <textarea value={payoutForm.note} onChange={(event) => setPayoutForm((current) => ({ ...current, note: event.target.value }))} placeholder="Payout note" />
-                        <div className="admin-referral__form-actions">
-                          <button className="admin-link-button" type="submit" disabled={!hasPermission("partners.edit") || isSaving}>
-                            <span>{isSaving ? "Saving..." : "Create payout"}</span>
-                          </button>
-                        </div>
-                      </form>
-                    </section>
-
-                    <section className="admin-referral__section">
-                      <h3>Payouts</h3>
-                      <div className="admin-referral__timeline">
-                        {selectedPartnerPayouts.length ? selectedPartnerPayouts.map((item) => (
-                          <article key={item.id}>
-                            <strong>{formatCurrency(item.amount, item.currency)}</strong>
-                            <p>{item.status} · {item.payout_method || "-"} · {formatDate(item.created_at)}</p>
-                          </article>
-                        )) : <p>No payouts yet.</p>}
-                      </div>
-                    </section>
-                  </div>
-                ) : (
-                  <div className="admin-empty admin-empty--module">
-                    <h2>No partner selected</h2>
-                    <p>Select a partner to review performance and payouts.</p>
-                  </div>
-                )}
-              </section>
+      <AdminDetailDrawer
+        open={drawerOpen}
+        title={selectedPartner?.public_name || selectedPartner?.name || "Partner detail"}
+        subtitle={selectedPartner?.referral_code || ""}
+        onClose={() => setDrawerOpen(false)}
+      >
+        {selectedPartner ? (
+          <div className="admin-partner-program__drawer">
+            <section className="admin-partner-program__summary-grid">
+              <article className="admin-partner-program__info-card"><span>Referral code</span><strong>{selectedPartner.referral_code}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Referral link</span><strong>{selectedPartner.referral_link || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Portal status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={toneForPortalStatus(selectedPartner.portal_status || "approved")}>{selectedPartner.portal_status || "approved"}</AdminStatusBadge></div></article>
+              <article className="admin-partner-program__info-card"><span>Registry status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={toneForLegacyStatus(selectedPartner.status || "active")}>{selectedPartner.status || "active"}</AdminStatusBadge></div></article>
+              <article className="admin-partner-program__info-card"><span>Commission rate</span><strong>{selectedPartner.commission_rate} {selectedPartner.commission_type === "percentage" ? "%" : "fixed"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Approved</span><strong>{formatDate(selectedPartner.approved_at)}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Leads</span><strong>{selectedPartner.leadsGenerated}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Cases</span><strong>{selectedPartner.casesConverted}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Earned commission</span><strong>{formatCurrency(selectedPartner.earnedCommission)}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Paid commission</span><strong>{formatCurrency(selectedPartner.paidCommission)}</strong></article>
             </section>
-          </section>
-        </>
-      )}
+
+            <section className="admin-partner-program__section">
+              <h3>Profile</h3>
+              <div className="admin-partner-program__meta-grid">
+                <article><strong>Contact</strong><span>{selectedPartner.contact_name || selectedPartner.contact_email || "—"}</span></article>
+                <article><strong>Phone</strong><span>{selectedPartner.contact_phone || "—"}</span></article>
+                <article><strong>Website</strong><span>{selectedPartner.website_url || "—"}</span></article>
+                <article><strong>Instagram</strong><span>{selectedPartner.instagram_url || "—"}</span></article>
+                <article><strong>TikTok</strong><span>{selectedPartner.tiktok_url || "—"}</span></article>
+                <article><strong>YouTube</strong><span>{selectedPartner.youtube_url || "—"}</span></article>
+              </div>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Status & commission</h3>
+              <div className="admin-partner-program__form-grid">
+                <label>
+                  <span>Portal status</span>
+                  <select value={selectedPartner.portal_status || "approved"} onChange={(event) => updatePartnerAccess(event.target.value)} disabled={!hasPermission("partners.manage") || isSaving}>
+                    {portalStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Registry status</span>
+                  <select value={selectedPartner.status || "active"} onChange={(event) => savePartner({ status: event.target.value })} disabled={!hasPermission("partners.manage") || isSaving}>
+                    {legacyStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Commission type</span>
+                  <select value={selectedPartner.commission_type || "percentage"} onChange={(event) => savePartner({ commission_type: event.target.value })} disabled={!hasPermission("partners.manage") || isSaving}>
+                    <option value="percentage">percentage</option>
+                    <option value="fixed">fixed</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Commission rate</span>
+                  <input type="number" min="0" step="0.01" defaultValue={selectedPartner.commission_rate || 0} onBlur={(event) => savePartner({ commission_rate: Number(event.target.value || 0) })} disabled={!hasPermission("partners.manage") || isSaving} />
+                </label>
+              </div>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Performance</h3>
+              <div className="admin-partner-program__meta-grid">
+                <article><strong>Referred leads</strong><span>{selectedPartner.leadsGenerated}</span></article>
+                <article><strong>Converted cases</strong><span>{selectedPartner.casesConverted}</span></article>
+                <article><strong>Approved cases</strong><span>{selectedPartner.approvedCases}</span></article>
+                <article><strong>Pending commission</strong><span>{formatCurrency(selectedPartner.pendingCommission)}</span></article>
+              </div>
+            </section>
+          </div>
+        ) : null}
+      </AdminDetailDrawer>
     </div>
   );
 }
-
-export default AdminReferralPartners;

@@ -72,7 +72,7 @@
 .article-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .mini-card,
@@ -490,7 +490,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 16px;
 
   strong {
@@ -538,7 +538,7 @@
     z-index: 1;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
   }
 
   .membership-photo__badge {
@@ -880,7 +880,7 @@
 .steps .step-grid {
   grid-template-columns: repeat(3, 320px);
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 @media (max-width: 1120px) {
@@ -893,7 +893,7 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 12px;
   text-align: left;
 
   &::after {
@@ -957,7 +957,7 @@
 .person {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 16px;
 
   img {
@@ -1109,7 +1109,7 @@
   padding: 40px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
   text-align: left;
   box-shadow: none;
 }

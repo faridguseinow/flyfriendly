@@ -1,13 +1,20 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Menu, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "../assets/icons/logo-image.svg";
 import logoText from "../assets/icons/fly-friendly.svg";
 import { signInCustomer } from "../services/authService.js";
-import { fetchAdminSearchData } from "../services/adminService.js";
+import {
+  endAdminWorkSession,
+  fetchAdminSearchData,
+  fetchAdminSidebarMenu,
+  heartbeatAdminWorkSession,
+  logAdminActivity,
+  startAdminWorkSession,
+} from "../services/adminService.js";
 import { requireSupabase } from "../lib/supabase.js";
-import { adminNavigation } from "./navigation.js";
+import { adminNavigation, adminNavigationSections, buildAdminNavigationSections } from "./navigation.js";
 import { useAdminAuth } from "./AdminAuthContext.jsx";
 import "./admin.scss";
 
@@ -33,20 +40,71 @@ function rankSearchValue(value, query) {
   return 0;
 }
 
-function SidebarLink({ item, onNavigate }) {
-  const Icon = item.icon;
+function isPathActive(itemPath, pathname) {
+  return itemPath === "/admin" ? pathname === "/admin" : pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+}
 
+function buildShellBreadcrumbs(activeSection, currentItem) {
+  const crumbs = [{ key: "admin", label: "Admin" }];
+
+  if (activeSection?.label) {
+    crumbs.push({ key: activeSection.key, label: activeSection.label });
+  }
+
+  if (currentItem?.label && currentItem.label !== activeSection?.label) {
+    crumbs.push({ key: currentItem.path || currentItem.label, label: currentItem.label });
+  }
+
+  return crumbs;
+}
+
+function findBestMatch(items, pathname) {
+  return items
+    .filter((item) => isPathActive(item.path, pathname))
+    .sort((left, right) => right.path.length - left.path.length)[0] || null;
+}
+
+function SectionLink({ item, onNavigate }) {
   return (
     <NavLink
       to={item.path}
       end={item.path === "/admin"}
-      className={({ isActive }) => `admin-sidebar__link${isActive ? " is-active" : ""}`}
+      className={({ isActive }) => `admin-section-link${isActive ? " is-active" : ""}`}
       onClick={onNavigate}
     >
-      <Icon size={18} strokeWidth={1.8} />
       <span>{item.label}</span>
     </NavLink>
   );
+}
+
+function RailButton({ section, isActive, onSelect }) {
+  const Icon = section.icon;
+
+  return (
+    <button
+      type="button"
+      className={`admin-rail-button${isActive ? " is-active" : ""}`}
+      onClick={onSelect}
+      aria-pressed={isActive}
+      aria-label={section.label}
+      title={section.label}
+    >
+      <Icon size={18} strokeWidth={1.9} />
+    </button>
+  );
+}
+
+function dedupeNavigationItems(items = []) {
+  const seenPaths = new Set();
+
+  return items.filter((item) => {
+    if (!item?.path || seenPaths.has(item.path)) {
+      return false;
+    }
+
+    seenPaths.add(item.path);
+    return true;
+  });
 }
 
 export function AdminLoginPage() {
@@ -64,6 +122,10 @@ export function AdminLoginPage() {
     try {
       await signInCustomer(form);
       await refreshAuth();
+      await logAdminActivity("login", "admin_session", null, {
+        module: "auth",
+        source: "admin_login",
+      });
       navigate("/admin", { replace: true });
     } catch (authError) {
       setError(authError.message || "Could not sign in.");
@@ -125,24 +187,78 @@ export function AdminForbiddenPage() {
 function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, roleLabels, hasPermission } = useAdminAuth();
+  const { profile, primaryRoleLabel, roleLabels, roles, hasPermission, isAdminUser } = useAdminAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchIndex, setSearchIndex] = useState(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [dynamicMenu, setDynamicMenu] = useState(null);
+  const adminWorkSessionIdRef = useRef("");
 
-  const navItems = useMemo(
-    () => adminNavigation.filter((item) => hasPermission(item.permission)),
-    [hasPermission],
+  const isMenuItemAllowed = (item) => {
+    if (item.permission && !hasPermission(item.permission)) {
+      return false;
+    }
+
+    if (Array.isArray(item.anyPermissions) && item.anyPermissions.length) {
+      return item.anyPermissions.some((permission) => hasPermission(permission));
+    }
+
+    if (Array.isArray(item.requiredPermissions) && item.requiredPermissions.length) {
+      return item.requiredPermissions.every((permission) => hasPermission(permission));
+    }
+
+    return true;
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    fetchAdminSidebarMenu(profile?.id || null, roles || [])
+      .then((menu) => {
+        if (active) {
+          setDynamicMenu(menu);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setDynamicMenu(null);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [profile?.id, roles]);
+
+  const navItems = useMemo(() => (
+    dedupeNavigationItems(dynamicMenu?.items || adminNavigation).filter(isMenuItemAllowed)
+  ), [dynamicMenu?.items, hasPermission]);
+
+  const navSections = useMemo(
+    () => buildAdminNavigationSections(navItems, adminNavigationSections),
+    [navItems],
   );
 
-  const currentLabel = navItems.find((item) =>
-    item.path === "/admin" ? location.pathname === "/admin" : location.pathname.startsWith(item.path),
-  )?.label;
+  const currentItem = findBestMatch(navItems, location.pathname);
+  const activeSection = navSections.find((section) => section.pages.some((item) => isPathActive(item.path, location.pathname))) || navSections[0] || null;
+  const currentLabel = currentItem?.label || activeSection?.label || "Admin";
+  const currentRoleLabel = primaryRoleLabel || roleLabels[0] || "No role assigned";
+  const currentUserEmail = profile?.email || "No email available";
+  const breadcrumbs = useMemo(
+    () => buildShellBreadcrumbs(activeSection, currentItem),
+    [activeSection, currentItem],
+  );
 
   const signOut = async () => {
     const client = requireSupabase();
+    await endAdminWorkSession(adminWorkSessionIdRef.current || null).catch(() => null);
+    adminWorkSessionIdRef.current = "";
+    await logAdminActivity("logout", "admin_session", profile?.id || null, {
+      module: "auth",
+      source: "admin_logout",
+    });
     await client.auth.signOut();
     navigate("/admin/login", { replace: true });
   };
@@ -171,6 +287,55 @@ function AdminLayout() {
       active = false;
     };
   }, [isSearchLoading, isSearchOpen, searchIndex]);
+
+  useEffect(() => {
+    if (!profile?.id || !isAdminUser) {
+      return undefined;
+    }
+
+    let active = true;
+    let heartbeatTimer = null;
+
+    startAdminWorkSession()
+      .then((sessionId) => {
+        if (!active) {
+          if (sessionId) {
+            void endAdminWorkSession(sessionId);
+          }
+          return;
+        }
+
+        adminWorkSessionIdRef.current = sessionId || "";
+        heartbeatTimer = window.setInterval(() => {
+          void heartbeatAdminWorkSession(adminWorkSessionIdRef.current || null);
+        }, 3 * 60 * 1000);
+      })
+      .catch(() => null);
+
+    const handleVisibilityChange = () => {
+      void heartbeatAdminWorkSession(adminWorkSessionIdRef.current || null);
+    };
+
+    const handlePageHide = () => {
+      void heartbeatAdminWorkSession(adminWorkSessionIdRef.current || null);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("beforeunload", handlePageHide);
+
+    return () => {
+      active = false;
+      if (heartbeatTimer) {
+        window.clearInterval(heartbeatTimer);
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("beforeunload", handlePageHide);
+      void endAdminWorkSession(adminWorkSessionIdRef.current || null);
+      adminWorkSessionIdRef.current = "";
+    };
+  }, [isAdminUser, profile?.id]);
 
   const searchResults = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
@@ -291,35 +456,66 @@ function AdminLayout() {
     setIsSearchOpen(false);
   };
 
+  const goToSection = (section) => {
+    const target = section.pages.find((item) => item.path === section.route)?.path || section.pages[0]?.path || section.route || "/admin";
+    setIsSidebarOpen(false);
+    navigate(target);
+  };
+
   return (
     <div className={`admin-shell${isSidebarOpen ? " is-sidebar-open" : ""}`}>
-      <aside className="admin-sidebar">
-        <div className="admin-sidebar__brand">
-          <NavLink to="/admin" className="admin-brand" onClick={() => setIsSidebarOpen(false)}>
+      {isSidebarOpen ? <button type="button" className="admin-sidebar__overlay" aria-label="Close menu" onClick={() => setIsSidebarOpen(false)} /> : null}
+      <aside className="admin-icon-rail">
+        <div className="admin-rail-logo-wrap">
+          <NavLink to="/admin" className="admin-rail-logo" onClick={() => setIsSidebarOpen(false)} aria-label="Fly Friendly admin">
             <img src={logoImage} alt="" />
-            <img src={logoText} alt="Fly Friendly" />
           </NavLink>
-          <button type="button" className="admin-sidebar__close" onClick={() => setIsSidebarOpen(false)}>
+          <button type="button" className="admin-sidebar__close" onClick={() => setIsSidebarOpen(false)} aria-label="Close menu">
             <Menu size={18} />
           </button>
         </div>
-        <nav className="admin-sidebar__nav">
-          {navItems.map((item) => (
-            <SidebarLink key={item.path} item={item} onNavigate={() => setIsSidebarOpen(false)} />
+        <nav className="admin-rail-nav sidebar-scroll compact-nav-group" aria-label="Admin sections">
+          {navSections.map((section) => (
+            <RailButton
+              key={section.key}
+              section={section}
+              isActive={section.key === activeSection?.key}
+              onSelect={() => goToSection(section)}
+            />
           ))}
         </nav>
       </aside>
 
-      <div className="admin-shell__content">
+      <aside className="admin-section-sidebar">
+        <div className="admin-section-header">
+          <span>Section</span>
+          <strong>{activeSection?.label || "Admin"}</strong>
+        </div>
+        <nav className="admin-section-nav sidebar-scroll compact-nav-group" aria-label={activeSection?.label || "Admin section pages"}>
+          {(activeSection?.pages || []).map((item) => (
+            <SectionLink key={item.path} item={item} onNavigate={() => setIsSidebarOpen(false)} />
+          ))}
+        </nav>
+      </aside>
+
+      <div className="admin-workspace">
         <header className="admin-topbar">
           <div className="admin-topbar__left">
-            <button type="button" className="admin-menu-button" onClick={() => setIsSidebarOpen((current) => !current)}>
+            <button
+              type="button"
+              className="admin-menu-button"
+              onClick={() => setIsSidebarOpen((current) => !current)}
+              aria-label="Open admin navigation"
+            >
               <Menu size={18} />
             </button>
-            <div>
-              <strong>{currentLabel || "Admin"}</strong>
-              <span>Fly Friendly internal control panel</span>
-            </div>
+            <nav className="admin-topbar__breadcrumbs" aria-label="Breadcrumbs">
+              {breadcrumbs.map((crumb, index) => (
+                <span key={crumb.key} className={`admin-topbar__breadcrumb${index === breadcrumbs.length - 1 ? " is-current" : ""}`}>
+                  {crumb.label}
+                </span>
+              ))}
+            </nav>
           </div>
           <div className="admin-topbar__right">
             <label className="admin-search admin-search--topbar">
@@ -370,8 +566,12 @@ function AdminLayout() {
               </AnimatePresence>
             </label>
             <div className="admin-user-chip">
-              <strong>{profile?.full_name || profile?.email || "Admin User"}</strong>
-              <span>{roleLabels.join(" · ") || "No role assigned"}</span>
+              <span>Email</span>
+              <strong>{currentUserEmail}</strong>
+            </div>
+            <div className="admin-user-chip">
+              <span>Role</span>
+              <strong>{currentRoleLabel}</strong>
             </div>
             <button type="button" className="admin-logout" onClick={signOut}>
               <LogOut size={16} />
@@ -380,17 +580,29 @@ function AdminLayout() {
           </div>
         </header>
 
-        <main className="admin-content">
+        <main className="admin-main admin-content-scroll">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              className="admin-content__viewport"
+              className="admin-main__viewport"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
             >
-              <Outlet />
+              <div className="admin-shell-page workspace-container">
+                {/* <header className="admin-shell-page__header workspace-toolbar">
+                  <div className="admin-shell-page__heading">
+                    <span className="admin-shell-page__eyebrow">{activeSection?.label || "Admin"}</span>
+                    <h1>{currentLabel}</h1>
+                    <p>This page header is driven by the active admin route.</p>
+                  </div>
+                </header> */}
+
+                <div className="admin-shell-page__body workspace-section">
+                  <Outlet />
+                </div>
+              </div>
             </motion.div>
           </AnimatePresence>
         </main>

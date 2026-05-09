@@ -1,4 +1,9 @@
 export const ADMIN_ROLES = {
+  owner: {
+    label: "Owner",
+    rank: 110,
+    permissions: ["*"],
+  },
   super_admin: {
     label: "Super Admin",
     rank: 100,
@@ -32,6 +37,8 @@ export const ADMIN_ROLES = {
       "documents.download",
       "partners.view",
       "partners.edit",
+      "partner_applications.view",
+      "partner_applications.manage",
       "finance.view",
       "finance.edit",
       "reports.view",
@@ -42,9 +49,15 @@ export const ADMIN_ROLES = {
       "blog.edit",
       "faq.view",
       "faq.edit",
+      "team.view",
+      "team.manage",
+      "menu.view",
+      "menu.manage",
       "settings.view",
+      "settings.manage",
       "settings.edit",
       "activity.view",
+      "trash.manage",
     ],
   },
   operations_manager: {
@@ -138,6 +151,17 @@ export const ADMIN_ROLES = {
       "partners.edit",
     ],
   },
+  partner_manager: {
+    label: "Partner Manager",
+    rank: 58,
+    permissions: [
+      "dashboard.view",
+      "partners.view",
+      "partners.edit",
+      "reports.view",
+      "activity.view",
+    ],
+  },
   read_only: {
     label: "Read Only",
     rank: 10,
@@ -160,16 +184,25 @@ export const ADMIN_ROLES = {
 };
 
 export const LEGACY_ROLE_MAP = {
+  owner: "owner",
   admin: "admin",
   manager: "operations_manager",
+  manager_1: "operations_manager",
+  manager_2: "operations_manager",
+  manager_3: "operations_manager",
+  finance: "finance_manager",
   support: "customer_support_agent",
+  content: "content_manager",
+  partner_manager: "partner_manager",
   customer: "read_only",
 };
 
 export const NORMALIZED_TO_LEGACY_ROLE = {
+  owner: "admin",
   super_admin: "admin",
   admin: "admin",
   operations_manager: "manager",
+  partner_manager: "admin",
   case_manager: "manager",
   customer_support_agent: "support",
   content_manager: "admin",

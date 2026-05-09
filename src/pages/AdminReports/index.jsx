@@ -136,15 +136,6 @@ function AdminReports() {
 
   return (
     <div className="admin-page admin-reports-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><BarChart3 size={16} /> Business Modules</span>
-          <h1>Reports & Analytics</h1>
-          <p>
-            Operational and commercial reporting across leads, cases, finance, tasks, communications, documents, and partners.
-          </p>
-        </div>
-      </header>
 
       {error && <p className="admin-message is-error">{error}</p>}
 

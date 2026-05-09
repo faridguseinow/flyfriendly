@@ -1,37 +1,48 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, HandCoins, Search, XCircle } from "lucide-react";
+import { CheckCircle2, HandCoins, XCircle } from "lucide-react";
 import {
   approvePartnerApplication,
   fetchPartnerApplicationsModuleData,
   rejectPartnerApplication,
 } from "../../services/adminService.js";
+import {
+  AdminDataTable,
+  AdminDetailDrawer,
+  AdminFilterBar,
+  AdminKpiCard,
+  AdminPageHeader,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
-import "./style.scss";
+import "../AdminReferralPartners/style.scss";
 
 const statusFilters = ["pending", "approved", "rejected", "all"];
 
 function formatDate(value) {
-  if (!value) return "-";
+  if (!value) return "—";
   return new Date(value).toLocaleString();
 }
 
 function toDisplayList(value) {
-  if (Array.isArray(value)) {
-    return value.filter(Boolean).join(", ");
-  }
-
-  return String(value || "").trim() || "-";
+  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+  return String(value || "").trim() || "—";
 }
 
 function toReviewerLabel(item) {
   if (item.reviewer?.full_name) {
     return item.reviewer.email ? `${item.reviewer.full_name} (${item.reviewer.email})` : item.reviewer.full_name;
   }
-
-  return item.reviewer?.email || item.reviewed_by || "-";
+  return item.reviewer?.email || item.reviewed_by || "—";
 }
 
-function AdminPartnerApplications() {
+function toneForStatus(status) {
+  if (status === "approved") return "success";
+  if (status === "rejected") return "danger";
+  if (status === "pending") return "warning";
+  return "neutral";
+}
+
+export default function AdminPartnerApplications() {
   const { hasPermission } = useAdminAuth();
   const [moduleData, setModuleData] = useState({ applications: [] });
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +50,7 @@ function AdminPartnerApplications() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeAction, setActiveAction] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -47,7 +59,6 @@ function AdminPartnerApplications() {
   const loadApplications = async () => {
     setError("");
     setIsLoading(true);
-
     try {
       const next = await fetchPartnerApplicationsModuleData();
       setModuleData(next);
@@ -66,9 +77,14 @@ function AdminPartnerApplications() {
     loadApplications();
   }, []);
 
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timeoutId = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
+
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return (moduleData.applications || []).filter((item) => {
       const matchesStatus = statusFilter === "all" || item.status === statusFilter;
       const matchesSearch = !query || [
@@ -79,7 +95,6 @@ function AdminPartnerApplications() {
         item.niche,
         item.public_name,
       ].some((value) => String(value || "").toLowerCase().includes(query));
-
       return matchesStatus && matchesSearch;
     });
   }, [moduleData.applications, search, statusFilter]);
@@ -96,15 +111,6 @@ function AdminPartnerApplications() {
     setRejectionReason(selectedApplication?.rejection_reason || "");
   }, [selectedApplication?.id]);
 
-  useEffect(() => {
-    if (!toast) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => setToast(null), 4000);
-    return () => window.clearTimeout(timeoutId);
-  }, [toast]);
-
   const metrics = useMemo(() => ({
     total: moduleData.applications.length,
     pending: moduleData.applications.filter((item) => item.status === "pending").length,
@@ -114,10 +120,7 @@ function AdminPartnerApplications() {
 
   const handleApprove = async () => {
     if (!selectedApplication) return;
-    if (!window.confirm(`Approve partner application for ${selectedApplication.full_name}?`)) {
-      return;
-    }
-
+    if (!window.confirm(`Approve partner application for ${selectedApplication.full_name}?`)) return;
     setError("");
     setIsSaving(true);
     setActiveAction("approve");
@@ -125,6 +128,7 @@ function AdminPartnerApplications() {
       await approvePartnerApplication(selectedApplication.id);
       await loadApplications();
       setToast({ type: "success", message: "Partner application approved." });
+      setDrawerOpen(false);
     } catch (nextError) {
       const message = nextError.message || "Could not approve partner application.";
       setError(message);
@@ -143,10 +147,7 @@ function AdminPartnerApplications() {
       setToast({ type: "error", message });
       return;
     }
-    if (!window.confirm(`Reject partner application for ${selectedApplication.full_name}?`)) {
-      return;
-    }
-
+    if (!window.confirm(`Reject partner application for ${selectedApplication.full_name}?`)) return;
     setError("");
     setIsSaving(true);
     setActiveAction("reject");
@@ -154,6 +155,7 @@ function AdminPartnerApplications() {
       await rejectPartnerApplication(selectedApplication.id, rejectionReason);
       await loadApplications();
       setToast({ type: "success", message: "Partner application rejected." });
+      setDrawerOpen(false);
     } catch (nextError) {
       const message = nextError.message || "Could not reject partner application.";
       setError(message);
@@ -166,176 +168,154 @@ function AdminPartnerApplications() {
 
   return (
     <div className="admin-page admin-partner-applications-page">
+      <AdminPageHeader
+        title="Partner Applications"
+        subtitle="Review inbound partner requests before creating approved partner accounts"
+        breadcrumbs={[
+          { label: "Admin", path: "/admin" },
+          { label: "Partner Applications" },
+        ]}
+      />
+
       {toast ? (
-        <div className={`admin-partner-applications__toast is-${toast.type}`} role="status" aria-live="polite">
+        <div className={`admin-partner-program__toast is-${toast.type}`} role="status" aria-live="polite">
           {toast.message}
         </div>
       ) : null}
-
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><HandCoins size={16} /> Business Modules</span>
-          <h1>Partner Applications</h1>
-          <p>
-            Review inbound partner requests before any partner profile, portal access, or referral code is created.
-          </p>
-        </div>
-      </header>
-
       {error ? <p className="admin-message is-error">{error}</p> : null}
 
-      {isLoading ? (
-        <p className="admin-message">Loading partner applications...</p>
-      ) : (
-        <>
-          <section className="admin-metrics">
-            <article className="admin-metric"><span><HandCoins size={22} strokeWidth={1.8} /></span><div><strong>{metrics.total}</strong><small>Total applications</small></div></article>
-            <article className="admin-metric"><span><HandCoins size={22} strokeWidth={1.8} /></span><div><strong>{metrics.pending}</strong><small>Pending review</small></div></article>
-            <article className="admin-metric"><span><CheckCircle2 size={22} strokeWidth={1.8} /></span><div><strong>{metrics.approved}</strong><small>Approved</small></div></article>
-            <article className="admin-metric"><span><XCircle size={22} strokeWidth={1.8} /></span><div><strong>{metrics.rejected}</strong><small>Rejected</small></div></article>
-          </section>
+      <div className="admin-partner-program__kpis">
+        <AdminKpiCard label="Total applications" value={isLoading ? "—" : metrics.total} icon={HandCoins} />
+        <AdminKpiCard label="Pending review" value={isLoading ? "—" : metrics.pending} icon={HandCoins} />
+        <AdminKpiCard label="Approved" value={isLoading ? "—" : metrics.approved} icon={CheckCircle2} />
+        <AdminKpiCard label="Rejected" value={isLoading ? "—" : metrics.rejected} icon={XCircle} />
+      </div>
 
-          <section className="admin-panel">
-            <div className="admin-panel__head">
-              <div>
-                <h2>Application queue</h2>
-                <p>Pending applications are shown by default. Review records here before creating approved partner accounts.</p>
+      <AdminFilterBar
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search applicant, email, country, niche"
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        statusOptions={statusFilters.map((item) => ({ value: item, label: item[0].toUpperCase() + item.slice(1) }))}
+      />
+
+      <AdminDataTable
+        title="Review queue"
+        description={isLoading ? "" : `${filteredRows.length} applications match the current filters.`}
+        columns={[
+          { key: "name", label: "Applicant" },
+          { key: "email", label: "Email" },
+          { key: "country", label: "Country" },
+          { key: "platform", label: "Primary platform" },
+          { key: "audience", label: "Audience size" },
+          { key: "niche", label: "Niche" },
+          { key: "created", label: "Created" },
+          { key: "status", label: "Status" },
+          { key: "action", label: "Action" },
+        ]}
+        rows={filteredRows}
+        loading={isLoading}
+        error={!isLoading ? error : ""}
+        emptyLabel="No partner applications match the current filters."
+        renderRow={(item) => (
+          <tr key={item.id}>
+            <td>{item.full_name}</td>
+            <td>{item.email}</td>
+            <td>{item.country || "—"}</td>
+            <td>{item.primary_platform || "—"}</td>
+            <td>{item.audience_size || "—"}</td>
+            <td>{item.niche || "—"}</td>
+            <td>{formatDate(item.created_at)}</td>
+            <td><AdminStatusBadge tone={toneForStatus(item.status)}>{item.status}</AdminStatusBadge></td>
+            <td>
+              <button
+                type="button"
+                className="admin-link-button"
+                onClick={() => {
+                  setSelectedApplicationId(item.id);
+                  setDrawerOpen(true);
+                }}
+              >
+                Review
+              </button>
+            </td>
+          </tr>
+        )}
+      />
+
+      <AdminDetailDrawer
+        open={drawerOpen}
+        title={selectedApplication?.full_name || "Application detail"}
+        subtitle={selectedApplication?.email || ""}
+        onClose={() => setDrawerOpen(false)}
+      >
+        {selectedApplication ? (
+          <div className="admin-partner-program__drawer">
+            <section className="admin-partner-program__summary-grid">
+              <article className="admin-partner-program__info-card"><span>Applicant</span><strong>{selectedApplication.full_name}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Email</span><strong>{selectedApplication.email}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Country</span><strong>{selectedApplication.country || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Preferred language</span><strong>{selectedApplication.preferred_language || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Public name</span><strong>{selectedApplication.public_name || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Primary platform</span><strong>{selectedApplication.primary_platform || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Audience size</span><strong>{selectedApplication.audience_size || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={toneForStatus(selectedApplication.status)}>{selectedApplication.status}</AdminStatusBadge></div></article>
+              <article className="admin-partner-program__info-card"><span>Consent</span><strong>{selectedApplication.consent_accepted ? "Accepted" : "Not accepted"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Reviewed by</span><strong>{toReviewerLabel(selectedApplication)}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Reviewed at</span><strong>{formatDate(selectedApplication.reviewed_at)}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Niche</span><strong>{selectedApplication.niche || "—"}</strong></article>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Motivation</h3>
+              <p>{selectedApplication.motivation || "No motivation provided."}</p>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Social links</h3>
+              <div className="admin-partner-program__meta-grid">
+                <article><strong>Website</strong><span>{selectedApplication.website_url || "—"}</span></article>
+                <article><strong>Instagram</strong><span>{selectedApplication.instagram_url || "—"}</span></article>
+                <article><strong>TikTok</strong><span>{selectedApplication.tiktok_url || "—"}</span></article>
+                <article><strong>YouTube</strong><span>{selectedApplication.youtube_url || "—"}</span></article>
               </div>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Content links</h3>
+              <p>{toDisplayList(selectedApplication.content_links)}</p>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Audience countries</h3>
+              <p>{toDisplayList(selectedApplication.audience_countries)}</p>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Rejection reason</h3>
+              <textarea
+                value={rejectionReason}
+                onChange={(event) => setRejectionReason(event.target.value)}
+                placeholder="Required when rejecting an application"
+                disabled={!hasPermission("partners.manage") || isSaving}
+              />
+              {selectedApplication.rejection_reason ? (
+                <p className="admin-partner-program__subnote">Current reason: {selectedApplication.rejection_reason}</p>
+              ) : null}
+            </section>
+
+            <div className="admin-partner-program__action-row">
+              <button className="btn btn--primary" type="button" disabled={!hasPermission("partners.manage") || isSaving || selectedApplication.status === "approved"} onClick={handleApprove}>
+                {activeAction === "approve" ? "Approving..." : "Approve"}
+              </button>
+              <button className="admin-link-button" type="button" disabled={!hasPermission("partners.manage") || isSaving} onClick={handleReject}>
+                {activeAction === "reject" ? "Rejecting..." : "Reject"}
+              </button>
             </div>
-
-            <div className="admin-referral__filters">
-              <label className="admin-search">
-                <Search size={16} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search applicant, email, country, niche" />
-              </label>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                {statusFilters.map((item) => <option key={item} value={item}>{item[0].toUpperCase() + item.slice(1)}</option>)}
-              </select>
-            </div>
-
-            <div className="admin-partner-applications__grid">
-              <section className="admin-panel">
-                <div className="admin-table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Full name</th>
-                        <th>Email</th>
-                        <th>Country</th>
-                        <th>Primary platform</th>
-                        <th>Audience size</th>
-                        <th>Niche</th>
-                        <th>Created</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRows.map((item) => (
-                        <tr key={item.id} className={selectedApplication?.id === item.id ? "is-selected" : ""} onClick={() => setSelectedApplicationId(item.id)}>
-                          <td>{item.full_name}</td>
-                          <td>{item.email}</td>
-                          <td>{item.country || "-"}</td>
-                          <td>{item.primary_platform || "-"}</td>
-                          <td>{item.audience_size || "-"}</td>
-                          <td>{item.niche || "-"}</td>
-                          <td>{formatDate(item.created_at)}</td>
-                          <td>{item.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section className="admin-panel admin-referral__detail admin-partner-applications__detail">
-                <div className="admin-panel__head">
-                  <div>
-                    <h2>Application detail</h2>
-                    <p>{selectedApplication ? selectedApplication.full_name : "Select an application to review."}</p>
-                  </div>
-                </div>
-
-                {selectedApplication ? (
-                  <div className="admin-referral__detail-body">
-                    <div className="admin-referral__summary">
-                      <article><strong>Applicant</strong><span>{selectedApplication.full_name}</span></article>
-                      <article><strong>Email</strong><span>{selectedApplication.email}</span></article>
-                      <article><strong>Country</strong><span>{selectedApplication.country || "-"}</span></article>
-                      <article><strong>Preferred language</strong><span>{selectedApplication.preferred_language || "-"}</span></article>
-                      <article><strong>Public name</strong><span>{selectedApplication.public_name || "-"}</span></article>
-                      <article><strong>Primary platform</strong><span>{selectedApplication.primary_platform || "-"}</span></article>
-                      <article><strong>Audience size</strong><span>{selectedApplication.audience_size || "-"}</span></article>
-                      <article><strong>Niche</strong><span>{selectedApplication.niche || "-"}</span></article>
-                      <article><strong>Consent</strong><span>{selectedApplication.consent_accepted ? "Accepted" : "Not accepted"}</span></article>
-                      <article><strong>Reviewed by</strong><span>{toReviewerLabel(selectedApplication)}</span></article>
-                      <article><strong>Reviewed at</strong><span>{formatDate(selectedApplication.reviewed_at)}</span></article>
-                      <article><strong>Status</strong><span>{selectedApplication.status}</span></article>
-                    </div>
-
-                    <section className="admin-referral__section">
-                      <h3>Motivation</h3>
-                      <p>{selectedApplication.motivation || "No motivation provided."}</p>
-                    </section>
-
-                    <section className="admin-referral__section">
-                      <h3>Social links</h3>
-                      <div className="admin-partner-applications__links">
-                        <article><strong>Website</strong><span>{selectedApplication.website_url || "-"}</span></article>
-                        <article><strong>Instagram</strong><span>{selectedApplication.instagram_url || "-"}</span></article>
-                        <article><strong>TikTok</strong><span>{selectedApplication.tiktok_url || "-"}</span></article>
-                        <article><strong>YouTube</strong><span>{selectedApplication.youtube_url || "-"}</span></article>
-                      </div>
-                    </section>
-
-                    <section className="admin-referral__section">
-                      <h3>Content links</h3>
-                      <p>{toDisplayList(selectedApplication.content_links)}</p>
-                    </section>
-
-                    <section className="admin-referral__section">
-                      <h3>Audience countries</h3>
-                      <p>{toDisplayList(selectedApplication.audience_countries)}</p>
-                    </section>
-
-                    <section className="admin-referral__section">
-                      <h3>Rejection reason</h3>
-                      <textarea
-                        value={rejectionReason}
-                        onChange={(event) => setRejectionReason(event.target.value)}
-                        placeholder="Required when rejecting an application"
-                        disabled={!hasPermission("partners.edit") || isSaving}
-                      />
-                      {selectedApplication.rejection_reason ? (
-                        <p className="admin-partner-applications__subnote">Current reason: {selectedApplication.rejection_reason}</p>
-                      ) : null}
-                    </section>
-
-                    <div className="admin-access__actions">
-                      <button className="btn btn--primary" type="button" disabled={!hasPermission("partners.edit") || isSaving || selectedApplication.status === "approved"} onClick={handleApprove}>
-                        {activeAction === "approve" ? "Approving..." : "Approve"}
-                      </button>
-                      <button className="admin-link-button" type="button" disabled={!hasPermission("partners.edit") || isSaving} onClick={handleReject}>
-                        {activeAction === "reject" ? "Rejecting..." : "Reject"}
-                      </button>
-                    </div>
-
-                    <p className="admin-partner-applications__subnote">
-                      This queue only updates application review status. Partner profile creation, referral code generation, and portal access should be handled separately in backend review logic.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="admin-empty admin-empty--module">
-                    <h2>No application selected</h2>
-                    <p>Select an application to review its details and update status.</p>
-                  </div>
-                )}
-              </section>
-            </div>
-          </section>
-        </>
-      )}
+          </div>
+        ) : null}
+      </AdminDetailDrawer>
     </div>
   );
 }
-
-export default AdminPartnerApplications;

@@ -184,15 +184,6 @@ function AdminCommunication() {
 
   return (
     <div className="admin-page admin-communication-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><MessageSquareText size={16} /> Core Operations</span>
-          <h1>Communication</h1>
-          <p>
-            Track customer contact, internal notes, airline replies, and outbound follow-ups across leads, cases, and customers.
-          </p>
-        </div>
-      </header>
 
       {error && <p className="admin-message is-error">{error}</p>}
       {moduleData && !moduleData.supportsCommunicationsModuleV1 && (

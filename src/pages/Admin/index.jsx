@@ -1,43 +1,115 @@
 import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, FileText, ShieldCheck, Users } from "lucide-react";
-import {
-  downloadSignaturePng,
-  fetchAdminOverview,
-  getDocumentDownloadUrl,
-  updateClaimStatus,
-  updateLeadStatus,
-  updateProfileRole,
-} from "../../services/adminService.js";
+import { AlertTriangle, Briefcase, CheckCircle2, Clock3, FileText, HandCoins, SearchCheck, Wallet } from "lucide-react";
+import { Link } from "react-router-dom";
+import { fetchAdminOverview } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import "./style.scss";
 
-const claimStatuses = ["new", "paid", "rejected"];
-const leadStatuses = ["new", "submitted", "not_eligible", "converted", "archived"];
-const profileRoles = ["customer", "read_only", "customer_support_agent", "case_manager", "operations_manager", "content_manager", "finance_manager", "admin", "super_admin"];
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}
 
-function AdminMetric({ icon: Icon, label, value }) {
+function formatCurrency(value, currency = "EUR") {
+  if (value === null || value === undefined) return "Not configured";
+  return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
+}
+
+function formatAge(value) {
+  if (!value) return "-";
+  const diff = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(diff) || diff < 0) return "-";
+
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours < 24) {
+    return `${Math.max(1, hours)}h`;
+  }
+
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function formatRoute(from, to) {
+  if (!from && !to) return "-";
+  return [from || "-", to || "-"].join(" → ");
+}
+
+function statusTone(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (["approved", "completed", "paid", "customer_paid", "referral_paid"].includes(normalized)) return "success";
+  if (["rejected", "cancelled", "archived", "blocked"].includes(normalized)) return "danger";
+  if (["documents_pending", "pending", "pending_review", "awaiting_payment", "payment_received", "suspended"].includes(normalized)) return "warning";
+  return "neutral";
+}
+
+function StatusBadge({ children, tone }) {
+  return <span className={`admin-dashboard__badge is-${tone || "neutral"}`}>{children}</span>;
+}
+
+function KpiCard({ icon: Icon, label, value, meta }) {
   return (
-    <article className="admin-metric">
-      <span><Icon size={22} strokeWidth={1.8} /></span>
+    <article className="admin-dashboard__kpi">
+      <span className="admin-dashboard__kpi-icon"><Icon size={18} strokeWidth={1.9} /></span>
       <div>
-        <strong>{value}</strong>
         <small>{label}</small>
+        <strong>{value}</strong>
+        {meta ? <span>{meta}</span> : null}
       </div>
     </article>
   );
 }
 
-function AdminTable({ title, description, children }) {
+function QueueCard({ icon: Icon, title, count, description, rows, emptyLabel, actionPath, actionLabel, renderRow }) {
   return (
-    <section className="admin-panel">
+    <section className="admin-panel admin-dashboard__queue-card">
+      <div className="admin-panel__head">
+        <div>
+          <h2><Icon size={18} strokeWidth={1.9} /> {title}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+        <div className="admin-dashboard__queue-meta">
+          <strong>{count}</strong>
+          {actionPath ? <Link to={actionPath}>{actionLabel || "Open"}</Link> : null}
+        </div>
+      </div>
+
+      {rows.length ? (
+        <div className="admin-dashboard__queue-list">
+          {rows.map((row) => renderRow(row))}
+        </div>
+      ) : (
+        <div className="admin-dashboard__empty">{emptyLabel}</div>
+      )}
+    </section>
+  );
+}
+
+function ActivityCard({ title, rows, emptyLabel, renderRow }) {
+  return (
+    <section className="admin-panel admin-dashboard__activity-card">
       <div className="admin-panel__head">
         <div>
           <h2>{title}</h2>
-          <p>{description}</p>
         </div>
       </div>
-      <div className="admin-table-wrap">{children}</div>
+
+      {rows.length ? (
+        <div className="admin-dashboard__activity-list">
+          {rows.map((row) => renderRow(row))}
+        </div>
+      ) : (
+        <div className="admin-dashboard__empty">{emptyLabel}</div>
+      )}
     </section>
+  );
+}
+
+function HealthCard({ title, value, tone = "neutral", description }) {
+  return (
+    <article className={`admin-panel admin-dashboard__health-card is-${tone}`}>
+      <div className="admin-dashboard__health-value">{value}</div>
+      <strong>{title}</strong>
+      {description ? <p>{description}</p> : null}
+    </article>
   );
 }
 
@@ -47,18 +119,6 @@ function AdminDashboard() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const metrics = useMemo(() => {
-    const claims = overview?.claims || [];
-    const leads = overview?.leads || [];
-    return {
-      leads: leads.length,
-      claims: claims.length,
-      users: overview?.profiles?.length || 0,
-      documents: overview?.documents?.length || 0,
-      open: leads.filter((lead) => lead.status === "new").length + claims.filter((claim) => claim.status === "new").length,
-    };
-  }, [overview]);
-
   const loadAdmin = async () => {
     setError("");
     setIsLoading(true);
@@ -66,7 +126,7 @@ function AdminDashboard() {
     try {
       setOverview(await fetchAdminOverview());
     } catch (adminError) {
-      setError(adminError.message || "Could not load admin data.");
+      setError(adminError.message || "Could not load admin dashboard.");
     } finally {
       setIsLoading(false);
     }
@@ -76,256 +136,379 @@ function AdminDashboard() {
     loadAdmin();
   }, []);
 
-  const changeClaimStatus = async (claimId, status) => {
-    await updateClaimStatus(claimId, status);
-    await loadAdmin();
-  };
+  const data = useMemo(() => {
+    const leads = overview?.leads || [];
+    const cases = overview?.cases || [];
+    const finance = overview?.finance || [];
+    const caseDocuments = overview?.caseDocuments || [];
+    const partnerApplications = overview?.partnerApplications || [];
+    const partnerPayouts = overview?.partnerPayouts || [];
+    const profiles = new Map((overview?.profiles || []).map((item) => [item.id, item]));
+    const documentsByCase = caseDocuments.reduce((acc, item) => {
+      acc[item.case_id] ||= 0;
+      acc[item.case_id] += 1;
+      return acc;
+    }, {});
+    const leadById = new Map(leads.map((item) => [item.id, item]));
+    const financeByCase = new Map(finance.map((item) => [item.case_id, item]));
+    const pendingPayoutStatuses = new Set(["awaiting_payment", "payment_received"]);
 
-  const changeLeadStatus = async (leadId, status) => {
-    await updateLeadStatus(leadId, status);
-    await loadAdmin();
-  };
+    const unassignedLeads = leads
+      .filter((lead) => ["new", "submitted"].includes(String(lead.status || "").toLowerCase()) && !lead.assigned_user_id)
+      .slice(0, 6);
 
-  const changeRole = async (profileId, role) => {
-    await updateProfileRole(profileId, role);
-    await loadAdmin();
-  };
+    const leadsNeedingReview = leads
+      .filter((lead) => ["new", "submitted"].includes(String(lead.status || "").toLowerCase()))
+      .slice(0, 6);
 
-  const downloadDocument = async (document) => {
-    setError("");
+    const casesMissingDocuments = cases
+      .filter((item) => {
+        const caseStatus = String(item.status || "").toLowerCase();
+        const isTerminal = ["approved", "rejected", "paid", "closed"].includes(caseStatus);
+        return !isTerminal && (caseStatus === "documents_pending" || !documentsByCase[item.id]);
+      })
+      .slice(0, 6);
 
-    try {
-      const url = await getDocumentDownloadUrl(document);
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (downloadError) {
-      setError(downloadError.message || "Could not create document download link.");
-    }
-  };
+    const casesPendingEstimate = cases
+      .filter((item) => {
+        const linkedLead = item.lead_id ? leadById.get(item.lead_id) : null;
+        return String(linkedLead?.estimate_status || "pending_review").toLowerCase() === "pending_review";
+      })
+      .slice(0, 6);
 
-  const downloadSignature = (signature) => {
-    try {
-      downloadSignaturePng(
-        signature.signature_data_url,
-        `${signature.signer_name || "lead-signature"}-${signature.lead_id || signature.id}.png`,
-      );
-    } catch (downloadError) {
-      setError(downloadError.message || "Could not download signature.");
-    }
-  };
+    const pendingApplications = partnerApplications
+      .filter((item) => item.status === "pending")
+      .slice(0, 6);
+
+    const pendingFinanceRows = finance
+      .filter((item) => pendingPayoutStatuses.has(String(item.payment_status || "").toLowerCase()))
+      .map((item) => ({
+        ...item,
+        linkedCase: cases.find((caseRow) => caseRow.id === item.case_id) || null,
+      }))
+      .slice(0, 6);
+
+    const latestLeadSubmissions = leads.slice(0, 5);
+    const latestCaseUpdates = cases.slice(0, 5);
+    const latestPartnerReviews = partnerApplications
+      .filter((item) => item.reviewed_at && ["approved", "rejected"].includes(String(item.status || "").toLowerCase()))
+      .sort((left, right) => new Date(right.reviewed_at).getTime() - new Date(left.reviewed_at).getTime())
+      .slice(0, 5);
+    const latestPayoutEvents = [
+      ...finance
+        .filter((item) => item.payment_status && item.payment_status !== "not_started")
+        .map((item) => ({
+          id: `finance-${item.id}`,
+          created_at: item.updated_at,
+          label: item.payment_status,
+          amount: item.customer_payout || item.compensation_amount,
+          currency: item.currency,
+          caseCode: cases.find((caseRow) => caseRow.id === item.case_id)?.case_code || item.case_id,
+        })),
+      ...partnerPayouts
+        .filter((item) => item.status && item.status !== "pending")
+        .map((item) => ({
+          id: `partner-${item.id}`,
+          created_at: item.updated_at || item.paid_at || item.created_at,
+          label: `Partner payout · ${item.status}`,
+          amount: item.amount,
+          currency: item.currency,
+          caseCode: item.case_id || "-",
+        })),
+    ]
+      .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+      .slice(0, 5);
+
+    const leadsMissingAirportIds = leads.filter((lead) =>
+      ["new", "submitted", "converted"].includes(String(lead.status || "").toLowerCase())
+      && (!lead.departure_airport_id || !lead.arrival_airport_id),
+    );
+
+    const leadsMissingDistanceEstimate = leads.filter((lead) =>
+      ["new", "submitted", "converted"].includes(String(lead.status || "").toLowerCase())
+      && String(lead.estimate_status || "pending_review").toLowerCase() === "pending_review",
+    );
+
+    const casesWithoutOwner = cases.filter((item) =>
+      ["draft", "documents_pending", "ready_to_submit", "submitted_to_airline", "awaiting_response", "airline_replied", "escalated"].includes(String(item.status || "").toLowerCase())
+      && !item.assigned_manager_id,
+    );
+
+    return {
+      profiles,
+      leadById,
+      financeByCase,
+      unassignedLeads,
+      leadsNeedingReview,
+      casesMissingDocuments,
+      casesPendingEstimate,
+      pendingApplications,
+      pendingFinanceRows,
+      latestLeadSubmissions,
+      latestCaseUpdates,
+      latestPartnerReviews,
+      latestPayoutEvents,
+      leadsMissingAirportIds,
+      leadsMissingDistanceEstimate,
+      casesWithoutOwner,
+    };
+  }, [overview]);
 
   return (
-    <div className="admin-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><ShieldCheck size={16} /> Foundation</span>
-          <h1>Operational dashboard</h1>
-          <p>
-            Signed in as {profile?.full_name || profile?.email || "internal user"} with role {primaryRoleLabel || "Unknown"}.
-            The foundation layer now handles authentication, role mapping, permission guards, and admin navigation.
-          </p>
-        </div>
-      </header>
+    <div className="admin-page admin-dashboard-page">
 
-      {isLoading && <p className="admin-message">Loading admin data...</p>}
-      {error && <p className="admin-message is-error">{error}</p>}
+      {isLoading ? <p className="admin-message">Loading dashboard...</p> : null}
+      {error ? <p className="admin-message is-error">{error}</p> : null}
 
-      {overview && (
+      {!isLoading && !error && overview ? (
         <>
-          <section className="admin-metrics">
-            <AdminMetric icon={BadgeCheck} label="Leads loaded" value={metrics.leads} />
-            <AdminMetric icon={ShieldCheck} label="Claims loaded" value={metrics.claims} />
-            <AdminMetric icon={Users} label="Users loaded" value={metrics.users} />
-            <AdminMetric icon={FileText} label="Documents loaded" value={metrics.documents} />
-            <AdminMetric icon={BadgeCheck} label="Open work" value={metrics.open} />
+          <section className="admin-metrics admin-dashboard__kpis">
+            <KpiCard icon={SearchCheck} label="New leads today" value={overview.metrics?.newLeadsToday ?? "Not configured"} />
+            <KpiCard icon={Briefcase} label="Claims under review" value={overview.metrics?.claimsUnderReview ?? "Not configured"} />
+            <KpiCard icon={FileText} label="Documents needed" value={overview.metrics?.documentsNeeded ?? "Not configured"} />
+            <KpiCard icon={HandCoins} label="Pending partner applications" value={overview.metrics?.pendingPartnerApplications ?? "Not configured"} />
+            <KpiCard
+              icon={Wallet}
+              label="Estimated compensation pipeline"
+              value={formatCurrency(overview.metrics?.estimatedCompensationPipeline)}
+            />
+            <KpiCard icon={Clock3} label="Pending payouts" value={overview.metrics?.pendingPayouts ?? "Not configured"} />
           </section>
 
-          {hasPermission("leads.view") && (
-            <>
-              <AdminTable title="Leads" description="Public compensation requests from Start Your Claim and Check Compensation.">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Code</th>
-                      <th>Status</th>
-                      <th>Stage</th>
-                      <th>Route</th>
-                      <th>Contact</th>
-                      <th>Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.leads.map((lead) => (
-                      <tr key={lead.id}>
-                        <td>{lead.lead_code || lead.id.slice(0, 8)}</td>
-                        <td>
-                          <select value={lead.status || "new"} onChange={(event) => changeLeadStatus(lead.id, event.target.value)} disabled={!hasPermission("leads.edit")}>
-                            {leadStatuses.map((status) => <option value={status} key={status}>{status}</option>)}
-                          </select>
-                        </td>
-                        <td>{lead.stage || "-"}</td>
-                        <td>{lead.departure_airport || "-"} → {lead.arrival_airport || "-"}</td>
-                        <td>{lead.full_name || lead.email || lead.phone || "-"}</td>
-                        <td>{lead.created_at ? new Date(lead.created_at).toLocaleDateString() : "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </AdminTable>
+          <section className="admin-dashboard__section">
+            <div className="admin-dashboard__section-head">
+              <div>
+                <h2>Action queue</h2>
+              </div>
+            </div>
 
-              <AdminTable title="Lead Details" description="Flight data, contact information, and customer notes collected from the lead form.">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Lead</th>
-                      <th>Flight</th>
-                      <th>Delay</th>
-                      <th>Contact</th>
-                      <th>Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.leads.map((lead) => (
-                      <tr key={`${lead.id}-details`}>
-                        <td>{lead.lead_code || lead.id.slice(0, 8)}</td>
-                        <td>{lead.airline || "-"} · {lead.departure_airport || "-"} → {lead.arrival_airport || "-"}</td>
-                        <td>{lead.payload?.delayDuration || lead.eligibility_status || "-"}</td>
-                        <td>{lead.full_name || "-"} · {lead.email || lead.phone || "-"}</td>
-                        <td className="admin-cell-wrap">{lead.reason || lead.payload?.reason || "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </AdminTable>
-            </>
-          )}
+            <div className="admin-dashboard__queue-grid">
+              {hasPermission("leads.view") ? (
+                <QueueCard
+                  icon={AlertTriangle}
+                  title="Unassigned leads"
+                  count={data.unassignedLeads.length}
+                  rows={data.unassignedLeads}
+                  emptyLabel="No unassigned leads."
+                  actionPath="/admin/leads"
+                  actionLabel="Open Leads"
+                  renderRow={(lead) => (
+                    <Link key={lead.id} to={`/admin/leads?lead=${lead.id}`} className="admin-dashboard__queue-row">
+                      <div>
+                        <strong>{lead.lead_code || lead.full_name || "Lead"}</strong>
+                        <span>{formatRoute(lead.departure_airport, lead.arrival_airport)}</span>
+                      </div>
+                      <StatusBadge tone={statusTone(lead.status)}>{lead.status || "new"}</StatusBadge>
+                    </Link>
+                  )}
+                />
+              ) : null}
 
-          {hasPermission("cases.view") && (
-            <AdminTable title="Claims" description="Review customer requests and move them through the workflow.">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Status</th>
-                    <th>Eligibility</th>
-                    <th>Amount</th>
-                    <th>Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overview.claims.map((claim) => (
-                    <tr key={claim.id}>
-                      <td>{claim.claim_code || claim.id.slice(0, 8)}</td>
-                      <td>
-                        <select value={claim.status || "new"} onChange={(event) => changeClaimStatus(claim.id, event.target.value)} disabled={!hasPermission("cases.edit")}>
-                          {claimStatuses.map((status) => <option value={status} key={status}>{status}</option>)}
-                        </select>
-                      </td>
-                      <td>{claim.eligibility_status || "pending"}</td>
-                      <td>{claim.compensation_amount || 0} {claim.currency || "EUR"}</td>
-                      <td>{claim.created_at ? new Date(claim.created_at).toLocaleDateString() : "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </AdminTable>
-          )}
+              {hasPermission("leads.view") ? (
+                <QueueCard
+                  icon={SearchCheck}
+                  title="Leads needing review"
+                  count={data.leadsNeedingReview.length}
+                  rows={data.leadsNeedingReview}
+                  emptyLabel="No leads waiting for review."
+                  actionPath="/admin/leads"
+                  actionLabel="Review queue"
+                  renderRow={(lead) => (
+                    <Link key={lead.id} to={`/admin/leads?lead=${lead.id}`} className="admin-dashboard__queue-row">
+                      <div>
+                        <strong>{lead.lead_code || lead.full_name || "Lead"}</strong>
+                        <span>{lead.full_name || lead.email || "-"}</span>
+                      </div>
+                      <span className="admin-dashboard__queue-age">{formatAge(lead.created_at)}</span>
+                    </Link>
+                  )}
+                />
+              ) : null}
 
-          {hasPermission("users.view") && (
-            <AdminTable title="Users & Roles" description="Foundation mapping between authenticated users and internal access levels.">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Role</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overview.profiles.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.full_name || "-"}</td>
-                      <td>{item.email || "-"}</td>
-                      <td>{item.phone || "-"}</td>
-                      <td>
-                        <select value={item.role || "customer"} onChange={(event) => changeRole(item.id, event.target.value)} disabled={!hasPermission("users.manage")}>
-                          {profileRoles.map((role) => <option value={role} key={role}>{role}</option>)}
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </AdminTable>
-          )}
+              {hasPermission("cases.view") ? (
+                <QueueCard
+                  icon={FileText}
+                  title="Cases missing documents"
+                  count={data.casesMissingDocuments.length}
+                  rows={data.casesMissingDocuments}
+                  emptyLabel="No cases blocked on documents."
+                  actionPath="/admin/cases"
+                  actionLabel="Open Cases"
+                  renderRow={(item) => (
+                    <Link key={item.id} to={`/admin/cases?case=${item.id}`} className="admin-dashboard__queue-row">
+                      <div>
+                        <strong>{item.case_code || "Case"}</strong>
+                        <span>{formatRoute(item.route_from, item.route_to)}</span>
+                      </div>
+                      <StatusBadge tone={statusTone(item.status)}>{item.status}</StatusBadge>
+                    </Link>
+                  )}
+                />
+              ) : null}
 
-          {hasPermission("documents.view") && (
-            <>
-              <AdminTable title="Documents" description="Latest uploaded files and their processing status.">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Owner</th>
-                      <th>Type</th>
-                      <th>File</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Download</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.documents.map((document) => (
-                      <tr key={document.id}>
-                        <td>{document.owner_type}</td>
-                        <td>{document.document_type}</td>
-                        <td>{document.file_name}</td>
-                        <td>{document.status}</td>
-                        <td>{document.created_at ? new Date(document.created_at).toLocaleDateString() : "-"}</td>
-                        <td>
-                          {hasPermission("documents.download") ? (
-                            <button className="admin-link-button" type="button" onClick={() => downloadDocument(document)}>
-                              Download
-                            </button>
-                          ) : "Restricted"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </AdminTable>
+              {hasPermission("cases.view") ? (
+                <QueueCard
+                  icon={AlertTriangle}
+                  title="Estimate pending review"
+                  count={data.casesPendingEstimate.length}
+                  rows={data.casesPendingEstimate}
+                  emptyLabel="No estimate blockers."
+                  actionPath="/admin/cases"
+                  actionLabel="Open Cases"
+                  renderRow={(item) => {
+                    const linkedLead = item.lead_id ? data.leadById.get(item.lead_id) : null;
+                    return (
+                      <Link key={item.id} to={`/admin/cases?case=${item.id}`} className="admin-dashboard__queue-row">
+                        <div>
+                          <strong>{item.case_code || "Case"}</strong>
+                          <span>{linkedLead?.lead_code || formatRoute(item.route_from, item.route_to)}</span>
+                        </div>
+                        <StatusBadge tone="warning">{linkedLead?.estimate_status || "pending_review"}</StatusBadge>
+                      </Link>
+                    );
+                  }}
+                />
+              ) : null}
 
-              <AdminTable title="Electronic Signatures" description="Final lead signatures and accepted terms for submitted claims.">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Signer</th>
-                      <th>Email</th>
-                      <th>Terms</th>
-                      <th>Signed</th>
-                      <th>Preview</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.leadSignatures.map((signature) => (
-                      <tr key={signature.id}>
-                        <td>{signature.signer_name || "-"}</td>
-                        <td>{signature.signer_email || "-"}</td>
-                        <td>{signature.terms_accepted ? "Accepted" : "Missing"}</td>
-                        <td>{signature.signed_at ? new Date(signature.signed_at).toLocaleString() : "-"}</td>
-                        <td>
-                          <button className="admin-link-button" type="button" onClick={() => downloadSignature(signature)}>
-                            Download PNG
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </AdminTable>
-            </>
-          )}
+              {hasPermission("partners.view") ? (
+                <QueueCard
+                  icon={HandCoins}
+                  title="Partner applications pending"
+                  count={data.pendingApplications.length}
+                  rows={data.pendingApplications}
+                  emptyLabel="No partner applications pending."
+                  actionPath="/admin/partner-applications"
+                  actionLabel="Open Applications"
+                  renderRow={(item) => (
+                    <Link key={item.id} to={`/admin/partner-applications`} className="admin-dashboard__queue-row">
+                      <div>
+                        <strong>{item.full_name || item.email}</strong>
+                        <span>{[item.country, item.primary_platform, item.niche].filter(Boolean).join(" • ") || item.email}</span>
+                      </div>
+                      <span className="admin-dashboard__queue-age">{formatAge(item.created_at)}</span>
+                    </Link>
+                  )}
+                />
+              ) : null}
+
+              {hasPermission("finance.view") ? (
+                <QueueCard
+                  icon={Wallet}
+                  title="Payouts pending"
+                  count={data.pendingFinanceRows.length}
+                  rows={data.pendingFinanceRows}
+                  emptyLabel="No pending payouts."
+                  actionPath="/admin/finances/finance"
+                  actionLabel="Open Finance"
+                  renderRow={(item) => (
+                    <Link key={item.id} to="/admin/finances/finance" className="admin-dashboard__queue-row">
+                      <div>
+                        <strong>{item.linkedCase?.case_code || item.case_id}</strong>
+                        <span>{formatCurrency(item.customer_payout || item.compensation_amount, item.currency)}</span>
+                      </div>
+                      <StatusBadge tone={statusTone(item.payment_status)}>{item.payment_status}</StatusBadge>
+                    </Link>
+                  )}
+                />
+              ) : null}
+            </div>
+          </section>
+
+          <section className="admin-dashboard__section">
+            <div className="admin-dashboard__section-head">
+              <div>
+                <h2>Recent activity</h2>
+              </div>
+            </div>
+
+            <div className="admin-dashboard__activity-grid">
+              <ActivityCard
+                title="Latest lead submissions"
+                rows={data.latestLeadSubmissions}
+                emptyLabel="No recent leads."
+                renderRow={(lead) => (
+                  <Link key={lead.id} to={`/admin/leads?lead=${lead.id}`} className="admin-dashboard__activity-row">
+                    <strong>{lead.lead_code || lead.full_name || "Lead"}</strong>
+                    <span>{formatRoute(lead.departure_airport, lead.arrival_airport)}</span>
+                    <small>{formatDateTime(lead.created_at)}</small>
+                  </Link>
+                )}
+              />
+
+              <ActivityCard
+                title="Latest case updates"
+                rows={data.latestCaseUpdates}
+                emptyLabel="No recent case updates."
+                renderRow={(item) => (
+                  <Link key={item.id} to={`/admin/cases?case=${item.id}`} className="admin-dashboard__activity-row">
+                    <strong>{item.case_code || "Case"}</strong>
+                    <span>{item.status || "-"}</span>
+                    <small>{formatDateTime(item.updated_at || item.created_at)}</small>
+                  </Link>
+                )}
+              />
+
+              <ActivityCard
+                title="Partner approvals / rejections"
+                rows={data.latestPartnerReviews}
+                emptyLabel={overview.supportsPartnerApplications ? "No reviewed applications yet." : "Not configured"}
+                renderRow={(item) => (
+                  <Link key={item.id} to="/admin/partner-applications" className="admin-dashboard__activity-row">
+                    <strong>{item.full_name || item.email}</strong>
+                    <span>{item.status}</span>
+                    <small>{formatDateTime(item.reviewed_at)}</small>
+                  </Link>
+                )}
+              />
+
+              <ActivityCard
+                title="Latest payout events"
+                rows={data.latestPayoutEvents}
+                emptyLabel="No payout events yet."
+                renderRow={(item) => (
+                  <Link key={item.id} to="/admin/finances/finance" className="admin-dashboard__activity-row">
+                    <strong>{item.caseCode || "Payout"}</strong>
+                    <span>{item.label} • {formatCurrency(item.amount, item.currency)}</span>
+                    <small>{formatDateTime(item.created_at)}</small>
+                  </Link>
+                )}
+              />
+            </div>
+          </section>
+
+          <section className="admin-dashboard__section">
+            <div className="admin-dashboard__section-head">
+              <div>
+                <h2>Operational health</h2>
+              </div>
+            </div>
+
+            <div className="admin-dashboard__health-grid">
+              <HealthCard
+                title="Failed emails"
+                value={overview.health?.failedEmailsSupported ? overview.health.failedEmails : "Not configured"}
+                tone="neutral"
+                description={overview.health?.failedEmailsSupported ? null : "Not configured"}
+              />
+              <HealthCard
+                title="Claims missing airport ids"
+                value={data.leadsMissingAirportIds.length}
+                tone={data.leadsMissingAirportIds.length ? "warning" : "success"}
+              />
+              <HealthCard
+                title="Claims missing distance estimate"
+                value={data.leadsMissingDistanceEstimate.length}
+                tone={data.leadsMissingDistanceEstimate.length ? "warning" : "success"}
+              />
+              <HealthCard
+                title="Cases without owner"
+                value={data.casesWithoutOwner.length}
+                tone={data.casesWithoutOwner.length ? "warning" : "success"}
+              />
+            </div>
+          </section>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

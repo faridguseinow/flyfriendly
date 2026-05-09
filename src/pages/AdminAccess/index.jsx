@@ -165,13 +165,6 @@ export default function AdminAccess() {
 
   return (
     <div className="admin-page admin-access-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><ShieldCheck size={16} /> Foundation</span>
-          <h1>Users & Roles</h1>
-          <p>Manage internal user access, assign admin roles, and inspect the permission surface of each role.</p>
-        </div>
-      </header>
 
       {error && <p className="admin-message is-error">{error}</p>}
       {moduleData && !moduleData.supportsAccessModuleV1 && (

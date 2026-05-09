@@ -1,6 +1,7 @@
 import { requireSupabase } from "../lib/supabase.js";
-import { getCurrentUser } from "./authService.js";
-import { toLegacyRoleCode } from "../admin/rbac.js";
+import { getCurrentUser, resetPassword } from "./authService.js";
+import { normalizeRoleCode, toLegacyRoleCode } from "../admin/rbac.js";
+import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 
 function isMissingOptionalTable(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -72,6 +73,67 @@ const countryAliases = {
   VE: ["Bolivarian Republic of Venezuela"],
   SY: ["Syrian Arab Republic"],
 };
+const adminMenuCache = new Map();
+const ADMIN_MENU_CACHE_VERSION = "v3-admin-finances";
+const ADMIN_WORK_SESSION_STORAGE_KEY = "fly-friendly-admin-work-session";
+const ADMIN_ACTIVITY_SENSITIVE_KEYS = [
+  "password",
+  "secret",
+  "token",
+  "signature",
+  "content",
+  "html",
+  "body",
+  "base64",
+  "raw",
+  "file_path",
+  "signed_url",
+  "signedurl",
+  "email",
+  "phone",
+  "full_name",
+  "fullName",
+  "customer_email",
+  "customer_phone",
+  "customer_name",
+];
+
+function isSensitiveActivityKey(key) {
+  const normalized = String(key || "").trim().toLowerCase();
+  if (!normalized) return false;
+  return ADMIN_ACTIVITY_SENSITIVE_KEYS.some((fragment) => normalized.includes(fragment));
+}
+
+function sanitizeActivityMetadata(value, depth = 0) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (depth > 4) {
+    return "[truncated]";
+  }
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 20).map((item) => sanitizeActivityMetadata(item, depth + 1));
+  }
+
+  if (typeof value === "object") {
+    return Object.entries(value).reduce((acc, [key, nestedValue]) => {
+      if (isSensitiveActivityKey(key)) {
+        return acc;
+      }
+
+      acc[key] = sanitizeActivityMetadata(nestedValue, depth + 1);
+      return acc;
+    }, {});
+  }
+
+  if (typeof value === "string") {
+    return value.length > 240 ? `${value.slice(0, 237)}...` : value;
+  }
+
+  return value;
+}
 
 function splitCsvLine(line) {
   const parts = [];
@@ -238,73 +300,399 @@ async function recordActivity(client, payload) {
   }
 }
 
-export async function fetchAdminOverview() {
-  const client = requireSupabase();
-
-  const [leads, claims, profiles, documents, leadDocuments, leadSignatures, events, eligibility] = await Promise.all([
-    client
-      .from("leads")
-      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, full_name, email, phone, reason, payload, created_at, updated_at")
-      .order("created_at", { ascending: false })
-      .limit(50),
-    client
-      .from("claims")
-      .select("id, claim_code, user_id, status, eligibility_status, compensation_amount, currency, created_at, updated_at")
-      .order("created_at", { ascending: false })
-      .limit(25),
-    client
-      .from("profiles")
-      .select("id, full_name, email, phone, role, created_at")
-      .order("created_at", { ascending: false })
-      .limit(25),
-    client
-      .from("documents")
-      .select("id, claim_id, user_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(25),
-    client
-      .from("lead_documents")
-      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(25),
-    client
-      .from("lead_signatures")
-      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
-      .order("created_at", { ascending: false })
-      .limit(25),
-    client
-      .from("claim_events")
-      .select("id, claim_id, event_type, payload, created_at")
-      .order("created_at", { ascending: false })
-      .limit(25),
-    client
-      .from("eligibility_results")
-      .select("id, claim_id, stage, eligible, confidence, compensation_amount, currency, reason, created_at")
-      .order("created_at", { ascending: false })
-      .limit(25),
-  ]);
-
-  const errors = [leads, claims, profiles, documents, leadDocuments, events, eligibility].map((result) => result.error).filter(Boolean);
-
-  if (errors.length) {
-    throw errors[0];
+export async function logAdminActivity(action, entityType, entityId, metadata = {}) {
+  const normalizedAction = String(action || "").trim();
+  if (!normalizedAction) {
+    return false;
   }
 
-  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error)) {
-    throw leadSignatures.error;
+  const client = requireSupabase();
+  const currentUser = await getCurrentUser().catch(() => null);
+  const sanitizedMetadata = sanitizeActivityMetadata(metadata);
+
+  const insertPayload = {
+    admin_profile_id: metadata?.adminProfileId || currentUser?.id || null,
+    action: normalizedAction,
+    entity_type: entityType ? String(entityType) : null,
+    entity_id: entityId === null || entityId === undefined ? null : String(entityId),
+    metadata: sanitizedMetadata && typeof sanitizedMetadata === "object"
+      ? Object.fromEntries(Object.entries(sanitizedMetadata).filter(([key]) => key !== "adminProfileId"))
+      : {},
+  };
+
+  const { error } = await client
+    .from("admin_activity_logs")
+    .insert(insertPayload);
+
+  if (error) {
+    if (!isMissingOptionalTable(error) && !isMissingColumnError(error)) {
+      console.warn("admin activity logging failed", {
+        action: normalizedAction,
+        entityType: insertPayload.entity_type,
+        entityId: insertPayload.entity_id,
+        code: error.code,
+        message: error.message,
+      });
+    }
+    return false;
+  }
+
+  return true;
+}
+
+export function logAdminMenuVisibilityChange(roleId, menuItemId, isVisible, sortOrder = null) {
+  return logAdminActivity("change_menu_visibility", "admin_menu_item", menuItemId, {
+    module: "menu",
+    role_id: roleId || null,
+    is_visible: Boolean(isVisible),
+    sort_order: sortOrder === null || sortOrder === undefined ? null : Number(sortOrder),
+  });
+}
+
+function readAdminWorkSessionState() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(ADMIN_WORK_SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeAdminWorkSessionState(payload) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    if (!payload) {
+      window.sessionStorage.removeItem(ADMIN_WORK_SESSION_STORAGE_KEY);
+      return;
+    }
+
+    window.sessionStorage.setItem(ADMIN_WORK_SESSION_STORAGE_KEY, JSON.stringify(payload));
+  } catch {}
+}
+
+export async function startAdminWorkSession() {
+  try {
+    const client = requireSupabase();
+    const currentUser = await getCurrentUser().catch(() => null);
+    if (!currentUser?.id) {
+      return null;
+    }
+
+    const existing = readAdminWorkSessionState();
+    if (existing?.sessionId && existing?.profileId === currentUser.id) {
+      await heartbeatAdminWorkSession(existing.sessionId);
+      return existing.sessionId;
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      admin_profile_id: currentUser.id,
+      started_at: now,
+      last_seen_at: now,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    };
+
+    const { data, error } = await client
+      .from("admin_work_sessions")
+      .insert(payload)
+      .select("id, admin_profile_id, started_at, last_seen_at")
+      .single();
+
+    if (error) {
+      if (!isMissingOptionalTable(error) && !isMissingColumnError(error)) {
+        console.warn("admin work session start failed", { code: error.code, message: error.message });
+      }
+      return null;
+    }
+
+    writeAdminWorkSessionState({
+      sessionId: data.id,
+      profileId: currentUser.id,
+    });
+
+    await client
+      .from("admin_team_members")
+      .update({ last_login_at: now })
+      .eq("profile_id", currentUser.id)
+      .then(() => null)
+      .catch(() => null);
+
+    return data.id;
+  } catch {
+    return null;
+  }
+}
+
+export async function heartbeatAdminWorkSession(sessionId = null) {
+  try {
+    const client = requireSupabase();
+    const currentUser = await getCurrentUser().catch(() => null);
+    const stored = readAdminWorkSessionState();
+    const activeSessionId = sessionId || stored?.sessionId || null;
+
+    if (!currentUser?.id || !activeSessionId) {
+      return false;
+    }
+
+    const now = new Date().toISOString();
+    const { error } = await client
+      .from("admin_work_sessions")
+      .update({
+        last_seen_at: now,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      })
+      .eq("id", activeSessionId)
+      .eq("admin_profile_id", currentUser.id);
+
+    if (error) {
+      if (!isMissingOptionalTable(error) && !isMissingColumnError(error)) {
+        console.warn("admin work session heartbeat failed", { code: error.code, message: error.message });
+      }
+      return false;
+    }
+
+    writeAdminWorkSessionState({
+      sessionId: activeSessionId,
+      profileId: currentUser.id,
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function endAdminWorkSession(sessionId = null) {
+  try {
+    const client = requireSupabase();
+    const currentUser = await getCurrentUser().catch(() => null);
+    const stored = readAdminWorkSessionState();
+    const activeSessionId = sessionId || stored?.sessionId || null;
+    const profileId = currentUser?.id || stored?.profileId || null;
+
+    if (!activeSessionId || !profileId) {
+      writeAdminWorkSessionState(null);
+      return false;
+    }
+
+    const currentSession = await client
+      .from("admin_work_sessions")
+      .select("id, started_at, duration_seconds")
+      .eq("id", activeSessionId)
+      .eq("admin_profile_id", profileId)
+      .maybeSingle();
+
+    if (currentSession.error) {
+      if (!isMissingOptionalTable(currentSession.error) && !isMissingColumnError(currentSession.error)) {
+        console.warn("admin work session load before end failed", {
+          code: currentSession.error.code,
+          message: currentSession.error.message,
+        });
+      }
+      writeAdminWorkSessionState(null);
+      return false;
+    }
+
+    const now = new Date();
+    const startedAt = currentSession.data?.started_at ? new Date(currentSession.data.started_at) : null;
+    const durationSeconds = startedAt && Number.isFinite(startedAt.getTime())
+      ? Math.max(0, Math.round((now.getTime() - startedAt.getTime()) / 1000))
+      : Number(currentSession.data?.duration_seconds || 0);
+
+    const { error } = await client
+      .from("admin_work_sessions")
+      .update({
+        ended_at: now.toISOString(),
+        last_seen_at: now.toISOString(),
+        duration_seconds: durationSeconds,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      })
+      .eq("id", activeSessionId)
+      .eq("admin_profile_id", profileId);
+
+    if (error) {
+      if (!isMissingOptionalTable(error) && !isMissingColumnError(error)) {
+        console.warn("admin work session end failed", { code: error.code, message: error.message });
+      }
+      writeAdminWorkSessionState(null);
+      return false;
+    }
+
+    writeAdminWorkSessionState(null);
+    return true;
+  } catch {
+    writeAdminWorkSessionState(null);
+    return false;
+  }
+}
+
+export async function fetchAdminOverview() {
+  const client = requireSupabase();
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayIso = startOfToday.toISOString();
+  const activeCaseStatuses = [
+    "draft",
+    "documents_pending",
+    "ready_to_submit",
+    "submitted_to_airline",
+    "awaiting_response",
+    "airline_replied",
+    "escalated",
+  ];
+  const pendingPayoutStatuses = ["awaiting_payment", "payment_received"];
+
+  const [
+    leadsResponse,
+    cases,
+    pipelineCases,
+    finance,
+    caseDocuments,
+    partnerApplications,
+    partnerPayouts,
+    profiles,
+    newLeadsToday,
+    claimsUnderReview,
+    documentsNeeded,
+    pendingPartnerApplications,
+    pendingPayouts,
+    casesWithoutOwner,
+    recentActivity,
+  ] = await Promise.all([
+    fetchLeadsWithFallback(client),
+    client
+      .from("cases")
+      .select("id, case_code, lead_id, customer_id, airline, route_from, route_to, status, payout_status, estimated_compensation, assigned_manager_id, created_at, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(160),
+    client
+      .from("cases")
+      .select("estimated_compensation, status")
+      .in("status", activeCaseStatuses)
+      .limit(2000),
+    client
+      .from("case_finance")
+      .select("id, case_id, compensation_amount, customer_payout, payment_status, currency, updated_at, payment_received_at, customer_paid_at")
+      .order("updated_at", { ascending: false })
+      .limit(160),
+    client
+      .from("case_documents")
+      .select("id, case_id, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(600),
+    client
+      .from("partner_applications")
+      .select("id, full_name, email, country, primary_platform, audience_size, niche, status, rejection_reason, reviewed_by, reviewed_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(120),
+    client
+      .from("referral_partner_payouts")
+      .select("id, partner_id, case_id, amount, currency, status, paid_at, created_at, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(120),
+    client
+      .from("profiles")
+      .select("id, full_name, email, role")
+      .order("full_name", { ascending: true })
+      .limit(300),
+    client
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", startOfTodayIso),
+    client
+      .from("cases")
+      .select("id", { count: "exact", head: true })
+      .in("status", activeCaseStatuses),
+    client
+      .from("cases")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "documents_pending"),
+    client
+      .from("partner_applications")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    client
+      .from("case_finance")
+      .select("id", { count: "exact", head: true })
+      .in("payment_status", pendingPayoutStatuses),
+    client
+      .from("cases")
+      .select("id", { count: "exact", head: true })
+      .in("status", activeCaseStatuses)
+      .is("assigned_manager_id", null),
+    client
+      .from("activity_logs")
+      .select("id, module, action, target_entity_type, target_entity_id, created_at")
+      .order("created_at", { ascending: false })
+      .limit(40),
+  ]);
+
+  if (leadsResponse.error) {
+    throw leadsResponse.error;
+  }
+
+  const requiredErrors = [cases, pipelineCases, finance, profiles].map((result) => result.error).filter(Boolean);
+  if (requiredErrors.length) {
+    throw requiredErrors[0];
+  }
+
+  const optionalResults = [
+    caseDocuments,
+    partnerApplications,
+    partnerPayouts,
+    newLeadsToday,
+    claimsUnderReview,
+    documentsNeeded,
+    pendingPartnerApplications,
+    pendingPayouts,
+    casesWithoutOwner,
+    recentActivity,
+  ];
+
+  for (const result of optionalResults) {
+    if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
+      throw result.error;
+    }
   }
 
   return {
-    leads: leads.data || [],
-    claims: claims.data || [],
+    leads: leadsResponse.data || [],
+    cases: cases.data || [],
+    pipelineCases: pipelineCases.data || [],
+    finance: finance.data || [],
+    caseDocuments: caseDocuments.data || [],
+    partnerApplications: partnerApplications.data || [],
+    partnerPayouts: partnerPayouts.data || [],
     profiles: profiles.data || [],
-    documents: [
-      ...(leadDocuments.data || []).map((document) => ({ ...document, owner_type: "lead", bucket: "claim-lead-documents" })),
-      ...(documents.data || []).map((document) => ({ ...document, owner_type: "claim", bucket: "claim-documents" })),
-    ],
-    leadSignatures: leadSignatures.data || [],
-    events: events.data || [],
-    eligibility: eligibility.data || [],
+    metrics: {
+      newLeadsToday: newLeadsToday.count ?? null,
+      claimsUnderReview: claimsUnderReview.count ?? null,
+      documentsNeeded: documentsNeeded.count ?? null,
+      pendingPartnerApplications: pendingPartnerApplications.count ?? null,
+      pendingPayouts: pendingPayouts.count ?? null,
+      casesWithoutOwner: casesWithoutOwner.count ?? null,
+      estimatedCompensationPipeline: (pipelineCases.data || []).reduce(
+        (sum, item) => sum + Number(item.estimated_compensation || 0),
+        0,
+      ),
+    },
+    health: {
+      failedEmailsSupported: false,
+      failedEmails: null,
+    },
+    activityLogs: recentActivity.data || [],
+    supportsCoreSchemaV1: leadsResponse.supportsCoreSchemaV1,
+    supportsCaseDocuments: !caseDocuments.error,
+    supportsPartnerApplications: !partnerApplications.error,
+    supportsPartnerPayouts: !partnerPayouts.error,
+    supportsActivityLogs: !recentActivity.error,
   };
 }
 
@@ -386,12 +774,12 @@ export async function fetchLeadsModuleData() {
       .limit(500),
     client
       .from("lead_documents")
-      .select("id, lead_id, document_type, file_name, mime_type, file_size, status, created_at")
+      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
       .order("created_at", { ascending: false })
       .limit(800),
     client
       .from("lead_signatures")
-      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, created_at")
+      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
       .order("created_at", { ascending: false })
       .limit(500),
   ]);
@@ -422,7 +810,11 @@ export async function fetchLeadsModuleData() {
     assignableUsers: (profiles.data || []).filter((profile) => profile.role !== "customer"),
     notes: leadNotes.data || [],
     statusHistory: leadStatusHistory.data || [],
-    documents: leadDocuments.data || [],
+    documents: (leadDocuments.data || []).map((item) => ({
+      ...item,
+      bucket: "claim-lead-documents",
+      kind: "document",
+    })),
     signatures: leadSignatures.data || [],
     supportsCoreSchemaV1: leadsResponse.supportsCoreSchemaV1,
     supportsNotes: !leadNotes.error,
@@ -1209,8 +1601,26 @@ export async function convertLeadToCase(leadId) {
 
 export async function fetchCustomersModuleData() {
   const client = requireSupabase();
+  const activeCustomerCaseStatuses = ["documents_pending", "ready_to_submit", "submitted_to_airline", "awaiting_response", "approved", "payment_processing"];
+  const fetchProfiles = async () => {
+    const primary = await client
+      .from("profiles")
+      .select("id, full_name, email, phone, role, created_at, status, last_login_at")
+      .order("created_at", { ascending: false })
+      .limit(500);
 
-  const [customers, leads, cases, communications] = await Promise.all([
+    if (primary.error && isMissingColumnError(primary.error)) {
+      return client
+        .from("profiles")
+        .select("id, full_name, email, phone, role, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+    }
+
+    return primary;
+  };
+
+  const [customers, leads, cases, communications, profiles, finance, leadDocuments, caseDocuments, leadSignatures, referrals] = await Promise.all([
     client
       .from("customers")
       .select("id, full_name, email, phone, country, preferred_language, notes, total_leads, total_cases, total_approved_cases, total_compensation, created_at, updated_at")
@@ -1218,19 +1628,48 @@ export async function fetchCustomersModuleData() {
       .limit(300),
     client
       .from("leads")
-      .select("id, lead_code, customer_id, status, stage, full_name, email, phone, departure_airport, arrival_airport, airline, created_at")
-      .order("created_at", { ascending: false })
+      .select("id, lead_code, customer_id, status, stage, full_name, email, phone, departure_airport, arrival_airport, airline, created_at, updated_at")
+      .order("updated_at", { ascending: false })
       .limit(500),
     client
       .from("cases")
-      .select("id, case_code, customer_id, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at")
-      .order("created_at", { ascending: false })
+      .select("id, case_code, customer_id, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at, updated_at, paid_at")
+      .order("updated_at", { ascending: false })
       .limit(500),
     client
       .from("communications")
       .select("id, customer_id, entity_type, entity_id, channel, direction, subject, body, created_at")
       .order("created_at", { ascending: false })
       .limit(500),
+    fetchProfiles(),
+    client
+      .from("case_finance")
+      .select("id, case_id, compensation_amount, customer_payout, payment_status, currency, updated_at, customer_paid_at")
+      .order("updated_at", { ascending: false })
+      .limit(600),
+    client
+      .from("lead_documents")
+      .select("id, lead_id, document_type, status, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(800),
+    client
+      .from("case_documents")
+      .select("id, case_id, document_type, status, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(800),
+    client
+      .from("lead_signatures")
+      .select("id, lead_id, terms_accepted, signed_at, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    client
+      .from("referrals")
+      .select("id, partner_id, customer_id, lead_id, case_id, referral_code, attribution_meta, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .limit(600),
   ]);
 
   const requiredErrors = [customers, leads, cases].map((result) => result.error).filter(Boolean);
@@ -1241,7 +1680,15 @@ export async function fetchCustomersModuleData() {
         leads: leads.data || [],
         cases: cases.data || [],
         communications: communications.data || [],
+        profiles: [],
+        finance: [],
+        leadDocuments: [],
+        caseDocuments: [],
+        leadSignatures: [],
         supportsCustomersModuleV1: false,
+        supportsCustomerProfiles: false,
+        supportsCustomerFinance: false,
+        supportsCustomerDocuments: false,
       };
     }
     throw requiredErrors[0];
@@ -1251,12 +1698,49 @@ export async function fetchCustomersModuleData() {
     throw communications.error;
   }
 
+  if (profiles.error && !isMissingOptionalTable(profiles.error) && !isMissingColumnError(profiles.error)) {
+    throw profiles.error;
+  }
+
+  if (finance.error && !isMissingOptionalTable(finance.error) && !isMissingColumnError(finance.error)) {
+    throw finance.error;
+  }
+
+  if (leadDocuments.error && !isMissingOptionalTable(leadDocuments.error) && !isMissingColumnError(leadDocuments.error)) {
+    throw leadDocuments.error;
+  }
+
+  if (caseDocuments.error && !isMissingOptionalTable(caseDocuments.error) && !isMissingColumnError(caseDocuments.error)) {
+    throw caseDocuments.error;
+  }
+
+  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error) && !isMissingColumnError(leadSignatures.error)) {
+    throw leadSignatures.error;
+  }
+
+  if (referrals.error && !isMissingOptionalTable(referrals.error) && !isMissingColumnError(referrals.error)) {
+    throw referrals.error;
+  }
+
   return {
     customers: customers.data || [],
     leads: leads.data || [],
-    cases: cases.data || [],
+    cases: (cases.data || []).map((item) => ({
+      ...item,
+      is_active_customer_case: activeCustomerCaseStatuses.includes(String(item.status || "").toLowerCase()),
+    })),
     communications: communications.data || [],
+    profiles: profiles.data || [],
+    finance: finance.data || [],
+    leadDocuments: leadDocuments.data || [],
+    caseDocuments: caseDocuments.data || [],
+    leadSignatures: leadSignatures.data || [],
+    referrals: referrals.data || [],
     supportsCustomersModuleV1: true,
+    supportsCustomerProfiles: !profiles.error,
+    supportsCustomerFinance: !finance.error,
+    supportsCustomerDocuments: !leadDocuments.error && !caseDocuments.error,
+    supportsCustomerReferrals: !referrals.error,
   };
 }
 
@@ -1290,7 +1774,7 @@ export async function updateCustomerProfile(customerId, updates) {
 export async function fetchTasksModuleData() {
   const client = requireSupabase();
 
-  const [tasks, profiles, leads, cases, customers] = await Promise.all([
+  const [tasks, profiles, leads, cases, customers, documents, finance, partners, activityLogs] = await Promise.all([
     client
       .from("tasks")
       .select("id, title, description, related_entity_type, related_entity_id, assigned_user_id, priority, status, task_type, due_date, reminder_at, created_by, completed_at, created_at, updated_at")
@@ -1316,6 +1800,27 @@ export async function fetchTasksModuleData() {
       .select("id, full_name, email, phone")
       .order("created_at", { ascending: false })
       .limit(400),
+    client
+      .from("case_documents")
+      .select("id, case_id, document_type, file_name, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(400),
+    client
+      .from("case_finance")
+      .select("id, case_id, payment_status, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(400),
+    client
+      .from("referral_partners")
+      .select("id, name, public_name, referral_code, status")
+      .order("created_at", { ascending: false })
+      .limit(300),
+    client
+      .from("activity_logs")
+      .select("id, user_id, action, module, target_entity_type, target_entity_id, previous_value, new_value, meta, created_at")
+      .eq("module", "tasks")
+      .order("created_at", { ascending: false })
+      .limit(800),
   ]);
 
   const errors = [profiles, leads, cases, customers].map((result) => result.error).filter(Boolean);
@@ -1327,7 +1832,12 @@ export async function fetchTasksModuleData() {
         leads: [],
         cases: [],
         customers: [],
+        documents: [],
+        finance: [],
+        partners: [],
+        activityLogs: [],
         supportsTasksModuleV1: false,
+        supportsTaskActivity: false,
       };
     }
     throw errors[0];
@@ -1341,10 +1851,20 @@ export async function fetchTasksModuleData() {
         leads: leads.data || [],
         cases: cases.data || [],
         customers: customers.data || [],
+        documents: [],
+        finance: [],
+        partners: [],
+        activityLogs: [],
         supportsTasksModuleV1: false,
+        supportsTaskActivity: false,
       };
     }
     throw tasks.error;
+  }
+
+  const optionalErrors = [documents, finance, partners, activityLogs].map((result) => result.error).filter(Boolean);
+  if (optionalErrors.some((error) => !isMissingOptionalTable(error) && !isMissingColumnError(error))) {
+    throw optionalErrors.find((error) => !isMissingOptionalTable(error) && !isMissingColumnError(error));
   }
 
   return {
@@ -1353,7 +1873,12 @@ export async function fetchTasksModuleData() {
     leads: leads.data || [],
     cases: cases.data || [],
     customers: customers.data || [],
+    documents: documents.data || [],
+    finance: finance.data || [],
+    partners: partners.data || [],
+    activityLogs: activityLogs.data || [],
     supportsTasksModuleV1: true,
+    supportsTaskActivity: !activityLogs.error,
   };
 }
 
@@ -1590,7 +2115,7 @@ export async function createCommunication(input) {
 export async function fetchDocumentsCenterData() {
   const client = requireSupabase();
 
-  const [leadDocuments, caseDocuments, claimDocuments, leadSignatures, leads, cases, claims, customers] = await Promise.all([
+  const [leadDocuments, caseDocuments, claimDocuments, leadSignatures, leads, cases, claims, customers, tasks] = await Promise.all([
     client
       .from("lead_documents")
       .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, deleted_at, purge_after, created_at")
@@ -1617,13 +2142,13 @@ export async function fetchDocumentsCenterData() {
       .limit(300),
     client
       .from("leads")
-      .select("id, lead_code, customer_id, full_name, email")
+      .select("id, lead_code, customer_id, full_name, email, departure_airport, arrival_airport, airline, created_at")
       .order("created_at", { ascending: false })
       .limit(500),
     client
       .from("cases")
-      .select("id, case_code, customer_id")
-      .order("created_at", { ascending: false })
+      .select("id, case_code, customer_id, route_from, route_to, airline, created_at, updated_at")
+      .order("updated_at", { ascending: false })
       .limit(500),
     client
       .from("claims")
@@ -1632,8 +2157,13 @@ export async function fetchDocumentsCenterData() {
       .limit(500),
     client
       .from("customers")
-      .select("id, full_name, email")
+      .select("id, full_name, email, phone")
       .order("created_at", { ascending: false })
+      .limit(500),
+    client
+      .from("tasks")
+      .select("id, title, status, priority, related_entity_type, related_entity_id, assigned_user_id, due_date, created_at, updated_at")
+      .order("updated_at", { ascending: false })
       .limit(500),
   ]);
 
@@ -1650,6 +2180,10 @@ export async function fetchDocumentsCenterData() {
     throw leadSignatures.error;
   }
 
+  if (tasks.error && !isMissingOptionalTable(tasks.error) && !isMissingColumnError(tasks.error)) {
+    throw tasks.error;
+  }
+
   const documents = [
     ...(leadDocuments.data || []).map((item) => ({ ...item, owner_type: "lead", owner_id: item.lead_id, bucket: "claim-lead-documents", kind: "document" })),
     ...(caseDocuments.data || []).map((item) => ({ ...item, owner_type: "case", owner_id: item.case_id, bucket: "case-documents", kind: "document" })),
@@ -1663,8 +2197,10 @@ export async function fetchDocumentsCenterData() {
     cases: cases.data || [],
     claims: claims.data || [],
     customers: customers.data || [],
+    tasks: tasks.data || [],
     supportsDocumentsCenterV1: !caseDocuments.error,
     supportsSignatures: !leadSignatures.error,
+    supportsTasksLinking: !tasks.error,
   };
 }
 
@@ -1679,7 +2215,7 @@ export async function fetchFinanceModuleData() {
       .limit(500),
     client
       .from("cases")
-      .select("id, case_code, customer_id, airline, route_from, route_to, status, payout_status, referral_partner_label, assigned_manager_id")
+      .select("id, case_code, customer_id, airline, route_from, route_to, status, payout_status, referral_partner_label, assigned_manager_id, estimated_compensation, created_at, updated_at, approved_at, paid_at, closed_at")
       .order("created_at", { ascending: false })
       .limit(500),
     client
@@ -1776,6 +2312,13 @@ export async function updateCaseFinance(financeId, updates) {
     previousValue: current.data || null,
     newValue: payload,
   });
+
+  void logAdminActivity("update_finance_record", "case_finance", financeId, {
+    module: "finance",
+    case_id: current.data?.case_id || null,
+    fields: Object.keys(updates || {}),
+    payment_status: payload.payment_status || current.data?.payment_status || null,
+  });
 }
 
 function matchPartnerForRow(row, partners = []) {
@@ -1803,13 +2346,13 @@ export async function fetchReferralPartnersModuleData() {
       .limit(500),
     client
       .from("leads")
-      .select("id, lead_code, referral_partner_id, source, source_details, payload, created_at")
-      .order("created_at", { ascending: false })
+      .select("id, lead_code, customer_id, referral_partner_id, source, source_details, payload, status, stage, full_name, email, phone, country, preferred_language, departure_airport, arrival_airport, airline, disruption_type, created_at, updated_at")
+      .order("updated_at", { ascending: false })
       .limit(600),
     client
       .from("cases")
-      .select("id, case_code, referral_partner_id, referral_partner_label, status, payout_status, estimated_compensation, created_at")
-      .order("created_at", { ascending: false })
+      .select("id, case_code, lead_id, customer_id, referral_partner_id, referral_partner_label, status, payout_status, estimated_compensation, airline, route_from, route_to, created_at, updated_at, paid_at")
+      .order("updated_at", { ascending: false })
       .limit(600),
     client
       .from("case_finance")
@@ -1841,6 +2384,42 @@ export async function fetchReferralPartnersModuleData() {
     finance: finance.data || [],
     commissions: commissions.data || [],
     supportsPartnersModuleV1: !partners.error,
+  };
+}
+
+export async function fetchReferralControlCenterData() {
+  const client = requireSupabase();
+
+  const [partnerModule, applicationsModule, referrals, customers] = await Promise.all([
+    fetchReferralPartnersModuleData(),
+    fetchPartnerApplicationsModuleData(),
+    client
+      .from("referrals")
+      .select("id, partner_id, client_profile_id, customer_id, lead_id, case_id, referral_code, source_url, source_path, status, attribution_meta, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .limit(800),
+    client
+      .from("customers")
+      .select("id, full_name, email, phone, country, preferred_language, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .limit(600),
+  ]);
+
+  if (referrals.error && !isMissingOptionalTable(referrals.error) && !isMissingColumnError(referrals.error)) {
+    throw referrals.error;
+  }
+
+  if (customers.error && !isMissingOptionalTable(customers.error) && !isMissingColumnError(customers.error)) {
+    throw customers.error;
+  }
+
+  return {
+    ...partnerModule,
+    ...applicationsModule,
+    referrals: referrals.data || [],
+    customers: customers.data || [],
+    supportsReferralsModuleV1: !referrals.error,
+    supportsReferralCustomersV1: !customers.error,
   };
 }
 
@@ -1950,12 +2529,20 @@ async function invokePartnerApplicationReviewFunction(functionName, body) {
 }
 
 export async function approvePartnerApplication(applicationId, input = {}) {
-  return invokePartnerApplicationReviewFunction("approve-partner-application", {
+  const result = await invokePartnerApplicationReviewFunction("approve-partner-application", {
     application_id: applicationId,
     commission_rate: input.commission_rate,
     referral_code: input.referral_code,
     notes: input.notes,
   });
+
+  void logAdminActivity("approve_partner_application", "partner_application", applicationId, {
+    module: "partner_program",
+    partner_id: result?.partner?.id || result?.referralPartner?.id || null,
+    referral_code: result?.partner?.referral_code || result?.referralPartner?.referral_code || null,
+  });
+
+  return result;
 }
 
 export async function rejectPartnerApplication(applicationId, rejectionReason) {
@@ -1964,10 +2551,17 @@ export async function rejectPartnerApplication(applicationId, rejectionReason) {
     throw new Error("Rejection reason is required.");
   }
 
-  return invokePartnerApplicationReviewFunction("reject-partner-application", {
+  const result = await invokePartnerApplicationReviewFunction("reject-partner-application", {
     application_id: applicationId,
     rejection_reason: normalizedReason,
   });
+
+  void logAdminActivity("reject_partner_application", "partner_application", applicationId, {
+    module: "partner_program",
+    rejection_reason: normalizedReason,
+  });
+
+  return result;
 }
 
 export async function updatePartnerPortalStatus(partnerId, portalStatus, notes) {
@@ -1976,11 +2570,27 @@ export async function updatePartnerPortalStatus(partnerId, portalStatus, notes) 
     throw new Error("A valid portal status is required.");
   }
 
-  return invokePartnerApplicationReviewFunction("update-partner-portal-status", {
+  const result = await invokePartnerApplicationReviewFunction("update-partner-portal-status", {
     partner_id: partnerId,
     portal_status: normalizedStatus,
     notes: String(notes || "").trim() || null,
   });
+
+  if (normalizedStatus === "suspended") {
+    void logAdminActivity("suspend_partner", "referral_partner", partnerId, {
+      module: "partner_program",
+      portal_status: normalizedStatus,
+    });
+  }
+
+  if (normalizedStatus === "approved") {
+    void logAdminActivity("reactivate_partner", "referral_partner", partnerId, {
+      module: "partner_program",
+      portal_status: normalizedStatus,
+    });
+  }
+
+  return result;
 }
 
 export async function createReferralPartner(input) {
@@ -2563,6 +3173,1641 @@ export async function fetchAccessModuleData() {
   };
 }
 
+function slugifyRoleCode(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function roleLabelFromRecord(role) {
+  return role?.name || role?.label || role?.code || "Role";
+}
+
+function buildStaticAdminMenuItemsCatalog() {
+  return adminNavigationSections.flatMap((section) => section.pages.map((page, index) => ({
+    id: page.key,
+    key: page.key,
+    label: page.label,
+    route: page.path,
+    icon: page.icon?.name || null,
+    group_key: section.key,
+    group_label: section.label,
+    sort_order: (index + 1) * 10,
+    is_enabled: true,
+    required_permissions: [
+      ...(page.permission ? [page.permission] : []),
+      ...((page.requiredPermissions || []).filter(Boolean)),
+      ...((page.anyPermissions || []).filter(Boolean)),
+    ],
+    is_critical: ["/admin", "/admin/people/users-roles", "/admin/settings"].includes(page.path),
+  })));
+}
+
+async function syncAdminMenuCatalog(client) {
+  const staticItems = buildStaticAdminMenuItemsCatalog();
+  const payload = staticItems.map((item) => ({
+    key: item.key,
+    label: item.label,
+    route: item.route,
+    icon: item.icon,
+    group_key: item.group_key,
+    group_label: item.group_label,
+    sort_order: item.sort_order,
+    is_enabled: item.is_enabled,
+    required_permissions: item.required_permissions,
+    is_critical: item.is_critical,
+    updated_at: new Date().toISOString(),
+  }));
+
+  const result = await client
+    .from("admin_menu_items")
+    .upsert(payload, { onConflict: "key" })
+    .select("id, key, label, route, icon, group_key, group_label, sort_order, is_enabled, required_permissions, is_critical, created_at, updated_at");
+
+  if (result.error) {
+    if (isMissingOptionalTable(result.error) || isMissingColumnError(result.error)) {
+      return staticItems;
+    }
+    throw result.error;
+  }
+
+  return result.data || staticItems;
+}
+
+async function fetchAdminMenuAccessCatalog(client) {
+  let menuItemsResponse = await client
+    .from("admin_menu_items")
+    .select("id, key, label, route, icon, group_key, group_label, sort_order, is_enabled, required_permissions, is_critical, created_at, updated_at")
+    .order("sort_order", { ascending: true });
+
+  if (menuItemsResponse.error && !isMissingOptionalTable(menuItemsResponse.error) && !isMissingColumnError(menuItemsResponse.error)) {
+    throw menuItemsResponse.error;
+  }
+
+  if (menuItemsResponse.error || !(menuItemsResponse.data || []).length) {
+    const synced = await syncAdminMenuCatalog(client).catch(() => buildStaticAdminMenuItemsCatalog());
+    menuItemsResponse = { data: synced, error: null };
+  }
+
+  const visibilityResponse = await client
+    .from("admin_role_menu_visibility")
+    .select("id, role_id, menu_item_id, is_visible, sort_order, created_at, updated_at")
+    .limit(5000);
+
+  if (visibilityResponse.error && !isMissingOptionalTable(visibilityResponse.error) && !isMissingColumnError(visibilityResponse.error)) {
+    throw visibilityResponse.error;
+  }
+
+  return {
+    menuItems: menuItemsResponse.data || buildStaticAdminMenuItemsCatalog(),
+    roleMenuVisibility: visibilityResponse.error ? [] : (visibilityResponse.data || []),
+    supportsMenuAccessV1: !visibilityResponse.error,
+  };
+}
+
+function normalizeRoleRecord(role) {
+  if (!role) {
+    return null;
+  }
+
+  return {
+    id: role.id || role.code,
+    code: role.code,
+    name: role.name || role.label || role.code,
+    label: role.label || role.name || role.code,
+    slug: role.slug || role.code,
+    description: role.description || "",
+    isSystemRole: role.is_system_role ?? role.is_system ?? true,
+    isOwnerRole: role.is_owner_role ?? (role.code === "owner" || role.code === "super_admin"),
+    isActive: role.is_active ?? true,
+    rank: role.rank ?? 0,
+    createdAt: role.created_at || null,
+    updatedAt: role.updated_at || null,
+  };
+}
+
+function normalizePermissionRecord(permission) {
+  if (!permission) {
+    return null;
+  }
+
+  return {
+    id: permission.id || permission.code,
+    code: permission.code || permission.key,
+    key: permission.key || permission.code,
+    module: permission.group_key || permission.module || "general",
+    action: permission.action || permission.code?.split(".")?.[1] || "view",
+    label: permission.label || permission.code,
+    description: permission.description || "",
+  };
+}
+
+async function fetchRolesCatalog(client) {
+  const expanded = await client
+    .from("admin_roles")
+    .select("id, code, label, rank, is_system, created_at, name, slug, description, is_system_role, is_owner_role, is_active, updated_at")
+    .order("rank", { ascending: false })
+    .limit(200);
+
+  if (!expanded.error) {
+    return expanded.data || [];
+  }
+
+  if (!isMissingOptionalTable(expanded.error) && !isMissingColumnError(expanded.error)) {
+    throw expanded.error;
+  }
+
+  const legacy = await client
+    .from("admin_roles")
+    .select("code, label, rank, is_system, created_at")
+    .order("rank", { ascending: false })
+    .limit(200);
+
+  if (legacy.error) {
+    throw legacy.error;
+  }
+
+  return legacy.data || [];
+}
+
+async function fetchPermissionsCatalog(client) {
+  const expanded = await client
+    .from("admin_permissions")
+    .select("id, code, module, action, label, created_at, key, description, group_key")
+    .order("group_key", { ascending: true })
+    .limit(1000);
+
+  if (!expanded.error) {
+    return expanded.data || [];
+  }
+
+  if (!isMissingOptionalTable(expanded.error) && !isMissingColumnError(expanded.error)) {
+    throw expanded.error;
+  }
+
+  const legacy = await client
+    .from("admin_permissions")
+    .select("code, module, action, label, created_at")
+    .order("module", { ascending: true })
+    .limit(1000);
+
+  if (legacy.error) {
+    throw legacy.error;
+  }
+
+  return legacy.data || [];
+}
+
+async function fetchRolePermissionsCatalog(client) {
+  const expanded = await client
+    .from("admin_role_permissions")
+    .select("id, role_id, permission_id, is_allowed, role_code, permission_code, created_at")
+    .limit(5000);
+
+  if (!expanded.error) {
+    return expanded.data || [];
+  }
+
+  if (!isMissingOptionalTable(expanded.error) && !isMissingColumnError(expanded.error)) {
+    throw expanded.error;
+  }
+
+  const legacy = await client
+    .from("admin_role_permissions")
+    .select("role_code, permission_code, created_at")
+    .limit(5000);
+
+  if (legacy.error) {
+    throw legacy.error;
+  }
+
+  return legacy.data || [];
+}
+
+async function fetchRoleMemberStats(client) {
+  const [teamMembers, userRoles] = await Promise.all([
+    client
+      .from("admin_team_members")
+      .select("id, role_id, status"),
+    client
+      .from("user_admin_roles")
+      .select("user_id, role_code"),
+  ]);
+
+  if (teamMembers.error && !isMissingOptionalTable(teamMembers.error) && !isMissingColumnError(teamMembers.error)) {
+    throw teamMembers.error;
+  }
+
+  if (userRoles.error && !isMissingOptionalTable(userRoles.error)) {
+    throw userRoles.error;
+  }
+
+  return {
+    teamMembers: teamMembers.error ? [] : (teamMembers.data || []),
+    userRoles: userRoles.error ? [] : (userRoles.data || []),
+    supportsTeamMembers: !teamMembers.error,
+  };
+}
+
+export async function fetchAdminRolesModuleData() {
+  const client = requireSupabase();
+
+  const [rolesRaw, permissionsRaw, rolePermissionsRaw, memberStats, menuAccess] = await Promise.all([
+    fetchRolesCatalog(client),
+    fetchPermissionsCatalog(client),
+    fetchRolePermissionsCatalog(client),
+    fetchRoleMemberStats(client),
+    fetchAdminMenuAccessCatalog(client).catch(() => ({
+      menuItems: buildStaticAdminMenuItemsCatalog(),
+      roleMenuVisibility: [],
+      supportsMenuAccessV1: false,
+    })),
+  ]);
+
+  const roles = rolesRaw.map(normalizeRoleRecord).filter(Boolean);
+  const permissions = permissionsRaw.map(normalizePermissionRecord).filter(Boolean);
+  const permissionIdsByCode = new Map(permissions.map((item) => [item.code, item.id]));
+  const roleIdsByCode = new Map(roles.map((item) => [item.code, item.id]));
+
+  const rolePermissions = (rolePermissionsRaw || []).map((item) => ({
+    id: item.id || `${item.role_code}:${item.permission_code}`,
+    roleId: item.role_id || roleIdsByCode.get(item.role_code) || null,
+    permissionId: item.permission_id || permissionIdsByCode.get(item.permission_code) || null,
+    roleCode: item.role_code || roles.find((role) => role.id === item.role_id)?.code || null,
+    permissionCode: item.permission_code || permissions.find((permission) => permission.id === item.permission_id)?.code || null,
+    isAllowed: item.is_allowed ?? true,
+    createdAt: item.created_at || null,
+  })).filter((item) => item.roleCode && item.permissionCode && item.isAllowed);
+
+  const memberCountByRoleId = new Map();
+  memberStats.teamMembers
+    .filter((item) => item.status !== "archived")
+    .forEach((item) => {
+      if (!item.role_id) return;
+      memberCountByRoleId.set(item.role_id, (memberCountByRoleId.get(item.role_id) || 0) + 1);
+    });
+
+  const memberCountByRoleCode = new Map();
+  memberStats.userRoles.forEach((item) => {
+    memberCountByRoleCode.set(item.role_code, (memberCountByRoleCode.get(item.role_code) || 0) + 1);
+  });
+
+  return {
+    roles: roles.map((role) => ({
+      ...role,
+      memberCount: memberStats.supportsTeamMembers
+        ? (memberCountByRoleId.get(role.id) || 0)
+        : (memberCountByRoleCode.get(role.code) || 0),
+    })),
+    permissions,
+    rolePermissions,
+    menuItems: (menuAccess.menuItems || []).map((item) => ({
+      id: item.id || item.key,
+      key: item.key,
+      label: item.label,
+      route: item.route,
+      icon: item.icon || null,
+      groupKey: item.group_key || item.groupKey || null,
+      groupLabel: item.group_label || item.groupLabel || null,
+      sortOrder: item.sort_order ?? item.sortOrder ?? 0,
+      requiredPermissions: Array.isArray(item.required_permissions)
+        ? item.required_permissions
+        : Array.isArray(item.requiredPermissions)
+          ? item.requiredPermissions
+          : [],
+      isCritical: Boolean(item.is_critical ?? item.isCritical),
+      isEnabled: item.is_enabled ?? item.isEnabled ?? true,
+    })),
+    roleMenuVisibility: menuAccess.roleMenuVisibility || [],
+    supportsDynamicRolesV1: roles.length > 0 && permissions.length > 0,
+    supportsTeamMembersV1: memberStats.supportsTeamMembers,
+    supportsMenuAccessV1: menuAccess.supportsMenuAccessV1,
+  };
+}
+
+function buildRolePayload(input = {}) {
+  const roleName = String(input.name || input.label || "").trim();
+  const roleCode = slugifyRoleCode(input.code || input.slug || input.name);
+
+  if (!roleName) {
+    throw new Error("Role name is required.");
+  }
+
+  if (!roleCode) {
+    throw new Error("Role slug is required.");
+  }
+
+  return {
+    code: roleCode,
+    label: roleName,
+    name: roleName,
+    slug: String(input.slug || roleCode).trim() || roleCode,
+    description: String(input.description || "").trim() || null,
+    is_active: input.isActive ?? true,
+    is_system_role: input.isSystemRole ?? false,
+    is_owner_role: input.isOwnerRole ?? false,
+    is_system: input.isSystemRole ?? false,
+    rank: Number.isFinite(input.rank) ? input.rank : 0,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function replaceRolePermissions(client, role, permissionCodes = []) {
+  const normalizedPermissionCodes = Array.from(new Set(permissionCodes.filter(Boolean)));
+
+  const currentAssignments = await client
+    .from("admin_role_permissions")
+    .select("id, role_code, permission_code")
+    .eq("role_code", role.code);
+
+  if (currentAssignments.error && !isMissingOptionalTable(currentAssignments.error) && !isMissingColumnError(currentAssignments.error)) {
+    throw currentAssignments.error;
+  }
+
+  const permissionsLookup = await client
+    .from("admin_permissions")
+    .select("id, code")
+    .in("code", normalizedPermissionCodes);
+
+  if (permissionsLookup.error && !isMissingOptionalTable(permissionsLookup.error) && !isMissingColumnError(permissionsLookup.error)) {
+    throw permissionsLookup.error;
+  }
+
+  const permissionsByCode = new Map((permissionsLookup.data || []).map((item) => [item.code, item]));
+  const existingCodes = new Set((currentAssignments.data || []).map((item) => item.permission_code));
+  const toDelete = Array.from(existingCodes).filter((code) => !normalizedPermissionCodes.includes(code));
+  const toInsert = normalizedPermissionCodes.filter((code) => !existingCodes.has(code));
+
+  if ((role.isOwnerRole || role.code === "owner" || role.code === "super_admin") && toDelete.length) {
+    const criticalPermissions = ["dashboard.view", "team.manage", "roles.manage", "menu.manage", "settings.manage"];
+    const removingCritical = toDelete.some((code) => criticalPermissions.includes(code));
+    if (removingCritical) {
+      const teamMembersResponse = await client
+        .from("admin_team_members")
+        .select("id, role_id, status");
+
+      const activeOwners = !teamMembersResponse.error
+        ? (teamMembersResponse.data || []).filter((item) => item.role_id === role.id && item.status === "active").length
+        : 1;
+
+      if (activeOwners <= 1) {
+        throw new Error("Cannot remove critical permissions from the last owner role.");
+      }
+    }
+  }
+
+  if (toDelete.length) {
+    const deleteResponse = await client
+      .from("admin_role_permissions")
+      .delete()
+      .eq("role_code", role.code)
+      .in("permission_code", toDelete);
+
+    if (deleteResponse.error) {
+      throw deleteResponse.error;
+    }
+  }
+
+  if (toInsert.length) {
+    const insertPayload = toInsert.map((permissionCode) => ({
+      role_code: role.code,
+      permission_code: permissionCode,
+      role_id: role.id || null,
+      permission_id: permissionsByCode.get(permissionCode)?.id || null,
+      is_allowed: true,
+    }));
+
+    const insertResponse = await client
+      .from("admin_role_permissions")
+      .upsert(insertPayload, { onConflict: "role_code,permission_code" });
+
+    if (insertResponse.error) {
+      throw insertResponse.error;
+    }
+  }
+}
+
+async function replaceRoleMenuVisibility(client, role, menuVisibility = {}) {
+  const menuCatalog = await fetchAdminMenuAccessCatalog(client);
+  const menuItems = (menuCatalog.menuItems || []).filter((item) => item.route);
+  const visibilityByPath = new Map(Object.entries(menuVisibility || {}));
+  const itemsByRoute = new Map(menuItems.map((item) => [item.route, item]));
+  const existingResponse = await client
+    .from("admin_role_menu_visibility")
+    .select("id, menu_item_id, is_visible")
+    .eq("role_id", role.id);
+
+  if (existingResponse.error && !isMissingOptionalTable(existingResponse.error) && !isMissingColumnError(existingResponse.error)) {
+    throw existingResponse.error;
+  }
+
+  const existingByMenuId = new Map((existingResponse.data || []).map((item) => [item.menu_item_id, item]));
+  const criticalOwnerRoutes = new Set(["/admin", "/admin/people/users-roles", "/admin/settings"]);
+  const upsertPayload = [];
+
+  menuItems.forEach((item) => {
+    const explicit = visibilityByPath.has(item.route) ? visibilityByPath.get(item.route) : null;
+    const forcedVisible = role.isOwnerRole && (item.is_critical || criticalOwnerRoutes.has(item.route));
+    const isVisible = forcedVisible ? true : (explicit ?? true);
+    const current = existingByMenuId.get(item.id);
+    if (!current || current.is_visible !== isVisible) {
+      upsertPayload.push({
+        id: current?.id,
+        role_id: role.id,
+        menu_item_id: item.id,
+        is_visible: isVisible,
+        sort_order: item.sort_order ?? current?.sort_order ?? null,
+        updated_at: new Date().toISOString(),
+      });
+    }
+  });
+
+  if (upsertPayload.length) {
+    const response = await client
+      .from("admin_role_menu_visibility")
+      .upsert(upsertPayload, { onConflict: "role_id,menu_item_id" });
+
+    if (response.error) {
+      throw response.error;
+    }
+  }
+
+  const unknownRoutes = Array.from(visibilityByPath.keys()).filter((route) => !itemsByRoute.has(route));
+  if (unknownRoutes.length) {
+    await syncAdminMenuCatalog(client).catch(() => null);
+  }
+}
+
+export async function createAdminRole({ role, permissionCodes = [], menuVisibility = {} }) {
+  const client = requireSupabase();
+  const payload = buildRolePayload(role);
+
+  const insertResponse = await client
+    .from("admin_roles")
+    .insert(payload)
+    .select("id, code, label, rank, is_system, created_at, name, slug, description, is_system_role, is_owner_role, is_active, updated_at")
+    .single();
+
+  if (insertResponse.error) {
+    throw insertResponse.error;
+  }
+
+  const nextRole = normalizeRoleRecord(insertResponse.data);
+  await replaceRolePermissions(client, nextRole, permissionCodes);
+  await replaceRoleMenuVisibility(client, nextRole, menuVisibility).catch(() => null);
+  void logAdminActivity("create_role", "admin_role", nextRole.id, {
+    module: "roles",
+    role_code: nextRole.code,
+    role_slug: nextRole.slug,
+    permissions_count: permissionCodes.length,
+    is_system_role: nextRole.isSystemRole,
+    is_owner_role: nextRole.isOwnerRole,
+  });
+  return nextRole;
+}
+
+export async function updateAdminRoleDefinition(roleId, { role, permissionCodes = [], menuVisibility = {} }) {
+  const client = requireSupabase();
+  const existingResponse = await client
+    .from("admin_roles")
+    .select("id, code, label, rank, is_system, created_at, name, slug, description, is_system_role, is_owner_role, is_active, updated_at")
+    .eq("id", roleId)
+    .maybeSingle();
+
+  if (existingResponse.error) {
+    throw existingResponse.error;
+  }
+
+  const existingRole = normalizeRoleRecord(existingResponse.data);
+  if (!existingRole) {
+    throw new Error("Role not found.");
+  }
+
+  const payload = buildRolePayload({
+    ...existingRole,
+    ...role,
+    code: existingRole.code,
+    slug: role?.slug || existingRole.slug,
+  });
+
+  if (existingRole.isSystemRole) {
+    payload.is_system_role = true;
+    payload.is_system = true;
+  }
+
+  if (existingRole.isOwnerRole) {
+    payload.is_owner_role = true;
+    payload.is_active = true;
+  }
+
+  const updateResponse = await client
+    .from("admin_roles")
+    .update(payload)
+    .eq("id", roleId)
+    .select("id, code, label, rank, is_system, created_at, name, slug, description, is_system_role, is_owner_role, is_active, updated_at")
+    .single();
+
+  if (updateResponse.error) {
+    throw updateResponse.error;
+  }
+
+  const nextRole = normalizeRoleRecord(updateResponse.data);
+  await replaceRolePermissions(client, nextRole, permissionCodes);
+  await replaceRoleMenuVisibility(client, nextRole, menuVisibility).catch(() => null);
+  void logAdminActivity("update_role", "admin_role", roleId, {
+    module: "roles",
+    role_code: nextRole.code,
+    role_slug: nextRole.slug,
+    permissions_count: permissionCodes.length,
+    is_active: nextRole.isActive,
+  });
+  return nextRole;
+}
+
+export async function duplicateAdminRole(roleId) {
+  const moduleData = await fetchAdminRolesModuleData();
+  const sourceRole = moduleData.roles.find((role) => role.id === roleId);
+  if (!sourceRole) {
+    throw new Error("Role not found.");
+  }
+
+  const sourcePermissions = moduleData.rolePermissions
+    .filter((item) => item.roleCode === sourceRole.code)
+    .map((item) => item.permissionCode);
+  const sourceMenuVisibility = Object.fromEntries(
+    (moduleData.roleMenuVisibility || [])
+      .filter((item) => item.role_id === sourceRole.id)
+      .map((item) => {
+        const menuItem = (moduleData.menuItems || []).find((entry) => entry.id === item.menu_item_id);
+        return [menuItem?.route, item.is_visible !== false];
+      })
+      .filter(([route]) => Boolean(route)),
+  );
+
+  return createAdminRole({
+    role: {
+      name: `${roleLabelFromRecord(sourceRole)} Copy`,
+      slug: `${sourceRole.slug || sourceRole.code}-copy`,
+      description: sourceRole.description || "",
+      isActive: sourceRole.isActive,
+      isSystemRole: false,
+      isOwnerRole: false,
+      rank: sourceRole.rank,
+    },
+    permissionCodes: sourcePermissions,
+    menuVisibility: sourceMenuVisibility,
+  });
+}
+
+export async function deactivateAdminRole(roleId, isActive = false) {
+  const client = requireSupabase();
+  const existingResponse = await client
+    .from("admin_roles")
+    .select("id, code, name, label, is_system_role, is_owner_role, is_active")
+    .eq("id", roleId)
+    .maybeSingle();
+
+  if (existingResponse.error) {
+    throw existingResponse.error;
+  }
+
+  const role = normalizeRoleRecord(existingResponse.data);
+  if (!role) {
+    throw new Error("Role not found.");
+  }
+
+  if (role.isOwnerRole && !isActive) {
+    throw new Error("Owner role cannot be deactivated.");
+  }
+
+  const updateResponse = await client
+    .from("admin_roles")
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq("id", roleId)
+    .select("id")
+    .single();
+
+  if (updateResponse.error) {
+    throw updateResponse.error;
+  }
+
+  return true;
+}
+
+export async function deleteAdminRole(roleId) {
+  const client = requireSupabase();
+  const [roleResponse, teamMembersResponse, userRolesResponse] = await Promise.all([
+    client
+      .from("admin_roles")
+      .select("id, code, name, label, is_system_role, is_owner_role")
+      .eq("id", roleId)
+      .maybeSingle(),
+    client
+      .from("admin_team_members")
+      .select("id")
+      .eq("role_id", roleId)
+      .limit(1),
+    client
+      .from("user_admin_roles")
+      .select("id, role_code")
+      .limit(5000),
+  ]);
+
+  if (roleResponse.error) {
+    throw roleResponse.error;
+  }
+
+  if (teamMembersResponse.error && !isMissingOptionalTable(teamMembersResponse.error) && !isMissingColumnError(teamMembersResponse.error)) {
+    throw teamMembersResponse.error;
+  }
+
+  if (userRolesResponse.error && !isMissingOptionalTable(userRolesResponse.error)) {
+    throw userRolesResponse.error;
+  }
+
+  const role = normalizeRoleRecord(roleResponse.data);
+  if (!role) {
+    throw new Error("Role not found.");
+  }
+
+  if (role.isSystemRole) {
+    throw new Error("System roles cannot be deleted.");
+  }
+
+  if (role.isOwnerRole || role.code === "owner" || role.code === "super_admin") {
+    throw new Error("Owner role cannot be deleted.");
+  }
+
+  const hasAssignedTeamMembers = (teamMembersResponse.data || []).length > 0;
+  const hasAssignedLegacyUsers = (userRolesResponse.data || []).some((item) => item.role_code === role.code);
+
+  if (hasAssignedTeamMembers || hasAssignedLegacyUsers) {
+    throw new Error("Cannot delete a role that still has team members assigned.");
+  }
+
+  const deleteResponse = await client
+    .from("admin_roles")
+    .delete()
+    .eq("id", roleId);
+
+  if (deleteResponse.error) {
+    throw deleteResponse.error;
+  }
+
+  return true;
+}
+
+function sortRolesByRank(roles = []) {
+  return [...roles].sort((left, right) => (right.rank || 0) - (left.rank || 0));
+}
+
+function normalizeTeamStatus(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (["active", "invited", "inactive", "suspended", "archived"].includes(normalized)) {
+    return normalized;
+  }
+  return "active";
+}
+
+function summarizeRecentActivity(rows = [], profileId) {
+  const recentRows = rows.filter((item) => item.admin_profile_id === profileId || item.user_id === profileId);
+  const last7d = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const recentCount = recentRows.filter((item) => {
+    const createdAt = item.created_at ? new Date(item.created_at).getTime() : 0;
+    return Number.isFinite(createdAt) && createdAt >= last7d;
+  }).length;
+
+  return {
+    recentCount,
+    rows: recentRows
+      .slice()
+      .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime())
+      .slice(0, 8),
+  };
+}
+
+function summarizeWorkSessions(rows = [], profileId) {
+  const recentRows = rows
+    .filter((item) => item.admin_profile_id === profileId)
+    .slice()
+    .sort((left, right) => new Date(right.last_seen_at || right.started_at || 0).getTime() - new Date(left.last_seen_at || left.started_at || 0).getTime());
+
+  const last7d = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const recentSessions = recentRows.filter((item) => {
+    const createdAt = item.started_at ? new Date(item.started_at).getTime() : 0;
+    return Number.isFinite(createdAt) && createdAt >= last7d;
+  });
+
+  return {
+    lastLoginAt: recentRows[0]?.last_seen_at || recentRows[0]?.started_at || null,
+    recentSessionCount: recentSessions.length,
+    recentDurationSeconds: recentSessions.reduce((sum, item) => sum + Number(item.duration_seconds || 0), 0),
+    rows: recentRows.slice(0, 8),
+  };
+}
+
+function parseDateInput(value) {
+  if (!value) return null;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function getSessionDurationSeconds(session) {
+  const explicit = Number(session?.duration_seconds || 0);
+  if (explicit > 0) {
+    return explicit;
+  }
+
+  const startedAt = parseDateInput(session?.started_at || session?.created_at);
+  const endedAt = parseDateInput(session?.ended_at || session?.last_seen_at);
+  if (!startedAt || !endedAt || endedAt <= startedAt) {
+    return 0;
+  }
+
+  return Math.round((endedAt - startedAt) / 1000);
+}
+
+function toDateRangeBounds(range = {}) {
+  const from = range?.from ? `${range.from}T00:00:00.000Z` : null;
+  const to = range?.to ? `${range.to}T23:59:59.999Z` : null;
+  return { from, to };
+}
+
+function buildAdminActivityMetadataSummary(metadata = {}) {
+  const safe = sanitizeActivityMetadata(metadata);
+  const entries = Object.entries(safe)
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
+    .slice(0, 4)
+    .map(([key, value]) => {
+      const label = key
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (match) => match.toUpperCase());
+      const normalizedValue = Array.isArray(value)
+        ? `${value.length} items`
+        : typeof value === "object"
+          ? "details"
+          : String(value);
+      return `${label}: ${normalizedValue}`;
+    });
+
+  return entries.join(" • ");
+}
+
+function getActivityEntityReference(entry = {}) {
+  const metadata = sanitizeActivityMetadata(entry.metadata || {});
+  return (
+    metadata.lead_code
+    || metadata.case_code
+    || metadata.document_id
+    || metadata.role_code
+    || metadata.status
+    || entry.entity_id
+    || "—"
+  );
+}
+
+function filterTimelineRows(rows = [], filters = {}) {
+  const fromMs = parseDateInput(filters?.dateRange?.from);
+  const toMs = parseDateInput(filters?.dateRange?.to)
+    ? parseDateInput(filters?.dateRange?.to) + (24 * 60 * 60 * 1000) - 1
+    : null;
+  const actionType = String(filters?.actionType || "all");
+  const entityType = String(filters?.entityType || "all");
+
+  return rows.filter((item) => {
+    const createdAt = parseDateInput(item.created_at);
+    if (fromMs && (!createdAt || createdAt < fromMs)) return false;
+    if (toMs && (!createdAt || createdAt > toMs)) return false;
+    if (actionType !== "all" && item.action !== actionType) return false;
+    if (entityType !== "all" && (item.entity_type || "unknown") !== entityType) return false;
+    return true;
+  });
+}
+
+function countAdminActions(rows = [], allowedActions = []) {
+  const allow = new Set(allowedActions);
+  return rows.filter((item) => allow.has(item.action)).length;
+}
+
+export async function fetchAdminTeamMemberActivity(profileId, filters = {}) {
+  const client = requireSupabase();
+  const normalizedProfileId = String(profileId || "").trim();
+  if (!normalizedProfileId) {
+    throw new Error("Team member id is required.");
+  }
+
+  const [profileResponse, teamMemberResponse, allRolesResponse, activityResponse, sessionsResponse, legacyRolesResponse] = await Promise.all([
+    client
+      .from("profiles")
+      .select("id, full_name, email, role, created_at, deleted_at")
+      .eq("id", normalizedProfileId)
+      .maybeSingle(),
+    client
+      .from("admin_team_members")
+      .select("id, profile_id, email, full_name, role_id, status, invited_by, last_login_at, created_at, updated_at")
+      .eq("profile_id", normalizedProfileId)
+      .maybeSingle(),
+    client
+      .from("admin_roles")
+      .select("id, code, label, rank, is_system, created_at, name, slug, description, is_system_role, is_owner_role, is_active, updated_at"),
+    client
+      .from("admin_activity_logs")
+      .select("id, admin_profile_id, action, entity_type, entity_id, metadata, created_at")
+      .eq("admin_profile_id", normalizedProfileId)
+      .order("created_at", { ascending: false })
+      .limit(2000),
+    client
+      .from("admin_work_sessions")
+      .select("id, admin_profile_id, started_at, ended_at, last_seen_at, duration_seconds, created_at")
+      .eq("admin_profile_id", normalizedProfileId)
+      .order("started_at", { ascending: false })
+      .limit(2000),
+    client
+      .from("user_admin_roles")
+      .select("user_id, role_code, created_at")
+      .eq("user_id", normalizedProfileId),
+  ]);
+
+  if (profileResponse.error) throw profileResponse.error;
+  if (!profileResponse.data) throw new Error("Team member profile not found.");
+
+  if (teamMemberResponse.error && !isMissingOptionalTable(teamMemberResponse.error) && !isMissingColumnError(teamMemberResponse.error)) {
+    throw teamMemberResponse.error;
+  }
+  if (allRolesResponse.error && !isMissingOptionalTable(allRolesResponse.error) && !isMissingColumnError(allRolesResponse.error)) {
+    throw allRolesResponse.error;
+  }
+  if (activityResponse.error && !isMissingOptionalTable(activityResponse.error) && !isMissingColumnError(activityResponse.error)) {
+    throw activityResponse.error;
+  }
+  if (sessionsResponse.error && !isMissingOptionalTable(sessionsResponse.error) && !isMissingColumnError(sessionsResponse.error)) {
+    throw sessionsResponse.error;
+  }
+  if (legacyRolesResponse.error && !isMissingOptionalTable(legacyRolesResponse.error)) {
+    throw legacyRolesResponse.error;
+  }
+
+  const profile = profileResponse.data;
+  const teamMember = teamMemberResponse.error ? null : teamMemberResponse.data;
+  const allRoles = (allRolesResponse.error ? [] : (allRolesResponse.data || [])).map(normalizeRoleRecord);
+  const rolesById = new Map(allRoles.map((item) => [item.id, item]));
+  const rolesByCode = new Map(allRoles.map((item) => [item.code, item]));
+  const legacyRoleCodes = Array.from(new Set((legacyRolesResponse.error ? [] : legacyRolesResponse.data || [])
+    .map((item) => normalizeRoleCode(item.role_code))
+    .filter(Boolean)));
+  const resolvedRole =
+    (teamMember?.role_id ? rolesById.get(teamMember.role_id) : null)
+    || sortRolesByRank(legacyRoleCodes.map((code) => rolesByCode.get(code)).filter(Boolean))[0]
+    || null;
+
+  const status = teamMember
+    ? normalizeTeamStatus(teamMember.status)
+    : profile.deleted_at ? "archived" : legacyRoleCodes.length ? "active" : "inactive";
+
+  const sessions = sessionsResponse.error ? [] : (sessionsResponse.data || []);
+  const totalActiveSeconds = sessions.reduce((sum, item) => sum + getSessionDurationSeconds(item), 0);
+  const now = Date.now();
+  const weekStart = now - (7 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const monthStartMs = monthStart.getTime();
+
+  const activeTimeThisWeek = sessions.reduce((sum, item) => {
+    const startedAt = parseDateInput(item.started_at || item.created_at);
+    return startedAt && startedAt >= weekStart ? sum + getSessionDurationSeconds(item) : sum;
+  }, 0);
+  const activeTimeThisMonth = sessions.reduce((sum, item) => {
+    const startedAt = parseDateInput(item.started_at || item.created_at);
+    return startedAt && startedAt >= monthStartMs ? sum + getSessionDurationSeconds(item) : sum;
+  }, 0);
+
+  const allActivityRows = (activityResponse.error ? [] : (activityResponse.data || [])).map((item) => {
+    const metadata = sanitizeActivityMetadata(item.metadata || {});
+    return {
+      id: item.id,
+      createdAt: item.created_at,
+      action: item.action,
+      entityType: item.entity_type || "unknown",
+      entityId: item.entity_id || "",
+      entityReference: getActivityEntityReference(item),
+      metadata,
+      metadataSummary: buildAdminActivityMetadataSummary(metadata),
+    };
+  });
+
+  const filteredActivityRows = filterTimelineRows(
+    allActivityRows.map((item) => ({
+      created_at: item.createdAt,
+      action: item.action,
+      entity_type: item.entityType,
+      ...item,
+    })),
+    filters,
+  ).map((item) => ({
+    id: item.id,
+    createdAt: item.createdAt || item.created_at,
+    action: item.action,
+    entityType: item.entityType || item.entity_type,
+    entityId: item.entityId || item.entity_id,
+    entityReference: item.entityReference,
+    metadata: item.metadata,
+    metadataSummary: item.metadataSummary,
+  }));
+
+  return {
+    member: {
+      profileId: normalizedProfileId,
+      fullName: teamMember?.full_name || profile.full_name || "",
+      email: teamMember?.email || profile.email || "",
+      roleLabel: resolvedRole?.name || resolvedRole?.label || "No role",
+      roleCode: resolvedRole?.code || legacyRoleCodes[0] || normalizeRoleCode(profile.role) || null,
+      status,
+      lastLoginAt: teamMember?.last_login_at || sessions[0]?.last_seen_at || sessions[0]?.started_at || null,
+      isOwner: !!resolvedRole?.isOwnerRole,
+      isSystemRole: !!resolvedRole?.isSystemRole,
+    },
+    workStats: {
+      totalSessions: sessions.length,
+      totalActiveSeconds,
+      activeTimeThisWeek,
+      activeTimeThisMonth,
+    },
+    operationalStats: {
+      leadsReviewed: countAdminActions(allActivityRows, ["view_lead", "update_lead"]),
+      casesUpdated: countAdminActions(allActivityRows, ["update_case"]),
+      documentsChecked: countAdminActions(allActivityRows, ["download_document"]),
+      partnerApplicationsReviewed: countAdminActions(allActivityRows, ["approve_partner_application", "reject_partner_application"]),
+      payoutsUpdated: countAdminActions(allActivityRows, ["update_finance_record"]),
+    },
+    timeline: filteredActivityRows,
+    filterOptions: {
+      actionTypes: Array.from(new Set(allActivityRows.map((item) => item.action).filter(Boolean))).sort(),
+      entityTypes: Array.from(new Set(allActivityRows.map((item) => item.entityType).filter(Boolean))).sort(),
+    },
+    supportsAdminActivityLogsV1: !activityResponse.error,
+    supportsWorkSessionsV1: !sessionsResponse.error,
+  };
+}
+
+export async function fetchAdminTeamModuleData() {
+  const client = requireSupabase();
+
+  const [rolesModule, teamMembersResponse, legacyRolesResponse, activityResponse, adminActivityResponse, sessionsResponse] = await Promise.all([
+    fetchAdminRolesModuleData(),
+    client
+      .from("admin_team_members")
+      .select("id, profile_id, email, full_name, role_id, status, invited_by, last_login_at, created_at, updated_at"),
+    client
+      .from("user_admin_roles")
+      .select("user_id, role_code, created_at"),
+    client
+      .from("activity_logs")
+      .select("id, user_id, action, module, target_entity_type, target_entity_id, previous_value, new_value, meta, created_at")
+      .order("created_at", { ascending: false })
+      .limit(3000),
+    client
+      .from("admin_activity_logs")
+      .select("id, admin_profile_id, action, entity_type, entity_id, metadata, created_at")
+      .order("created_at", { ascending: false })
+      .limit(3000),
+    client
+      .from("admin_work_sessions")
+      .select("id, admin_profile_id, started_at, ended_at, last_seen_at, duration_seconds, created_at")
+      .order("created_at", { ascending: false })
+      .limit(3000),
+  ]);
+
+  if (teamMembersResponse.error && !isMissingOptionalTable(teamMembersResponse.error) && !isMissingColumnError(teamMembersResponse.error)) {
+    throw teamMembersResponse.error;
+  }
+
+  if (legacyRolesResponse.error && !isMissingOptionalTable(legacyRolesResponse.error)) {
+    throw legacyRolesResponse.error;
+  }
+
+  if (activityResponse.error && !isMissingOptionalTable(activityResponse.error) && !isMissingColumnError(activityResponse.error)) {
+    throw activityResponse.error;
+  }
+
+  if (adminActivityResponse.error && !isMissingOptionalTable(adminActivityResponse.error) && !isMissingColumnError(adminActivityResponse.error)) {
+    throw adminActivityResponse.error;
+  }
+
+  if (sessionsResponse.error && !isMissingOptionalTable(sessionsResponse.error) && !isMissingColumnError(sessionsResponse.error)) {
+    throw sessionsResponse.error;
+  }
+
+  const teamMembers = teamMembersResponse.error ? [] : (teamMembersResponse.data || []);
+  const legacyRoles = legacyRolesResponse.error ? [] : (legacyRolesResponse.data || []);
+  const activityLogs = activityResponse.error ? [] : (activityResponse.data || []);
+  const adminActivityLogs = adminActivityResponse.error ? [] : (adminActivityResponse.data || []);
+  const sessions = sessionsResponse.error ? [] : (sessionsResponse.data || []);
+  const combinedActivityLogs = [
+    ...activityLogs.map((item) => ({
+      id: item.id,
+      admin_profile_id: item.user_id || null,
+      action: item.action,
+      module: item.module || "general",
+      entity_type: item.target_entity_type || "unknown",
+      entity_id: item.target_entity_id || "",
+      metadata: sanitizeActivityMetadata(item.meta || {}),
+      created_at: item.created_at,
+      source: "activity_logs",
+    })),
+    ...adminActivityLogs.map((item) => {
+      const metadata = sanitizeActivityMetadata(item.metadata || {});
+      return {
+        id: item.id,
+        admin_profile_id: item.admin_profile_id || null,
+        action: item.action,
+        module: metadata.module || "team",
+        entity_type: item.entity_type || "unknown",
+        entity_id: item.entity_id || "",
+        metadata,
+        created_at: item.created_at,
+        source: "admin_activity_logs",
+      };
+    }),
+  ];
+
+  const profileIds = new Set([
+    ...teamMembers.map((item) => item.profile_id).filter(Boolean),
+    ...legacyRoles.map((item) => item.user_id).filter(Boolean),
+  ]);
+
+  const profilesResponse = profileIds.size
+    ? await client
+      .from("profiles")
+      .select("id, full_name, email, phone, role, created_at, deleted_at")
+      .in("id", Array.from(profileIds))
+    : { data: [], error: null };
+
+  if (profilesResponse.error) {
+    throw profilesResponse.error;
+  }
+
+  const profilesById = new Map((profilesResponse.data || []).map((item) => [item.id, item]));
+  const rolesById = new Map(rolesModule.roles.map((item) => [item.id, item]));
+  const rolesByCode = new Map(rolesModule.roles.map((item) => [item.code, item]));
+  const legacyRolesByUserId = legacyRoles.reduce((acc, item) => {
+    acc[item.user_id] ||= [];
+    acc[item.user_id].push(normalizeRoleCode(item.role_code));
+    return acc;
+  }, {});
+  const teamMembersByProfileId = new Map(teamMembers.map((item) => [item.profile_id, item]));
+
+  const members = Array.from(profileIds).map((profileId) => {
+    const profile = profilesById.get(profileId) || null;
+    const teamMember = teamMembersByProfileId.get(profileId) || null;
+    const legacyRoleCodes = Array.from(new Set((legacyRolesByUserId[profileId] || []).filter(Boolean)));
+    const role =
+      (teamMember?.role_id ? rolesById.get(teamMember.role_id) : null)
+      || sortRolesByRank(legacyRoleCodes.map((code) => rolesByCode.get(code)).filter(Boolean))[0]
+      || null;
+
+    const activitySummary = summarizeRecentActivity(
+      combinedActivityLogs,
+      profileId,
+    );
+    const workSummary = summarizeWorkSessions(sessions, profileId);
+    const memberSessions = sessions.filter((item) => item.admin_profile_id === profileId);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartMs = todayStart.getTime();
+    const weekStartMs = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const activeTimeToday = memberSessions.reduce((sum, item) => {
+      const startedAt = parseDateInput(item.started_at || item.created_at);
+      return startedAt && startedAt >= todayStartMs ? sum + getSessionDurationSeconds(item) : sum;
+    }, 0);
+    const activeTimeThisWeek = memberSessions.reduce((sum, item) => {
+      const startedAt = parseDateInput(item.started_at || item.created_at);
+      return startedAt && startedAt >= weekStartMs ? sum + getSessionDurationSeconds(item) : sum;
+    }, 0);
+    const currentSession = memberSessions.find((item) => !item.ended_at) || null;
+    const lastLogoutAt = memberSessions.find((item) => item.ended_at)?.ended_at || null;
+    const status = teamMember
+      ? normalizeTeamStatus(teamMember.status)
+      : profile?.deleted_at ? "archived" : legacyRoleCodes.length ? "active" : "inactive";
+
+    return {
+      id: teamMember?.id || `legacy:${profileId}`,
+      profileId,
+      email: teamMember?.email || profile?.email || "",
+      phone: profile?.phone || "",
+      fullName: teamMember?.full_name || profile?.full_name || "",
+      roleId: teamMember?.role_id || role?.id || null,
+      roleCode: role?.code || legacyRoleCodes[0] || null,
+      roleLabel: role?.name || role?.label || "No role",
+      status,
+      invitedBy: teamMember?.invited_by || null,
+      createdAt: teamMember?.created_at || profile?.created_at || null,
+      updatedAt: teamMember?.updated_at || null,
+      lastLoginAt: teamMember?.last_login_at || workSummary.lastLoginAt || null,
+      lastLogoutAt,
+      currentSession,
+      totalSessionCount: memberSessions.length,
+      activeTimeTodaySeconds: activeTimeToday,
+      activeTimeThisWeekSeconds: activeTimeThisWeek,
+      recentActivityCount: activitySummary.recentCount,
+      recentActivity: activitySummary.rows,
+      recentSessionCount: workSummary.recentSessionCount,
+      recentSessionDurationSeconds: workSummary.recentDurationSeconds,
+      recentSessions: workSummary.rows,
+      isOwner: !!role?.isOwnerRole,
+      isSystemRole: !!role?.isSystemRole,
+      source: teamMember ? "team_member" : "legacy",
+    };
+  }).sort((left, right) => {
+    if (left.isOwner !== right.isOwner) return left.isOwner ? -1 : 1;
+    return String(left.fullName || left.email).localeCompare(String(right.fullName || right.email));
+  });
+
+  return {
+    members,
+    roles: sortRolesByRank(rolesModule.roles).filter((role) => role.isActive),
+    permissions: rolesModule.permissions || [],
+    rolePermissions: rolesModule.rolePermissions || [],
+    menuItems: rolesModule.menuItems || [],
+    roleMenuVisibility: rolesModule.roleMenuVisibility || [],
+    activityTimeline: combinedActivityLogs
+      .filter((item) => item.admin_profile_id)
+      .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime()),
+    workSessions: sessions,
+    supportsTeamMembersV1: !teamMembersResponse.error,
+    supportsAdminActivityLogsV1: !adminActivityResponse.error,
+    supportsCoreActivityLogsV1: !activityResponse.error,
+    supportsWorkSessionsV1: !sessionsResponse.error,
+    supportsMenuAccessV1: rolesModule.supportsMenuAccessV1,
+    supportsInviteEmailFlow: false,
+  };
+}
+
+async function getRoleById(client, roleId) {
+  const response = await client
+    .from("admin_roles")
+    .select("id, code, label, name, is_system_role, is_owner_role, is_active")
+    .eq("id", roleId)
+    .maybeSingle();
+
+  if (response.error) {
+    throw response.error;
+  }
+
+  if (!response.data) {
+    throw new Error("Role not found.");
+  }
+
+  return normalizeRoleRecord(response.data);
+}
+
+async function getAdminTeamMemberByProfileId(client, profileId) {
+  const response = await client
+    .from("admin_team_members")
+    .select("id, profile_id, email, full_name, role_id, status, invited_by, last_login_at, created_at, updated_at")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+
+  if (response.error && !isMissingOptionalTable(response.error) && !isMissingColumnError(response.error)) {
+    throw response.error;
+  }
+
+  return response.error ? null : response.data;
+}
+
+async function fetchAssignedAdminRoleCodesForUser(client, profileId) {
+  const response = await client
+    .from("user_admin_roles")
+    .select("role_code")
+    .eq("user_id", profileId);
+
+  if (response.error && !isMissingOptionalTable(response.error)) {
+    throw response.error;
+  }
+
+  return response.error ? [] : (response.data || []).map((item) => normalizeRoleCode(item.role_code)).filter(Boolean);
+}
+
+async function assertOwnerTeamAccessCanChange(client, actorId, profileId, teamMember) {
+  const roleCodes = await fetchAssignedAdminRoleCodesForUser(client, profileId);
+  const targetIsOwner = !!teamMember?.role_id
+    ? !!(await getRoleById(client, teamMember.role_id)).isOwnerRole
+    : roleCodes.includes("owner") || roleCodes.includes("super_admin");
+
+  if (!targetIsOwner) {
+    return;
+  }
+
+  if (actorId && actorId === profileId) {
+    throw new Error("Owner cannot remove or suspend their own access.");
+  }
+
+  const [rolesResponse, teamMembersResponse, legacyOwnersResponse] = await Promise.all([
+    client.from("admin_roles").select("id, code, is_owner_role, is_active"),
+    client.from("admin_team_members").select("profile_id, role_id, status"),
+    client.from("user_admin_roles").select("user_id, role_code").in("role_code", ["owner", "super_admin"]),
+  ]);
+
+  if (rolesResponse.error) {
+    throw rolesResponse.error;
+  }
+
+  if (teamMembersResponse.error && !isMissingOptionalTable(teamMembersResponse.error) && !isMissingColumnError(teamMembersResponse.error)) {
+    throw teamMembersResponse.error;
+  }
+
+  if (legacyOwnersResponse.error && !isMissingOptionalTable(legacyOwnersResponse.error)) {
+    throw legacyOwnersResponse.error;
+  }
+
+  const ownerRoleIds = new Set((rolesResponse.data || [])
+    .filter((item) => item.is_owner_role && item.is_active)
+    .map((item) => item.id));
+
+  const activeOwnerProfiles = new Set([
+    ...(teamMembersResponse.error ? [] : (teamMembersResponse.data || [])
+      .filter((item) => item.status === "active" && ownerRoleIds.has(item.role_id))
+      .map((item) => item.profile_id)),
+    ...((legacyOwnersResponse.error ? [] : legacyOwnersResponse.data || []).map((item) => item.user_id)),
+  ]);
+
+  if (activeOwnerProfiles.has(profileId) && activeOwnerProfiles.size <= 1) {
+    throw new Error("Cannot remove or suspend the last owner.");
+  }
+}
+
+export async function createAdminTeamMember(input = {}) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const email = String(input.email || "").trim().toLowerCase();
+  const fullName = String(input.fullName || "").trim();
+  const phone = String(input.phone || "").trim();
+  const roleId = input.roleId || null;
+  const status = normalizeTeamStatus(input.status || "active");
+
+  if (!email) {
+    throw new Error("Email is required.");
+  }
+
+  if (!roleId) {
+    throw new Error("Role is required.");
+  }
+
+  const [profileResponse, role] = await Promise.all([
+    client
+      .from("profiles")
+      .select("id, full_name, email, phone, role")
+      .eq("email", email)
+      .maybeSingle(),
+    getRoleById(client, roleId),
+  ]);
+
+  if (profileResponse.error) {
+    throw profileResponse.error;
+  }
+
+  if (!profileResponse.data) {
+    throw new Error("Invite email flow is not configured yet. Create the user profile first, then assign the team role.");
+  }
+
+  const profile = profileResponse.data;
+  const payload = {
+    profile_id: profile.id,
+    email,
+    full_name: fullName || profile.full_name || null,
+    role_id: role.id,
+    status,
+    invited_by: actor?.id || null,
+  };
+
+  const upsertResponse = await client
+    .from("admin_team_members")
+    .upsert(payload, { onConflict: "profile_id" })
+    .select("id, profile_id, email, full_name, role_id, status")
+    .single();
+
+  if (upsertResponse.error) {
+    throw upsertResponse.error;
+  }
+
+  if ((payload.full_name && payload.full_name !== profile.full_name) || (phone && phone !== String(profile.phone || ""))) {
+    const profileUpdate = await client
+      .from("profiles")
+      .update({
+        full_name: payload.full_name || profile.full_name || null,
+        ...(phone ? { phone } : {}),
+      })
+      .eq("id", profile.id);
+    if (profileUpdate.error) {
+      throw profileUpdate.error;
+    }
+  }
+
+  await updateUserAdminRoles(profile.id, status === "active" ? [role.code] : []);
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "upsert_team_member",
+    module: "team",
+    targetEntityType: "profile",
+    targetEntityId: profile.id,
+    previousValue: null,
+    newValue: {
+      email,
+      role_code: role.code,
+      status,
+    },
+  });
+
+  void logAdminActivity("invite_team_member", "admin_team_member", profile.id, {
+    module: "team",
+    role_id: role.id,
+    role_code: role.code,
+    status,
+  });
+
+  return upsertResponse.data;
+}
+
+export async function updateAdminTeamMemberProfile(profileId, input = {}) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const normalizedProfileId = String(profileId || "").trim();
+  if (!normalizedProfileId) {
+    throw new Error("Employee id is required.");
+  }
+
+  const currentProfile = await client
+    .from("profiles")
+    .select("id, full_name, email, phone")
+    .eq("id", normalizedProfileId)
+    .maybeSingle();
+
+  if (currentProfile.error) {
+    throw currentProfile.error;
+  }
+
+  if (!currentProfile.data) {
+    throw new Error("Employee profile not found.");
+  }
+
+  const nextFullName = String(input.fullName || "").trim() || currentProfile.data.full_name || null;
+  const nextPhone = String(input.phone || "").trim() || null;
+  const nextEmail = String(input.email || currentProfile.data.email || "").trim().toLowerCase();
+
+  const profileUpdate = await client
+    .from("profiles")
+    .update({
+      full_name: nextFullName,
+      phone: nextPhone,
+      ...(nextEmail ? { email: nextEmail } : {}),
+    })
+    .eq("id", normalizedProfileId);
+
+  if (profileUpdate.error) {
+    throw profileUpdate.error;
+  }
+
+  const teamUpdate = await client
+    .from("admin_team_members")
+    .update({
+      full_name: nextFullName,
+      ...(nextEmail ? { email: nextEmail } : {}),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("profile_id", normalizedProfileId);
+
+  if (teamUpdate.error && !isMissingOptionalTable(teamUpdate.error) && !isMissingColumnError(teamUpdate.error)) {
+    throw teamUpdate.error;
+  }
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "update_team_member_profile",
+    module: "team",
+    targetEntityType: "profile",
+    targetEntityId: normalizedProfileId,
+    previousValue: currentProfile.data,
+    newValue: {
+      full_name: nextFullName,
+      phone: nextPhone,
+      email: nextEmail || currentProfile.data.email || null,
+    },
+  });
+
+  return true;
+}
+
+export async function sendAdminEmployeeSetupLink({ email, profileId = null } = {}) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    throw new Error("Employee email is required.");
+  }
+
+  await resetPassword(normalizedEmail);
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "send_team_setup_link",
+    module: "team",
+    targetEntityType: "profile",
+    targetEntityId: profileId || normalizedEmail,
+    newValue: {
+      email: normalizedEmail,
+    },
+  });
+
+  void logAdminActivity("send_team_setup_link", "admin_team_member", profileId || normalizedEmail, {
+    module: "team",
+    email: normalizedEmail,
+  });
+
+  return true;
+}
+
+export async function updateAdminTeamMemberRole(profileId, roleId) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const [teamMember, role] = await Promise.all([
+    getAdminTeamMemberByProfileId(client, profileId),
+    getRoleById(client, roleId),
+  ]);
+
+  if (!teamMember) {
+    throw new Error("Team member not found.");
+  }
+
+  const updateResponse = await client
+    .from("admin_team_members")
+    .update({ role_id: role.id })
+    .eq("profile_id", profileId)
+    .select("id, profile_id, role_id, status")
+    .single();
+
+  if (updateResponse.error) {
+    throw updateResponse.error;
+  }
+
+  if (teamMember.status === "active") {
+    await updateUserAdminRoles(profileId, [role.code]);
+  }
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "change_team_role",
+    module: "team",
+    targetEntityType: "profile",
+    targetEntityId: profileId,
+    previousValue: {
+      role_id: teamMember.role_id,
+    },
+    newValue: {
+      role_id: role.id,
+      role_code: role.code,
+    },
+  });
+
+  return updateResponse.data;
+}
+
+export async function updateAdminTeamMemberStatus(profileId, nextStatus) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const teamMember = await getAdminTeamMemberByProfileId(client, profileId);
+
+  const status = normalizeTeamStatus(nextStatus);
+  if (["inactive", "suspended", "archived"].includes(status)) {
+    await assertOwnerTeamAccessCanChange(client, actor?.id || null, profileId, teamMember);
+  }
+
+  if (!teamMember) {
+    if (status === "active") {
+      throw new Error("This legacy admin user must be added to the team registry before reactivation.");
+    }
+
+    await updateUserAdminRoles(profileId, []);
+    await recordActivity(client, {
+      userId: actor?.id,
+      action: "change_team_status",
+      module: "team",
+      targetEntityType: "profile",
+      targetEntityId: profileId,
+      previousValue: {
+        status: "legacy_active",
+      },
+      newValue: {
+        status,
+      },
+    });
+    if (status === "suspended") {
+      void logAdminActivity("suspend_team_member", "admin_team_member", profileId, {
+        module: "team",
+        status,
+        source: "legacy",
+      });
+    }
+    return { profile_id: profileId, status };
+  }
+
+  const updateResponse = await client
+    .from("admin_team_members")
+    .update({ status })
+    .eq("profile_id", profileId)
+    .select("id, profile_id, role_id, status")
+    .single();
+
+  if (updateResponse.error) {
+    throw updateResponse.error;
+  }
+
+  if (status === "active") {
+    const role = teamMember.role_id ? await getRoleById(client, teamMember.role_id) : null;
+    if (role) {
+      await updateUserAdminRoles(profileId, [role.code]);
+    }
+  } else if (["inactive", "suspended", "archived"].includes(status)) {
+    await updateUserAdminRoles(profileId, []);
+  }
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "change_team_status",
+    module: "team",
+    targetEntityType: "profile",
+    targetEntityId: profileId,
+    previousValue: {
+      status: teamMember.status,
+    },
+    newValue: {
+      status,
+    },
+  });
+
+  if (status === "suspended") {
+    void logAdminActivity("suspend_team_member", "admin_team_member", profileId, {
+      module: "team",
+      status,
+      role_id: teamMember.role_id || null,
+    });
+  }
+
+  return updateResponse.data;
+}
+
+export async function removeAdminTeamMember(profileId) {
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const teamMember = await getAdminTeamMemberByProfileId(client, profileId);
+
+  await assertOwnerTeamAccessCanChange(client, actor?.id || null, profileId, teamMember);
+
+  if (!teamMember) {
+    await updateUserAdminRoles(profileId, []);
+    await recordActivity(client, {
+      userId: actor?.id,
+      action: "remove_team_member",
+      module: "team",
+      targetEntityType: "profile",
+      targetEntityId: profileId,
+      previousValue: {
+        source: "legacy",
+      },
+      newValue: null,
+    });
+    return true;
+  }
+
+  const deleteResponse = await client
+    .from("admin_team_members")
+    .delete()
+    .eq("profile_id", profileId);
+
+  if (deleteResponse.error) {
+    throw deleteResponse.error;
+  }
+
+  await updateUserAdminRoles(profileId, []);
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "remove_team_member",
+    module: "team",
+    targetEntityType: "profile",
+    targetEntityId: profileId,
+    previousValue: {
+      team_member_id: teamMember.id,
+      role_id: teamMember.role_id,
+      status: teamMember.status,
+    },
+    newValue: null,
+  });
+}
+
 export async function updateUserAdminRoles(userId, roleCodes = []) {
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
@@ -2996,6 +5241,260 @@ export async function purgeExpiredTrashItems() {
   return { purged };
 }
 
+function getAdminMenuCacheKey(profileId, roleCodes = []) {
+  return `admin-menu:${ADMIN_MENU_CACHE_VERSION}:${profileId || "guest"}:${[...roleCodes].sort().join(",")}`;
+}
+
+function reviveAdminMenuPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const routeAliases = new Map([
+    ["/admin/finance", "/admin/finances/finance"],
+    ["/admin/finance/payments", "/admin/finances/payments"],
+    ["/admin/finance/revenue", "/admin/finances/revenue"],
+    ["/admin/payments", "/admin/finances/payments"],
+    ["/admin/revenue", "/admin/finances/revenue"],
+    ["/admin/reports", "/admin/finances/revenue"],
+  ]);
+
+  const reviveItem = (item) => {
+    if (!item?.path) {
+      return item;
+    }
+
+    const normalizedPath = routeAliases.get(item.path) || item.path;
+    const staticItem = adminNavigationByPath.get(normalizedPath);
+    return staticItem
+      ? {
+        ...staticItem,
+        ...item,
+        path: normalizedPath,
+        icon: staticItem.icon,
+      }
+      : {
+        ...item,
+        path: normalizedPath,
+      };
+  };
+
+  const items = Array.isArray(payload.items) ? payload.items.map(reviveItem) : [];
+  const groups = Array.isArray(payload.groups)
+    ? payload.groups.map((group) => ({
+      ...group,
+      items: Array.isArray(group.items) ? group.items.map(reviveItem) : [],
+    }))
+    : [];
+
+  return {
+    ...payload,
+    items,
+    groups,
+  };
+}
+
+function readAdminMenuCache(cacheKey) {
+  if (typeof window === "undefined") {
+    return reviveAdminMenuPayload(adminMenuCache.get(cacheKey)) || null;
+  }
+
+  if (adminMenuCache.has(cacheKey)) {
+    return reviveAdminMenuPayload(adminMenuCache.get(cacheKey));
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const revived = reviveAdminMenuPayload(parsed);
+    adminMenuCache.set(cacheKey, revived);
+    return revived;
+  } catch {
+    return null;
+  }
+}
+
+function writeAdminMenuCache(cacheKey, payload) {
+  adminMenuCache.set(cacheKey, payload);
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(cacheKey, JSON.stringify(payload));
+  } catch {}
+}
+
+export async function fetchAdminSidebarMenu(profileId, roleCodes = []) {
+  const normalizedRoleCodes = Array.from(new Set((roleCodes || []).map((role) => normalizeRoleCode(role)).filter(Boolean)));
+  const cacheKey = getAdminMenuCacheKey(profileId, normalizedRoleCodes);
+  const cached = readAdminMenuCache(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const client = requireSupabase();
+  const staticItemsByPath = new Map(adminNavigation.map((item) => [item.path, item]));
+
+  const teamMemberResponse = profileId
+    ? await client
+      .from("admin_team_members")
+      .select("id, profile_id, role_id, status")
+      .eq("profile_id", profileId)
+      .maybeSingle()
+    : { data: null, error: null };
+
+  if (teamMemberResponse.error && !isMissingOptionalTable(teamMemberResponse.error) && !isMissingColumnError(teamMemberResponse.error)) {
+    throw teamMemberResponse.error;
+  }
+
+  let resolvedRole = null;
+
+  if (teamMemberResponse.data?.role_id) {
+    const roleResponse = await client
+      .from("admin_roles")
+      .select("id, code, name, label, is_active, rank")
+      .eq("id", teamMemberResponse.data.role_id)
+      .maybeSingle();
+
+    if (roleResponse.error && !isMissingOptionalTable(roleResponse.error) && !isMissingColumnError(roleResponse.error)) {
+      throw roleResponse.error;
+    }
+
+    resolvedRole = roleResponse.data
+      ? normalizeRoleRecord(roleResponse.data)
+      : null;
+  }
+
+  if (!resolvedRole && normalizedRoleCodes.length) {
+    const rolesResponse = await client
+      .from("admin_roles")
+      .select("id, code, name, label, is_active, rank")
+      .in("code", normalizedRoleCodes);
+
+    if (rolesResponse.error && !isMissingOptionalTable(rolesResponse.error) && !isMissingColumnError(rolesResponse.error)) {
+      throw rolesResponse.error;
+    }
+
+    resolvedRole = sortRolesByRank((rolesResponse.data || []).map(normalizeRoleRecord).filter((role) => role?.isActive))[0] || null;
+  }
+
+  if (!resolvedRole) {
+    const fallback = {
+      source: "static",
+      roleId: null,
+      roleCode: normalizedRoleCodes[0] || null,
+      items: adminNavigation,
+      groups: buildAdminNavigationGroups(adminNavigation),
+    };
+    writeAdminMenuCache(cacheKey, fallback);
+    return fallback;
+  }
+
+  const [menuItemsResponse, visibilityResponse] = await Promise.all([
+    client
+      .from("admin_menu_items")
+      .select("id, key, label, route, icon, group_key, group_label, sort_order, is_enabled, required_permissions")
+      .eq("is_enabled", true),
+    client
+      .from("admin_role_menu_visibility")
+      .select("menu_item_id, is_visible, sort_order")
+      .eq("role_id", resolvedRole.id),
+  ]);
+
+  if (menuItemsResponse.error && !isMissingOptionalTable(menuItemsResponse.error) && !isMissingColumnError(menuItemsResponse.error)) {
+    throw menuItemsResponse.error;
+  }
+
+  if (visibilityResponse.error && !isMissingOptionalTable(visibilityResponse.error) && !isMissingColumnError(visibilityResponse.error)) {
+    throw visibilityResponse.error;
+  }
+
+  const visibilityByMenuItemId = new Map((visibilityResponse.data || []).map((item) => [item.menu_item_id, item]));
+
+  const dynamicItems = (menuItemsResponse.data || [])
+    .map((item) => {
+      const visibility = visibilityByMenuItemId.get(item.id);
+      if (visibility && visibility.is_visible === false) {
+        return null;
+      }
+
+      const staticItem = staticItemsByPath.get(item.route);
+      if (!staticItem) {
+        return null;
+      }
+
+      return {
+        ...staticItem,
+        label: item.label || staticItem.label,
+        path: item.route,
+        groupKey: item.group_key || null,
+        groupLabel: item.group_label || null,
+        sortOrder: visibility?.sort_order ?? item.sort_order ?? 0,
+        requiredPermissions: Array.isArray(item.required_permissions) ? item.required_permissions : [],
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => {
+      const groupCompare = String(left.groupLabel || "").localeCompare(String(right.groupLabel || ""));
+      if (groupCompare !== 0) return groupCompare;
+      const orderCompare = (left.sortOrder || 0) - (right.sortOrder || 0);
+      if (orderCompare !== 0) return orderCompare;
+      return String(left.label || "").localeCompare(String(right.label || ""));
+    });
+
+  const dynamicPaths = new Set(dynamicItems.map((item) => item.path));
+  const staticExtras = adminNavigation
+    .filter((item) => !dynamicPaths.has(item.path))
+    .map((item) => {
+      const fallbackGroup = buildAdminNavigationGroups([item])[0] || null;
+      return {
+        ...item,
+        groupKey: item.groupKey || fallbackGroup?.key || null,
+        groupLabel: item.groupLabel || fallbackGroup?.label || null,
+        sortOrder: item.sortOrder ?? 999,
+        requiredPermissions: Array.isArray(item.requiredPermissions) ? item.requiredPermissions : [],
+      };
+    });
+
+  const mergedItems = [...dynamicItems, ...staticExtras];
+
+  const dynamicGroupsMap = new Map();
+  mergedItems.forEach((item) => {
+    const groupKey = item.groupKey || "other";
+    const existing = dynamicGroupsMap.get(groupKey) || {
+      key: groupKey,
+      label: item.groupLabel || buildAdminNavigationGroups([item])[0]?.label || "Other",
+      items: [],
+    };
+    existing.items.push(item);
+    dynamicGroupsMap.set(groupKey, existing);
+  });
+
+  const dynamicGroups = Array.from(dynamicGroupsMap.values());
+  dynamicGroups.sort((left, right) => {
+    const leftIndex = adminNavigationGroupOrder.indexOf(left.key);
+    const rightIndex = adminNavigationGroupOrder.indexOf(right.key);
+    const normalizedLeft = leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex;
+    const normalizedRight = rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex;
+    if (normalizedLeft !== normalizedRight) {
+      return normalizedLeft - normalizedRight;
+    }
+    return String(left.label || "").localeCompare(String(right.label || ""));
+  });
+  const payload = {
+    source: "dynamic",
+    roleId: resolvedRole.id,
+    roleCode: resolvedRole.code,
+    items: mergedItems,
+    groups: dynamicGroups.length ? dynamicGroups : buildAdminNavigationGroups(adminNavigation),
+  };
+
+  writeAdminMenuCache(cacheKey, payload);
+  return payload;
+}
+
 export async function fetchAdminSearchData() {
   const client = requireSupabase();
 
@@ -3218,6 +5717,12 @@ export async function updateLeadStatus(leadId, status) {
     previousValue: { status: currentLead.data?.status || null },
     newValue: { status },
   });
+
+  void logAdminActivity("update_lead", "lead", leadId, {
+    module: "leads",
+    fields: ["status"],
+    status,
+  });
 }
 
 export async function updateCaseWorkflow(caseId, updates) {
@@ -3283,6 +5788,13 @@ export async function updateCaseWorkflow(caseId, updates) {
     previousValue: current.data || null,
     newValue: payload,
   });
+
+  void logAdminActivity("update_case", "case", caseId, {
+    module: "cases",
+    fields: Object.keys(updates || {}),
+    status: payload.status || current.data?.status || null,
+    payout_status: payload.payout_status || current.data?.payout_status || null,
+  });
 }
 
 export async function assignLeadOwner(leadId, assignedUserId) {
@@ -3313,6 +5825,12 @@ export async function assignLeadOwner(leadId, assignedUserId) {
     targetEntityId: leadId,
     previousValue: current.data || null,
     newValue: { assigned_user_id: assignedUserId || null },
+  });
+
+  void logAdminActivity("update_lead", "lead", leadId, {
+    module: "leads",
+    fields: ["assigned_user_id"],
+    assigned_user_id: assignedUserId || null,
   });
 }
 

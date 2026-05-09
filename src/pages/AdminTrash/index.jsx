@@ -139,13 +139,6 @@ export default function AdminTrash() {
 
   return (
     <div className="admin-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><Trash2 size={16} /> Cleanup</span>
-          <h1>Trash</h1>
-          <p>Deleted documents and users remain here for up to 30 days before permanent purge.</p>
-        </div>
-      </header>
 
       {error ? <p className="admin-message is-error">{error}</p> : null}
       {info ? <p className="admin-message">{info}</p> : null}

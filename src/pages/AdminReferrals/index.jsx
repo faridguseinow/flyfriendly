@@ -1,0 +1,235 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link2, Users } from "lucide-react";
+import { fetchReferralPartnersModuleData } from "../../services/adminService.js";
+import {
+  AdminDataTable,
+  AdminDetailDrawer,
+  AdminFilterBar,
+  AdminKpiCard,
+  AdminPageHeader,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
+import "../AdminReferralPartners/style.scss";
+
+function formatDate(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
+
+function toPartnerLabel(partner) {
+  return partner?.public_name || partner?.name || partner?.referral_code || "—";
+}
+
+function toClaimStatusTone(status) {
+  if (["won", "approved", "paid", "closed"].includes(status)) return "success";
+  if (["rejected", "cancelled"].includes(status)) return "danger";
+  if (["submitted", "under_review", "pending_review", "documents_pending"].includes(status)) return "warning";
+  return "neutral";
+}
+
+function toAttributionDate(lead) {
+  return lead.created_at || null;
+}
+
+export default function AdminReferrals() {
+  const [moduleData, setModuleData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedReferralId, setSelectedReferralId] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      setError("");
+      setIsLoading(true);
+      try {
+        setModuleData(await fetchReferralPartnersModuleData());
+      } catch (nextError) {
+        setError(nextError.message || "Could not load referrals.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const partnersById = useMemo(
+    () => new Map((moduleData?.partners || []).map((partner) => [partner.id, partner])),
+    [moduleData?.partners],
+  );
+
+  const casesByPartnerId = useMemo(() => {
+    const map = new Map();
+    (moduleData?.cases || []).forEach((caseRow) => {
+      if (!caseRow.referral_partner_id) return;
+      const next = map.get(caseRow.referral_partner_id) || [];
+      next.push(caseRow);
+      map.set(caseRow.referral_partner_id, next);
+    });
+    return map;
+  }, [moduleData?.cases]);
+
+  const rows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const baseRows = (moduleData?.leads || [])
+      .filter((lead) => lead.referral_partner_id)
+      .map((lead) => {
+        const partner = partnersById.get(lead.referral_partner_id);
+        const relatedCases = casesByPartnerId.get(lead.referral_partner_id) || [];
+        const matchingCase = relatedCases.find((item) => item.case_code && lead.payload?.caseCode && item.case_code === lead.payload.caseCode)
+          || relatedCases.find((item) => item.status !== "cancelled")
+          || null;
+
+        return {
+          id: lead.id,
+          leadId: lead.id,
+          leadCode: lead.lead_code || "—",
+          partnerId: lead.referral_partner_id,
+          partnerLabel: toPartnerLabel(partner),
+          partnerCode: partner?.referral_code || "—",
+          partnerPortalStatus: partner?.portal_status || "approved",
+          claimStatus: matchingCase?.status || lead.status || "submitted",
+          attributionDate: toAttributionDate(lead),
+          routeLabel: lead.payload?.routeLabel
+            || [lead.payload?.departure, lead.payload?.destination].filter(Boolean).join(" -> ")
+            || "—",
+          sourceLabel: lead.source_details?.referralCode || lead.source || "—",
+          linkedCaseCode: matchingCase?.case_code || "—",
+          rawLead: lead,
+          rawPartner: partner || null,
+          rawCase: matchingCase,
+        };
+      });
+
+    return baseRows.filter((row) => {
+      const matchesSearch = !query || [
+        row.leadCode,
+        row.partnerLabel,
+        row.partnerCode,
+        row.linkedCaseCode,
+        row.routeLabel,
+      ].some((value) => String(value || "").toLowerCase().includes(query));
+      const matchesStatus = statusFilter === "all" || row.claimStatus === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [casesByPartnerId, moduleData?.leads, partnersById, search, statusFilter]);
+
+  const selectedReferral = useMemo(
+    () => rows.find((item) => item.id === selectedReferralId) || rows[0] || null,
+    [rows, selectedReferralId],
+  );
+
+  const statusOptions = useMemo(() => {
+    const statuses = Array.from(new Set(rows.map((item) => item.claimStatus).filter(Boolean)));
+    return [{ value: "all", label: "All claim states" }, ...statuses.map((item) => ({ value: item, label: item }))];
+  }, [rows]);
+
+  const metrics = useMemo(() => ({
+    total: rows.length,
+    activePartners: new Set(rows.map((item) => item.partnerId)).size,
+    pendingClaims: rows.filter((item) => ["submitted", "under_review", "pending_review", "documents_pending"].includes(item.claimStatus)).length,
+    convertedCases: rows.filter((item) => item.linkedCaseCode !== "—").length,
+  }), [rows]);
+
+  return (
+    <div className="admin-page admin-partner-referrals-page">
+      <AdminPageHeader
+        title="Referrals"
+        subtitle="Claims and leads attributed to approved referral partners"
+        breadcrumbs={[
+          { label: "Admin", path: "/admin" },
+          { label: "Referrals" },
+        ]}
+      />
+
+      {error ? <p className="admin-message is-error">{error}</p> : null}
+
+      <div className="admin-partner-program__kpis">
+        <AdminKpiCard label="Attributed referrals" value={isLoading ? "—" : metrics.total} icon={Link2} />
+        <AdminKpiCard label="Active partners" value={isLoading ? "—" : metrics.activePartners} icon={Users} />
+        <AdminKpiCard label="Claims moving" value={isLoading ? "—" : metrics.pendingClaims} icon={Link2} />
+        <AdminKpiCard label="Converted to case" value={isLoading ? "—" : metrics.convertedCases} icon={Users} />
+      </div>
+
+      <AdminFilterBar
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search lead, partner, route, case"
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        statusOptions={statusOptions}
+      />
+
+      <AdminDataTable
+        title="Referred claims"
+        description={isLoading ? "" : `${rows.length} referrals match the current filters.`}
+        columns={[
+          { key: "lead", label: "Lead / claim" },
+          { key: "partner", label: "Partner" },
+          { key: "status", label: "Claim status" },
+          { key: "date", label: "Attribution date" },
+          { key: "route", label: "Route" },
+          { key: "action", label: "Action" },
+        ]}
+        rows={rows}
+        loading={isLoading}
+        error={!isLoading ? error : ""}
+        emptyLabel="No referrals found."
+        renderRow={(row) => (
+          <tr key={row.id}>
+            <td>{row.leadCode}</td>
+            <td>{row.partnerLabel}</td>
+            <td><AdminStatusBadge tone={toClaimStatusTone(row.claimStatus)}>{row.claimStatus}</AdminStatusBadge></td>
+            <td>{formatDate(row.attributionDate)}</td>
+            <td className="admin-cell-wrap">{row.routeLabel}</td>
+            <td>
+              <button
+                type="button"
+                className="admin-link-button"
+                onClick={() => {
+                  setSelectedReferralId(row.id);
+                  setDrawerOpen(true);
+                }}
+              >
+                Open
+              </button>
+            </td>
+          </tr>
+        )}
+      />
+
+      <AdminDetailDrawer
+        open={drawerOpen}
+        title={selectedReferral?.leadCode || "Referral detail"}
+        subtitle={selectedReferral ? `${selectedReferral.partnerLabel} • ${selectedReferral.partnerCode}` : ""}
+        onClose={() => setDrawerOpen(false)}
+      >
+        {selectedReferral ? (
+          <div className="admin-partner-program__drawer">
+            <section className="admin-partner-program__summary-grid">
+              <article className="admin-partner-program__info-card"><span>Lead reference</span><strong>{selectedReferral.leadCode}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Partner</span><strong>{selectedReferral.partnerLabel}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Partner code</span><strong>{selectedReferral.partnerCode}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Partner status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={selectedReferral.partnerPortalStatus === "approved" ? "success" : "warning"}>{selectedReferral.partnerPortalStatus}</AdminStatusBadge></div></article>
+              <article className="admin-partner-program__info-card"><span>Claim status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={toClaimStatusTone(selectedReferral.claimStatus)}>{selectedReferral.claimStatus}</AdminStatusBadge></div></article>
+              <article className="admin-partner-program__info-card"><span>Attribution date</span><strong>{formatDate(selectedReferral.attributionDate)}</strong></article>
+            </section>
+
+            <section className="admin-partner-program__section">
+              <h3>Referral detail</h3>
+              <div className="admin-partner-program__meta-grid">
+                <div><span>Linked case</span><strong>{selectedReferral.linkedCaseCode}</strong></div>
+                <div><span>Route</span><strong>{selectedReferral.routeLabel}</strong></div>
+                <div><span>Source</span><strong>{selectedReferral.sourceLabel}</strong></div>
+                <div><span>Lead created</span><strong>{formatDate(selectedReferral.rawLead.created_at)}</strong></div>
+              </div>
+            </section>
+          </div>
+        ) : null}
+      </AdminDetailDrawer>
+    </div>
+  );
+}

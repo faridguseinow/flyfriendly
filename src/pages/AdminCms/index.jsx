@@ -232,13 +232,6 @@ export default function AdminCms() {
 
   return (
     <div className="admin-page admin-content-system-page">
-      <header className="admin-hero">
-        <div>
-          <span className="section-label is-primary"><LayoutTemplate size={16} /> Content System</span>
-          <h1>Website CMS</h1>
-          <p>Manage public site pages and ordered content blocks with publish states, SEO fields, and reusable payloads.</p>
-        </div>
-      </header>
 
       {error && <p className="admin-message is-error">{error}</p>}
       {notice && <p className="admin-message">{notice}</p>}

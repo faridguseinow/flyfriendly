@@ -1,0 +1,79 @@
+.admin-team-activity-page {
+  .admin-filter-bar {
+    margin-top: 24px;
+    margin-bottom: 0;
+  }
+
+  .admin-team-activity-page__summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    padding: 24px 28px 28px;
+  }
+
+  .admin-team-activity-page__summary-card {
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #fbfdff;
+
+    span,
+    strong {
+      display: block;
+    }
+
+    span {
+      color: #6b7484;
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 600;
+    }
+
+    strong {
+      margin-top: 8px;
+      color: #20242e;
+      font-size: 16px;
+      line-height: 22px;
+      font-weight: 600;
+      word-break: break-word;
+    }
+  }
+
+  .admin-team-activity-page__summary-badge {
+    margin-top: 8px;
+  }
+
+  .admin-team-activity-page__kpis {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .admin-team-activity-page__kpis + .admin-team-activity-page__kpis {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1280px) {
+  .admin-team-activity-page {
+    .admin-team-activity-page__summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .admin-team-activity-page__kpis,
+    .admin-team-activity-page__kpis + .admin-team-activity-page__kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-team-activity-page {
+    .admin-team-activity-page__summary,
+    .admin-team-activity-page__kpis,
+    .admin-team-activity-page__kpis + .admin-team-activity-page__kpis {
+      grid-template-columns: 1fr;
+    }
+  }
+}
