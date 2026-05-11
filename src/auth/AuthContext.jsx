@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, requireSupabase } from "../lib/supabase.js";
 import {
   ensureCurrentUserProfile,
+  getCurrentAdminAccess,
   getCurrentPartnerProfile,
   getCurrentSession,
   getCurrentUser,
@@ -21,6 +22,7 @@ async function buildAuthState() {
       session: null,
       profile: null,
       partnerProfile: null,
+      adminAccess: null,
     };
   }
 
@@ -36,16 +38,26 @@ async function buildAuthState() {
       session: null,
       profile,
       partnerProfile: null,
+      adminAccess: null,
     };
   }
 
-  const partnerProfile = await getCurrentPartnerProfile().catch(() => null);
+  const [partnerProfile, adminAccess] = await Promise.all([
+    getCurrentPartnerProfile().catch(() => null),
+    getCurrentAdminAccess().catch(() => ({
+      isAdminUser: false,
+      assignedRoles: [],
+      teamMember: null,
+      dynamicRoleCode: null,
+    })),
+  ]);
 
   return {
     user,
     session,
     profile,
     partnerProfile,
+    adminAccess,
   };
 }
 
@@ -56,6 +68,7 @@ export function AuthProvider({ children }) {
     session: null,
     profile: null,
     partnerProfile: null,
+    adminAccess: null,
   });
 
   useEffect(() => {
@@ -66,6 +79,7 @@ export function AuthProvider({ children }) {
         session: null,
         profile: null,
         partnerProfile: null,
+        adminAccess: null,
       });
       return;
     }
@@ -93,6 +107,7 @@ export function AuthProvider({ children }) {
             session: null,
             profile: null,
             partnerProfile: null,
+            adminAccess: null,
           });
         }
       }
@@ -111,8 +126,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(() => {
-    const role = getNormalizedRole(state.profile, state.partnerProfile);
-    const dashboardPath = resolveDashboardPath(state.profile, state.partnerProfile);
+    const role = getNormalizedRole(state.profile, state.partnerProfile, state.adminAccess);
+    const dashboardPath = resolveDashboardPath(state.profile, state.partnerProfile, state.adminAccess);
 
     return {
       ...state,
@@ -127,6 +142,7 @@ export function AuthProvider({ children }) {
             session: null,
             profile: null,
             partnerProfile: null,
+            adminAccess: null,
           };
           setState(fallback);
           return fallback;
@@ -139,7 +155,11 @@ export function AuthProvider({ children }) {
           ...next,
         };
         setState(resolved);
-        return resolved;
+        return {
+          ...resolved,
+          role: getNormalizedRole(resolved.profile, resolved.partnerProfile, resolved.adminAccess),
+          dashboardPath: resolveDashboardPath(resolved.profile, resolved.partnerProfile, resolved.adminAccess),
+        };
       },
       signOut: async () => {
         await signOutUser();
@@ -149,6 +169,7 @@ export function AuthProvider({ children }) {
           session: null,
           profile: null,
           partnerProfile: null,
+          adminAccess: null,
         });
       },
     };

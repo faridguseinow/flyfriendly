@@ -91,9 +91,10 @@ function createEmployeeForm() {
     fullName: "",
     email: "",
     phone: "",
+    password: "",
     roleId: "",
     status: "active",
-    sendSetupLink: true,
+    sendSetupLink: false,
   };
 }
 
@@ -501,6 +502,7 @@ export default function AdminTeam() {
       fullName: employee.fullName || "",
       email: employee.email || "",
       phone: employee.phone || "",
+      password: "",
       roleId: employee.roleId || "",
       status: employee.status || "active",
       sendSetupLink: false,
@@ -541,11 +543,14 @@ export default function AdminTeam() {
 
     try {
       if (panel?.type === "employee-create") {
-        await createAdminTeamMember(employeeForm);
+        const createdEmployee = await createAdminTeamMember(employeeForm);
         if (employeeForm.sendSetupLink) {
-          await sendAdminEmployeeSetupLink({ email: employeeForm.email });
+          await sendAdminEmployeeSetupLink({
+            email: employeeForm.email,
+            profileId: createdEmployee?.profile_id || null,
+          });
         }
-        setNotice(employeeForm.sendSetupLink ? "Employee access created and setup link sent." : "Employee access created.");
+        setNotice(employeeForm.sendSetupLink ? "Employee access created, password assigned, and setup link sent." : "Employee access created and password assigned.");
       } else if (selectedEmployee) {
         const previous = selectedEmployee;
         if (
@@ -1082,14 +1087,14 @@ export default function AdminTeam() {
         <AdminSidePanel
           open
           title={isEdit ? "Edit employee" : "Add employee"}
-          subtitle={isEdit ? "Update internal worker access, role, and status." : "Assign an existing profile to the admin workspace and use setup-link access."}
+          subtitle={isEdit ? "Update internal worker access, role, and status." : "Create or connect an employee account, assign a role, and set the starting password."}
           onClose={closePanel}
         >
           <div className="admin-employees-page__panel-grid">
             <article className="admin-panel-card">
               <header>
                 <strong>Account details</strong>
-                <small>No password is stored or logged here.</small>
+                <small>Password is sent to secure backend auth tooling and is not stored in app logs.</small>
               </header>
               <div className="admin-employees-page__form-grid">
                 <label>
@@ -1104,6 +1109,19 @@ export default function AdminTeam() {
                   <span>Phone</span>
                   <input className="admin-input" value={employeeForm.phone} onChange={(event) => setEmployeeForm((current) => ({ ...current, phone: event.target.value }))} />
                 </label>
+                {!isEdit ? (
+                  <label>
+                    <span>Password</span>
+                    <input
+                      className="admin-input"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="At least 8 characters"
+                      value={employeeForm.password}
+                      onChange={(event) => setEmployeeForm((current) => ({ ...current, password: event.target.value }))}
+                    />
+                  </label>
+                ) : null}
                 <label>
                   <span>Role</span>
                   <select className="admin-select" value={employeeForm.roleId} onChange={(event) => setEmployeeForm((current) => ({ ...current, roleId: event.target.value }))}>
@@ -1125,10 +1143,10 @@ export default function AdminTeam() {
             <article className="admin-panel-card">
               <header>
                 <strong>Secure setup flow</strong>
-                <small>Use password setup email instead of storing passwords in the database.</small>
+                <small>Optional: also send a password-reset/setup email after the employee account is created.</small>
               </header>
               <p className="admin-employees-page__panel-note">
-                Employee creation is limited to existing Auth/Profile records. If the email does not exist in `profiles`, a secure backend worker such as `create-admin-employee` is still needed.
+                New employees can now be created directly from this panel. The password you enter is applied in Supabase Auth, while admin access is assigned separately through the admin role registry.
               </p>
               <label className="admin-employees-page__checkbox-row">
                 <input
@@ -1142,7 +1160,12 @@ export default function AdminTeam() {
 
             <div className="admin-employees-page__panel-actions">
               <button type="button" className="admin-btn admin-btn-secondary" onClick={closePanel}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn-primary" onClick={persistEmployee} disabled={isSaving}>
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary"
+                onClick={persistEmployee}
+                disabled={isSaving || (!isEdit && employeeForm.password.trim().length < 8)}
+              >
                 {isSaving ? "Saving..." : isEdit ? "Save employee" : "Add employee"}
               </button>
             </div>

@@ -9,8 +9,10 @@ const corsHeaders = {
 };
 
 const MANAGER_ROLE_CODES = new Set([
+  "owner",
   "super_admin",
   "admin",
+  "partner_manager",
   "operations_manager",
   "case_manager",
   "finance_manager",
@@ -140,7 +142,7 @@ async function requireAuthorizedReviewer(
 
   const userId = authUser.data.user.id;
 
-  const [rolesResponse, profileResponse] = await Promise.all([
+  const [rolesResponse, profileResponse, teamMemberResponse] = await Promise.all([
     serviceRoleClient
       .from("user_admin_roles")
       .select("role_code")
@@ -149,6 +151,11 @@ async function requireAuthorizedReviewer(
       .from("profiles")
       .select("id, role, full_name, email")
       .eq("id", userId)
+      .maybeSingle(),
+    serviceRoleClient
+      .from("admin_team_members")
+      .select("role_id, status")
+      .eq("profile_id", userId)
       .maybeSingle(),
   ]);
 
@@ -160,12 +167,33 @@ async function requireAuthorizedReviewer(
     throw profileResponse.error;
   }
 
+  if (teamMemberResponse.error) {
+    throw teamMemberResponse.error;
+  }
+
+  let teamRoleCode = "";
+  if (teamMemberResponse.data?.role_id && teamMemberResponse.data?.status === "active") {
+    const roleResponse = await serviceRoleClient
+      .from("admin_roles")
+      .select("code")
+      .eq("id", teamMemberResponse.data.role_id)
+      .maybeSingle();
+
+    if (roleResponse.error) {
+      throw roleResponse.error;
+    }
+
+    teamRoleCode = String(roleResponse.data?.code || "").trim().toLowerCase();
+  }
+
   const assignedRoles = (rolesResponse.data || [])
     .map((item) => String(item.role_code || "").trim().toLowerCase())
     .filter(Boolean);
-  const profileRole = String(profileResponse.data?.role || "").trim().toLowerCase();
-  const isAuthorized = assignedRoles.some((role) => MANAGER_ROLE_CODES.has(role))
-    || MANAGER_ROLE_CODES.has(profileRole);
+  const effectiveRoles = Array.from(new Set([
+    ...assignedRoles,
+    teamRoleCode,
+  ].filter(Boolean)));
+  const isAuthorized = effectiveRoles.some((role) => MANAGER_ROLE_CODES.has(role));
 
   if (!isAuthorized) {
     throw new Response(JSON.stringify({ error: { message: "You are not allowed to reject partner applications." } }), {
@@ -177,7 +205,7 @@ async function requireAuthorizedReviewer(
   return {
     userId,
     profile: profileResponse.data || null,
-    roles: assignedRoles,
+    roles: effectiveRoles,
   };
 }
 

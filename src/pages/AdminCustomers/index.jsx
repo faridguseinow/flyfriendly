@@ -44,6 +44,14 @@ function deriveAccountStatus(profile) {
   return "unknown";
 }
 
+function activateOnEnterOrSpace(handler) {
+  return (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handler();
+  };
+}
+
 function getAccountTone(status) {
   if (status === "active" || status === "registered") return "success";
   if (status === "blocked") return "danger";
@@ -483,11 +491,13 @@ export default function AdminCustomers() {
             </div>
 
             {filteredCustomers.map((customer) => (
-              <button
+              <div
                 key={customer.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 className={`admin-customers-page__row admin-list-row${selectedCustomer?.id === customer.id && drawerOpen ? " is-active" : ""}`}
                 onClick={() => openCustomer(customer.id)}
+                onKeyDown={activateOnEnterOrSpace(() => openCustomer(customer.id))}
               >
                 <span className="admin-customers-page__person" data-label="Customer">
                   <span className="admin-customers-page__avatar">{customer.initials}</span>
@@ -532,7 +542,7 @@ export default function AdminCustomers() {
                     View
                   </button>
                 </span>
-              </button>
+              </div>
             ))}
           </div>
         )}

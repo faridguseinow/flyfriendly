@@ -16,6 +16,10 @@ function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.code === "42703" || error?.message?.includes("column");
 }
 
+function isMissingTableError(error) {
+  return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
+}
+
 function isMissingRpcError(error) {
   return error?.code === "PGRST202"
     || error?.code === "42883"
@@ -181,10 +185,8 @@ export async function signUpWithEmail(email, password, metadata = {}) {
       fullName: metadata.fullName ?? metadata.full_name,
       email,
       phone: metadata.phone,
-      role: "client",
       status: "active",
     });
-    await syncCurrentUserClaimData().catch(() => null);
   }
 
   return data;
@@ -203,7 +205,6 @@ export async function signInWithEmail(email, password) {
 
   if (data.session?.user) {
     await ensureCurrentUserProfile({ email });
-    await syncCurrentUserClaimData().catch(() => null);
   }
 
   return data;
@@ -256,6 +257,72 @@ export async function getCurrentProfile() {
   return fetchProfileById(client, user.id);
 }
 
+export async function getCurrentAdminAccess() {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+
+  if (!user) {
+    return {
+      isAdminUser: false,
+      assignedRoles: [],
+      teamMember: null,
+      dynamicRoleCode: null,
+    };
+  }
+
+  const [assignedRolesResponse, teamMemberResponse, rolesResponse] = await Promise.all([
+    client
+      .from("user_admin_roles")
+      .select("role_code")
+      .eq("user_id", user.id),
+    client
+      .from("admin_team_members")
+      .select("profile_id, role_id, status")
+      .eq("profile_id", user.id)
+      .maybeSingle(),
+    client
+      .from("admin_roles")
+      .select("id, code, is_active"),
+  ]);
+
+  if (assignedRolesResponse.error && !isMissingTableError(assignedRolesResponse.error)) {
+    throw assignedRolesResponse.error;
+  }
+
+  if (
+    teamMemberResponse.error
+    && teamMemberResponse.error.code !== "PGRST116"
+    && !isMissingTableError(teamMemberResponse.error)
+    && !isMissingColumnError(teamMemberResponse.error)
+  ) {
+    throw teamMemberResponse.error;
+  }
+
+  if (rolesResponse.error && !isMissingTableError(rolesResponse.error) && !isMissingColumnError(rolesResponse.error)) {
+    throw rolesResponse.error;
+  }
+
+  const assignedRoles = Array.from(
+    new Set((assignedRolesResponse.error ? [] : (assignedRolesResponse.data || []))
+      .map((item) => String(item.role_code || "").trim().toLowerCase())
+      .filter(Boolean)),
+  );
+
+  const rolesById = new Map((rolesResponse.error ? [] : (rolesResponse.data || []))
+    .map((item) => [item.id, { code: String(item.code || "").trim().toLowerCase(), isActive: item.is_active !== false }]));
+
+  const teamMember = teamMemberResponse.error ? null : teamMemberResponse.data;
+  const dynamicRole = teamMember?.role_id ? rolesById.get(teamMember.role_id) || null : null;
+  const teamMemberActive = !!teamMember && teamMember.status === "active" && !!dynamicRole?.isActive;
+
+  return {
+    isAdminUser: assignedRoles.length > 0 || teamMemberActive,
+    assignedRoles,
+    teamMember,
+    dynamicRoleCode: dynamicRole?.code || null,
+  };
+}
+
 export async function syncCurrentUserClaimData() {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
@@ -276,6 +343,15 @@ export async function syncCurrentUserClaimData() {
   return data || null;
 }
 
+export async function syncCurrentUserClaimDataIfClient() {
+  const access = await getCurrentAdminAccess().catch(() => ({ isAdminUser: false }));
+  if (access?.isAdminUser) {
+    return null;
+  }
+
+  return syncCurrentUserClaimData();
+}
+
 export async function createProfileForCurrentUser(input = {}) {
   const client = requireSupabase();
   const user = await getCurrentUser();
@@ -290,7 +366,7 @@ export async function createProfileForCurrentUser(input = {}) {
     email: normalized.email || user.email || null,
     full_name: normalized.full_name ?? user.user_metadata?.full_name ?? null,
     phone: normalized.phone ?? user.user_metadata?.phone ?? null,
-    role: normalized.role || "client",
+    role: normalized.role ?? null,
     status: normalized.status || "active",
   });
 
@@ -307,7 +383,7 @@ export async function ensureCurrentUserProfile(input = {}) {
 
   const existing = await getCurrentProfile();
   if (existing) {
-    await syncCurrentUserClaimData().catch(() => null);
+    await syncCurrentUserClaimDataIfClient().catch(() => null);
     return existing;
   }
 
@@ -315,7 +391,7 @@ export async function ensureCurrentUserProfile(input = {}) {
     ...input,
     email: input.email || user.email || null,
   });
-  await syncCurrentUserClaimData().catch(() => null);
+  await syncCurrentUserClaimDataIfClient().catch(() => null);
   return createdProfile;
 }
 

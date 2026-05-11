@@ -346,9 +346,7 @@ async function upsertClientProfile(
     email: account.email,
     full_name: String(data.fullName || "").trim() || null,
     phone: String(data.phone || "").trim() || null,
-    // Legacy production schema still enforces the old customer/admin role constraint.
-    // The frontend normalizes any non-internal profile without a partner profile as a client.
-    role: "customer",
+    // Regular client accounts must not carry an admin/portal role value.
     status: "active",
   };
 

@@ -144,6 +144,11 @@
     background: rgba(236, 244, 255, 0.95);
     box-shadow: inset 3px 0 0 #0584ff;
   }
+
+  &:focus-visible {
+    outline: 2px solid #0584ff;
+    outline-offset: -2px;
+  }
 }
 
 .admin-referral-page__cell,

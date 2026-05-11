@@ -28,7 +28,7 @@ function getDaysLeft(value) {
 }
 
 export default function AdminTrash() {
-  const { isSuperAdmin, hasPermission } = useAdminAuth();
+  const { isOwnerOrSuperAdmin, hasPermission } = useAdminAuth();
   const [moduleData, setModuleData] = useState({ items: [] });
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [search, setSearch] = useState("");
@@ -114,8 +114,8 @@ export default function AdminTrash() {
 
   const purgeSelected = async () => {
     if (!selectedItem) return;
-    if (selectedItem.entity_type === "profile" && !isSuperAdmin) {
-      setError("Only super admins can permanently delete user accounts.");
+    if (selectedItem.entity_type === "profile" && !isOwnerOrSuperAdmin) {
+      setError("Only the owner can permanently delete user accounts.");
       return;
     }
 
@@ -226,7 +226,7 @@ export default function AdminTrash() {
                             <RotateCcw size={14} />
                             <span>{activeActionId === selectedItem.id ? "Working..." : "Restore"}</span>
                           </button>
-                          <button className="admin-link-button" type="button" disabled={activeActionId === selectedItem.id || (selectedItem.entity_type === "profile" && !isSuperAdmin)} onClick={purgeSelected}>
+                          <button className="admin-link-button" type="button" disabled={activeActionId === selectedItem.id || (selectedItem.entity_type === "profile" && !isOwnerOrSuperAdmin)} onClick={purgeSelected}>
                             <Trash2 size={14} />
                             <span>{selectedItem.entity_type === "profile" ? "Delete user now" : "Delete now"}</span>
                           </button>

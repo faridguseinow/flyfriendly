@@ -1,6 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser, resetPassword } from "./authService.js";
-import { normalizeRoleCode, toLegacyRoleCode } from "../admin/rbac.js";
+import { normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 
 function isMissingOptionalTable(error) {
@@ -2186,7 +2186,13 @@ export async function fetchDocumentsCenterData() {
 
   const documents = [
     ...(leadDocuments.data || []).map((item) => ({ ...item, owner_type: "lead", owner_id: item.lead_id, bucket: "claim-lead-documents", kind: "document" })),
-    ...(caseDocuments.data || []).map((item) => ({ ...item, owner_type: "case", owner_id: item.case_id, bucket: "case-documents", kind: "document" })),
+    ...(caseDocuments.data || []).map((item) => ({
+      ...item,
+      owner_type: "case",
+      owner_id: item.case_id,
+      bucket: String(item.file_path || "").startsWith("leads/") ? "claim-lead-documents" : "case-documents",
+      kind: "document",
+    })),
     ...(claimDocuments.data || []).map((item) => ({ ...item, owner_type: "claim", owner_id: item.claim_id, bucket: "claim-documents", kind: "document" })),
     ...(leadSignatures.data || []).map((item) => ({ ...item, owner_type: "lead", owner_id: item.lead_id, kind: "signature", status: item.terms_accepted ? "signed" : "pending" })),
   ];
@@ -2512,6 +2518,23 @@ export async function reviewPartnerApplication(applicationId, input = {}) {
 }
 
 async function invokePartnerApplicationReviewFunction(functionName, body) {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke(functionName, {
+    body,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (data?.error?.message) {
+    throw new Error(data.error.message);
+  }
+
+  return data;
+}
+
+async function invokeAdminTeamFunction(functionName, body) {
   const client = requireSupabase();
   const { data, error } = await client.functions.invoke(functionName, {
     body,
@@ -4444,8 +4467,10 @@ export async function createAdminTeamMember(input = {}) {
   const email = String(input.email || "").trim().toLowerCase();
   const fullName = String(input.fullName || "").trim();
   const phone = String(input.phone || "").trim();
+  const password = String(input.password || "");
   const roleId = input.roleId || null;
   const status = normalizeTeamStatus(input.status || "active");
+  const sendSetupLink = Boolean(input.sendSetupLink);
 
   if (!email) {
     throw new Error("Email is required.");
@@ -4453,6 +4478,14 @@ export async function createAdminTeamMember(input = {}) {
 
   if (!roleId) {
     throw new Error("Role is required.");
+  }
+
+  if (!password) {
+    throw new Error("Password is required when creating an employee.");
+  }
+
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters.");
   }
 
   const [profileResponse, role] = await Promise.all([
@@ -4468,8 +4501,50 @@ export async function createAdminTeamMember(input = {}) {
     throw profileResponse.error;
   }
 
-  if (!profileResponse.data) {
-    throw new Error("Invite email flow is not configured yet. Create the user profile first, then assign the team role.");
+  if (password || !profileResponse.data) {
+    const result = await invokeAdminTeamFunction("create-admin-employee", {
+      email,
+      password,
+      full_name: fullName || null,
+      phone: phone || null,
+      role_id: role.id,
+      status,
+      send_setup_link: sendSetupLink,
+    });
+
+    const profileId = result?.profile?.id || result?.profile_id || null;
+
+    await recordActivity(client, {
+      userId: actor?.id,
+      action: "upsert_team_member",
+      module: "team",
+      targetEntityType: "profile",
+      targetEntityId: profileId,
+      previousValue: null,
+      newValue: {
+        email,
+        role_code: role.code,
+        status,
+        source: "edge_function",
+      },
+    });
+
+    void logAdminActivity("invite_team_member", "admin_team_member", profileId || email, {
+      module: "team",
+      role_id: role.id,
+      role_code: role.code,
+      status,
+      source: "edge_function",
+    });
+
+    return {
+      id: result?.team_member?.id || null,
+      profile_id: profileId,
+      email,
+      full_name: fullName || result?.profile?.full_name || null,
+      role_id: role.id,
+      status,
+    };
   }
 
   const profile = profileResponse.data;
@@ -4609,6 +4684,21 @@ export async function sendAdminEmployeeSetupLink({ email, profileId = null } = {
     throw new Error("Employee email is required.");
   }
 
+  let targetProfileId = String(profileId || "").trim() || null;
+  if (!targetProfileId) {
+    const profileResponse = await client
+      .from("profiles")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    if (profileResponse.error) {
+      throw profileResponse.error;
+    }
+
+    targetProfileId = profileResponse.data?.id || null;
+  }
+
   await resetPassword(normalizedEmail);
 
   await recordActivity(client, {
@@ -4616,13 +4706,13 @@ export async function sendAdminEmployeeSetupLink({ email, profileId = null } = {
     action: "send_team_setup_link",
     module: "team",
     targetEntityType: "profile",
-    targetEntityId: profileId || normalizedEmail,
+    targetEntityId: targetProfileId,
     newValue: {
       email: normalizedEmail,
     },
   });
 
-  void logAdminActivity("send_team_setup_link", "admin_team_member", profileId || normalizedEmail, {
+  void logAdminActivity("send_team_setup_link", "admin_team_member", targetProfileId || normalizedEmail, {
     module: "team",
     email: normalizedEmail,
   });
@@ -4844,8 +4934,10 @@ export async function updateUserAdminRoles(userId, roleCodes = []) {
 
   const orderedRoles = [...normalized].sort((left, right) => {
     const rankMap = {
+      owner: 110,
       super_admin: 100,
       admin: 90,
+      partner_manager: 58,
       operations_manager: 70,
       case_manager: 60,
       customer_support_agent: 50,
@@ -4856,15 +4948,6 @@ export async function updateUserAdminRoles(userId, roleCodes = []) {
     return (rankMap[right] || 0) - (rankMap[left] || 0);
   });
   const primaryRole = orderedRoles[0] || "read_only";
-  const fallbackRole = toLegacyRoleCode(primaryRole);
-  const { error: profileError } = await client
-    .from("profiles")
-    .update({ role: fallbackRole })
-    .eq("id", userId);
-
-  if (profileError) {
-    throw profileError;
-  }
 
   await recordActivity(client, {
     userId: actor?.id,
@@ -4877,7 +4960,7 @@ export async function updateUserAdminRoles(userId, roleCodes = []) {
       admin_roles: (currentRoles.data || []).map((item) => item.role_code),
     },
     newValue: {
-      profile_role: fallbackRole,
+      profile_role: currentProfile.data?.role || null,
       primary_role: primaryRole,
       admin_roles: normalized,
     },
@@ -4959,7 +5042,7 @@ export async function moveDocumentToTrash(document, note = "") {
   return trashResult.data;
 }
 
-async function isCurrentUserSuperAdmin(client, userId) {
+async function isCurrentUserOwnerOrSuperAdmin(client, userId) {
   if (!userId) {
     return false;
   }
@@ -4968,15 +5051,14 @@ async function isCurrentUserSuperAdmin(client, userId) {
     .from("user_admin_roles")
     .select("role_code")
     .eq("user_id", userId)
-    .eq("role_code", "super_admin")
-    .limit(1)
-    .maybeSingle();
+    .in("role_code", ["owner", "super_admin"])
+    .limit(2);
 
   if (response.error && !isMissingOptionalTable(response.error)) {
     throw response.error;
   }
 
-  return Boolean(response.data);
+  return Boolean(response.data?.length);
 }
 
 export async function moveUserToTrash(profileId, note = "") {
@@ -4987,9 +5069,9 @@ export async function moveUserToTrash(profileId, note = "") {
     throw new Error("You need to be signed in.");
   }
 
-  const isSuperAdmin = await isCurrentUserSuperAdmin(client, actor.id);
-  if (!isSuperAdmin) {
-    throw new Error("Only super admins can delete users.");
+  const isOwnerOrSuperAdmin = await isCurrentUserOwnerOrSuperAdmin(client, actor.id);
+  if (!isOwnerOrSuperAdmin) {
+    throw new Error("Only the owner can delete users.");
   }
 
   if (profileId === actor.id) {
@@ -5651,17 +5733,35 @@ export async function updateCmsBlock(blockId, updates) {
   });
 }
 
-export async function getDocumentDownloadUrl(document) {
-  const client = requireSupabase();
-  const { data, error } = await client.storage
-    .from(document.bucket)
-    .createSignedUrl(document.file_path, 60);
+function getDocumentBucketCandidates(document) {
+  const primaryBucket = String(document?.bucket || "").trim();
+  const filePath = String(document?.file_path || "");
+  const buckets = [primaryBucket];
 
-  if (error) {
-    throw error;
+  if (primaryBucket === "case-documents" && filePath.startsWith("leads/")) {
+    buckets.push("claim-lead-documents");
   }
 
-  return data.signedUrl;
+  return buckets.filter(Boolean);
+}
+
+export async function getDocumentDownloadUrl(document) {
+  const client = requireSupabase();
+  let lastError = null;
+
+  for (const bucket of getDocumentBucketCandidates(document)) {
+    const { data, error } = await client.storage
+      .from(bucket)
+      .createSignedUrl(document.file_path, 60);
+
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
+    }
+
+    lastError = error || lastError;
+  }
+
+  throw lastError || new Error("Could not create document download URL.");
 }
 
 export function downloadSignaturePng(signatureDataUrl, fileName = "signature.png") {

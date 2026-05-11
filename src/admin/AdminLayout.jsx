@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "../assets/icons/logo-image.svg";
 import logoText from "../assets/icons/fly-friendly.svg";
-import { signInCustomer } from "../services/authService.js";
+import { signInCustomer, signOut as signOutUser } from "../services/authService.js";
 import {
   endAdminWorkSession,
   fetchAdminSearchData,
@@ -121,7 +121,12 @@ export function AdminLoginPage() {
 
     try {
       await signInCustomer(form);
-      await refreshAuth();
+      const accessState = await refreshAuth();
+      if (!accessState?.isAdminUser) {
+        await signOutUser().catch(() => null);
+        setError("This account does not have admin access.");
+        return;
+      }
       await logAdminActivity("login", "admin_session", null, {
         module: "auth",
         source: "admin_login",

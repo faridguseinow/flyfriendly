@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, requireSupabase } from "../lib/supabase.js";
-import { ALL_PERMISSIONS, getAvailablePermissions, getRoleDefinition, hasPermission, normalizeRoleCode } from "./rbac.js";
+import { ALL_PERMISSIONS, getAvailablePermissions, getRoleDefinition, hasPermission, isAdminRoleCode, normalizeRoleCode } from "./rbac.js";
 
 const AdminAuthContext = createContext(null);
 
@@ -172,16 +172,12 @@ async function loadAdminAccessState(client, user) {
     fetchAdminTeamMember(client, user.id),
   ]);
 
-  const fallbackRole = normalizeRoleCode(profile?.role);
-  const roleSet = new Set(assignedRoles);
-  if (fallbackRole && !profile?.deleted_at) {
-    roleSet.add(fallbackRole);
-  }
-
-  const staticRoles = profile?.deleted_at ? [] : Array.from(roleSet);
+  const staticRoles = profile?.deleted_at
+    ? []
+    : Array.from(new Set(assignedRoles.filter((role) => isAdminRoleCode(role))));
   const dynamicRole = await fetchDynamicRole(client, teamMember, staticRoles);
   const dynamicPermissions = await fetchDynamicPermissions(client, dynamicRole);
-  const dynamicRoleCode = normalizeRoleCode(dynamicRole?.code);
+  const dynamicRoleCode = isAdminRoleCode(dynamicRole?.code) ? normalizeRoleCode(dynamicRole?.code) : null;
   const roles = Array.from(new Set([
     ...(dynamicRoleCode ? [dynamicRoleCode] : []),
     ...staticRoles,
@@ -372,7 +368,18 @@ export function AdminAuthProvider({ children }) {
             dynamicRole: null,
             teamAccessBlocked: false,
           });
-          return;
+          return {
+            isLoading: false,
+            user: null,
+            profile: null,
+            roles: [],
+            permissions: [],
+            permissionSource: "static",
+            teamMember: null,
+            dynamicRole: null,
+            teamAccessBlocked: false,
+            isAdminUser: false,
+          };
         }
 
         const client = requireSupabase();
@@ -389,12 +396,23 @@ export function AdminAuthProvider({ children }) {
             dynamicRole: null,
             teamAccessBlocked: false,
           });
-          return;
+          return {
+            isLoading: false,
+            user: null,
+            profile: null,
+            roles: [],
+            permissions: [],
+            permissionSource: "static",
+            teamMember: null,
+            dynamicRole: null,
+            teamAccessBlocked: false,
+            isAdminUser: false,
+          };
         }
 
         const accessState = await loadAdminAccessState(client, data.session.user);
 
-        setState({
+        const nextState = {
           isLoading: false,
           user: data.session.user,
           profile: accessState.profile,
@@ -406,7 +424,14 @@ export function AdminAuthProvider({ children }) {
           teamAccessBlocked: accessState.teamAccessBlocked,
           roleLabels: accessState.roleLabels,
           isOwner: accessState.isOwner,
-        });
+        };
+
+        setState(nextState);
+
+        return {
+          ...nextState,
+          isAdminUser: nextState.roles.length > 0 && !nextState.teamAccessBlocked,
+        };
       },
     };
   }, [state]);

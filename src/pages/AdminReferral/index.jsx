@@ -175,8 +175,9 @@ export default function AdminReferral() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const canManagePartners = hasPermission("partners.manage");
-  const canManageFinance = hasPermission("finance.manage");
+  const canManageApplications = hasPermission("partner_applications.manage");
+  const canEditPartners = hasPermission("partners.edit");
+  const canEditFinance = hasPermission("finance.edit");
   const drawerLabels = {
     application: "Applications",
     partner: "Referral Users",
@@ -184,6 +185,12 @@ export default function AdminReferral() {
     commission: "Commissions",
     payout: "Payouts",
     activity: "Activity",
+  };
+
+  const activateRowOnKeyDown = (handler) => (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handler();
   };
 
   const loadData = async () => {
@@ -801,11 +808,13 @@ export default function AdminReferral() {
         <span>Actions</span>
       </div>
       {currentRows.map((item) => (
-        <button
+        <div
           key={item.id}
-          type="button"
+          role="button"
+          tabIndex={0}
           className={`admin-referral-page__row admin-list-row${selectedItem?.id === item.id && drawerOpen ? " is-active" : ""}`}
           onClick={() => openRecord("application", item.id)}
+          onKeyDown={activateRowOnKeyDown(() => openRecord("application", item.id))}
         >
           <span className="admin-referral-page__cell admin-referral-page__person" data-label="Applicant">
             <span className="admin-referral-page__avatar">{getInitials(item.displayName, item.email)}</span>
@@ -830,7 +839,7 @@ export default function AdminReferral() {
           <span className="admin-referral-page__actions-cell" data-label="Actions" onClick={(event) => event.stopPropagation()}>
             <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => openRecord("application", item.id)}>View</button>
           </span>
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -847,11 +856,13 @@ export default function AdminReferral() {
         <span>Actions</span>
       </div>
       {currentRows.map((item) => (
-        <button
+        <div
           key={item.id}
-          type="button"
+          role="button"
+          tabIndex={0}
           className={`admin-referral-page__row admin-list-row${selectedItem?.id === item.id && drawerOpen ? " is-active" : ""}`}
           onClick={() => openRecord("partner", item.id)}
+          onKeyDown={activateRowOnKeyDown(() => openRecord("partner", item.id))}
         >
           <span className="admin-referral-page__cell admin-referral-page__person" data-label="Referral user">
             <span className="admin-referral-page__avatar">{item.initials}</span>
@@ -879,7 +890,7 @@ export default function AdminReferral() {
           <span className="admin-referral-page__actions-cell" data-label="Actions" onClick={(event) => event.stopPropagation()}>
             <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => openRecord("partner", item.id)}>View</button>
           </span>
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -896,11 +907,13 @@ export default function AdminReferral() {
         <span>Actions</span>
       </div>
       {currentRows.map((item) => (
-        <button
+        <div
           key={item.id}
-          type="button"
+          role="button"
+          tabIndex={0}
           className={`admin-referral-page__row admin-list-row${selectedItem?.id === item.id && drawerOpen ? " is-active" : ""}`}
           onClick={() => openRecord("customer", item.id)}
+          onKeyDown={activateRowOnKeyDown(() => openRecord("customer", item.id))}
         >
           <span className="admin-referral-page__cell admin-referral-page__person" data-label="Customer">
             <span className="admin-referral-page__avatar">{getInitials(item.customerName, item.customerEmail)}</span>
@@ -934,7 +947,7 @@ export default function AdminReferral() {
           <span className="admin-referral-page__actions-cell" data-label="Actions" onClick={(event) => event.stopPropagation()}>
             <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => openRecord("customer", item.id)}>View</button>
           </span>
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -951,11 +964,13 @@ export default function AdminReferral() {
         <span>Actions</span>
       </div>
       {currentRows.map((item) => (
-        <button
+        <div
           key={item.id}
-          type="button"
+          role="button"
+          tabIndex={0}
           className={`admin-referral-page__row admin-list-row${selectedItem?.id === item.id && drawerOpen ? " is-active" : ""}`}
           onClick={() => openRecord("commission", item.id)}
+          onKeyDown={activateRowOnKeyDown(() => openRecord("commission", item.id))}
         >
           <span className="admin-referral-page__cell" data-label="Referral user">
             <strong>{item.partnerLabel}</strong>
@@ -980,7 +995,7 @@ export default function AdminReferral() {
           <span className="admin-referral-page__actions-cell" data-label="Actions" onClick={(event) => event.stopPropagation()}>
             <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => openRecord("commission", item.id)}>View</button>
           </span>
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -997,11 +1012,13 @@ export default function AdminReferral() {
         <span>Actions</span>
       </div>
       {currentRows.map((item) => (
-        <button
+        <div
           key={item.id}
-          type="button"
+          role="button"
+          tabIndex={0}
           className={`admin-referral-page__row admin-list-row${selectedItem?.id === item.id && drawerOpen ? " is-active" : ""}`}
           onClick={() => openRecord("payout", item.id)}
+          onKeyDown={activateRowOnKeyDown(() => openRecord("payout", item.id))}
         >
           <span className="admin-referral-page__cell" data-label="Referral user">
             <strong>{item.partnerLabel}</strong>
@@ -1026,7 +1043,7 @@ export default function AdminReferral() {
           <span className="admin-referral-page__actions-cell" data-label="Actions" onClick={(event) => event.stopPropagation()}>
             <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => openRecord("payout", item.id)}>View</button>
           </span>
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -1042,11 +1059,13 @@ export default function AdminReferral() {
         <span>Actions</span>
       </div>
       {currentRows.map((item) => (
-        <button
+        <div
           key={item.id}
-          type="button"
+          role="button"
+          tabIndex={0}
           className={`admin-referral-page__row admin-list-row${selectedItem?.id === item.id && drawerOpen ? " is-active" : ""}`}
           onClick={() => openRecord("activity", item.id)}
+          onKeyDown={activateRowOnKeyDown(() => openRecord("activity", item.id))}
         >
           <span className="admin-referral-page__cell" data-label="Event">
             <strong>{item.type}</strong>
@@ -1064,7 +1083,7 @@ export default function AdminReferral() {
           <span className="admin-referral-page__actions-cell" data-label="Actions" onClick={(event) => event.stopPropagation()}>
             <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => openRecord("activity", item.id)}>View</button>
           </span>
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -1271,11 +1290,11 @@ export default function AdminReferral() {
                 </label>
               </div>
               <div className="admin-referral-page__drawer-actions">
-                <button className="admin-btn admin-btn-primary" type="button" disabled={!canManagePartners || isSaving || isApprovedLike(selectedItem.status)} onClick={handleApprove}>
+                <button className="admin-btn admin-btn-primary" type="button" disabled={!canManageApplications || isSaving || isApprovedLike(selectedItem.status)} onClick={handleApprove}>
                   <CheckCircle2 size={14} />
                   <span>Approve application</span>
                 </button>
-                <button className="admin-btn admin-btn-danger" type="button" disabled={!canManagePartners || isSaving || selectedItem.status === "rejected"} onClick={handleReject}>
+                <button className="admin-btn admin-btn-danger" type="button" disabled={!canManageApplications || isSaving || selectedItem.status === "rejected"} onClick={handleReject}>
                   <XCircle size={14} />
                   <span>Reject application</span>
                 </button>
@@ -1374,11 +1393,11 @@ export default function AdminReferral() {
                 <textarea className="admin-input" value={partnerActionNotes} onChange={(event) => setPartnerActionNotes(event.target.value)} />
               </label>
               <div className="admin-referral-page__drawer-actions">
-                <button className="admin-btn admin-btn-secondary" type="button" disabled={!canManagePartners || isSaving || selectedItem.portal_status === "suspended"} onClick={() => handlePartnerStatusChange("suspended")}>
+                <button className="admin-btn admin-btn-secondary" type="button" disabled={!canEditPartners || isSaving || selectedItem.portal_status === "suspended"} onClick={() => handlePartnerStatusChange("suspended")}>
                   <XCircle size={14} />
                   <span>Suspend partner</span>
                 </button>
-                <button className="admin-btn admin-btn-primary" type="button" disabled={!canManagePartners || isSaving || selectedItem.portal_status === "approved"} onClick={() => handlePartnerStatusChange("approved")}>
+                <button className="admin-btn admin-btn-primary" type="button" disabled={!canEditPartners || isSaving || selectedItem.portal_status === "approved"} onClick={() => handlePartnerStatusChange("approved")}>
                   <RefreshCcw size={14} />
                   <span>Reactivate partner</span>
                 </button>
@@ -1467,7 +1486,7 @@ export default function AdminReferral() {
                 <article><strong>Approved</strong><span>{formatDateTime(selectedItem.approved_at)}</span></article>
                 <article><strong>Paid</strong><span>{formatDateTime(selectedItem.paid_at)}</span></article>
               </div>
-              {!canManageFinance ? <p>Commission status is read-only in the current admin role.</p> : <p>Commission actions are read-only here until a dedicated finance workflow is enabled.</p>}
+              {!canEditFinance ? <p>Commission status is read-only in the current admin role.</p> : <p>Commission actions are read-only here until a dedicated finance workflow is enabled.</p>}
             </section>
           </div>
         ) : null}
@@ -1490,7 +1509,7 @@ export default function AdminReferral() {
                 <article><strong>Paid</strong><span>{formatDateTime(selectedItem.paid_at)}</span></article>
                 <article><strong>Note</strong><span>{selectedItem.note || "—"}</span></article>
               </div>
-              <p>{canManageFinance ? "Payout actions remain read-only here until a dedicated payout backend flow is enabled." : "Payout detail is read-only in the current admin role."}</p>
+              <p>{canEditFinance ? "Payout actions remain read-only here until a dedicated payout backend flow is enabled." : "Payout detail is read-only in the current admin role."}</p>
             </section>
           </div>
         ) : null}

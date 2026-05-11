@@ -23,6 +23,7 @@ function formatCurrency(value, currency = "EUR") {
 
 export default function AdminPartnerPayouts() {
   const { hasPermission } = useAdminAuth();
+  const canEditPartners = hasPermission("partners.edit");
   const [moduleData, setModuleData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -129,7 +130,7 @@ export default function AdminPartnerPayouts() {
           { label: "Admin", path: "/admin" },
           { label: "Partner Payouts" },
         ]}
-        primaryAction={hasPermission("partners.manage") ? {
+        primaryAction={canEditPartners ? {
           label: "Create payout",
           onClick: () => {
             setDrawerMode("create");
@@ -269,7 +270,7 @@ export default function AdminPartnerPayouts() {
               </div>
               <textarea value={payoutForm.note} onChange={(event) => setPayoutForm((current) => ({ ...current, note: event.target.value }))} placeholder="Internal payout note" />
               <div className="admin-partner-program__action-row">
-                <button className="btn btn--primary" type="button" disabled={!hasPermission("partners.manage") || isSaving} onClick={handleCreate}>
+                <button className="btn btn--primary" type="button" disabled={!canEditPartners || isSaving} onClick={handleCreate}>
                   {isSaving ? "Saving..." : "Create payout"}
                 </button>
               </div>

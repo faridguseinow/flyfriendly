@@ -37,9 +37,21 @@ export function getPartnerAccessState(partnerProfile) {
   return "pending";
 }
 
-export function getNormalizedRole(profile, partnerProfile) {
+function hasAdminAccess(adminAccess) {
+  if (typeof adminAccess === "boolean") {
+    return adminAccess;
+  }
+
+  return Boolean(adminAccess?.isAdminUser);
+}
+
+export function getNormalizedRole(profile, partnerProfile, adminAccess = null) {
   if (profile?.deleted_at) {
     return null;
+  }
+
+  if (hasAdminAccess(adminAccess)) {
+    return "admin";
   }
 
   const role = String(profile?.role || "").toLowerCase();
@@ -59,8 +71,8 @@ export function getNormalizedRole(profile, partnerProfile) {
   return null;
 }
 
-export function resolveDashboardPath(profile, partnerProfile) {
-  const normalizedRole = getNormalizedRole(profile, partnerProfile);
+export function resolveDashboardPath(profile, partnerProfile, adminAccess = null) {
+  const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
 
   if (normalizedRole === "admin") {
     return "/admin";
@@ -83,7 +95,7 @@ export function resolveDashboardPath(profile, partnerProfile) {
   return "/client/dashboard";
 }
 
-export function hasAllowedRole(allowedRoles = [], profile, partnerProfile) {
-  const normalizedRole = getNormalizedRole(profile, partnerProfile);
+export function hasAllowedRole(allowedRoles = [], profile, partnerProfile, adminAccess = null) {
+  const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
   return allowedRoles.includes(normalizedRole);
 }

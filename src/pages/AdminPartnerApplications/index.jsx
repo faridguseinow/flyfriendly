@@ -44,6 +44,7 @@ function toneForStatus(status) {
 
 export default function AdminPartnerApplications() {
   const { hasPermission } = useAdminAuth();
+  const canManageApplications = hasPermission("partner_applications.manage");
   const [moduleData, setModuleData] = useState({ applications: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -298,7 +299,7 @@ export default function AdminPartnerApplications() {
                 value={rejectionReason}
                 onChange={(event) => setRejectionReason(event.target.value)}
                 placeholder="Required when rejecting an application"
-                disabled={!hasPermission("partners.manage") || isSaving}
+                disabled={!canManageApplications || isSaving}
               />
               {selectedApplication.rejection_reason ? (
                 <p className="admin-partner-program__subnote">Current reason: {selectedApplication.rejection_reason}</p>
@@ -306,10 +307,10 @@ export default function AdminPartnerApplications() {
             </section>
 
             <div className="admin-partner-program__action-row">
-              <button className="btn btn--primary" type="button" disabled={!hasPermission("partners.manage") || isSaving || selectedApplication.status === "approved"} onClick={handleApprove}>
+              <button className="btn btn--primary" type="button" disabled={!canManageApplications || isSaving || selectedApplication.status === "approved"} onClick={handleApprove}>
                 {activeAction === "approve" ? "Approving..." : "Approve"}
               </button>
-              <button className="admin-link-button" type="button" disabled={!hasPermission("partners.manage") || isSaving} onClick={handleReject}>
+              <button className="admin-link-button" type="button" disabled={!canManageApplications || isSaving} onClick={handleReject}>
                 {activeAction === "reject" ? "Rejecting..." : "Reject"}
               </button>
             </div>

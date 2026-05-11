@@ -19,7 +19,7 @@ function MetricCard({ icon: Icon, label, value }) {
 }
 
 export default function AdminAccess() {
-  const { isSuperAdmin } = useAdminAuth();
+  const { isOwnerOrSuperAdmin } = useAdminAuth();
   const [searchParams] = useSearchParams();
   const [moduleData, setModuleData] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -120,7 +120,7 @@ export default function AdminAccess() {
 
   const metrics = useMemo(() => ({
     users: profiles.length,
-    adminUsers: profiles.filter((profile) => (userRoles.some((item) => item.user_id === profile.id) || profile.role === "admin")).length,
+    adminUsers: new Set(userRoles.map((item) => item.user_id)).size,
     roles: roles.length,
     permissions: permissions.length || Object.values(groupedPermissions).flat().length,
   }), [groupedPermissions, permissions.length, profiles, roles.length, userRoles]);
@@ -146,8 +146,8 @@ export default function AdminAccess() {
   };
 
   const trashUser = async () => {
-    if (!selectedProfile || !isSuperAdmin) return;
-    const confirmed = window.confirm(`Move ${selectedProfile.full_name || selectedProfile.email || "this user"} to trash? Only a super admin will be able to permanently purge the account.`);
+    if (!selectedProfile || !isOwnerOrSuperAdmin) return;
+    const confirmed = window.confirm(`Move ${selectedProfile.full_name || selectedProfile.email || "this user"} to trash? Only the owner will be able to permanently purge the account.`);
     if (!confirmed) return;
 
     setIsSaving(true);
@@ -208,7 +208,7 @@ export default function AdminAccess() {
                     <thead>
                       <tr>
                         <th>User</th>
-                        <th>Legacy role</th>
+                        <th>Portal role</th>
                         <th>Assigned roles</th>
                       </tr>
                     </thead>
@@ -267,7 +267,7 @@ export default function AdminAccess() {
                           <button className="btn btn--primary" type="button" disabled={isSaving} onClick={saveRoles}>
                             Save roles
                           </button>
-                          {isSuperAdmin ? (
+                          {isOwnerOrSuperAdmin ? (
                             <button className="admin-link-button" type="button" disabled={isSaving} onClick={trashUser}>
                               <Trash2 size={14} />
                               <span>Delete user</span>

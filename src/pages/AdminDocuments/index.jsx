@@ -168,6 +168,14 @@ function getPreviewSource(item, previewUrls) {
   return previewUrls[item.id] || "";
 }
 
+function activateOnEnterOrSpace(handler) {
+  return (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handler();
+  };
+}
+
 function canLoadPreview(item) {
   return Boolean(item && isImageDocument(item) && (item.signature_data_url || (item.bucket && item.file_path)));
 }
@@ -489,7 +497,7 @@ export default function AdminDocuments() {
   }, [filteredRows, recentCaseFolders, recentLeadFolders, recentTaskFolders, selectedDocument, selectedFolder]);
 
   useEffect(() => {
-    const nextItems = previewCandidates.filter((item) => item.kind !== "signature" && !previewUrls[item.id]);
+    const nextItems = previewCandidates.filter((item) => item.kind !== "signature" && !(item.id in previewUrls));
     if (!nextItems.length) return;
 
     let cancelled = false;
@@ -498,14 +506,14 @@ export default function AdminDocuments() {
         const url = await getDocumentDownloadUrl(item);
         return [item.id, url];
       } catch {
-        return [item.id, ""];
+        return [item.id, null];
       }
     })).then((entries) => {
       if (cancelled) return;
       setPreviewUrls((current) => {
         const next = { ...current };
         entries.forEach(([id, url]) => {
-          if (url) next[id] = url;
+          next[id] = url;
         });
         return next;
       });
@@ -761,11 +769,13 @@ export default function AdminDocuments() {
               </div>
 
               {filteredRows.map((item) => (
-                <button
+                <div
                   key={`${item.kind}-${item.id}`}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   className={`admin-documents-page__row admin-list-row${selectedDocument?.id === item.id ? " is-active" : ""}`}
                   onClick={() => openDocument(item.id)}
+                  onKeyDown={activateOnEnterOrSpace(() => openDocument(item.id))}
                 >
                   <span className="admin-documents-page__document-cell is-name" data-label="Document">
                     <DocumentPreviewThumb item={item} previewUrl={getPreviewSource(item, previewUrls)} compact />
@@ -789,7 +799,7 @@ export default function AdminDocuments() {
                       {activeTrashId === item.id ? "Moving..." : "Trash"}
                     </button>
                   </span>
-                </button>
+                </div>
               ))}
             </div>
           )}

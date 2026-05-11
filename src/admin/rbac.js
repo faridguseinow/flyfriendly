@@ -183,6 +183,14 @@ export const ADMIN_ROLES = {
   },
 };
 
+const UNKNOWN_ADMIN_ROLE = {
+  label: "No admin role",
+  rank: 0,
+  permissions: [],
+};
+
+export const ADMIN_ROLE_CODES = new Set(Object.keys(ADMIN_ROLES));
+
 export const LEGACY_ROLE_MAP = {
   owner: "owner",
   admin: "admin",
@@ -224,8 +232,13 @@ export function normalizeRoleCode(role) {
   return LEGACY_ROLE_MAP[role] || role;
 }
 
+export function isAdminRoleCode(role) {
+  const normalized = normalizeRoleCode(role);
+  return Boolean(normalized && ADMIN_ROLE_CODES.has(normalized));
+}
+
 export function getRoleDefinition(role) {
-  return ADMIN_ROLES[normalizeRoleCode(role)] || ADMIN_ROLES.read_only;
+  return ADMIN_ROLES[normalizeRoleCode(role)] || UNKNOWN_ADMIN_ROLE;
 }
 
 export function hasPermission(roleCodes = [], permission) {

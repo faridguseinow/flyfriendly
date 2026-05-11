@@ -78,6 +78,7 @@ function toneForLegacyStatus(status) {
 
 export default function AdminReferralPartners() {
   const { hasPermission } = useAdminAuth();
+  const canEditPartners = hasPermission("partners.edit");
   const [searchParams] = useSearchParams();
   const [moduleData, setModuleData] = useState(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState(null);
@@ -333,26 +334,26 @@ export default function AdminReferralPartners() {
               <div className="admin-partner-program__form-grid">
                 <label>
                   <span>Portal status</span>
-                  <select value={selectedPartner.portal_status || "approved"} onChange={(event) => updatePartnerAccess(event.target.value)} disabled={!hasPermission("partners.manage") || isSaving}>
+                  <select value={selectedPartner.portal_status || "approved"} onChange={(event) => updatePartnerAccess(event.target.value)} disabled={!canEditPartners || isSaving}>
                     {portalStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </label>
                 <label>
                   <span>Registry status</span>
-                  <select value={selectedPartner.status || "active"} onChange={(event) => savePartner({ status: event.target.value })} disabled={!hasPermission("partners.manage") || isSaving}>
+                  <select value={selectedPartner.status || "active"} onChange={(event) => savePartner({ status: event.target.value })} disabled={!canEditPartners || isSaving}>
                     {legacyStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </label>
                 <label>
                   <span>Commission type</span>
-                  <select value={selectedPartner.commission_type || "percentage"} onChange={(event) => savePartner({ commission_type: event.target.value })} disabled={!hasPermission("partners.manage") || isSaving}>
+                  <select value={selectedPartner.commission_type || "percentage"} onChange={(event) => savePartner({ commission_type: event.target.value })} disabled={!canEditPartners || isSaving}>
                     <option value="percentage">percentage</option>
                     <option value="fixed">fixed</option>
                   </select>
                 </label>
                 <label>
                   <span>Commission rate</span>
-                  <input type="number" min="0" step="0.01" defaultValue={selectedPartner.commission_rate || 0} onBlur={(event) => savePartner({ commission_rate: Number(event.target.value || 0) })} disabled={!hasPermission("partners.manage") || isSaving} />
+                  <input type="number" min="0" step="0.01" defaultValue={selectedPartner.commission_rate || 0} onBlur={(event) => savePartner({ commission_rate: Number(event.target.value || 0) })} disabled={!canEditPartners || isSaving} />
                 </label>
               </div>
             </section>

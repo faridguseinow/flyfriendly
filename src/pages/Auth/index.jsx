@@ -59,7 +59,7 @@ export function LoginPage() {
       await signInWithEmail(form.email, form.password);
       const nextAuth = await refreshProfile();
       navigate(
-        getReturnPath(searchParams) || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile),
+        getReturnPath(searchParams) || nextAuth?.dashboardPath || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess),
         { replace: true },
       );
     } catch (authError) {
@@ -165,7 +165,7 @@ export function RegisterPage() {
 
       if (result.session) {
         const nextAuth = await refreshProfile();
-        navigate(resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile) || toLocalizedPath("/client/dashboard"), { replace: true });
+        navigate(nextAuth?.dashboardPath || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess) || toLocalizedPath("/client/dashboard"), { replace: true });
         return;
       }
 
@@ -473,7 +473,7 @@ export function ResetPasswordPage() {
       setNotice(t("auth.reset.notice", { defaultValue: "Password updated. Redirecting to your account..." }));
       const nextAuth = await refreshProfile();
       window.setTimeout(() => {
-        navigate(resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile) || toLocalizedPath("/client/dashboard"), { replace: true });
+        navigate(nextAuth?.dashboardPath || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess) || toLocalizedPath("/client/dashboard"), { replace: true });
       }, 700);
     } catch (authError) {
       setError(authError.message || t("auth.reset.error", { defaultValue: "Could not update your password." }));

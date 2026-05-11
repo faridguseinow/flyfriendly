@@ -39,7 +39,7 @@ export function GuestRoute() {
 }
 
 export function RoleRoute({ allowedRoles = [], ignorePartnerStatus = false }) {
-  const { loading, isAuthenticated, profile, partnerProfile, dashboardPath } = useAuth();
+  const { loading, isAuthenticated, profile, partnerProfile, adminAccess, dashboardPath } = useAuth();
 
   if (loading) {
     return <LoadingState />;
@@ -49,7 +49,7 @@ export function RoleRoute({ allowedRoles = [], ignorePartnerStatus = false }) {
     return <Navigate to="/auth/login" replace />;
   }
 
-  if (!hasAllowedRole(allowedRoles, profile, partnerProfile)) {
+  if (!hasAllowedRole(allowedRoles, profile, partnerProfile, adminAccess)) {
     return <Navigate to={dashboardPath} replace />;
   }
 
@@ -66,7 +66,7 @@ export function RoleRoute({ allowedRoles = [], ignorePartnerStatus = false }) {
 export function PartnerRoute() {
   const location = useLocation();
   const toLocalizedPath = useLocalizedPath();
-  const { loading, isAuthenticated, profile, partnerProfile, dashboardPath } = useAuth();
+  const { loading, isAuthenticated, profile, partnerProfile, adminAccess, dashboardPath } = useAuth();
 
   if (loading) {
     return <LoadingState />;
@@ -77,7 +77,7 @@ export function PartnerRoute() {
     return <Navigate to={toLocalizedPath(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)} replace />;
   }
 
-  const normalizedRole = getNormalizedRole(profile, partnerProfile);
+  const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
   if (normalizedRole !== "partner") {
     return <Navigate to={dashboardPath || toLocalizedPath("/client/dashboard")} replace />;
   }
