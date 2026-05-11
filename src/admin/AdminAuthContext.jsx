@@ -177,12 +177,18 @@ async function loadAdminAccessState(client, user) {
     : Array.from(new Set(assignedRoles.filter((role) => isAdminRoleCode(role))));
   const dynamicRole = await fetchDynamicRole(client, teamMember, staticRoles);
   const dynamicPermissions = await fetchDynamicPermissions(client, dynamicRole);
-  const dynamicRoleCode = isAdminRoleCode(dynamicRole?.code) ? normalizeRoleCode(dynamicRole?.code) : null;
+  const dynamicRoleCode = dynamicRole?.code
+    ? (isAdminRoleCode(dynamicRole.code) ? normalizeRoleCode(dynamicRole.code) : dynamicRole.code)
+    : null;
   const roles = Array.from(new Set([
     ...(dynamicRoleCode ? [dynamicRoleCode] : []),
     ...staticRoles,
   ]));
-  const roleLabels = roles.map((role) => getRoleDefinition(role).label);
+  const roleLabels = roles.map((role) => (
+    role === dynamicRole?.code
+      ? (dynamicRole.label || dynamicRole.name || getRoleDefinition(role).label)
+      : getRoleDefinition(role).label
+  ));
   const isOwner = roles.includes("owner") || roles.includes("super_admin") || !!dynamicRole?.is_owner_role;
   const teamStatus = teamMember?.status || null;
   const teamAccessBlocked = !!teamMember && teamStatus !== "active";
