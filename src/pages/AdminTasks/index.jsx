@@ -3,7 +3,7 @@ import { CheckCircle2, Download, FilterX, Plus, Search, X } from "lucide-react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { createTask, fetchTasksModuleData, updateTask } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
-import { AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
 
 const priorities = ["low", "medium", "high", "urgent"];
@@ -42,6 +42,29 @@ function formatDateTime(value) {
 function formatDate(value) {
   if (!value) return "—";
   return new Date(value).toLocaleDateString();
+}
+
+function formatCurrency(value, currency = "EUR") {
+  if (value === null || value === undefined || value === "") return "—";
+  return `€${Number(value || 0).toFixed(0)}${currency && currency !== "EUR" ? ` ${currency}` : ""}`;
+}
+
+function formatEstimateCurrency(value, currency = "EUR") {
+  if (value === null || value === undefined || value === "") return "Estimate pending review";
+  return `Up to €${Number(value || 0).toFixed(0)}${currency && currency !== "EUR" ? ` ${currency}` : ""}`;
+}
+
+function formatDistanceBand(band) {
+  if (band === "short") return "Short";
+  if (band === "medium") return "Medium";
+  if (band === "long") return "Long";
+  return "Pending review";
+}
+
+function formatEstimateStatus(status) {
+  if (status === "calculated") return "Calculated";
+  if (status === "manual_override") return "Manual override";
+  return "Estimate pending review";
 }
 
 function toDateKey(value) {
@@ -292,6 +315,7 @@ export default function AdminTasks() {
     const customers = new Map((moduleData?.customers || []).map((item) => [item.id, item]));
     const documents = new Map((moduleData?.documents || []).map((item) => [item.id, item]));
     const finance = new Map((moduleData?.finance || []).map((item) => [item.id, item]));
+    const financeByCase = new Map((moduleData?.finance || []).map((item) => [item.case_id, item]));
     const partners = new Map((moduleData?.partners || []).map((item) => [item.id, item]));
 
     return (moduleData?.tasks || []).map((task) => {
@@ -302,6 +326,11 @@ export default function AdminTasks() {
       const relatedDocument = task.related_entity_type === "case_document" || task.related_entity_type === "document" ? documents.get(task.related_entity_id) : null;
       const relatedFinance = task.related_entity_type === "case_finance" || task.related_entity_type === "finance" ? finance.get(task.related_entity_id) : null;
       const relatedPartner = task.related_entity_type === "referral_partner" || task.related_entity_type === "partner" ? partners.get(task.related_entity_id) : null;
+      const caseFromFinance = relatedFinance?.case_id ? cases.get(relatedFinance.case_id) : null;
+      const caseFromDocument = relatedDocument?.case_id ? cases.get(relatedDocument.case_id) : null;
+      const compensationCase = relatedCase || caseFromFinance || caseFromDocument || null;
+      const compensationLead = relatedLead || (compensationCase?.lead_id ? leads.get(compensationCase.lead_id) : null) || null;
+      const compensationFinance = relatedFinance || (compensationCase?.id ? financeByCase.get(compensationCase.id) : null) || null;
       const customerLabel = relatedCustomer?.full_name
         || (relatedCase ? customers.get(relatedCase?.customer_id)?.full_name : null);
       const relatedLabel = relatedLead?.lead_code
@@ -330,6 +359,9 @@ export default function AdminTasks() {
         relatedDocument,
         relatedFinance,
         relatedPartner,
+        compensationCase,
+        compensationLead,
+        compensationFinance,
         relatedRoute: routeLabel,
         customerLabel: customerLabel || relatedLead?.full_name || "Unknown customer",
         relatedRouteLink: getRelatedRoute(task),
@@ -816,9 +848,17 @@ export default function AdminTasks() {
         </aside>
       </section>
 
-      {selectedTask && detailOpen ? <button type="button" className="admin-tasks-page__overlay" onClick={closeDetail} aria-label="Close task detail" /> : null}
-
-      <aside className={`admin-tasks-page__drawer${selectedTask && detailOpen ? " is-open" : ""}`}>
+      <AdminSidePanel
+        open={Boolean(selectedTask && detailOpen)}
+        eyebrow="Task detail"
+        title={selectedTask?.title || "Task detail"}
+        subtitle={selectedTask ? `${selectedTask.relatedLabel} • ${selectedTask.assignedLabel}` : ""}
+        onClose={closeDetail}
+        className="admin-tasks-page__drawer"
+        withOverlay
+        overlayClassName="admin-tasks-page__overlay"
+        overlayLabel="Close task detail"
+      >
         {!selectedTask ? (
           <div className="admin-tasks-page__drawer-empty">
             <strong>Select a task to review details</strong>
@@ -826,17 +866,6 @@ export default function AdminTasks() {
           </div>
         ) : draft ? (
           <div className="admin-tasks-page__drawer-inner">
-            <header className="admin-tasks-page__drawer-header">
-              <div>
-                <span className="admin-tasks-page__eyebrow">Task detail</span>
-                <h3>{selectedTask.title}</h3>
-                <p>{selectedTask.relatedLabel} • {selectedTask.assignedLabel}</p>
-              </div>
-              <button type="button" className="admin-tasks-page__close" onClick={closeDetail} aria-label="Close task detail">
-                <X size={16} />
-              </button>
-            </header>
-
             <div className="admin-tasks-page__drawer-scroll">
               <section className="admin-tasks-page__summary">
                 <article><strong>Status</strong><span>{normalizeLabel(selectedTask.status)}</span></article>
@@ -858,6 +887,42 @@ export default function AdminTasks() {
                   <article><strong>Reference</strong><span>{selectedTask.relatedLabel || "—"}</span></article>
                   <article><strong>Route</strong><span>{selectedTask.relatedRoute}</span></article>
                   <article><strong>Customer</strong><span>{selectedTask.customerLabel}</span></article>
+                </div>
+              </section>
+
+              <section className="admin-tasks-page__section">
+                <div className="admin-tasks-page__section-title">
+                  <h4>Compensation / Finance</h4>
+                </div>
+                <div className="admin-tasks-page__meta-grid">
+                  <article>
+                    <strong>Estimated compensation</strong>
+                    <span>
+                      {selectedTask.compensationLead
+                        ? formatEstimateCurrency(selectedTask.compensationLead.estimated_compensation_eur, selectedTask.compensationLead.compensation_currency)
+                        : formatCurrency(selectedTask.compensationCase?.estimated_compensation)}
+                    </span>
+                  </article>
+                  <article>
+                    <strong>Distance</strong>
+                    <span>{selectedTask.compensationLead?.distance_km ? `${Math.round(Number(selectedTask.compensationLead.distance_km))} km` : "Pending review"}</span>
+                  </article>
+                  <article>
+                    <strong>Distance band</strong>
+                    <span>{selectedTask.compensationLead ? formatDistanceBand(selectedTask.compensationLead.distance_band) : "Pending review"}</span>
+                  </article>
+                  <article>
+                    <strong>Estimate status</strong>
+                    <span>{selectedTask.compensationLead ? formatEstimateStatus(selectedTask.compensationLead.estimate_status) : "Estimate pending review"}</span>
+                  </article>
+                  <article>
+                    <strong>Recovered amount</strong>
+                    <span>{selectedTask.compensationFinance ? formatCurrency(selectedTask.compensationFinance.compensation_amount, selectedTask.compensationFinance.currency) : "Not configured"}</span>
+                  </article>
+                  <article>
+                    <strong>Customer payout</strong>
+                    <span>{selectedTask.compensationFinance ? formatCurrency(selectedTask.compensationFinance.customer_payout, selectedTask.compensationFinance.currency) : "Not configured"}</span>
+                  </article>
                 </div>
               </section>
 
@@ -1003,7 +1068,7 @@ export default function AdminTasks() {
             </div>
           </div>
         ) : null}
-      </aside>
+      </AdminSidePanel>
 
       {createOpen ? (
         <div className="admin-tasks-page__modal-layer" role="presentation">

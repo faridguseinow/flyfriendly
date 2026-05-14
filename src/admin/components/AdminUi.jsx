@@ -239,25 +239,38 @@ export function AdminSidePanel({
   onClose,
   children,
   className = "",
+  withOverlay = false,
+  overlayClassName = "",
+  overlayLabel = "Close panel",
 }) {
   return (
-    <aside className={`admin-side-panel${open ? " is-open" : ""}${className ? ` ${className}` : ""}`} aria-hidden={!open}>
-      <div className="admin-side-panel__inner">
-        <div className="admin-side-panel__header">
-          <div>
-            {eyebrow ? <span className="admin-side-panel__eyebrow">{eyebrow}</span> : null}
-            <h2>{title || "Detail"}</h2>
-            {subtitle ? <p>{subtitle}</p> : null}
+    <>
+      {withOverlay && open && onClose ? (
+        <button
+          type="button"
+          className={`admin-side-panel__overlay${overlayClassName ? ` ${overlayClassName}` : ""}`}
+          onClick={onClose}
+          aria-label={overlayLabel}
+        />
+      ) : null}
+      <aside className={`admin-side-panel${open ? " is-open" : ""}${className ? ` ${className}` : ""}`} aria-hidden={!open}>
+        <div className="admin-side-panel__inner">
+          <div className="admin-side-panel__header">
+            <div>
+              {eyebrow ? <span className="admin-side-panel__eyebrow">{eyebrow}</span> : null}
+              <h2>{title || "Detail"}</h2>
+              {subtitle ? <p>{subtitle}</p> : null}
+            </div>
+            {onClose ? (
+              <button type="button" className="admin-side-panel__close" onClick={onClose} aria-label="Close panel">
+                <X size={16} />
+              </button>
+            ) : null}
           </div>
-          {onClose ? (
-            <button type="button" className="admin-side-panel__close" onClick={onClose} aria-label="Close panel">
-              <X size={16} />
-            </button>
-          ) : null}
+          <div className="admin-side-panel__body">{children}</div>
         </div>
-        <div className="admin-side-panel__body">{children}</div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 

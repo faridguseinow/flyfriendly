@@ -1089,6 +1089,10 @@ export default function AdminTeam() {
           title={isEdit ? "Edit employee" : "Add employee"}
           subtitle={isEdit ? "Update internal worker access, role, and status." : "Create or connect an employee account, assign a role, and set the starting password."}
           onClose={closePanel}
+          className="admin-employees-page__drawer"
+          withOverlay
+          overlayClassName="admin-employees-page__overlay"
+          overlayLabel="Close employee drawer"
         >
           <div className="admin-employees-page__panel-grid">
             <article className="admin-panel-card">
@@ -1185,6 +1189,10 @@ export default function AdminTeam() {
         title={selectedEmployee.fullName || selectedEmployee.email}
         subtitle={selectedEmployee.email}
         onClose={closePanel}
+        className="admin-employees-page__drawer"
+        withOverlay
+        overlayClassName="admin-employees-page__overlay"
+        overlayLabel="Close employee drawer"
       >
         <div className="admin-employees-page__panel-grid">
           <article className="admin-panel-card">
@@ -1305,6 +1313,10 @@ export default function AdminTeam() {
         title={isCreate ? "Create role" : role.name}
         subtitle={isCreate ? "Create a custom employee role with scoped permissions and menu access." : "Edit permissions and menu visibility for this role."}
         onClose={closePanel}
+        className="admin-employees-page__drawer"
+        withOverlay
+        overlayClassName="admin-employees-page__overlay"
+        overlayLabel="Close role drawer"
       >
         <div className="admin-employees-page__panel-grid">
           <article className="admin-panel-card">

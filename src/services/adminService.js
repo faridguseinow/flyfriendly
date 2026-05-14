@@ -732,7 +732,7 @@ async function fetchCaseLeadsWithEstimateFallback(client) {
     .limit(500);
 
   if (!extended.error) {
-    return extended.data || [];
+    return { data: extended.data || [] };
   }
 
   if (!isMissingColumnError(extended.error)) {
@@ -749,7 +749,7 @@ async function fetchCaseLeadsWithEstimateFallback(client) {
     throw fallback.error;
   }
 
-  return fallback.data || [];
+  return { data: fallback.data || [] };
 }
 
 export async function fetchLeadsModuleData() {
@@ -1328,7 +1328,7 @@ export async function convertLeadToCase(leadId) {
 
   const { data: lead, error: leadError } = await client
     .from("leads")
-    .select("id, lead_code, status, customer_id, profile_id, referral_partner_id, source, source_details, departure_airport, arrival_airport, airline, scheduled_departure_date, issue_type, disruption_type, full_name, email, phone, country, preferred_language, city, reason, payload")
+    .select("id, lead_code, status, customer_id, profile_id, referral_partner_id, source, source_details, departure_airport, arrival_airport, airline, scheduled_departure_date, issue_type, disruption_type, full_name, email, phone, country, preferred_language, city, reason, payload, estimated_compensation_eur, compensation_currency")
     .eq("id", leadId)
     .maybeSingle();
 
@@ -1436,6 +1436,8 @@ export async function convertLeadToCase(leadId) {
   const caseCode = buildCaseCode();
   const now = new Date().toISOString();
   const partner = await findReferralPartnerForContext(client, lead, null).catch(() => null);
+  const estimatedCompensation = roundMoney(lead.estimated_compensation_eur || 0);
+  const compensationCurrency = lead.compensation_currency || "EUR";
 
   const { error: caseError } = await client
     .from("cases")
@@ -1453,6 +1455,7 @@ export async function convertLeadToCase(leadId) {
       status: "documents_pending",
       payout_status: "not_started",
       priority: "normal",
+      estimated_compensation: estimatedCompensation,
       notes: lead.reason || lead.payload?.reason || null,
       referral_partner_id: partner?.id || lead.referral_partner_id || null,
       referral_partner_label: partner?.referral_code || lead.source_details?.referral_partner || lead.payload?.referralPartner || lead.source || null,
@@ -1491,13 +1494,13 @@ export async function convertLeadToCase(leadId) {
     }),
     client.from("case_finance").insert({
       case_id: caseId,
-      compensation_amount: 0,
+      compensation_amount: estimatedCompensation,
       company_fee: 0,
       customer_payout: 0,
       referral_commission: 0,
       agent_bonus: 0,
       payment_status: "not_started",
-      currency: "EUR",
+      currency: compensationCurrency,
     }),
     client
       .from("lead_documents")
@@ -1787,12 +1790,12 @@ export async function fetchTasksModuleData() {
       .limit(200),
     client
       .from("leads")
-      .select("id, lead_code, full_name, email, departure_airport, arrival_airport, airline")
+      .select("id, lead_code, full_name, email, departure_airport, arrival_airport, airline, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
       .order("created_at", { ascending: false })
       .limit(400),
     client
       .from("cases")
-      .select("id, case_code, customer_id, airline, route_from, route_to, status")
+      .select("id, case_code, lead_id, customer_id, airline, route_from, route_to, status, estimated_compensation, payout_status")
       .order("created_at", { ascending: false })
       .limit(400),
     client
@@ -1807,7 +1810,7 @@ export async function fetchTasksModuleData() {
       .limit(400),
     client
       .from("case_finance")
-      .select("id, case_id, payment_status, updated_at")
+      .select("id, case_id, compensation_amount, customer_payout, company_fee, payment_status, currency, updated_at")
       .order("updated_at", { ascending: false })
       .limit(400),
     client

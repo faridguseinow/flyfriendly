@@ -855,10 +855,6 @@ export default function AdminDocuments() {
         </aside>
       </section>
 
-      {drawerOpen ? (
-        <button type="button" className="admin-documents-page__overlay" onClick={closeDrawer} aria-label="Close drawer" />
-      ) : null}
-
       {drawerMode === "folder" && activeFolder ? (
         <AdminSidePanel
           open={drawerOpen}
@@ -867,6 +863,9 @@ export default function AdminDocuments() {
           title={activeFolder.reference}
           subtitle={activeFolder.customerName}
           onClose={closeDrawer}
+          withOverlay
+          overlayClassName="admin-documents-page__overlay"
+          overlayLabel="Close drawer"
         >
           <section className="admin-documents-page__summary">
             <article><strong>Reference</strong><span>{activeFolder.reference}</span></article>
@@ -941,6 +940,9 @@ export default function AdminDocuments() {
           title={activePreviewDocument.displayName}
           subtitle={`${activePreviewDocument.reference} • ${activePreviewDocument.customerName}`}
           onClose={closeDrawer}
+          withOverlay
+          overlayClassName="admin-documents-page__overlay"
+          overlayLabel="Close drawer"
         >
           <section className="admin-documents-page__preview-card admin-card-compact">
             <DocumentPreviewThumb item={activePreviewDocument} previewUrl={getPreviewSource(activePreviewDocument, previewUrls)} large />

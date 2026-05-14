@@ -4,6 +4,7 @@ import { ArrowRight, Lock, Mail, Phone, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
+import { GoogleSignInButton } from "../../components/auth/GoogleSignInButton";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
@@ -75,6 +76,15 @@ export function LoginPage() {
       title={t("auth.login.title", { defaultValue: "Welcome back" })}
       text={t("auth.login.text", { defaultValue: "Sign in to view your claims, documents, and payout updates." })}
     >
+      <GoogleSignInButton
+        disabled={isSubmitting}
+        onAuthError={(authError) => {
+          setError(authError.message || t("auth.login.googleError", { defaultValue: "Could not continue with Google. Please try again." }));
+        }}
+      />
+      <div className="auth-divider">
+        <span>{t("auth.login.emailDivider", { defaultValue: "or sign in with email" })}</span>
+      </div>
       <form className="auth-form" onSubmit={submit}>
         <label>
           <span>{t("auth.fields.email", { defaultValue: "Email" })}</span>

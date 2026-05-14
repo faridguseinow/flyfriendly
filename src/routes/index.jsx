@@ -14,6 +14,7 @@ import AdminLayout, { AdminForbiddenPage, AdminLoginPage } from "../admin/AdminL
 import AdminPlaceholderPage from "../admin/AdminPlaceholderPage.jsx";
 import { AdminRouteGuard } from "../admin/AdminGuards.jsx";
 import { GuestRoute, PartnerRoute, ProtectedRoute, RoleRoute } from "../auth/AuthGuards.jsx";
+import { useAuth } from "../auth/AuthContext.jsx";
 import i18n from "../i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "../i18n/languages.js";
 import { getPreferredLanguage, localizePath } from "../i18n/path.js";
@@ -64,8 +65,40 @@ import {
   PartnerSuspendedPage,
 } from "../pages/PartnerPortal/index.jsx";
 
+const GOOGLE_OAUTH_PENDING_KEY = "flyfriendly.googleOAuth.pending";
+
+function hasPendingGoogleOAuthRedirect() {
+  try {
+    return window.localStorage.getItem(GOOGLE_OAUTH_PENDING_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function clearPendingGoogleOAuthRedirect() {
+  try {
+    window.localStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY);
+  } catch {
+    // Local storage can be unavailable in private browsing modes.
+  }
+}
+
 function RedirectToPreferredLanguage() {
   const location = useLocation();
+  const { loading, isAuthenticated, dashboardPath } = useAuth();
+
+  if (hasPendingGoogleOAuthRedirect()) {
+    if (loading) {
+      return <div className="placeholder-page"><p>Loading account...</p></div>;
+    }
+
+    clearPendingGoogleOAuthRedirect();
+
+    if (isAuthenticated) {
+      return <Navigate to={dashboardPath} replace />;
+    }
+  }
+
   const targetLanguage = getPreferredLanguage();
   return <Navigate to={localizePath(`${location.pathname}${location.search}${location.hash}`, targetLanguage)} replace />;
 }

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, CircleUserRound, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, CircleUserRound, LogOut, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
@@ -167,10 +167,12 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { isAuthenticated, dashboardPath } = useAuth();
+  const { isAuthenticated, dashboardPath, profile, user, signOut } = useAuth();
   const currentLanguage = location.pathname.split("/").filter(Boolean)[0] || "en";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountMenuRef = useRef(null);
 
   const navLinks = useMemo(
     () => [
@@ -190,6 +192,7 @@ function Navbar() {
       if (event.key === "Escape") {
         setIsLanguageOpen(false);
         setIsMenuOpen(false);
+        setIsAccountOpen(false);
       }
     };
 
@@ -202,10 +205,37 @@ function Navbar() {
     };
   }, [isLanguageOpen, isMenuOpen]);
 
-  const closeMenu = () => setIsMenuOpen(false);
+  useEffect(() => {
+    if (!isAccountOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target)) {
+        setIsAccountOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isAccountOpen]);
+
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || t("nav.account", { defaultValue: "My account" });
+  const accountEmail = profile?.email || user?.email || "";
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+    setIsAccountOpen(false);
+  };
   const startClaim = () => {
     setIsMenuOpen(false);
     setIsLanguageOpen(false);
+    setIsAccountOpen(false);
   };
 
   const openLanguageModal = () => setIsLanguageOpen(true);
@@ -217,6 +247,17 @@ function Navbar() {
 
     setIsLanguageOpen(false);
     setIsMenuOpen(false);
+    setIsAccountOpen(false);
+  };
+  const toggleAccountMenu = () => {
+    setIsAccountOpen((current) => !current);
+    setIsLanguageOpen(false);
+  };
+  const handleSignOut = async () => {
+    setIsAccountOpen(false);
+    setIsMenuOpen(false);
+    await signOut();
+    navigate(replaceLanguageInPath("/", currentLanguage));
   };
 
   return (
@@ -232,18 +273,60 @@ function Navbar() {
           ))}
         </div>
         <div className="nav-actions">
-          {isAuthenticated ? (
-            <LocalizedLink
-              to={dashboardPath}
+          <div className="account-menu" ref={accountMenuRef}>
+            <button
+              type="button"
               className="account-entry"
               aria-label={t("nav.account", { defaultValue: "My account" })}
-              onClick={closeMenu}
+              aria-haspopup="menu"
+              aria-expanded={isAccountOpen}
+              onClick={toggleAccountMenu}
             >
               <CircleUserRound size={20} strokeWidth={1.9} />
-            </LocalizedLink>
-          ) : null}
-          <LanguageSwitcher currentLanguage={currentLanguage} isOpen={isLanguageOpen} onOpen={openLanguageModal} onClose={closeLanguageModal} onSelectLanguage={selectLanguage} />
-          <LocalizedLink className="btn btn-primary" to="/claim/eligibility" onClick={startClaim}>{t("common.startYourClaim")}</LocalizedLink>
+            </button>
+
+            {isAccountOpen ? (
+              <div className="account-dropdown" role="menu" aria-label={t("nav.account", { defaultValue: "My account" })}>
+                {isAuthenticated ? (
+                  <>
+                    <div className="account-dropdown__identity">
+                      <strong>{displayName}</strong>
+                      {accountEmail ? <span>{accountEmail}</span> : null}
+                    </div>
+                    <div className="account-dropdown__row">
+                      <LanguageSwitcher
+                        currentLanguage={currentLanguage}
+                        isOpen={isLanguageOpen}
+                        onOpen={openLanguageModal}
+                        onClose={closeLanguageModal}
+                        onSelectLanguage={selectLanguage}
+                      />
+                      <button className="account-dropdown__ghost" type="button" role="menuitem" onClick={handleSignOut}>
+                        <LogOut size={18} strokeWidth={2} />
+                        <span>{t("clientPortal.signOut", { defaultValue: "Sign out" })}</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="account-dropdown__row account-dropdown__row--guest">
+                      <LanguageSwitcher
+                        currentLanguage={currentLanguage}
+                        isOpen={isLanguageOpen}
+                        onOpen={openLanguageModal}
+                        onClose={closeLanguageModal}
+                        onSelectLanguage={selectLanguage}
+                      />
+                    <LocalizedLink className="account-dropdown__primary" to="/auth/login" role="menuitem" onClick={closeMenu}>
+                      {t("claimModal.logIn", { defaultValue: "Sign in" })}
+                    </LocalizedLink>
+                  </div>
+                )}
+                <LocalizedLink className="account-dropdown__claim" to="/claim/eligibility" role="menuitem" onClick={startClaim}>
+                  {t("common.startYourClaim")}
+                </LocalizedLink>
+              </div>
+            ) : null}
+          </div>
         </div>
         <button
           className="menu-toggle"
@@ -271,18 +354,20 @@ function Navbar() {
                 {item.label}
               </LocalizedNavLink>
             ))}
+            {isAuthenticated ? (
+              <LocalizedLink to={dashboardPath} onClick={closeMenu}>
+                {t("nav.account", { defaultValue: "My account" })}
+              </LocalizedLink>
+            ) : (
+              <LocalizedLink to="/auth/login" onClick={closeMenu}>
+                {t("claimModal.logIn", { defaultValue: "Sign in" })}
+              </LocalizedLink>
+            )}
           </div>
 
           <LocalizedLink className="mobile-menu__claim" to="/claim/eligibility" onClick={startClaim}>
             {t("common.startYourClaim")}
           </LocalizedLink>
-
-          {isAuthenticated ? (
-            <LocalizedLink className="mobile-menu__account" to={dashboardPath} onClick={closeMenu}>
-              <CircleUserRound size={18} strokeWidth={1.9} />
-              <span>{t("nav.account", { defaultValue: "My account" })}</span>
-            </LocalizedLink>
-          ) : null}
 
           <MobileLanguagePicker
             currentLanguage={currentLanguage}

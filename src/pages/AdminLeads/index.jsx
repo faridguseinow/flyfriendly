@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FilterX, Search, UserRoundPlus, X } from "lucide-react";
+import { Download, FilterX, Search, UserRoundPlus } from "lucide-react";
 import {
   assignLeadOwner,
   convertLeadToCase,
@@ -11,7 +11,7 @@ import {
 } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
 
 const leadStatuses = ["new", "submitted", "not_eligible", "converted", "archived"];
@@ -492,9 +492,17 @@ export default function AdminLeads() {
           </div>
         </div>
 
-        {selectedLead && previewOpen ? <button type="button" className="admin-leads-page__overlay" onClick={handleClosePreview} aria-label="Close lead preview" /> : null}
-
-        <aside className={`admin-leads-page__preview${selectedLead && previewOpen ? " is-open" : ""}`}>
+        <AdminSidePanel
+          open={Boolean(selectedLead && previewOpen)}
+          eyebrow="Lead preview"
+          title={selectedLead ? formatLeadReference(selectedLead) : "Lead preview"}
+          subtitle={selectedLead ? `${selectedLead.full_name || "Unknown customer"} • ${formatDateTime(selectedLead.created_at)}` : ""}
+          onClose={handleClosePreview}
+          className="admin-leads-page__preview"
+          withOverlay
+          overlayClassName="admin-leads-page__overlay"
+          overlayLabel="Close lead preview"
+        >
           {!selectedLead ? (
             <div className="admin-leads-page__empty-preview">
               <strong>Select a lead to preview details</strong>
@@ -502,28 +510,17 @@ export default function AdminLeads() {
             </div>
           ) : (
             <div className="admin-leads-page__preview-inner">
-              <header className="admin-leads-page__preview-header">
-                <div>
-                  <span className="admin-leads-page__eyebrow">Lead preview</span>
-                  <h3>{formatLeadReference(selectedLead)}</h3>
-                  <p>{selectedLead.full_name || "Unknown customer"} • {formatDateTime(selectedLead.created_at)}</p>
-                </div>
-                <div className="admin-leads-page__preview-actions">
-                  <button
-                    className="btn btn--primary"
-                    type="button"
-                    onClick={handleConvertToCase}
-                    disabled={!hasPermission("cases.update") || isSaving}
-                  >
-                    <UserRoundPlus size={15} />
-                    <span>{selectedLead.status === "converted" ? "Open case" : "Convert to case"}</span>
-                  </button>
-                  <button type="button" className="admin-leads-page__close" onClick={handleClosePreview} aria-label="Close preview">
-                    <X size={16} />
-                  </button>
-                </div>
-              </header>
-
+              <div className="admin-leads-page__preview-actions admin-leads-page__preview-actions--body">
+                <button
+                  className="btn btn--primary"
+                  type="button"
+                  onClick={handleConvertToCase}
+                  disabled={!hasPermission("cases.update") || isSaving}
+                >
+                  <UserRoundPlus size={15} />
+                  <span>{selectedLead.status === "converted" ? "Open case" : "Convert to case"}</span>
+                </button>
+              </div>
               <div className="admin-leads-page__preview-scroll">
                 <section className="admin-leads-page__identity">
                   <div>
@@ -746,7 +743,7 @@ export default function AdminLeads() {
               </div>
             </div>
           )}
-        </aside>
+        </AdminSidePanel>
       </section>
     </div>
   );

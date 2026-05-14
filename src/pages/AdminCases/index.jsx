@@ -9,7 +9,7 @@ import {
   updateCaseWorkflow,
 } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
-import { AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
 
 const caseStatuses = [
@@ -662,11 +662,17 @@ export default function AdminCases() {
           </div>
         </div>
 
-        {selectedCase && previewOpen ? (
-          <button type="button" className="admin-cases-page__overlay" onClick={closePreview} aria-label="Close case preview" />
-        ) : null}
-
-        <aside className={`admin-cases-page__preview${selectedCase && previewOpen ? " is-open" : ""}`}>
+        <AdminSidePanel
+          open={Boolean(selectedCase && previewOpen)}
+          eyebrow="Case preview"
+          title={selectedCase ? formatCaseReference(selectedCase) : "Case preview"}
+          subtitle={selectedCase ? `${selectedCase.customerName} • Updated ${formatDateTime(selectedCase.updated_at || selectedCase.created_at)}` : ""}
+          onClose={closePreview}
+          className="admin-cases-page__preview"
+          withOverlay
+          overlayClassName="admin-cases-page__overlay"
+          overlayLabel="Close case preview"
+        >
           {!selectedCase ? (
             <div className="admin-cases-page__empty-preview">
               <strong>Select a case to preview details</strong>
@@ -674,29 +680,18 @@ export default function AdminCases() {
             </div>
           ) : (
             <div className="admin-cases-page__preview-inner">
-              <header className="admin-cases-page__preview-header">
-                <div>
-                  <span className="admin-cases-page__eyebrow">Case preview</span>
-                  <h3>{formatCaseReference(selectedCase)}</h3>
-                  <p>{selectedCase.customerName} • Updated {formatDateTime(selectedCase.updated_at || selectedCase.created_at)}</p>
-                </div>
-                <div className="admin-cases-page__preview-actions">
-                  <button
-                    className="btn btn--primary"
-                    type="button"
-                    onClick={openTaskModal}
-                    disabled={!hasPermission("tasks.edit") || isCreatingTask}
-                    title={hasPermission("tasks.edit") ? "Create task" : "You do not have permission to create tasks."}
-                  >
-                    <Plus size={15} />
-                    <span>Create task</span>
-                  </button>
-                  <button type="button" className="admin-cases-page__close" onClick={closePreview} aria-label="Close preview">
-                    <X size={16} />
-                  </button>
-                </div>
-              </header>
-
+              <div className="admin-cases-page__preview-actions admin-cases-page__preview-actions--body">
+                <button
+                  className="btn btn--primary"
+                  type="button"
+                  onClick={openTaskModal}
+                  disabled={!hasPermission("tasks.edit") || isCreatingTask}
+                  title={hasPermission("tasks.edit") ? "Create task" : "You do not have permission to create tasks."}
+                >
+                  <Plus size={15} />
+                  <span>Create task</span>
+                </button>
+              </div>
               <div className="admin-cases-page__preview-scroll">
                 <section className="admin-cases-page__identity">
                   <div>
@@ -933,7 +928,7 @@ export default function AdminCases() {
               </div>
             </div>
           )}
-        </aside>
+        </AdminSidePanel>
       </section>
 
       {taskModalOpen && selectedCase ? (

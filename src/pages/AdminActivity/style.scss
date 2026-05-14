@@ -251,6 +251,10 @@
   gap: 14px;
 }
 
+.admin-activity-page__drawer {
+  width: min(620px, calc(100vw - 24px));
+}
+
 .admin-activity-page__summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

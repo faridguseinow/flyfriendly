@@ -262,6 +262,10 @@
   gap: 10px;
 }
 
+.admin-employees-page__drawer {
+  width: min(640px, calc(100vw - 24px));
+}
+
 .admin-employees-page__access-item,
 .admin-employees-page__toggle-row,
 .admin-employees-page__drawer-list-row,

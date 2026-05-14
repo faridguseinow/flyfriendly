@@ -536,6 +536,9 @@ function AdminActivity() {
         subtitle={selectedLog ? formatDateTime(selectedLog.created_at) : ""}
         onClose={() => setSelectedLogId(null)}
         className="admin-activity-page__drawer"
+        withOverlay
+        overlayClassName="admin-activity-page__overlay"
+        overlayLabel="Close activity detail"
       >
         {selectedLog ? (
           <div className="admin-activity-page__drawer-grid">

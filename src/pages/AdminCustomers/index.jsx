@@ -548,10 +548,6 @@ export default function AdminCustomers() {
         )}
       </section>
 
-      {drawerOpen ? (
-        <button type="button" className="admin-customers-page__overlay" onClick={closeDrawer} aria-label="Close customer drawer" />
-      ) : null}
-
       {selectedCustomer ? (
         <AdminSidePanel
           open={drawerOpen}
@@ -560,6 +556,9 @@ export default function AdminCustomers() {
           title={selectedCustomer.displayName}
           subtitle={selectedCustomer.email || selectedCustomer.phone || "No primary contact"}
           onClose={closeDrawer}
+          withOverlay
+          overlayClassName="admin-customers-page__overlay"
+          overlayLabel="Close customer drawer"
         >
           <section className="admin-customers-page__drawer-hero">
             <span className="admin-customers-page__avatar is-large">{selectedCustomer.initials}</span>

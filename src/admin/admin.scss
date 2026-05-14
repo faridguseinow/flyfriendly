@@ -230,6 +230,16 @@
   transition: transform 220ms ease;
 }
 
+.admin-side-panel__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  border: 0;
+  background: rgba(15, 23, 42, 0.26);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
 .admin-side-panel.is-open {
   pointer-events: auto;
   transform: translateX(0);
@@ -295,6 +305,22 @@
   height: 38px;
   padding: 0;
   flex: 0 0 auto;
+  background: none;
+  border: none;
+}
+
+@media (max-width: 720px) {
+  .admin-side-panel {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    transform: translateX(100%);
+  }
+
+  .admin-side-panel__inner {
+    border-radius: 0;
+  }
 }
 
 .admin-icon-rail {

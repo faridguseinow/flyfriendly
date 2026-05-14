@@ -1199,10 +1199,6 @@ export default function AdminReferral() {
                   : renderActivityTable()}
       </section>
 
-      {drawerOpen ? (
-        <button type="button" className="admin-referral-page__overlay" onClick={closeDrawer} aria-label="Close referral detail drawer" />
-      ) : null}
-
       <AdminSidePanel
         open={drawerOpen && Boolean(selectedItem)}
         className="admin-referral-page__drawer"
@@ -1224,6 +1220,9 @@ export default function AdminReferral() {
                     : selectedItem?.description || ""
         }
         onClose={closeDrawer}
+        withOverlay
+        overlayClassName="admin-referral-page__overlay"
+        overlayLabel="Close referral detail drawer"
       >
         {selectedRecord?.type === "application" && selectedItem ? (
           <div className="admin-referral-page__drawer-body">
