@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, CircleUserRound, LogOut, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -32,7 +33,7 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLa
         <span className="language-current__code">{currentLanguageOption.code.toUpperCase()}</span>
       </button>
 
-      {isOpen ? (
+      {isOpen ? createPortal(
         <div className="language-modal" role="presentation" onMouseDown={onClose}>
           <section
             className="language-modal__panel"
@@ -91,7 +92,8 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLa
               </div>
             </div>
           </section>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   );
