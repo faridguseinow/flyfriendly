@@ -42,10 +42,8 @@
   width: 1020px;
   height: 1020px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, rgba(5, 164, 255, 0.28) 0%, rgba(5, 164, 255, 0.18) 22%, rgba(5, 164, 255, 0.1) 43%, rgba(5, 164, 255, 0.035) 62%, transparent 76%);
-  filter: blur(26px);
-  animation: heroGlowFloat 8.8s ease-in-out infinite;
+  background: radial-gradient(circle, #4173fd2d 0%, rgba(65, 115, 253, 0.13) 22%, rgba(65, 115, 253, 0.09) 43%, rgba(65, 115, 253, 0) 62%, transparent 76%);
+  animation: heroGlowFloat 9.8s ease-in-out infinite;
 }
 
 @keyframes heroGlowFloat {
@@ -146,7 +144,7 @@
   width: min(1032px, calc(100% - 48px));
   padding-top: 92px;
 
-  > .section-label {
+  >.section-label {
     margin-bottom: 8px;
   }
 
@@ -172,7 +170,7 @@
 .issue-card,
 .wide-cta {
   padding: 26px 28px;
-;
+  ;
 }
 
 .issue-card {
@@ -208,7 +206,7 @@
     width: 435px;
     height: 168px;
     border-radius: 999px 999px 0 0;
-    background: radial-gradient(ellipse at 62% 100%, rgba(5, 164, 255, 0.12) 0 54%, rgba(5, 164, 255, 0.07) 55% 68%, transparent 69%);
+    background: radial-gradient(ellipse at 62% 100%, rgba(5, 72, 255, 0.12) 0 54%, rgba(5, 88, 255, 0.07) 55% 68%, transparent 69%);
     pointer-events: none;
   }
 
@@ -408,7 +406,7 @@
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.38) 45%, rgba(0, 0, 0, 0.72) 100%);
   }
 
-  > div {
+  >div {
     position: absolute;
     inset: 24px 18px 18px;
     z-index: 1;
@@ -807,6 +805,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .step-card,
   .mini-card,
   .mini-card .icon,
@@ -1339,7 +1338,7 @@
   .photo-cta {
     border-width: 0;
 
-    > div {
+    >div {
       inset: 28px 20px 20px;
     }
   }

@@ -5,7 +5,7 @@
   color: #fff;
   background:
     linear-gradient(120deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 20%),
-    linear-gradient(135deg, #0f8ce8 0%, #0ea1f2 38%, #0679ce 100%);
+    linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 38%, var(--primary-dark) 100%);
 }
 
 .footer__glow {

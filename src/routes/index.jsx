@@ -20,13 +20,13 @@ import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "../i18
 import { getPreferredLanguage, localizePath } from "../i18n/path.js";
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from "../pages/Auth/index.jsx";
 import {
+  ClientAccountPage,
   ClientClaimDetailsPage,
   ClientClaimsPage,
   ClientDashboardPage,
   ClientDocumentsPage,
   ClientPaymentsPage,
   ClientPortalLayout,
-  ClientProfilePage,
 } from "../pages/ClientPortal/index.jsx";
 import PartnerApplyPage from "../pages/PartnerApply/index.jsx";
 import ReferralCapturePage from "../pages/ReferralCapture/index.jsx";
@@ -266,7 +266,8 @@ function AnimatedRoutes({ location }) {
               <Route path="claims" element={<ClientClaimsPage />} />
               <Route path="claims/:id" element={<ClientClaimDetailsPage />} />
               <Route path="documents" element={<ClientDocumentsPage />} />
-              <Route path="profile" element={<ClientProfilePage />} />
+              <Route path="account" element={<ClientAccountPage />} />
+              <Route path="profile" element={<Navigate to="../account" replace />} />
               <Route path="payments" element={<ClientPaymentsPage />} />
             </Route>
           </Route>

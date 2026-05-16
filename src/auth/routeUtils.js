@@ -106,7 +106,7 @@ export function resolveProfilePath(profile, partnerProfile, adminAccess = null) 
     return "/partner/profile";
   }
 
-  return "/client/profile";
+  return "/client/account";
 }
 
 export function hasAllowedRole(allowedRoles = [], profile, partnerProfile, adminAccess = null) {

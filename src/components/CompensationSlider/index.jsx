@@ -103,7 +103,7 @@ function CompensationSlider() {
           <path
             d="M 50 360 Q 545 70 1050 170"
             fill="none"
-            stroke="#05a4ff"
+            stroke="var(--primary)"
             strokeDasharray="10 12"
             strokeLinecap="round"
             strokeWidth="4"

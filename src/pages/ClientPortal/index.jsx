@@ -2,14 +2,27 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import {
   ArrowRight,
+  CheckCircle2,
+  ChevronRight,
   CircleDollarSign,
-  Files,
+  Clock3,
+  FileImage,
+  FileText,
   FolderOpen,
-  LayoutDashboard,
-  LogOut,
+  Globe,
+  House,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Signature,
+  Ticket,
+  TriangleAlert,
   UserRound,
+  UserSquare2,
+  XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getLanguageByCode } from "../../i18n/languages.js";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
@@ -17,129 +30,320 @@ import {
   fetchClientClaims,
   fetchClientDashboardData,
   fetchClientDocuments,
+  getClientDocumentDownloadUrl,
+  getClientDocumentStatus,
+  getClientPaymentStatus,
   saveClientProfile,
 } from "../../services/clientPortalService.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
+import { contactEmail } from "../../constants/site.js";
 import "./style.scss";
 
-function formatEstimateBand(distanceBand, t) {
-  if (distanceBand === "short") {
-    return t("clientPortal.estimate.short", { defaultValue: "Short haul" });
+const CLIENT_STATUS_STEPS = [
+  { key: "submitted", label: "Submitted" },
+  { key: "under_review", label: "Under review" },
+  { key: "documents_needed", label: "Documents needed" },
+  { key: "approved", label: "Approved" },
+  { key: "rejected", label: "Rejected" },
+  { key: "paid", label: "Paid" },
+];
+
+function formatDate(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString();
+}
+
+function formatDateTime(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
+
+function formatCurrencyValue(value, currency = "EUR") {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) {
+    return "—";
   }
 
-  if (distanceBand === "medium") {
-    return t("clientPortal.estimate.medium", { defaultValue: "Medium haul" });
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency || "EUR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(0)} ${currency || "EUR"}`;
   }
-
-  if (distanceBand === "long") {
-    return t("clientPortal.estimate.long", { defaultValue: "Long haul" });
-  }
-
-  return t("clientPortal.estimate.unknown", { defaultValue: "Pending review" });
 }
 
 function formatEstimateAmount(amount, currency = "EUR", t) {
   if (!Number.isFinite(Number(amount))) {
-    return t("clientPortal.estimate.pending", { defaultValue: "Estimate pending review" });
+    return t("clientPortal.estimate.pending", { defaultValue: "Estimate pending" });
   }
 
   return t("clientPortal.estimate.upTo", {
-    defaultValue: "Up to {{currencySymbol}}{{amount}}",
-    currencySymbol: currency === "EUR" ? "€" : `${currency} `,
-    amount: Number(amount).toFixed(0),
+    defaultValue: "Up to {{amount}}",
+    amount: formatCurrencyValue(amount, currency),
   });
 }
 
-function EstimateSummary({ estimate, t }) {
-  if (!estimate) {
-    return null;
+function getStatusIcon(tone) {
+  if (tone === "success") return CheckCircle2;
+  if (tone === "warning") return TriangleAlert;
+  if (tone === "danger") return XCircle;
+  return Clock3;
+}
+
+function isImageDocument(document) {
+  if (!document) return false;
+  if (document.kind === "signature") return true;
+  const mime = String(document.mime_type || "").toLowerCase();
+  const name = String(document.file_name || "").toLowerCase();
+  return mime.startsWith("image/") || [".png", ".jpg", ".jpeg", ".webp", ".gif"].some((suffix) => name.endsWith(suffix));
+}
+
+function isPdfDocument(document) {
+  if (!document) return false;
+  const mime = String(document.mime_type || "").toLowerCase();
+  const name = String(document.file_name || "").toLowerCase();
+  return mime.includes("pdf") || name.endsWith(".pdf");
+}
+
+function getDocumentIcon(document) {
+  const type = String(document?.document_type || "").toLowerCase();
+  if (document?.kind === "signature" || type.includes("signature") || type.includes("consent")) return Signature;
+  if (type.includes("passport") || type.includes("id")) return UserSquare2;
+  if (type.includes("boarding")) return Ticket;
+  if (isImageDocument(document)) return FileImage;
+  return FileText;
+}
+
+function getClaimAction(claim, t) {
+  if (!claim) {
+    return {
+      label: t("clientPortal.actions.startClaim", { defaultValue: "Start new claim" }),
+      to: "/claim/eligibility",
+    };
   }
 
-  const hasDistance = Number.isFinite(Number(estimate.distance_km ?? estimate.distanceKm));
-  const amount = estimate.estimated_compensation_eur ?? estimate.estimatedCompensationEur;
-  const currency = estimate.compensation_currency ?? estimate.currency ?? "EUR";
-  const status = estimate.estimate_status ?? estimate.estimateStatus ?? "pending_review";
+  if (claim.publicStatus.key === "documents_needed") {
+    return {
+      label: t("clientPortal.actions.viewDocuments", { defaultValue: "View documents" }),
+      to: "/client/documents",
+    };
+  }
 
+  return {
+    label: t("clientPortal.actions.viewClaim", { defaultValue: "View claim" }),
+    to: `/client/claims/${claim.id}`,
+  };
+}
+
+function getProgressState(currentStatus, stepKey) {
+  if (stepKey === "submitted") {
+    return currentStatus === "submitted" ? "current" : "completed";
+  }
+
+  if (stepKey === "under_review") {
+    if (currentStatus === "under_review") return "current";
+    if (["documents_needed", "approved", "rejected", "paid"].includes(currentStatus)) return "completed";
+    return "idle";
+  }
+
+  if (stepKey === "documents_needed") {
+    return currentStatus === "documents_needed" ? "current" : "idle";
+  }
+
+  if (stepKey === "approved") {
+    if (currentStatus === "approved") return "current";
+    if (currentStatus === "paid") return "completed";
+    return "idle";
+  }
+
+  if (stepKey === "rejected") {
+    return currentStatus === "rejected" ? "current" : "idle";
+  }
+
+  if (stepKey === "paid") {
+    return currentStatus === "paid" ? "current" : "idle";
+  }
+
+  return "idle";
+}
+
+function useDocumentPreviewUrls(documents) {
+  const [previewUrls, setPreviewUrls] = useState({});
+
+  useEffect(() => {
+    const targets = documents.filter((item) => isImageDocument(item) && !item.signature_data_url && item.file_path && item.bucket);
+
+    if (!targets.length) {
+      setPreviewUrls({});
+      return;
+    }
+
+    let active = true;
+
+    Promise.all(targets.map(async (item) => {
+      try {
+        const url = await getClientDocumentDownloadUrl(item);
+        return [item.id, url];
+      } catch {
+        return [item.id, ""];
+      }
+    })).then((entries) => {
+      if (!active) {
+        return;
+      }
+
+      setPreviewUrls(Object.fromEntries(entries.filter(([, value]) => value)));
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [documents]);
+
+  return previewUrls;
+}
+
+function PortalSectionHeader({ title, text, action }) {
   return (
-    <div className="portal-estimate">
-      <small className="portal-estimate__label">
-        {t("clientPortal.estimate.label", { defaultValue: "Possible compensation" })}
-      </small>
-      <strong>{formatEstimateAmount(amount, currency, t)}</strong>
-      <span>
-        {hasDistance
-          ? t("clientPortal.estimate.distanceBand", {
-            defaultValue: "{{distance}} km approx. • {{band}}",
-            distance: Math.round(Number(estimate.distance_km ?? estimate.distanceKm)),
-            band: formatEstimateBand(estimate.distance_band ?? estimate.distanceBand, t),
-          })
-          : formatEstimateBand(estimate.distance_band ?? estimate.distanceBand, t)}
-      </span>
-      {status === "pending_review" ? (
-        <small>{t("clientPortal.estimate.pendingNote", { defaultValue: "This route still needs a manual review by our team." })}</small>
-      ) : null}
+    <div className="client-portal-section-header">
+      <div>
+        <h2>{title}</h2>
+        {text ? <p>{text}</p> : null}
+      </div>
+      {action ? <div className="client-portal-section-header__action">{action}</div> : null}
     </div>
   );
 }
 
-function PortalNavLink({ to, icon: Icon, label }) {
+function ClientStatusBadge({ status }) {
+  const tone = status?.tone || "neutral";
+  const Icon = getStatusIcon(tone);
+
   return (
-    <NavLink to={to} end={to.endsWith("/dashboard")} className={({ isActive }) => `portal-nav__link${isActive ? " is-active" : ""}`}>
+    <span className={`client-portal-status-badge is-${tone}`}>
+      <Icon size={14} />
+      <span>{status?.label || "Under review"}</span>
+    </span>
+  );
+}
+
+function ClaimProgress({ status, t }) {
+  return (
+    <div className="client-portal-progress" aria-label={t("clientPortal.progress", { defaultValue: "Claim progress" })}>
+      {CLIENT_STATUS_STEPS.map((step) => {
+        const state = getProgressState(status?.key, step.key);
+        return (
+          <div key={step.key} className={`client-portal-progress__step is-${state}`}>
+            <span className="client-portal-progress__dot" aria-hidden="true" />
+            <span>{t(`clientPortal.status.${step.key}`, { defaultValue: step.label })}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ClientPortalNavLink({ to, icon: Icon, label, end = false }) {
+  return (
+    <NavLink to={to} end={end} className={({ isActive }) => `client-portal-nav__link${isActive ? " is-active" : ""}`}>
       <Icon size={18} />
       <span>{label}</span>
     </NavLink>
   );
 }
 
-export function ClientPortalLayout() {
-  const { t } = useTranslation();
-  const { profile, signOut } = useAuth();
-  const toLocalizedPath = useLocalizedPath();
-  const navItems = useMemo(() => ([
-    { label: t("clientPortal.nav.dashboard", { defaultValue: "Dashboard" }), path: toLocalizedPath("/client/dashboard"), icon: LayoutDashboard },
-    { label: t("clientPortal.nav.claims", { defaultValue: "My claims" }), path: toLocalizedPath("/client/claims"), icon: Files },
-    { label: t("clientPortal.nav.documents", { defaultValue: "Documents" }), path: toLocalizedPath("/client/documents"), icon: FolderOpen },
-    { label: t("clientPortal.nav.profile", { defaultValue: "Profile" }), path: toLocalizedPath("/client/profile"), icon: UserRound },
-    { label: t("clientPortal.nav.payments", { defaultValue: "Payments" }), path: toLocalizedPath("/client/payments"), icon: CircleDollarSign },
-  ]), [t, toLocalizedPath]);
+function DocumentStatusCard({ item, previewUrl, onOpen }) {
+  const status = item.latestDocument
+    ? getClientDocumentStatus(item.latestDocument.status, item.latestDocument.kind)
+    : { key: item.statusKey, label: item.statusLabel, tone: item.statusTone };
 
   return (
-    <div className="portal-shell section">
-      <div className="portal-head">
-        <div>
-          <span className="section-label is-primary">{t("clientPortal.label", { defaultValue: "Client Portal" })}</span>
-          <h1>{t("clientPortal.title", { defaultValue: "Your Fly Friendly account" })}</h1>
-          <p>{t("clientPortal.text", { defaultValue: "Track submitted claims, review documents, and return to your case anytime." })}</p>
-        </div>
-        <div className="portal-head__meta">
-          <strong>{profile?.full_name || t("clientPortal.defaultName", { defaultValue: "Traveler" })}</strong>
-          <span>{profile?.email || ""}</span>
-          <button type="button" className="portal-signout" onClick={() => signOut()}>
-            <LogOut size={16} />
-            <span>{t("clientPortal.signOut", { defaultValue: "Sign out" })}</span>
-          </button>
-        </div>
+    <article className="client-portal-document-card">
+      <div className="client-portal-document-card__preview">
+        {previewUrl ? (
+          <img src={previewUrl} alt="" />
+        ) : (
+          (() => {
+            const Icon = getDocumentIcon(item.latestDocument || { document_type: item.key });
+            return <Icon size={22} />;
+          })()
+        )}
       </div>
+      <div className="client-portal-document-card__copy">
+        <strong>{item.label}</strong>
+        <ClientStatusBadge status={status} />
+        <small>{item.uploadedAt ? formatDateTime(item.uploadedAt) : "No file uploaded yet"}</small>
+      </div>
+      {item.latestDocument ? (
+        <button type="button" className="client-portal-inline-button" onClick={() => onOpen(item.latestDocument)}>
+          Open
+        </button>
+      ) : null}
+    </article>
+  );
+}
 
-      <div className="portal-grid">
-        <aside className="portal-nav">
-          {navItems.map((item) => <PortalNavLink key={item.path} to={item.path} icon={item.icon} label={item.label} />)}
-        </aside>
-        <section className="portal-panel">
-          <Outlet />
-        </section>
+function UploadedDocumentRow({ document, previewUrl, onOpen }) {
+  const status = getClientDocumentStatus(document.status, document.kind);
+  const Icon = getDocumentIcon(document);
+
+  return (
+    <div className="client-portal-uploaded-row">
+      <div className="client-portal-uploaded-row__thumb">
+        {previewUrl ? <img src={previewUrl} alt="" /> : <Icon size={20} />}
+      </div>
+      <div className="client-portal-uploaded-row__copy">
+        <strong>{document.file_name || "Document"}</strong>
+        <span>{document.kind === "signature" ? "Signature / Consent" : document.document_type}</span>
+        <small>{formatDateTime(document.created_at)}</small>
+      </div>
+      <div className="client-portal-uploaded-row__meta">
+        <ClientStatusBadge status={status} />
+        <button type="button" className="client-portal-inline-button" onClick={() => onOpen(document)}>
+          Open
+        </button>
       </div>
     </div>
   );
 }
 
-function MetricCard({ label, value, hint }) {
+export function ClientPortalLayout() {
+  const { t } = useTranslation();
+  const toLocalizedPath = useLocalizedPath();
+
+  const navItems = useMemo(() => ([
+    { label: t("clientPortal.nav.home", { defaultValue: "Home" }), path: toLocalizedPath("/client/dashboard"), icon: House, end: true },
+    { label: t("clientPortal.nav.claims", { defaultValue: "Claims" }), path: toLocalizedPath("/client/claims"), icon: FileText },
+    { label: t("clientPortal.nav.documents", { defaultValue: "Documents" }), path: toLocalizedPath("/client/documents"), icon: FolderOpen },
+    { label: t("clientPortal.nav.payments", { defaultValue: "Payments" }), path: toLocalizedPath("/client/payments"), icon: CircleDollarSign },
+    { label: t("clientPortal.nav.account", { defaultValue: "Account" }), path: toLocalizedPath("/client/account"), icon: UserRound },
+  ]), [t, toLocalizedPath]);
+
   return (
-    <article className="portal-metric">
-      <strong>{value}</strong>
-      <span>{label}</span>
-      {hint ? <small>{hint}</small> : null}
-    </article>
+    <div className="client-portal-shell section">
+      <div className="client-portal-layout">
+        <aside className="client-portal-sidebar">
+          <nav className="client-portal-nav" aria-label={t("clientPortal.navLabel", { defaultValue: "Client account sections" })}>
+            {navItems.map((item) => (
+              <ClientPortalNavLink key={item.path} to={item.path} icon={item.icon} label={item.label} end={item.end} />
+            ))}
+          </nav>
+        </aside>
+
+        <main className="client-portal-main">
+          <Outlet />
+        </main>
+      </div>
+
+      <nav className="client-portal-mobile-nav" aria-label={t("clientPortal.navLabel", { defaultValue: "Client account sections" })}>
+        {navItems.map((item) => (
+          <ClientPortalNavLink key={`mobile-${item.path}`} to={item.path} icon={item.icon} label={item.label} end={item.end} />
+        ))}
+      </nav>
+    </div>
   );
 }
 
@@ -150,6 +354,7 @@ export function ClientDashboardPage() {
   useEffect(() => {
     let active = true;
     setState({ isLoading: true, error: "", data: null });
+
     fetchClientDashboardData()
       .then((data) => {
         if (active) {
@@ -158,7 +363,7 @@ export function ClientDashboardPage() {
       })
       .catch((error) => {
         if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load dashboard.", data: null });
+          setState({ isLoading: false, error: error.message || "Could not load your account.", data: null });
         }
       });
 
@@ -175,49 +380,96 @@ export function ClientDashboardPage() {
     return <p className="portal-message is-error">{state.error}</p>;
   }
 
-  const data = state.data || { leads: [], cases: [], finance: [] };
-  const latestLead = data.leads[0] || null;
-  const paidCases = data.finance.filter((item) => item.customer_paid_at).length;
+  const claimRows = state.data?.claimRows || [];
+  const activeClaim = claimRows.find((item) => !["paid", "rejected"].includes(item.publicStatus.key)) || claimRows[0] || null;
+  const claimsNeedingAttention = claimRows.filter((item) => item.publicStatus.key === "documents_needed").length;
+  const paidClaims = claimRows.filter((item) => item.publicStatus.key === "paid").length;
+  const action = getClaimAction(activeClaim, t);
+
+  if (!claimRows.length) {
+    return (
+      <div className="client-portal-page">
+        <section className="portal-card client-portal-empty-card">
+          <PortalSectionHeader
+            title={t("clientPortal.home.emptyTitle", { defaultValue: "No claims yet" })}
+            text={t("clientPortal.home.emptyText", { defaultValue: "Start your first claim to track compensation, documents, and payout updates here." })}
+            action={<LocalizedLink className="btn btn-primary" to="/claim/eligibility">{t("clientPortal.home.start", { defaultValue: "Start your first claim" })}</LocalizedLink>}
+          />
+        </section>
+      </div>
+    );
+  }
 
   return (
-    <div className="portal-stack">
-      <section className="portal-metrics">
-        <MetricCard label={t("clientPortal.metrics.leads", { defaultValue: "Submitted claims" })} value={data.leads.length} />
-        <MetricCard label={t("clientPortal.metrics.cases", { defaultValue: "Open cases" })} value={data.cases.length} />
-        <MetricCard label={t("clientPortal.metrics.paid", { defaultValue: "Paid cases" })} value={paidCases} />
-      </section>
+    <div className="client-portal-page">
+      <div className="client-portal-overview-grid">
+        <article className="client-portal-overview-card">
+          <span>{t("clientPortal.overview.totalClaims", { defaultValue: "Claims" })}</span>
+          <strong>{claimRows.length}</strong>
+        </article>
+        <article className="client-portal-overview-card">
+          <span>{t("clientPortal.overview.documents", { defaultValue: "Needs attention" })}</span>
+          <strong>{claimsNeedingAttention}</strong>
+        </article>
+        <article className="client-portal-overview-card">
+          <span>{t("clientPortal.overview.paid", { defaultValue: "Paid" })}</span>
+          <strong>{paidClaims}</strong>
+        </article>
+      </div>
 
-      <section className="portal-card">
-        <div className="portal-card__head">
-          <div>
-            <h2>{t("clientPortal.nextAction.title", { defaultValue: "Next recommended action" })}</h2>
-            <p>{t("clientPortal.nextAction.text", { defaultValue: "Keep your contact details current and return here for updates on any submitted case." })}</p>
-          </div>
-          <LocalizedLink className="btn btn-primary" to="/claim/eligibility">
-            {t("clientPortal.nextAction.cta", { defaultValue: "Start a new claim" })}
-          </LocalizedLink>
-        </div>
-      </section>
+      <section className="portal-card client-portal-hero-card">
+        <PortalSectionHeader
+          title={t("clientPortal.home.title", { defaultValue: "Home" })}
+          text={t("clientPortal.home.text", { defaultValue: "Your latest claim and the only next step that matters right now." })}
+          action={<LocalizedLink className="btn btn-secondary" to="/claim/eligibility">{t("clientPortal.home.newClaim", { defaultValue: "Start new claim" })}</LocalizedLink>}
+        />
 
-      <section className="portal-card">
-        <div className="portal-card__head">
-          <div>
-            <h2>{t("clientPortal.recent.title", { defaultValue: "Latest submission" })}</h2>
-            <p>{t("clientPortal.recent.text", { defaultValue: "Your most recent claim will appear here after submission." })}</p>
-          </div>
-        </div>
-        {latestLead ? (
-          <div className="portal-summary">
-            <strong>{latestLead.lead_code}</strong>
-            <span>{latestLead.airline || t("clientPortal.recent.noFlight", { defaultValue: "Airline pending" })}</span>
-            <div>
-              <span>{latestLead.status} / {latestLead.stage}</span>
-              <EstimateSummary estimate={latestLead} t={t} />
+        {activeClaim ? (
+          <div className="client-portal-current-claim">
+            <div className="client-portal-current-claim__main">
+              <div className="client-portal-current-claim__head">
+                <div>
+                  <small>{t("clientPortal.home.currentClaim", { defaultValue: "Current claim" })}</small>
+                  <h2>{activeClaim.reference}</h2>
+                </div>
+                <ClientStatusBadge status={activeClaim.publicStatus} />
+              </div>
+
+              <div className="client-portal-meta-grid">
+                <article>
+                  <span>{t("clientPortal.claim.airline", { defaultValue: "Airline" })}</span>
+                  <strong>{activeClaim.airline || "—"}</strong>
+                </article>
+                <article>
+                  <span>{t("clientPortal.claim.route", { defaultValue: "Route" })}</span>
+                  <strong>{activeClaim.route || "—"}</strong>
+                </article>
+                <article>
+                  <span>{t("clientPortal.claim.compensation", { defaultValue: "Possible compensation" })}</span>
+                  <strong>{formatEstimateAmount(activeClaim.estimate?.amount, activeClaim.estimate?.currency, t)}</strong>
+                </article>
+                <article>
+                  <span>{t("clientPortal.claim.documents", { defaultValue: "Documents" })}</span>
+                  <strong>{activeClaim.documentsSummary.label}</strong>
+                </article>
+              </div>
+
+              <div className="client-portal-current-claim__actions">
+                <LocalizedLink className="btn btn-primary" to={action.to}>{action.label}</LocalizedLink>
+                <LocalizedLink className="client-portal-text-link" to={`/client/claims/${activeClaim.id}`}>
+                  {t("clientPortal.actions.claimDetails", { defaultValue: "Claim details" })}
+                  <ArrowRight size={16} />
+                </LocalizedLink>
+              </div>
+            </div>
+
+            <div className="client-portal-current-claim__side">
+              <h3>{t("clientPortal.home.progressTitle", { defaultValue: "Claim status" })}</h3>
+              <p>{activeClaim.publicStatus.explanation}</p>
+              <ClaimProgress status={activeClaim.publicStatus} t={t} />
             </div>
           </div>
-        ) : (
-          <p className="portal-empty">{t("clientPortal.recent.empty", { defaultValue: "No claims yet. Start your first claim to build your case history." })}</p>
-        )}
+        ) : null}
       </section>
     </div>
   );
@@ -229,6 +481,8 @@ export function ClientClaimsPage() {
 
   useEffect(() => {
     let active = true;
+    setState({ isLoading: true, error: "", rows: [] });
+
     fetchClientClaims()
       .then((data) => {
         if (active) {
@@ -255,28 +509,57 @@ export function ClientClaimsPage() {
   }
 
   return (
-    <div className="portal-stack">
+    <div className="client-portal-page">
       <section className="portal-card">
-        <div className="portal-card__head">
-          <div>
-            <h2>{t("clientPortal.claims.title", { defaultValue: "My claims" })}</h2>
-            <p>{t("clientPortal.claims.text", { defaultValue: "Track each submitted lead or active case in one list." })}</p>
-          </div>
-        </div>
+        <PortalSectionHeader
+          title={t("clientPortal.claims.title", { defaultValue: "Claims" })}
+          text={t("clientPortal.claims.text", { defaultValue: "Every claim attached to your account, simplified into customer-safe updates." })}
+          action={<LocalizedLink className="btn btn-secondary" to="/claim/eligibility">{t("clientPortal.claims.newClaim", { defaultValue: "Start new claim" })}</LocalizedLink>}
+        />
+
         {state.rows.length ? (
-          <div className="portal-list">
+          <div className="client-portal-claims-list">
             {state.rows.map((item) => (
-              <LocalizedLink key={`${item.kind}-${item.id}`} to={`/client/claims/${item.id}`} className="portal-row">
-                <div>
-                  <strong>{item.code || item.id}</strong>
-                  <span>{item.flight || t("clientPortal.claims.noFlight", { defaultValue: "Airline pending" })}</span>
-                  {item.kind === "lead" ? <EstimateSummary estimate={item} t={t} /> : null}
+              <LocalizedLink key={`${item.kind}-${item.id}`} to={`/client/claims/${item.id}`} className="client-portal-claim-card">
+                <div className="client-portal-claim-card__head">
+                  <div>
+                    <small>{item.reference}</small>
+                    <h2>{item.route || item.airline || t("clientPortal.claims.pendingRoute", { defaultValue: "Route pending" })}</h2>
+                  </div>
+                  <ClientStatusBadge status={item.publicStatus} />
                 </div>
-                <div>
-                  <span>{item.route || "-"}</span>
-                  <small>{item.status} / {item.substatus}</small>
+
+                <div className="client-portal-meta-grid">
+                  <article>
+                    <span>{t("clientPortal.claim.airline", { defaultValue: "Airline" })}</span>
+                    <strong>{item.airline || "—"}</strong>
+                  </article>
+                  <article>
+                    <span>{t("clientPortal.claim.disruption", { defaultValue: "Disruption" })}</span>
+                    <strong>{item.disruptionType || "—"}</strong>
+                  </article>
+                  <article>
+                    <span>{t("clientPortal.claim.submitted", { defaultValue: "Submitted" })}</span>
+                    <strong>{formatDate(item.submittedAt)}</strong>
+                  </article>
+                  <article>
+                    <span>{t("clientPortal.claim.compensation", { defaultValue: "Possible compensation" })}</span>
+                    <strong>{formatEstimateAmount(item.estimate?.amount, item.estimate?.currency, t)}</strong>
+                  </article>
+                  <article>
+                    <span>{t("clientPortal.claim.documents", { defaultValue: "Documents" })}</span>
+                    <strong>{item.documentsSummary.detail}</strong>
+                  </article>
+                  <article>
+                    <span>{t("clientPortal.claim.payment", { defaultValue: "Payment" })}</span>
+                    <strong>{item.paymentStatus.label}</strong>
+                  </article>
                 </div>
-                <ArrowRight size={18} />
+
+                <span className="client-portal-card-link">
+                  {t("clientPortal.actions.openClaim", { defaultValue: "Open claim" })}
+                  <ChevronRight size={16} />
+                </span>
               </LocalizedLink>
             ))}
           </div>
@@ -295,6 +578,8 @@ export function ClientClaimDetailsPage() {
 
   useEffect(() => {
     let active = true;
+    setState({ isLoading: true, error: "", data: null });
+
     fetchClientClaimDetails(id)
       .then((data) => {
         if (active) {
@@ -312,6 +597,18 @@ export function ClientClaimDetailsPage() {
     };
   }, [id]);
 
+  const uploadedDocuments = state.data?.documents || [];
+  const previewUrls = useDocumentPreviewUrls(uploadedDocuments);
+
+  const openDocument = async (document) => {
+    try {
+      const url = document.signature_data_url || previewUrls[document.id] || await getClientDocumentDownloadUrl(document);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      // Keep the UI quiet here; the page-level data already loaded successfully.
+    }
+  };
+
   if (state.isLoading) {
     return <p className="portal-message">{t("clientPortal.loadingClaimDetails", { defaultValue: "Loading claim details..." })}</p>;
   }
@@ -320,52 +617,88 @@ export function ClientClaimDetailsPage() {
     return <p className="portal-message is-error">{state.error}</p>;
   }
 
-  const data = state.data;
-  const base = data?.type === "case" ? data.case : data?.lead;
-  const estimate = data?.type === "case" ? data?.leadEstimate : data?.lead;
+  const claim = state.data?.claim || null;
 
-  if (!base) {
+  if (!claim) {
     return <p className="portal-empty">{t("clientPortal.claimDetails.empty", { defaultValue: "This claim is not available in your account." })}</p>;
   }
 
   return (
-    <div className="portal-stack">
+    <div className="client-portal-page">
       <section className="portal-card">
-        <div className="portal-card__head">
-          <div>
-            <h2>{base.case_code || base.lead_code || id}</h2>
-            <p>{base.airline || t("clientPortal.claimDetails.noFlight", { defaultValue: "Airline pending" })}</p>
-          </div>
+        <PortalSectionHeader
+          title={claim.reference}
+          text={claim.route || claim.airline || t("clientPortal.claimDetails.routePending", { defaultValue: "Route details will appear here." })}
+          action={<ClientStatusBadge status={claim.publicStatus} />}
+        />
+
+        <div className="client-portal-meta-grid">
+          <article>
+            <span>{t("clientPortal.claim.airline", { defaultValue: "Airline" })}</span>
+            <strong>{claim.airline || "—"}</strong>
+          </article>
+          <article>
+            <span>{t("clientPortal.claim.disruption", { defaultValue: "Disruption" })}</span>
+            <strong>{claim.disruptionType || "—"}</strong>
+          </article>
+          <article>
+            <span>{t("clientPortal.claim.submitted", { defaultValue: "Submitted" })}</span>
+            <strong>{formatDate(claim.submittedAt)}</strong>
+          </article>
+          <article>
+            <span>{t("clientPortal.claim.compensation", { defaultValue: "Possible compensation" })}</span>
+            <strong>{formatEstimateAmount(claim.estimate?.amount, claim.estimate?.currency, t)}</strong>
+          </article>
+          <article>
+            <span>{t("clientPortal.claim.payment", { defaultValue: "Payment" })}</span>
+            <strong>{claim.paymentStatus.label}</strong>
+          </article>
+          <article>
+            <span>{t("clientPortal.claim.documents", { defaultValue: "Documents" })}</span>
+            <strong>{claim.documentsSummary.label}</strong>
+          </article>
         </div>
-        <div className="portal-detail-grid">
-          <article><strong>{t("clientPortal.claimDetails.status", { defaultValue: "Status" })}</strong><span>{base.status || "-"}</span></article>
-          <article><strong>{t("clientPortal.claimDetails.route", { defaultValue: "Route" })}</strong><span>{[base.route_from || base.departure_airport, base.route_to || base.arrival_airport].filter(Boolean).join(" -> ") || "-"}</span></article>
-          <article><strong>{t("clientPortal.claimDetails.kind", { defaultValue: "Record type" })}</strong><span>{data.type}</span></article>
-          <article><strong>{t("clientPortal.claimDetails.payout", { defaultValue: "Payout status" })}</strong><span>{base.payout_status || data.finance?.payment_status || "-"}</span></article>
-          <article><strong>{t("clientPortal.claimDetails.estimate", { defaultValue: "Estimated compensation" })}</strong><span>{formatEstimateAmount(estimate?.estimated_compensation_eur ?? estimate?.estimatedCompensationEur, estimate?.compensation_currency ?? estimate?.currency ?? "EUR", t)}</span></article>
-          <article><strong>{t("clientPortal.claimDetails.distance", { defaultValue: "Calculated distance" })}</strong><span>{Number.isFinite(Number(estimate?.distance_km ?? estimate?.distanceKm)) ? `${Math.round(Number(estimate.distance_km ?? estimate.distanceKm))} km` : t("clientPortal.estimate.pending", { defaultValue: "Estimate pending review" })}</span></article>
-        </div>
-        {estimate ? <EstimateSummary estimate={estimate} t={t} /> : null}
+
+        <ClaimProgress status={claim.publicStatus} t={t} />
       </section>
 
       <section className="portal-card">
-        <h2>{t("clientPortal.claimDetails.documents", { defaultValue: "Documents" })}</h2>
-        {data.documents.length ? (
-          <div className="portal-list is-compact">
-            {data.documents.map((item) => (
-              <div key={item.id} className="portal-row is-static">
-                <div>
-                  <strong>{item.file_name}</strong>
-                  <span>{item.document_type}</span>
-                </div>
-                <div>
-                  <small>{item.status}</small>
-                </div>
-              </div>
+        <PortalSectionHeader
+          title={t("clientPortal.documents.requiredTitle", { defaultValue: "Required documents" })}
+          text={t("clientPortal.documents.requiredText", { defaultValue: "Only the documents that matter for your claim are shown here." })}
+        />
+
+        <div className="client-portal-documents-grid">
+          {claim.requiredDocuments.map((item) => (
+            <DocumentStatusCard
+              key={item.key}
+              item={item}
+              previewUrl={item.latestDocument ? (item.latestDocument.signature_data_url || previewUrls[item.latestDocument.id] || "") : ""}
+              onOpen={openDocument}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.documents.uploadedTitle", { defaultValue: "Uploaded files" })}
+          text={t("clientPortal.documents.uploadedText", { defaultValue: "These are the files already attached to this claim." })}
+        />
+
+        {uploadedDocuments.length ? (
+          <div className="client-portal-uploaded-list">
+            {uploadedDocuments.map((document) => (
+              <UploadedDocumentRow
+                key={`${document.kind}-${document.id}`}
+                document={document}
+                previewUrl={document.signature_data_url || previewUrls[document.id] || ""}
+                onOpen={openDocument}
+              />
             ))}
           </div>
         ) : (
-          <p className="portal-empty">{t("clientPortal.claimDetails.noDocuments", { defaultValue: "No uploaded documents are attached yet." })}</p>
+          <p className="portal-empty">{t("clientPortal.documents.none", { defaultValue: "No files are attached to this claim yet." })}</p>
         )}
       </section>
     </div>
@@ -374,19 +707,26 @@ export function ClientClaimDetailsPage() {
 
 export function ClientDocumentsPage() {
   const { t } = useTranslation();
-  const [state, setState] = useState({ isLoading: true, error: "", documents: [] });
+  const [state, setState] = useState({ isLoading: true, error: "", documents: [], requiredDocuments: [] });
 
   useEffect(() => {
     let active = true;
+    setState({ isLoading: true, error: "", documents: [], requiredDocuments: [] });
+
     fetchClientDocuments()
       .then((data) => {
         if (active) {
-          setState({ isLoading: false, error: "", documents: data.documents || [] });
+          setState({
+            isLoading: false,
+            error: "",
+            documents: data.documents || [],
+            requiredDocuments: data.requiredDocuments || [],
+          });
         }
       })
       .catch((error) => {
         if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load documents.", documents: [] });
+          setState({ isLoading: false, error: error.message || "Could not load documents.", documents: [], requiredDocuments: [] });
         }
       });
 
@@ -394,6 +734,17 @@ export function ClientDocumentsPage() {
       active = false;
     };
   }, []);
+
+  const previewUrls = useDocumentPreviewUrls(state.documents);
+
+  const openDocument = async (document) => {
+    try {
+      const url = document.signature_data_url || previewUrls[document.id] || await getClientDocumentDownloadUrl(document);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      // Keep the page stable if a preview fails.
+    }
+  };
 
   if (state.isLoading) {
     return <p className="portal-message">{t("clientPortal.loadingDocuments", { defaultValue: "Loading documents..." })}</p>;
@@ -404,42 +755,58 @@ export function ClientDocumentsPage() {
   }
 
   return (
-    <section className="portal-card">
-      <div className="portal-card__head">
-        <div>
-          <h2>{t("clientPortal.documents.title", { defaultValue: "Documents" })}</h2>
-          <p>{t("clientPortal.documents.text", { defaultValue: "Review files uploaded through your claims and active cases." })}</p>
-        </div>
-      </div>
-      {state.documents.length ? (
-        <div className="portal-list is-compact">
-          {state.documents.map((item) => (
-            <div key={item.id} className="portal-row is-static">
-              <div>
-                <strong>{item.file_name}</strong>
-                <span>{item.document_type}</span>
-              </div>
-              <div>
-                <span>{item.ownerType}</span>
-                <small>{item.status}</small>
-              </div>
-            </div>
+    <div className="client-portal-page">
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.documents.title", { defaultValue: "Documents" })}
+          text={t("clientPortal.documents.text", { defaultValue: "Passport / ID, boarding pass, and signature are the only customer documents surfaced here." })}
+        />
+
+        <div className="client-portal-documents-grid">
+          {state.requiredDocuments.map((item) => (
+            <DocumentStatusCard
+              key={item.key}
+              item={item}
+              previewUrl={item.latestDocument ? (item.latestDocument.signature_data_url || previewUrls[item.latestDocument.id] || "") : ""}
+              onOpen={openDocument}
+            />
           ))}
         </div>
-      ) : (
-        <p className="portal-empty">{t("clientPortal.documents.empty", { defaultValue: "Documents will appear here after you upload them in the claim flow." })}</p>
-      )}
-    </section>
+      </section>
+
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.documents.uploadedTitle", { defaultValue: "Uploaded files" })}
+          text={t("clientPortal.documents.uploadedText", { defaultValue: "You can review the files already attached to your account here." })}
+        />
+
+        {state.documents.length ? (
+          <div className="client-portal-uploaded-list">
+            {state.documents.map((document) => (
+              <UploadedDocumentRow
+                key={`${document.kind}-${document.id}`}
+                document={document}
+                previewUrl={document.signature_data_url || previewUrls[document.id] || ""}
+                onOpen={openDocument}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="portal-empty">{t("clientPortal.documents.empty", { defaultValue: "Documents will appear here after they are added to your claim." })}</p>
+        )}
+      </section>
+    </div>
   );
 }
 
-export function ClientProfilePage() {
+function ClientAccountPageInner() {
   const { t } = useTranslation();
-  const { profile, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
+  const currentLanguage = getLanguageByCode(document.documentElement.lang || "en");
   const [form, setForm] = useState({
-    full_name: profile?.full_name || "",
-    email: profile?.email || "",
-    phone: profile?.phone || "",
+    full_name: profile?.full_name || user?.user_metadata?.full_name || "",
+    email: profile?.email || user?.email || "",
+    phone: profile?.phone || user?.user_metadata?.phone || "",
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -447,11 +814,11 @@ export function ClientProfilePage() {
 
   useEffect(() => {
     setForm({
-      full_name: profile?.full_name || "",
-      email: profile?.email || "",
-      phone: profile?.phone || "",
+      full_name: profile?.full_name || user?.user_metadata?.full_name || "",
+      email: profile?.email || user?.email || "",
+      phone: profile?.phone || user?.user_metadata?.phone || "",
     });
-  }, [profile]);
+  }, [profile, user]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -460,45 +827,112 @@ export function ClientProfilePage() {
     setIsSaving(true);
 
     try {
-      await saveClientProfile(form);
+      await saveClientProfile({
+        full_name: form.full_name,
+        phone: form.phone,
+      });
       await refreshProfile();
-      setMessage(t("clientPortal.profile.saved", { defaultValue: "Profile updated." }));
+      setMessage(t("clientPortal.account.saved", { defaultValue: "Account details updated." }));
     } catch (saveError) {
-      setError(saveError.message || t("clientPortal.profile.error", { defaultValue: "Could not update your profile." }));
+      setError(saveError.message || t("clientPortal.account.error", { defaultValue: "Could not update your account." }));
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <section className="portal-card">
-      <div className="portal-card__head">
-        <div>
-          <h2>{t("clientPortal.profile.title", { defaultValue: "Profile" })}</h2>
-          <p>{t("clientPortal.profile.text", { defaultValue: "Keep your contact information up to date for case communication." })}</p>
+    <div className="client-portal-page">
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.account.title", { defaultValue: "Account" })}
+          text={t("clientPortal.account.text", { defaultValue: "Profile details, support, and the settings that are safe to manage here." })}
+        />
+
+        <form className="portal-form" onSubmit={submit}>
+          <label>
+            <span>{t("clientPortal.account.fullName", { defaultValue: "Full name" })}</span>
+            <input value={form.full_name} onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))} />
+          </label>
+          <label>
+            <span>{t("clientPortal.account.email", { defaultValue: "Email" })}</span>
+            <input value={form.email} readOnly disabled />
+          </label>
+          <label>
+            <span>{t("clientPortal.account.phone", { defaultValue: "Phone" })}</span>
+            <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+          </label>
+          {error ? <p className="portal-message is-error">{error}</p> : null}
+          {message ? <p className="portal-message is-notice">{message}</p> : null}
+          <button className="btn btn-primary" type="submit" disabled={isSaving}>
+            {isSaving ? t("clientPortal.account.saving", { defaultValue: "Saving..." }) : t("clientPortal.account.submit", { defaultValue: "Save changes" })}
+          </button>
+        </form>
+      </section>
+
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.account.preferences", { defaultValue: "Preferences" })}
+          text={t("clientPortal.account.preferencesText", { defaultValue: "Language is managed through the main header so it stays consistent across the whole website." })}
+        />
+
+        <div className="client-portal-settings-list">
+          <article className="client-portal-settings-item">
+            <div className="client-portal-settings-item__icon"><Globe size={18} /></div>
+            <div>
+              <strong>{t("clientPortal.account.language", { defaultValue: "Language" })}</strong>
+              <span>{currentLanguage.label}</span>
+            </div>
+          </article>
+          <article className="client-portal-settings-item">
+            <div className="client-portal-settings-item__icon"><Mail size={18} /></div>
+            <div>
+              <strong>{t("clientPortal.account.notifications", { defaultValue: "Claim updates" })}</strong>
+              <span>{t("clientPortal.account.notificationsText", { defaultValue: "Important updates are sent to your account email." })}</span>
+            </div>
+          </article>
         </div>
-      </div>
-      <form className="portal-form" onSubmit={submit}>
-        <label>
-          <span>{t("clientPortal.profile.fullName", { defaultValue: "Full name" })}</span>
-          <input value={form.full_name} onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))} />
-        </label>
-        <label>
-          <span>{t("clientPortal.profile.email", { defaultValue: "Email" })}</span>
-          <input value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
-        </label>
-        <label>
-          <span>{t("clientPortal.profile.phone", { defaultValue: "Phone" })}</span>
-          <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
-        </label>
-        {error ? <p className="portal-message is-error">{error}</p> : null}
-        {message ? <p className="portal-message is-notice">{message}</p> : null}
-        <button className="btn btn-primary" type="submit" disabled={isSaving}>
-          {isSaving ? t("clientPortal.profile.saving", { defaultValue: "Saving..." }) : t("clientPortal.profile.submit", { defaultValue: "Save changes" })}
-        </button>
-      </form>
-    </section>
+      </section>
+
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.account.support", { defaultValue: "Support and legal" })}
+          text={t("clientPortal.account.supportText", { defaultValue: "Need help or want to review our policies? Start here." })}
+        />
+
+        <div className="client-portal-support-grid">
+          <a className="client-portal-support-link" href={`mailto:${contactEmail}`}>
+            <Mail size={18} />
+            <span>{contactEmail}</span>
+          </a>
+          <LocalizedLink className="client-portal-support-link" to="/contact">
+            <Phone size={18} />
+            <span>{t("common.contact", { defaultValue: "Contact" })}</span>
+          </LocalizedLink>
+          <LocalizedLink className="client-portal-support-link" to="/privacyPolicy">
+            <ShieldCheck size={18} />
+            <span>{t("common.privacyPolicy", { defaultValue: "Privacy Policy" })}</span>
+          </LocalizedLink>
+          <LocalizedLink className="client-portal-support-link" to="/termsOfUse">
+            <FileText size={18} />
+            <span>{t("common.termsOfUse", { defaultValue: "Terms of Use" })}</span>
+          </LocalizedLink>
+        </div>
+
+        <LocalizedLink className="client-portal-text-link" to="/contact">
+          {t("clientPortal.account.help", { defaultValue: "Open support page" })}
+          <ArrowRight size={16} />
+        </LocalizedLink>
+      </section>
+    </div>
   );
+}
+
+export function ClientAccountPage() {
+  return <ClientAccountPageInner />;
+}
+
+export function ClientProfilePage() {
+  return <ClientAccountPageInner />;
 }
 
 export function ClientPaymentsPage() {
@@ -507,6 +941,8 @@ export function ClientPaymentsPage() {
 
   useEffect(() => {
     let active = true;
+    setState({ isLoading: true, error: "", data: null });
+
     fetchClientDashboardData()
       .then((data) => {
         if (active) {
@@ -533,33 +969,88 @@ export function ClientPaymentsPage() {
   }
 
   const financeRows = state.data?.finance || [];
+  const claimRows = state.data?.claimRows || [];
+  const activeClaim = claimRows.find((item) => !["paid", "rejected"].includes(item.publicStatus.key)) || claimRows[0] || null;
+  const estimatedAmount = Number.isFinite(Number(activeClaim?.estimate?.amount)) ? activeClaim.estimate.amount : null;
+  const estimatedCurrency = activeClaim?.estimate?.currency || "EUR";
+  const approvedTotal = financeRows.reduce((sum, item) => {
+    const value = Number(item.compensation_amount);
+    return Number.isFinite(value) ? sum + value : sum;
+  }, 0);
+  const paidTotal = financeRows.reduce((sum, item) => {
+    const value = Number(item.customer_payout);
+    return Number.isFinite(value) ? sum + value : sum;
+  }, 0);
+  const latestPayment = financeRows[0] || null;
+  const latestPaymentStatus = latestPayment
+    ? getClientPaymentStatus(latestPayment.payment_status, latestPayment.customer_paid_at)
+    : getClientPaymentStatus(null);
+  const caseReferenceById = new Map((state.data?.cases || []).map((item) => [item.id, item.case_code || item.id]));
 
   return (
-    <section className="portal-card">
-      <div className="portal-card__head">
-        <div>
-          <h2>{t("clientPortal.payments.title", { defaultValue: "Payments" })}</h2>
-          <p>{t("clientPortal.payments.text", { defaultValue: "When compensation and payout data become available, they will appear here." })}</p>
+    <div className="client-portal-page">
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.payments.title", { defaultValue: "Payments" })}
+          text={t("clientPortal.payments.text", { defaultValue: "Estimated, approved, and paid amounts appear here only when the data exists." })}
+        />
+
+        <div className="client-portal-overview-grid">
+          <article className="client-portal-overview-card">
+            <span>{t("clientPortal.payments.estimated", { defaultValue: "Estimated compensation" })}</span>
+            <strong>{estimatedAmount !== null ? formatEstimateAmount(estimatedAmount, estimatedCurrency, t) : "—"}</strong>
+          </article>
+          <article className="client-portal-overview-card">
+            <span>{t("clientPortal.payments.approvedAmount", { defaultValue: "Approved amount" })}</span>
+            <strong>{approvedTotal ? formatCurrencyValue(approvedTotal, latestPayment?.currency || "EUR") : "—"}</strong>
+          </article>
+          <article className="client-portal-overview-card">
+            <span>{t("clientPortal.payments.paidAmount", { defaultValue: "Paid amount" })}</span>
+            <strong>{paidTotal ? formatCurrencyValue(paidTotal, latestPayment?.currency || "EUR") : "—"}</strong>
+          </article>
+          <article className="client-portal-overview-card">
+            <span>{t("clientPortal.payments.payoutStatus", { defaultValue: "Payout status" })}</span>
+            <strong>{latestPaymentStatus.label}</strong>
+          </article>
         </div>
-      </div>
-      {financeRows.length ? (
-        <div className="portal-list is-compact">
-          {financeRows.map((item) => (
-            <div key={item.id} className="portal-row is-static">
-              <div>
-                <strong>{Number(item.customer_payout || item.compensation_amount || 0).toFixed(0)} {item.currency || "EUR"}</strong>
-                <span>{item.case_id}</span>
-              </div>
-              <div>
-                <span>{item.payment_status || "-"}</span>
-                <small>{item.customer_paid_at || ""}</small>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="portal-empty">{t("clientPortal.payments.empty", { defaultValue: "No payment records are attached to your account yet." })}</p>
-      )}
-    </section>
+      </section>
+
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.payments.history", { defaultValue: "Payment history" })}
+          text={t("clientPortal.payments.historyText", { defaultValue: "Approved payouts and completed transfers will be listed here." })}
+        />
+
+        {financeRows.length ? (
+          <div className="client-portal-uploaded-list">
+            {financeRows.map((item) => {
+              const paymentStatus = getClientPaymentStatus(item.payment_status, item.customer_paid_at);
+              return (
+                <div key={item.id} className="client-portal-uploaded-row">
+                  <div className="client-portal-uploaded-row__thumb">
+                    <CircleDollarSign size={20} />
+                  </div>
+                  <div className="client-portal-uploaded-row__copy">
+                    <strong>{caseReferenceById.get(item.case_id) || item.case_id}</strong>
+                    <span>
+                      {t("clientPortal.payments.approvedAmount", { defaultValue: "Approved" })}: {Number.isFinite(Number(item.compensation_amount)) ? formatCurrencyValue(item.compensation_amount, item.currency || "EUR") : "—"}
+                    </span>
+                    <small>
+                      {t("clientPortal.payments.paidAmount", { defaultValue: "Paid" })}: {Number.isFinite(Number(item.customer_payout)) ? formatCurrencyValue(item.customer_payout, item.currency || "EUR") : "—"}
+                    </small>
+                  </div>
+                  <div className="client-portal-uploaded-row__meta">
+                    <ClientStatusBadge status={paymentStatus} />
+                    <small>{item.customer_paid_at ? formatDateTime(item.customer_paid_at) : formatDateTime(item.updated_at || item.created_at)}</small>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="portal-empty">{t("clientPortal.payments.empty", { defaultValue: "Payment information will appear here when your claim is approved." })}</p>
+        )}
+      </section>
+    </div>
   );
 }

@@ -3,8 +3,26 @@ import { calculateDistanceCompensationEstimate } from "../lib/compensationDistan
 import { findAirportByCode } from "./catalogService.js";
 import { getCurrentProfile, syncCurrentUserClaimData, updateCurrentProfile } from "./authService.js";
 
+const REQUIRED_CLIENT_DOCUMENTS = [
+  { key: "passport", label: "Passport / ID" },
+  { key: "boarding_pass", label: "Boarding Pass" },
+  { key: "signature", label: "Signature / Consent" },
+];
+
+const DOCUMENT_STATUS_META = {
+  missing: { key: "missing", label: "Missing", tone: "warning" },
+  uploaded: { key: "uploaded", label: "Uploaded", tone: "neutral" },
+  pending_review: { key: "pending_review", label: "Pending review", tone: "info" },
+  approved: { key: "approved", label: "Approved", tone: "success" },
+  rejected: { key: "rejected", label: "Rejected", tone: "danger" },
+};
+
 function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.code === "42703" || error?.message?.includes("column");
+}
+
+function isMissingOptionalTable(error) {
+  return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
 }
 
 function extractAirportCode(value) {
@@ -24,6 +42,26 @@ async function resolveAirportFromRouteLabel(value) {
   }
 
   return findAirportByCode(code).catch(() => null);
+}
+
+function normalizeLabel(value, fallback = "Unknown") {
+  const input = String(value || "").trim();
+  if (!input) {
+    return fallback;
+  }
+
+  return input
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function toTimestamp(value) {
+  const date = new Date(value || 0);
+  return Number.isFinite(date.getTime()) ? date.getTime() : 0;
+}
+
+function sortByNewest(items = []) {
+  return [...items].sort((left, right) => toTimestamp(right.created_at || right.signed_at) - toTimestamp(left.created_at || left.signed_at));
 }
 
 async function withEstimateFallback(record) {
@@ -59,28 +97,415 @@ async function withEstimateFallback(record) {
   };
 }
 
-export async function fetchClientDashboardData() {
+function getDocumentTypeKey(type, kind = "document") {
+  const value = String(type || "").toLowerCase();
+
+  if (kind === "signature" || value.includes("signature") || value.includes("consent")) return "signature";
+  if (value.includes("passport") || value.includes("id")) return "passport";
+  if (value.includes("boarding")) return "boarding_pass";
+  if (value.includes("booking") || value.includes("ticket")) return "booking";
+  return "other";
+}
+
+export function getClientDocumentStatus(status, kind = "document") {
+  const value = String(status || "").toLowerCase();
+
+  if (!value) {
+    return DOCUMENT_STATUS_META.missing;
+  }
+
+  if (kind === "signature" && value === "signed") {
+    return DOCUMENT_STATUS_META.approved;
+  }
+
+  if (["approved", "accepted"].includes(value)) {
+    return DOCUMENT_STATUS_META.approved;
+  }
+
+  if (["rejected", "declined", "invalid"].includes(value)) {
+    return DOCUMENT_STATUS_META.rejected;
+  }
+
+  if (["pending_review", "pending", "review"].includes(value)) {
+    return DOCUMENT_STATUS_META.pending_review;
+  }
+
+  if (["missing", "requested", "replacement_requested"].includes(value)) {
+    return DOCUMENT_STATUS_META.missing;
+  }
+
+  if (["uploaded", "signed"].includes(value)) {
+    return DOCUMENT_STATUS_META.uploaded;
+  }
+
+  return DOCUMENT_STATUS_META.uploaded;
+}
+
+export function getClientPaymentStatus(paymentStatus, paidAt = null) {
+  const value = String(paymentStatus || "").toLowerCase();
+
+  if (paidAt || ["paid", "completed", "payout_completed", "customer_paid"].includes(value)) {
+    return { key: "paid", label: "Paid", tone: "success" };
+  }
+
+  if (["approved", "ready", "ready_for_payout"].includes(value)) {
+    return { key: "approved", label: "Approved", tone: "success" };
+  }
+
+  if (["pending", "processing", "scheduled", "awaiting_payment"].includes(value)) {
+    return { key: "pending", label: "Pending", tone: "info" };
+  }
+
+  return { key: "not_started", label: "Not started", tone: "neutral" };
+}
+
+function hasDocumentAttention(documentStatus) {
+  if (Array.isArray(documentStatus)) {
+    return documentStatus.some((item) => ["missing", "rejected"].includes(item?.statusKey));
+  }
+
+  return Boolean(documentStatus?.needsAttention);
+}
+
+export function getClientClaimStatus(internalStatus, stage, documentStatus, paymentStatus) {
+  const normalizedStatus = String(internalStatus || "").toLowerCase();
+  const normalizedStage = String(stage || "").toLowerCase();
+  const payment = getClientPaymentStatus(paymentStatus);
+
+  if (payment.key === "paid") {
+    return {
+      key: "paid",
+      label: "Paid",
+      tone: "success",
+      step: 5,
+      explanation: "Compensation has been paid.",
+    };
+  }
+
+  if (["rejected", "ineligible", "closed_rejected", "denied", "lost"].includes(normalizedStatus)) {
+    return {
+      key: "rejected",
+      label: "Rejected",
+      tone: "danger",
+      step: 4,
+      explanation: "This claim could not be approved.",
+    };
+  }
+
+  if (["approved", "won", "eligible"].includes(normalizedStatus) || payment.key === "approved") {
+    return {
+      key: "approved",
+      label: "Approved",
+      tone: "success",
+      step: 4,
+      explanation: "Your claim has been approved.",
+    };
+  }
+
+  if (
+    hasDocumentAttention(documentStatus)
+    || ["documents_pending", "missing_documents", "needs_documents"].includes(normalizedStatus)
+    || normalizedStage === "documents"
+  ) {
+    return {
+      key: "documents_needed",
+      label: "Documents needed",
+      tone: "warning",
+      step: 2,
+      explanation: "Some documents still need your attention.",
+    };
+  }
+
+  if (["submitted", "new", "draft"].includes(normalizedStatus)) {
+    return {
+      key: "submitted",
+      label: "Submitted",
+      tone: "info",
+      step: 1,
+      explanation: "Your claim was received.",
+    };
+  }
+
+  if (
+    ["review", "pending_review", "processing", "active", "under_review", "ready_to_submit", "submitted_to_airline", "awaiting_response", "escalated", "payment_processing"].includes(normalizedStatus)
+  ) {
+    return {
+      key: "under_review",
+      label: "Under review",
+      tone: "info",
+      step: 2,
+      explanation: "Your claim is being reviewed.",
+    };
+  }
+
+  return {
+    key: "under_review",
+    label: "Under review",
+    tone: "info",
+    step: 2,
+    explanation: "Your claim is being reviewed.",
+  };
+}
+
+function normalizeLeadDocument(item) {
+  return {
+    ...item,
+    kind: "document",
+    ownerType: "lead",
+    ownerId: item.lead_id,
+    bucket: "claim-lead-documents",
+    mime_type: item.mime_type || "",
+  };
+}
+
+function normalizeCaseDocument(item) {
+  return {
+    ...item,
+    kind: "document",
+    ownerType: "case",
+    ownerId: item.case_id,
+    bucket: String(item.file_path || "").startsWith("leads/") ? "claim-lead-documents" : "case-documents",
+    mime_type: item.mime_type || "",
+  };
+}
+
+function normalizeLeadSignature(item) {
+  return {
+    ...item,
+    kind: "signature",
+    ownerType: "lead",
+    ownerId: item.lead_id,
+    document_type: "signature",
+    file_name: item.signer_name ? `${item.signer_name} signature` : "Signature / Consent",
+    status: item.terms_accepted ? "signed" : "pending",
+    created_at: item.signed_at || item.created_at,
+    mime_type: "image/png",
+    signature_data_url: item.signature_data_url || "",
+  };
+}
+
+function buildRequiredDocumentSummary(records = []) {
+  const sorted = sortByNewest(records);
+
+  return REQUIRED_CLIENT_DOCUMENTS.map((definition) => {
+    const matches = sorted.filter((item) => getDocumentTypeKey(item.document_type, item.kind) === definition.key);
+    const latest = matches[0] || null;
+    const statusMeta = latest ? getClientDocumentStatus(latest.status, latest.kind) : DOCUMENT_STATUS_META.missing;
+
+    return {
+      ...definition,
+      latestDocument: latest,
+      statusKey: statusMeta.key,
+      statusLabel: statusMeta.label,
+      statusTone: statusMeta.tone,
+      uploadedAt: latest?.created_at || latest?.signed_at || "",
+    };
+  });
+}
+
+function buildDocumentsSummary(requiredDocuments = []) {
+  const availableCount = requiredDocuments.filter((item) => item.statusKey !== "missing").length;
+  const needsAttention = requiredDocuments.some((item) => ["missing", "rejected"].includes(item.statusKey));
+
+  if (!availableCount) {
+    return {
+      label: "No documents uploaded",
+      detail: "Passport / ID, boarding pass, and signature will appear here.",
+      availableCount,
+      needsAttention,
+    };
+  }
+
+  if (needsAttention) {
+    return {
+      label: "Documents needed",
+      detail: `${availableCount}/3 required documents are on file.`,
+      availableCount,
+      needsAttention,
+    };
+  }
+
+  if (availableCount === REQUIRED_CLIENT_DOCUMENTS.length) {
+    return {
+      label: "All required documents received",
+      detail: "Passport / ID, boarding pass, and signature are attached.",
+      availableCount,
+      needsAttention,
+    };
+  }
+
+  return {
+    label: "Documents uploaded",
+    detail: `${availableCount}/3 required documents are on file.`,
+    availableCount,
+    needsAttention,
+  };
+}
+
+function createFinanceMap(financeRows = []) {
+  return new Map(financeRows.map((item) => [item.case_id, item]));
+}
+
+function buildClaimRowFromLead(lead, context) {
+  const relatedDocuments = [
+    ...(context.leadDocumentsByLeadId.get(lead.id) || []),
+    ...(context.signaturesByLeadId.get(lead.id) || []),
+  ];
+  const requiredDocuments = buildRequiredDocumentSummary(relatedDocuments);
+  const documentsSummary = buildDocumentsSummary(requiredDocuments);
+  const publicStatus = getClientClaimStatus(lead.status, lead.stage, requiredDocuments, null);
+
+  return {
+    id: lead.id,
+    kind: "lead",
+    reference: lead.lead_code || lead.id,
+    airline: lead.airline || "",
+    route: [lead.departure_airport, lead.arrival_airport].filter(Boolean).join(" → "),
+    disruptionType: normalizeLabel(lead.disruption_type, "Flight disruption"),
+    submittedAt: lead.submitted_at || lead.created_at,
+    created_at: lead.created_at,
+    publicStatus,
+    requiredDocuments,
+    documentsSummary,
+    paymentStatus: getClientPaymentStatus(null),
+    estimate: {
+      amount: lead.estimated_compensation_eur,
+      currency: lead.compensation_currency || "EUR",
+      distanceKm: lead.distance_km,
+      distanceBand: lead.distance_band,
+      status: lead.estimate_status,
+    },
+    raw: lead,
+  };
+}
+
+function buildClaimRowFromCase(caseRow, context) {
+  const relatedLead = caseRow.lead_id ? context.leadsById.get(caseRow.lead_id) || null : null;
+  const finance = context.financeByCaseId.get(caseRow.id) || null;
+  const relatedDocuments = [
+    ...(caseRow.lead_id ? (context.leadDocumentsByLeadId.get(caseRow.lead_id) || []) : []),
+    ...(context.caseDocumentsByCaseId.get(caseRow.id) || []),
+    ...(caseRow.lead_id ? (context.signaturesByLeadId.get(caseRow.lead_id) || []) : []),
+  ];
+  const requiredDocuments = buildRequiredDocumentSummary(relatedDocuments);
+  const documentsSummary = buildDocumentsSummary(requiredDocuments);
+  const paymentStatus = getClientPaymentStatus(
+    finance?.payment_status || caseRow.payout_status || null,
+    finance?.customer_paid_at || caseRow.paid_at || null,
+  );
+  const publicStatus = getClientClaimStatus(caseRow.status, relatedLead?.stage || "", requiredDocuments, paymentStatus.key);
+
+  return {
+    id: caseRow.id,
+    kind: "case",
+    reference: caseRow.case_code || caseRow.id,
+    airline: caseRow.airline || relatedLead?.airline || "",
+    route: [caseRow.route_from || relatedLead?.departure_airport, caseRow.route_to || relatedLead?.arrival_airport].filter(Boolean).join(" → "),
+    disruptionType: normalizeLabel(relatedLead?.disruption_type || caseRow.issue_type, "Flight disruption"),
+    submittedAt: relatedLead?.submitted_at || caseRow.created_at,
+    created_at: caseRow.created_at,
+    publicStatus,
+    requiredDocuments,
+    documentsSummary,
+    paymentStatus,
+    estimate: {
+      amount: relatedLead?.estimated_compensation_eur ?? caseRow.estimated_compensation ?? finance?.compensation_amount ?? null,
+      currency: relatedLead?.compensation_currency || finance?.currency || "EUR",
+      distanceKm: relatedLead?.distance_km ?? null,
+      distanceBand: relatedLead?.distance_band ?? null,
+      status: relatedLead?.estimate_status || "",
+    },
+    raw: caseRow,
+    finance,
+  };
+}
+
+function createContext({ leads, cases, finance, leadDocuments, caseDocuments, leadSignatures }) {
+  const leadsById = new Map((leads || []).map((item) => [item.id, item]));
+  const leadDocumentsByLeadId = new Map();
+  const caseDocumentsByCaseId = new Map();
+  const signaturesByLeadId = new Map();
+
+  (leadDocuments || []).forEach((item) => {
+    const bucket = leadDocumentsByLeadId.get(item.lead_id) || [];
+    bucket.push(normalizeLeadDocument(item));
+    leadDocumentsByLeadId.set(item.lead_id, bucket);
+  });
+
+  (caseDocuments || []).forEach((item) => {
+    const bucket = caseDocumentsByCaseId.get(item.case_id) || [];
+    bucket.push(normalizeCaseDocument(item));
+    caseDocumentsByCaseId.set(item.case_id, bucket);
+  });
+
+  (leadSignatures || []).forEach((item) => {
+    const bucket = signaturesByLeadId.get(item.lead_id) || [];
+    bucket.push(normalizeLeadSignature(item));
+    signaturesByLeadId.set(item.lead_id, bucket);
+  });
+
+  return {
+    leadsById,
+    financeByCaseId: createFinanceMap(finance),
+    leadDocumentsByLeadId,
+    caseDocumentsByCaseId,
+    signaturesByLeadId,
+  };
+}
+
+function buildClaimRows({ leads, cases, finance, leadDocuments, caseDocuments, leadSignatures }) {
+  const context = createContext({ leads, cases, finance, leadDocuments, caseDocuments, leadSignatures });
+  const caseLeadIds = new Set((cases || []).map((item) => item.lead_id).filter(Boolean));
+  const caseRows = (cases || []).map((item) => buildClaimRowFromCase(item, context));
+  const leadRows = (leads || [])
+    .filter((item) => !caseLeadIds.has(item.id))
+    .map((item) => buildClaimRowFromLead(item, context));
+
+  return caseRows
+    .concat(leadRows)
+    .sort((left, right) => toTimestamp(right.submittedAt || right.created_at) - toTimestamp(left.submittedAt || left.created_at));
+}
+
+async function fetchPortalBaseData() {
   const client = requireSupabase();
 
   await syncCurrentUserClaimData().catch(() => null);
 
-  const [profile, leads, cases, finance] = await Promise.all([
+  const [profile, leads, cases, finance, leadDocuments, caseDocuments, leadSignatures] = await Promise.all([
     getCurrentProfile(),
     client
       .from("leads")
-      .select("id, lead_code, status, stage, eligibility_status, departure_airport, arrival_airport, airline, created_at, submitted_at, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
+      .select("id, lead_code, status, stage, eligibility_status, disruption_type, departure_airport, arrival_airport, airline, created_at, submitted_at, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(30),
     client
       .from("cases")
-      .select("id, case_code, lead_id, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at, approved_at, paid_at")
+      .select("id, case_code, lead_id, status, payout_status, airline, route_from, route_to, issue_type, estimated_compensation, created_at, approved_at, paid_at")
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(30),
     client
       .from("case_finance")
-      .select("id, case_id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at")
+      .select("id, case_id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at, created_at, updated_at")
       .order("updated_at", { ascending: false })
-      .limit(20),
+      .limit(30),
+    client
+      .from("lead_documents")
+      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(200),
+    client
+      .from("case_documents")
+      .select("id, case_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(200),
+    client
+      .from("lead_signatures")
+      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(100),
   ]);
 
   if (leads.error) {
@@ -95,139 +520,6 @@ export async function fetchClientDashboardData() {
     throw finance.error;
   }
 
-  const enrichedLeads = await Promise.all((leads.data || []).map((item) => withEstimateFallback(item)));
-
-  return {
-    profile,
-    leads: enrichedLeads,
-    cases: cases.data || [],
-    finance: finance.data || [],
-  };
-}
-
-export async function fetchClientClaims() {
-  const data = await fetchClientDashboardData();
-  return {
-    ...data,
-    claimRows: [
-      ...(data.leads || []).map((item) => ({
-        id: item.id,
-        code: item.lead_code,
-        status: item.status,
-        substatus: item.stage,
-        flight: item.airline || "",
-        route: [item.departure_airport, item.arrival_airport].filter(Boolean).join(" -> "),
-        kind: "lead",
-        created_at: item.created_at,
-        distance_km: item.distance_km,
-        distance_band: item.distance_band,
-        estimated_compensation_eur: item.estimated_compensation_eur,
-        compensation_currency: item.compensation_currency,
-        estimate_status: item.estimate_status,
-      })),
-      ...(data.cases || []).map((item) => ({
-        id: item.id,
-        code: item.case_code,
-        status: item.status,
-        substatus: item.payout_status,
-        flight: item.airline || "",
-        route: [item.route_from, item.route_to].filter(Boolean).join(" -> "),
-        kind: "case",
-        created_at: item.created_at,
-      })),
-    ].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()),
-  };
-}
-
-export async function fetchClientClaimDetails(claimId) {
-  const client = requireSupabase();
-
-  const caseResponse = await client
-    .from("cases")
-    .select("id, case_code, lead_id, status, payout_status, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, created_at, approved_at, paid_at, notes")
-    .eq("id", claimId)
-    .maybeSingle();
-
-  if (caseResponse.error) {
-    throw caseResponse.error;
-  }
-
-  if (caseResponse.data) {
-    const [documents, history, finance, leadEstimate] = await Promise.all([
-      client.from("case_documents").select("id, document_type, file_name, status, created_at").eq("case_id", claimId).is("deleted_at", null).order("created_at", { ascending: false }),
-      client.from("case_status_history").select("id, previous_status, next_status, note, created_at").eq("case_id", claimId).order("created_at", { ascending: false }),
-      client.from("case_finance").select("id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at").eq("case_id", claimId).maybeSingle(),
-      caseResponse.data.lead_id
-        ? client
-          .from("leads")
-          .select("id, lead_code, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
-          .eq("id", caseResponse.data.lead_id)
-          .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-    ]);
-
-    if (documents.error) throw documents.error;
-    if (history.error) throw history.error;
-    if (finance.error && !isMissingColumnError(finance.error)) throw finance.error;
-    if (leadEstimate.error && !isMissingColumnError(leadEstimate.error)) throw leadEstimate.error;
-
-    return {
-      type: "case",
-      case: caseResponse.data,
-      leadEstimate: await withEstimateFallback(leadEstimate.data || null),
-      documents: documents.data || [],
-      history: history.data || [],
-      finance: finance.data || null,
-    };
-  }
-
-  const leadResponse = await client
-    .from("leads")
-    .select("id, lead_code, status, stage, eligibility_status, airline, departure_airport, arrival_airport, scheduled_departure_date, disruption_type, created_at, submitted_at, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
-    .eq("id", claimId)
-    .maybeSingle();
-
-  if (leadResponse.error) {
-    throw leadResponse.error;
-  }
-
-  const documents = await client
-    .from("lead_documents")
-    .select("id, document_type, file_name, status, created_at")
-    .eq("lead_id", claimId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-
-  if (documents.error) {
-    throw documents.error;
-  }
-
-  return {
-    type: "lead",
-    lead: await withEstimateFallback(leadResponse.data),
-    documents: documents.data || [],
-    history: [],
-    finance: null,
-  };
-}
-
-export async function fetchClientDocuments() {
-  const client = requireSupabase();
-  const [leadDocuments, caseDocuments] = await Promise.all([
-    client
-      .from("lead_documents")
-      .select("id, lead_id, document_type, file_name, status, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(100),
-    client
-      .from("case_documents")
-      .select("id, case_id, document_type, file_name, status, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(100),
-  ]);
-
   if (leadDocuments.error) {
     throw leadDocuments.error;
   }
@@ -236,14 +528,220 @@ export async function fetchClientDocuments() {
     throw caseDocuments.error;
   }
 
+  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error) && !isMissingColumnError(leadSignatures.error)) {
+    throw leadSignatures.error;
+  }
+
+  const enrichedLeads = await Promise.all((leads.data || []).map((item) => withEstimateFallback(item)));
+
   return {
-    documents: [
-      ...(leadDocuments.data || []).map((item) => ({ ...item, ownerType: "lead" })),
-      ...(caseDocuments.data || []).map((item) => ({ ...item, ownerType: "case" })),
-    ].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()),
+    profile,
+    leads: enrichedLeads,
+    cases: cases.data || [],
+    finance: finance.error ? [] : (finance.data || []),
+    leadDocuments: leadDocuments.data || [],
+    caseDocuments: caseDocuments.data || [],
+    leadSignatures: leadSignatures.error ? [] : (leadSignatures.data || []),
   };
 }
 
+export async function fetchClientDashboardData() {
+  const data = await fetchPortalBaseData();
+  const claimRows = buildClaimRows(data);
+
+  return {
+    ...data,
+    claimRows,
+  };
+}
+
+export async function fetchClientClaims() {
+  const data = await fetchClientDashboardData();
+  return {
+    ...data,
+    claimRows: data.claimRows || [],
+  };
+}
+
+export async function fetchClientClaimDetails(claimId) {
+  const client = requireSupabase();
+
+  const caseResponse = await client
+    .from("cases")
+    .select("id, case_code, lead_id, status, payout_status, airline, route_from, route_to, flight_date, issue_type, estimated_compensation, created_at, approved_at, paid_at")
+    .eq("id", claimId)
+    .maybeSingle();
+
+  if (caseResponse.error) {
+    throw caseResponse.error;
+  }
+
+  if (caseResponse.data) {
+    const [caseDocuments, finance, relatedLead, leadDocuments, leadSignatures] = await Promise.all([
+      client.from("case_documents").select("id, case_id, document_type, file_path, file_name, mime_type, file_size, status, created_at").eq("case_id", claimId).is("deleted_at", null).order("created_at", { ascending: false }),
+      client.from("case_finance").select("id, case_id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at, created_at, updated_at").eq("case_id", claimId).maybeSingle(),
+      caseResponse.data.lead_id
+        ? client
+          .from("leads")
+          .select("id, lead_code, status, stage, eligibility_status, disruption_type, departure_airport, arrival_airport, airline, created_at, submitted_at, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
+          .eq("id", caseResponse.data.lead_id)
+          .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      caseResponse.data.lead_id
+        ? client
+          .from("lead_documents")
+          .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+          .eq("lead_id", caseResponse.data.lead_id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
+      caseResponse.data.lead_id
+        ? client
+          .from("lead_signatures")
+          .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
+          .eq("lead_id", caseResponse.data.lead_id)
+          .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (caseDocuments.error) throw caseDocuments.error;
+    if (finance.error && !isMissingColumnError(finance.error)) throw finance.error;
+    if (relatedLead.error && !isMissingColumnError(relatedLead.error)) throw relatedLead.error;
+    if (leadDocuments.error) throw leadDocuments.error;
+    if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error) && !isMissingColumnError(leadSignatures.error)) throw leadSignatures.error;
+
+    const lead = await withEstimateFallback(relatedLead.data || null);
+    const data = {
+      leads: lead ? [lead] : [],
+      cases: [caseResponse.data],
+      finance: finance.error ? [] : [finance.data].filter(Boolean),
+      leadDocuments: leadDocuments.data || [],
+      caseDocuments: caseDocuments.data || [],
+      leadSignatures: leadSignatures.error ? [] : (leadSignatures.data || []),
+    };
+    const claim = buildClaimRows(data)[0] || null;
+
+    return {
+      type: "case",
+      claim,
+      documents: sortByNewest([
+        ...(leadDocuments.data || []).map(normalizeLeadDocument),
+        ...(caseDocuments.data || []).map(normalizeCaseDocument),
+        ...((leadSignatures.error ? [] : (leadSignatures.data || [])).map(normalizeLeadSignature)),
+      ]),
+      finance: finance.error ? null : (finance.data || null),
+    };
+  }
+
+  const leadResponse = await client
+    .from("leads")
+    .select("id, lead_code, status, stage, eligibility_status, disruption_type, airline, departure_airport, arrival_airport, scheduled_departure_date, created_at, submitted_at, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
+    .eq("id", claimId)
+    .maybeSingle();
+
+  if (leadResponse.error) {
+    throw leadResponse.error;
+  }
+
+  const [leadDocuments, leadSignatures] = await Promise.all([
+    client
+      .from("lead_documents")
+      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+      .eq("lead_id", claimId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    client
+      .from("lead_signatures")
+      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
+      .eq("lead_id", claimId)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (leadDocuments.error) {
+    throw leadDocuments.error;
+  }
+
+  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error) && !isMissingColumnError(leadSignatures.error)) {
+    throw leadSignatures.error;
+  }
+
+  const lead = await withEstimateFallback(leadResponse.data);
+  const claim = buildClaimRows({
+    leads: lead ? [lead] : [],
+    cases: [],
+    finance: [],
+    leadDocuments: leadDocuments.data || [],
+    caseDocuments: [],
+    leadSignatures: leadSignatures.error ? [] : (leadSignatures.data || []),
+  })[0] || null;
+
+  return {
+    type: "lead",
+    claim,
+    documents: sortByNewest([
+      ...(leadDocuments.data || []).map(normalizeLeadDocument),
+      ...((leadSignatures.error ? [] : (leadSignatures.data || [])).map(normalizeLeadSignature)),
+    ]),
+    finance: null,
+  };
+}
+
+export async function fetchClientDocuments() {
+  const data = await fetchPortalBaseData();
+  const normalizedDocuments = sortByNewest([
+    ...(data.leadDocuments || []).map(normalizeLeadDocument),
+    ...(data.caseDocuments || []).map(normalizeCaseDocument),
+    ...(data.leadSignatures || []).map(normalizeLeadSignature),
+  ]);
+
+  const requiredDocuments = buildRequiredDocumentSummary(normalizedDocuments);
+
+  return {
+    documents: normalizedDocuments.filter((item) => ["passport", "boarding_pass", "signature"].includes(getDocumentTypeKey(item.document_type, item.kind))),
+    requiredDocuments,
+  };
+}
+
+export async function getClientDocumentDownloadUrl(document) {
+  if (!document) {
+    throw new Error("Document is missing.");
+  }
+
+  if (document.kind === "signature" && document.signature_data_url) {
+    return document.signature_data_url;
+  }
+
+  if (!document.bucket || !document.file_path) {
+    throw new Error("Document file is not available.");
+  }
+
+  const client = requireSupabase();
+  const buckets = [document.bucket];
+
+  if (document.bucket === "case-documents" && String(document.file_path || "").startsWith("leads/")) {
+    buckets.push("claim-lead-documents");
+  }
+
+  let lastError = null;
+
+  for (const bucket of buckets) {
+    const { data, error } = await client.storage
+      .from(bucket)
+      .createSignedUrl(document.file_path, 60);
+
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
+    }
+
+    lastError = error || lastError;
+  }
+
+  throw lastError || new Error("Could not open the document.");
+}
+
 export async function saveClientProfile(input) {
-  return updateCurrentProfile(input);
+  return updateCurrentProfile({
+    full_name: input.full_name,
+    phone: input.phone,
+  });
 }
