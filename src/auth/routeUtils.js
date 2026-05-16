@@ -95,6 +95,20 @@ export function resolveDashboardPath(profile, partnerProfile, adminAccess = null
   return "/client/dashboard";
 }
 
+export function resolveProfilePath(profile, partnerProfile, adminAccess = null) {
+  const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
+
+  if (normalizedRole === "admin") {
+    return "/admin";
+  }
+
+  if (normalizedRole === "partner") {
+    return "/partner/profile";
+  }
+
+  return "/client/profile";
+}
+
 export function hasAllowedRole(allowedRoles = [], profile, partnerProfile, adminAccess = null) {
   const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
   return allowedRoles.includes(normalizedRole);

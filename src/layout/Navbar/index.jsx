@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, CircleUserRound, LogOut, X } from "lucide-react";
+import { ChevronDown, CircleUserRound, LogOut, UserRound, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
@@ -11,7 +11,28 @@ import { socialLinks } from "../../constants/site.js";
 import { getLanguageByCode, languages } from "../../i18n/languages.js";
 import { replaceLanguageInPath } from "../../i18n/path.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
+import { resolveProfilePath } from "../../auth/routeUtils.js";
 import "./style.scss";
+
+function getIdentityAvatarUrl(profile, user) {
+  const metadata = user?.user_metadata || {};
+  const identityData = Array.isArray(user?.identities)
+    ? user.identities
+      .map((identity) => identity?.identity_data || null)
+      .find((identity) => identity?.avatar_url || identity?.picture || identity?.photo_url || identity?.photoURL)
+    : null;
+
+  return profile?.avatar_url
+    || metadata.avatar_url
+    || metadata.picture
+    || metadata.photo_url
+    || metadata.photoURL
+    || identityData?.avatar_url
+    || identityData?.picture
+    || identityData?.photo_url
+    || identityData?.photoURL
+    || "";
+}
 
 function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLanguage }) {
   const { t } = useTranslation();
@@ -169,11 +190,12 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { isAuthenticated, dashboardPath, profile, user, signOut } = useAuth();
+  const { isAuthenticated, adminAccess, dashboardPath, partnerProfile, profile, user, signOut } = useAuth();
   const currentLanguage = location.pathname.split("/").filter(Boolean)[0] || "en";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [hasAvatarLoadError, setHasAvatarLoadError] = useState(false);
   const accountMenuRef = useRef(null);
 
   const navLinks = useMemo(
@@ -227,8 +249,17 @@ function Navbar() {
     };
   }, [isAccountOpen]);
 
-  const displayName = profile?.full_name || user?.user_metadata?.full_name || t("nav.account", { defaultValue: "My account" });
+  const accountTitle = t("nav.account", { defaultValue: "My account" });
+  const profileLabel = t("nav.myProfile", { defaultValue: "My profile" });
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || accountTitle;
   const accountEmail = profile?.email || user?.email || "";
+  const profilePhotoUrl = getIdentityAvatarUrl(profile, user);
+  const avatarImageUrl = profilePhotoUrl && !hasAvatarLoadError ? profilePhotoUrl : "";
+  const profilePath = resolveProfilePath(profile, partnerProfile, adminAccess);
+
+  useEffect(() => {
+    setHasAvatarLoadError(false);
+  }, [profilePhotoUrl]);
 
   const closeMenu = () => {
     setIsMenuOpen(false);
@@ -278,23 +309,46 @@ function Navbar() {
           <div className="account-menu" ref={accountMenuRef}>
             <button
               type="button"
-              className="account-entry"
-              aria-label={t("nav.account", { defaultValue: "My account" })}
+              className={`account-entry${avatarImageUrl ? " account-entry--with-photo" : ""}`}
+              aria-label={accountTitle}
               aria-haspopup="menu"
               aria-expanded={isAccountOpen}
               onClick={toggleAccountMenu}
             >
-              <CircleUserRound size={20} strokeWidth={1.9} />
+              {avatarImageUrl ? (
+                <img
+                  className="account-entry__photo"
+                  src={avatarImageUrl}
+                  alt=""
+                  onError={() => setHasAvatarLoadError(true)}
+                />
+              ) : (
+                <CircleUserRound size={20} strokeWidth={1.9} />
+              )}
             </button>
 
             {isAccountOpen ? (
-              <div className="account-dropdown" role="menu" aria-label={t("nav.account", { defaultValue: "My account" })}>
+              <div className="account-dropdown" role="menu" aria-label={accountTitle}>
                 {isAuthenticated ? (
                   <>
                     <div className="account-dropdown__identity">
-                      <strong>{displayName}</strong>
-                      {accountEmail ? <span>{accountEmail}</span> : null}
+                      <div className="account-dropdown__avatar" aria-hidden="true">
+                        {avatarImageUrl ? (
+                          <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
+                        ) : (
+                          <CircleUserRound size={24} strokeWidth={1.9} />
+                        )}
+                      </div>
+                      <div className="account-dropdown__identity-copy">
+                        <span className="account-dropdown__eyebrow">{accountTitle}</span>
+                        <strong>{displayName}</strong>
+                        {accountEmail ? <span className="account-dropdown__identity-email">{accountEmail}</span> : null}
+                      </div>
                     </div>
+                    <LocalizedLink className="account-dropdown__link" to={profilePath} role="menuitem" onClick={closeMenu}>
+                      <UserRound size={18} strokeWidth={2} />
+                      <span>{profileLabel}</span>
+                    </LocalizedLink>
                     <div className="account-dropdown__row">
                       <LanguageSwitcher
                         currentLanguage={currentLanguage}
@@ -357,9 +411,28 @@ function Navbar() {
               </LocalizedNavLink>
             ))}
             {isAuthenticated ? (
-              <LocalizedLink to={dashboardPath} onClick={closeMenu}>
-                {t("nav.account", { defaultValue: "My account" })}
-              </LocalizedLink>
+              <>
+                <div className="mobile-menu__account-card">
+                  <div className="mobile-menu__account-avatar" aria-hidden="true">
+                    {avatarImageUrl ? (
+                      <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
+                    ) : (
+                      <CircleUserRound size={24} strokeWidth={1.9} />
+                    )}
+                  </div>
+                  <div className="mobile-menu__account-copy">
+                    <span>{accountTitle}</span>
+                    <strong>{displayName}</strong>
+                    {accountEmail ? <small>{accountEmail}</small> : null}
+                  </div>
+                </div>
+                <LocalizedLink to={dashboardPath} onClick={closeMenu}>
+                  {accountTitle}
+                </LocalizedLink>
+                <LocalizedLink to={profilePath} onClick={closeMenu}>
+                  {profileLabel}
+                </LocalizedLink>
+              </>
             ) : (
               <LocalizedLink to="/auth/login" onClick={closeMenu}>
                 {t("claimModal.logIn", { defaultValue: "Sign in" })}
