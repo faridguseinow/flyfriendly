@@ -708,12 +708,20 @@
     padding: 16px;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 14px;
     border: 1px solid rgba(226, 236, 248, 0.94);
     border-radius: 22px;
     background: rgba(255, 255, 255, 0.88);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
     text-align: left;
+    place-items: initial;
+
+    &:hover,
+    &.active {
+      color: inherit;
+      background: rgba(255, 255, 255, 0.94);
+    }
   }
 
   .mobile-menu__account-avatar {
@@ -739,16 +747,7 @@
   .mobile-menu__account-copy {
     min-width: 0;
     display: grid;
-    gap: 3px;
-
-    span {
-      color: #8a94a6;
-      font-size: 12px;
-      line-height: 16px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+    gap: 4px;
 
     strong {
       color: var(--ink);

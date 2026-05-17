@@ -190,7 +190,7 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { isAuthenticated, adminAccess, dashboardPath, partnerProfile, profile, user, signOut } = useAuth();
+  const { isAuthenticated, adminAccess, partnerProfile, profile, user, signOut } = useAuth();
   const currentLanguage = location.pathname.split("/").filter(Boolean)[0] || "en";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
@@ -250,7 +250,6 @@ function Navbar() {
   }, [isAccountOpen]);
 
   const accountTitle = t("nav.account", { defaultValue: "My account" });
-  const profileLabel = t("nav.myProfile", { defaultValue: "My profile" });
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || accountTitle;
   const accountEmail = profile?.email || user?.email || "";
   const profilePhotoUrl = getIdentityAvatarUrl(profile, user);
@@ -347,7 +346,7 @@ function Navbar() {
                     </div>
                     <LocalizedLink className="account-dropdown__link" to={profilePath} role="menuitem" onClick={closeMenu}>
                       <UserRound size={18} strokeWidth={2} />
-                      <span>{profileLabel}</span>
+                      <span>{t("nav.myProfile", { defaultValue: "My profile" })}</span>
                     </LocalizedLink>
                     <div className="account-dropdown__row">
                       <LanguageSwitcher
@@ -411,8 +410,7 @@ function Navbar() {
               </LocalizedNavLink>
             ))}
             {isAuthenticated ? (
-              <>
-                <div className="mobile-menu__account-card">
+              <LocalizedLink className="mobile-menu__account-card" to={profilePath} onClick={closeMenu}>
                   <div className="mobile-menu__account-avatar" aria-hidden="true">
                     {avatarImageUrl ? (
                       <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
@@ -421,18 +419,10 @@ function Navbar() {
                     )}
                   </div>
                   <div className="mobile-menu__account-copy">
-                    <span>{accountTitle}</span>
                     <strong>{displayName}</strong>
                     {accountEmail ? <small>{accountEmail}</small> : null}
                   </div>
-                </div>
-                <LocalizedLink to={dashboardPath} onClick={closeMenu}>
-                  {accountTitle}
-                </LocalizedLink>
-                <LocalizedLink to={profilePath} onClick={closeMenu}>
-                  {profileLabel}
-                </LocalizedLink>
-              </>
+              </LocalizedLink>
             ) : (
               <LocalizedLink to="/auth/login" onClick={closeMenu}>
                 {t("claimModal.logIn", { defaultValue: "Sign in" })}
