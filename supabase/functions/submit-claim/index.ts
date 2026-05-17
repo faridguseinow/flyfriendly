@@ -346,13 +346,28 @@ async function upsertClientProfile(
     email: account.email,
     full_name: String(data.fullName || "").trim() || null,
     phone: String(data.phone || "").trim() || null,
-    // Regular client accounts must not carry an admin/portal role value.
     status: "active",
   };
 
+  const insertResult = await supabase
+    .from("profiles")
+    .insert({
+      ...profilePayload,
+      role: null,
+    });
+
+  if (!insertResult.error) {
+    return;
+  }
+
+  if (insertResult.error.code !== "23505") {
+    throw insertResult.error;
+  }
+
   const { error } = await supabase
     .from("profiles")
-    .upsert(profilePayload, { onConflict: "id" });
+    .update(profilePayload)
+    .eq("id", account.userId);
 
   if (error) {
     throw error;

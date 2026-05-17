@@ -62,6 +62,91 @@ const languageToLocale = {
   uk: "uk-UA",
   pl: "pl-PL",
 };
+const CLAIM_DRAFT_STORAGE_KEY = "flyFriendlyClaim";
+const CLAIM_DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
+
+function clearStoredClaimDraft() {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.removeItem(CLAIM_DRAFT_STORAGE_KEY);
+  } catch {
+    // Ignore storage access errors in restrictive browsing modes.
+  }
+}
+
+function readStoredClaimDraft() {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(CLAIM_DRAFT_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw);
+    const storedAt = Date.parse(parsed?.storedAt || "");
+
+    if (!storedAt || (Date.now() - storedAt) > CLAIM_DRAFT_TTL_MS) {
+      clearStoredClaimDraft();
+      return {};
+    }
+
+    return {
+      currentStep: parsed?.currentStep || "eligibility",
+      departure: parsed?.departure || "",
+      destination: parsed?.destination || "",
+      departureAirportId: parsed?.departureAirportId || null,
+      departureAirportSource: parsed?.departureAirportSource || null,
+      destinationAirportId: parsed?.destinationAirportId || null,
+      destinationAirportSource: parsed?.destinationAirportSource || null,
+      airline: parsed?.airline || "",
+      airlineId: parsed?.airlineId || null,
+      airlineSource: parsed?.airlineSource || null,
+      date: parsed?.date || "",
+      delayDuration: parsed?.delayDuration || "",
+      direct: parsed?.direct || "",
+      preferredLanguage: parsed?.preferredLanguage || null,
+    };
+  } catch {
+    clearStoredClaimDraft();
+    return {};
+  }
+}
+
+function buildStoredClaimDraft(data, stage, currentLanguageCode) {
+  // Only keep non-sensitive flight progress in localStorage.
+  // Personal/contact data, signature, consent, and uploaded files must stay in memory only.
+  return {
+    storedAt: new Date().toISOString(),
+    currentStep: stage,
+    departure: data.departure || "",
+    destination: data.destination || "",
+    departureAirportId: data.departureAirportId || null,
+    departureAirportSource: data.departureAirportSource || null,
+    destinationAirportId: data.destinationAirportId || null,
+    destinationAirportSource: data.destinationAirportSource || null,
+    airline: data.airline || "",
+    airlineId: data.airlineId || null,
+    airlineSource: data.airlineSource || null,
+    date: data.date || "",
+    delayDuration: data.delayDuration || "",
+    direct: data.direct || "",
+    preferredLanguage: data.preferredLanguage || currentLanguageCode || null,
+  };
+}
+
+function hasStoredClaimDraftContent(draft) {
+  return Boolean(
+    draft.departure
+      || draft.destination
+      || draft.departureAirportId
+      || draft.destinationAirportId
+      || draft.airline
+      || draft.airlineId
+      || draft.date
+      || draft.delayDuration
+      || draft.direct,
+  );
+}
 
 function getEmailError(value, t) {
   const email = String(value || "").trim();
@@ -999,10 +1084,11 @@ function ClaimFlow() {
   const { t, i18n } = useTranslation();
   const { stage = "eligibility", lang } = useParams();
   const [searchParams] = useSearchParams();
+  const storedClaim = readStoredClaimDraft();
   const [data, setData] = useState(() => ({
-    ...JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}"),
-    departure: searchParams.get("departure") || JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}").departure,
-    destination: searchParams.get("destination") || JSON.parse(localStorage.getItem("flyFriendlyClaim") || "{}").destination,
+    ...storedClaim,
+    departure: searchParams.get("departure") || storedClaim.departure,
+    destination: searchParams.get("destination") || storedClaim.destination,
   }));
   const [files, setFiles] = useState({});
   const [departureMatches, setDepartureMatches] = useState([]);
@@ -1022,8 +1108,42 @@ function ClaimFlow() {
   });
 
   useEffect(() => {
-    localStorage.setItem("flyFriendlyClaim", JSON.stringify(data));
-  }, [data]);
+    const draft = buildStoredClaimDraft(data, stage, currentLanguageCode);
+
+    if (!hasStoredClaimDraftContent(draft)) {
+      clearStoredClaimDraft();
+      return;
+    }
+
+    window.localStorage.setItem(CLAIM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  }, [currentLanguageCode, data, stage]);
+
+  const go = (nextStage) => navigate(toLocalizedPath(`/claim/${nextStage}`));
+
+  useEffect(() => {
+    if (!["documents", "finish"].includes(stage)) {
+      return;
+    }
+
+    const isMissingContactDetails = !String(data.fullName || "").trim()
+      || !String(data.email || "").trim()
+      || !String(data.phone || "").trim();
+
+    if (!isMissingContactDetails) {
+      return;
+    }
+
+    setSyncNotice(t("claim.status.restoreContact", {
+      defaultValue: "For your privacy, contact details are not stored on this device. Please re-enter them to continue.",
+    }));
+    go("contact");
+  }, [data.email, data.fullName, data.phone, go, stage, t]);
+
+  useEffect(() => {
+    if (stage === "approved" || stage === "denied") {
+      clearStoredClaimDraft();
+    }
+  }, [stage]);
 
   useEffect(() => {
     if (stage !== "eligibility") {
@@ -1191,8 +1311,6 @@ function ClaimFlow() {
     setData((current) => ({ ...current, leadId: lead.id, leadCode: lead.lead_code }));
     return lead.id;
   };
-
-  const go = (nextStage) => navigate(toLocalizedPath(`/claim/${nextStage}`));
   const submit = async (nextStage, event) => {
     event.preventDefault();
 
@@ -1211,6 +1329,7 @@ function ClaimFlow() {
       }
 
       setSyncNotice(t("claim.status.notEligible"));
+      clearStoredClaimDraft();
       go("denied");
       return;
     }
@@ -1281,6 +1400,8 @@ function ClaimFlow() {
         if (finishNotices.length) {
           setSyncNotice(finishNotices.join(" "));
         }
+
+        clearStoredClaimDraft();
       }
 
       if (stage !== "finish") {

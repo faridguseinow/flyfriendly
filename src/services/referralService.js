@@ -7,6 +7,20 @@ function isBrowser() {
   return typeof window !== "undefined";
 }
 
+function sanitizeReferralLocation(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(raw, isBrowser() ? window.location.origin : "https://fly-friendly.local");
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return raw.startsWith("/") || raw.startsWith("?") || raw.startsWith("#") ? raw : "";
+  }
+}
+
 function cleanReferralRecord(record) {
   if (!record?.partnerId || !record?.referralCode) {
     return null;
@@ -16,8 +30,8 @@ function cleanReferralRecord(record) {
     partnerId: record.partnerId,
     referralCode: record.referralCode,
     publicName: record.publicName || "",
-    sourceUrl: record.sourceUrl || "",
-    sourcePath: record.sourcePath || "",
+    sourceUrl: sanitizeReferralLocation(record.sourceUrl),
+    sourcePath: sanitizeReferralLocation(record.sourcePath),
     storedAt: record.storedAt || new Date().toISOString(),
   };
 }
@@ -99,8 +113,9 @@ export async function validateReferralCode(referralCode, context = {}) {
     partnerId: partner.id,
     referralCode: partner.referral_code || code,
     publicName: partner.public_name || partner.name || "",
-    sourceUrl: context.sourceUrl || (isBrowser() ? window.location.href : ""),
-    sourcePath: context.sourcePath || (isBrowser() ? `${window.location.pathname}${window.location.search}${window.location.hash}` : ""),
+    // Keep only path-level attribution metadata in localStorage.
+    sourceUrl: sanitizeReferralLocation(context.sourceUrl || (isBrowser() ? window.location.href : "")),
+    sourcePath: sanitizeReferralLocation(context.sourcePath || (isBrowser() ? `${window.location.pathname}${window.location.search}${window.location.hash}` : "")),
     storedAt: new Date().toISOString(),
   };
 

@@ -9,7 +9,6 @@ import {
   FileImage,
   FileText,
   FolderOpen,
-  Globe,
   House,
   Mail,
   Phone,
@@ -22,7 +21,6 @@ import {
   XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getLanguageByCode } from "../../i18n/languages.js";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
@@ -45,6 +43,13 @@ const CLIENT_STATUS_STEPS = [
   { key: "documents_needed", label: "Documents needed" },
   { key: "approved", label: "Approved" },
   { key: "rejected", label: "Rejected" },
+  { key: "paid", label: "Paid" },
+];
+
+const CLIENT_PAYMENT_STEPS = [
+  { key: "not_started", label: "Not started" },
+  { key: "pending", label: "Pending" },
+  { key: "approved", label: "Approved" },
   { key: "paid", label: "Paid" },
 ];
 
@@ -115,6 +120,32 @@ function getDocumentIcon(document) {
   if (type.includes("boarding")) return Ticket;
   if (isImageDocument(document)) return FileImage;
   return FileText;
+}
+
+function getDocumentLabel(value) {
+  const type = String(value?.document_type || value?.key || value || "").toLowerCase();
+
+  if (value?.kind === "signature" || type.includes("signature") || type.includes("consent")) {
+    return "Signature / Consent";
+  }
+
+  if (type.includes("passport") || type.includes("id")) {
+    return "Passport / ID";
+  }
+
+  if (type.includes("boarding")) {
+    return "Boarding Pass";
+  }
+
+  return "Document";
+}
+
+function getDocumentFormatLabel(document) {
+  const mime = String(document?.mime_type || "").toLowerCase();
+  if (document?.kind === "signature") return "Digital signature";
+  if (mime.includes("pdf")) return "PDF";
+  if (mime.startsWith("image/")) return "Image";
+  return "Uploaded file";
 }
 
 function getClaimAction(claim, t) {
@@ -218,6 +249,120 @@ function PortalSectionHeader({ title, text, action }) {
   );
 }
 
+function SkeletonBlock({ className = "" }) {
+  return <span className={`client-portal-skeleton ${className}`.trim()} aria-hidden="true" />;
+}
+
+function LoadingCard({ rows = 3, compact = false }) {
+  return (
+    <section className={`portal-card client-portal-loading-card${compact ? " is-compact" : ""}`}>
+      <div className="client-portal-loading-card__head">
+        <SkeletonBlock className="is-heading" />
+        <SkeletonBlock className="is-button" />
+      </div>
+      <div className="client-portal-loading-card__body">
+        {Array.from({ length: rows }).map((_, index) => (
+          <div key={index} className="client-portal-loading-row">
+            <SkeletonBlock className="is-line-lg" />
+            <SkeletonBlock className="is-line-sm" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PortalLoadingPage({ variant = "default" }) {
+  if (variant === "dashboard") {
+    return (
+      <div className="client-portal-page client-portal-page--loading">
+        <div className="client-portal-overview-grid">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <article key={index} className="client-portal-overview-card is-loading">
+              <SkeletonBlock className="is-caption" />
+              <SkeletonBlock className="is-stat" />
+            </article>
+          ))}
+        </div>
+        <section className="portal-card client-portal-hero-card client-portal-loading-hero">
+          <div className="client-portal-loading-hero__main">
+            <div className="client-portal-loading-card__head">
+              <SkeletonBlock className="is-heading" />
+              <SkeletonBlock className="is-pill" />
+            </div>
+            <div className="client-portal-meta-grid">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <article key={index}>
+                  <SkeletonBlock className="is-caption" />
+                  <SkeletonBlock className="is-line-md" />
+                </article>
+              ))}
+            </div>
+            <div className="client-portal-cta-row">
+              <SkeletonBlock className="is-button" />
+              <SkeletonBlock className="is-line-sm" />
+            </div>
+          </div>
+          <div className="client-portal-loading-hero__side">
+            <SkeletonBlock className="is-line-md" />
+            <SkeletonBlock className="is-line-lg" />
+            <div className="client-portal-progress">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="client-portal-progress__step is-loading">
+                  <SkeletonBlock className="is-dot" />
+                  <SkeletonBlock className="is-caption" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (variant === "claims") {
+    return (
+      <div className="client-portal-page client-portal-page--loading">
+        <LoadingCard rows={3} />
+        <LoadingCard rows={3} compact />
+      </div>
+    );
+  }
+
+  if (variant === "documents") {
+    return (
+      <div className="client-portal-page client-portal-page--loading">
+        <LoadingCard rows={3} />
+        <LoadingCard rows={4} compact />
+      </div>
+    );
+  }
+
+  if (variant === "payments") {
+    return (
+      <div className="client-portal-page client-portal-page--loading">
+        <section className="portal-card client-portal-loading-card">
+          <div className="client-portal-overview-grid">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <article key={index} className="client-portal-overview-card is-loading">
+                <SkeletonBlock className="is-caption" />
+                <SkeletonBlock className="is-stat" />
+              </article>
+            ))}
+          </div>
+        </section>
+        <LoadingCard rows={3} compact />
+      </div>
+    );
+  }
+
+  return (
+    <div className="client-portal-page client-portal-page--loading">
+      <LoadingCard rows={3} />
+    </div>
+  );
+}
+
 function ClientStatusBadge({ status }) {
   const tone = status?.tone || "neutral";
   const Icon = getStatusIcon(tone);
@@ -246,11 +391,38 @@ function ClaimProgress({ status, t }) {
   );
 }
 
-function ClientPortalNavLink({ to, icon: Icon, label, end = false }) {
+function PaymentProgress({ status, t }) {
+  const activeIndex = CLIENT_PAYMENT_STEPS.findIndex((step) => step.key === status?.key);
+
   return (
-    <NavLink to={to} end={end} className={({ isActive }) => `client-portal-nav__link${isActive ? " is-active" : ""}`}>
-      <Icon size={18} />
-      <span>{label}</span>
+    <div className="client-portal-payment-progress" aria-label={t("clientPortal.payments.progress", { defaultValue: "Payment progress" })}>
+      {CLIENT_PAYMENT_STEPS.map((step, index) => {
+        const state = activeIndex === -1
+          ? (index === 0 ? "current" : "idle")
+          : index < activeIndex
+            ? "completed"
+            : index === activeIndex
+              ? "current"
+              : "idle";
+
+        return (
+          <div key={step.key} className={`client-portal-payment-progress__step is-${state}`}>
+            <span className="client-portal-payment-progress__dot" aria-hidden="true" />
+            <span>{t(`clientPortal.payments.status.${step.key}`, { defaultValue: step.label })}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ClientPortalNavLink({ to, icon: Icon, label, end = false, mobile = false }) {
+  return (
+    <NavLink to={to} end={end} className={({ isActive }) => `client-portal-nav__link${mobile ? " is-mobile" : ""}${isActive ? " is-active" : ""}`}>
+      <span className="client-portal-nav__icon">
+        <Icon size={18} />
+      </span>
+      <span className="client-portal-nav__label">{label}</span>
     </NavLink>
   );
 }
@@ -289,6 +461,7 @@ function DocumentStatusCard({ item, previewUrl, onOpen }) {
 function UploadedDocumentRow({ document, previewUrl, onOpen }) {
   const status = getClientDocumentStatus(document.status, document.kind);
   const Icon = getDocumentIcon(document);
+  const label = getDocumentLabel(document);
 
   return (
     <div className="client-portal-uploaded-row">
@@ -296,8 +469,8 @@ function UploadedDocumentRow({ document, previewUrl, onOpen }) {
         {previewUrl ? <img src={previewUrl} alt="" /> : <Icon size={20} />}
       </div>
       <div className="client-portal-uploaded-row__copy">
-        <strong>{document.file_name || "Document"}</strong>
-        <span>{document.kind === "signature" ? "Signature / Consent" : document.document_type}</span>
+        <strong>{label}</strong>
+        <span>{getDocumentFormatLabel(document)}</span>
         <small>{formatDateTime(document.created_at)}</small>
       </div>
       <div className="client-portal-uploaded-row__meta">
@@ -334,13 +507,15 @@ export function ClientPortalLayout() {
         </aside>
 
         <main className="client-portal-main">
-          <Outlet />
+          <div className="client-portal-main__viewport">
+            <Outlet />
+          </div>
         </main>
       </div>
 
       <nav className="client-portal-mobile-nav" aria-label={t("clientPortal.navLabel", { defaultValue: "Client account sections" })}>
         {navItems.map((item) => (
-          <ClientPortalNavLink key={`mobile-${item.path}`} to={item.path} icon={item.icon} label={item.label} end={item.end} />
+          <ClientPortalNavLink key={`mobile-${item.path}`} to={item.path} icon={item.icon} label={item.label} end={item.end} mobile />
         ))}
       </nav>
     </div>
@@ -373,7 +548,7 @@ export function ClientDashboardPage() {
   }, []);
 
   if (state.isLoading) {
-    return <p className="portal-message">{t("clientPortal.loading", { defaultValue: "Loading your account..." })}</p>;
+    return <PortalLoadingPage variant="dashboard" />;
   }
 
   if (state.error) {
@@ -420,7 +595,7 @@ export function ClientDashboardPage() {
       <section className="portal-card client-portal-hero-card">
         <PortalSectionHeader
           title={t("clientPortal.home.title", { defaultValue: "Home" })}
-          text={t("clientPortal.home.text", { defaultValue: "Your latest claim and the only next step that matters right now." })}
+          text={t("clientPortal.home.text", { defaultValue: "Your latest claim, current status, and the next action that matters." })}
           action={<LocalizedLink className="btn btn-secondary" to="/claim/eligibility">{t("clientPortal.home.newClaim", { defaultValue: "Start new claim" })}</LocalizedLink>}
         />
 
@@ -430,7 +605,8 @@ export function ClientDashboardPage() {
               <div className="client-portal-current-claim__head">
                 <div>
                   <small>{t("clientPortal.home.currentClaim", { defaultValue: "Current claim" })}</small>
-                  <h2>{activeClaim.reference}</h2>
+                  <h2>{activeClaim.route || activeClaim.reference}</h2>
+                  <p>{activeClaim.reference}</p>
                 </div>
                 <ClientStatusBadge status={activeClaim.publicStatus} />
               </div>
@@ -445,17 +621,26 @@ export function ClientDashboardPage() {
                   <strong>{activeClaim.route || "—"}</strong>
                 </article>
                 <article>
+                  <span>{t("clientPortal.claim.disruption", { defaultValue: "Disruption" })}</span>
+                  <strong>{activeClaim.disruptionType || "—"}</strong>
+                </article>
+                <article>
                   <span>{t("clientPortal.claim.compensation", { defaultValue: "Possible compensation" })}</span>
                   <strong>{formatEstimateAmount(activeClaim.estimate?.amount, activeClaim.estimate?.currency, t)}</strong>
                 </article>
                 <article>
                   <span>{t("clientPortal.claim.documents", { defaultValue: "Documents" })}</span>
-                  <strong>{activeClaim.documentsSummary.label}</strong>
+                  <strong>{activeClaim.documentsSummary.detail || activeClaim.documentsSummary.label}</strong>
                 </article>
               </div>
 
-              <div className="client-portal-current-claim__actions">
+              <div className="client-portal-cta-row">
                 <LocalizedLink className="btn btn-primary" to={action.to}>{action.label}</LocalizedLink>
+                {activeClaim.publicStatus.key === "documents_needed" ? (
+                  <LocalizedLink className="btn btn-secondary" to="/client/documents">
+                    {t("clientPortal.actions.uploadDocuments", { defaultValue: "Upload documents" })}
+                  </LocalizedLink>
+                ) : null}
                 <LocalizedLink className="client-portal-text-link" to={`/client/claims/${activeClaim.id}`}>
                   {t("clientPortal.actions.claimDetails", { defaultValue: "Claim details" })}
                   <ArrowRight size={16} />
@@ -464,8 +649,11 @@ export function ClientDashboardPage() {
             </div>
 
             <div className="client-portal-current-claim__side">
-              <h3>{t("clientPortal.home.progressTitle", { defaultValue: "Claim status" })}</h3>
-              <p>{activeClaim.publicStatus.explanation}</p>
+              <div className="client-portal-compact-block">
+                <small>{t("clientPortal.home.progressTitle", { defaultValue: "Claim status" })}</small>
+                <strong>{activeClaim.publicStatus.label}</strong>
+                <p>{activeClaim.publicStatus.explanation}</p>
+              </div>
               <ClaimProgress status={activeClaim.publicStatus} t={t} />
             </div>
           </div>
@@ -501,7 +689,7 @@ export function ClientClaimsPage() {
   }, []);
 
   if (state.isLoading) {
-    return <p className="portal-message">{t("clientPortal.loadingClaims", { defaultValue: "Loading your claims..." })}</p>;
+    return <PortalLoadingPage variant="claims" />;
   }
 
   if (state.error) {
@@ -525,15 +713,12 @@ export function ClientClaimsPage() {
                   <div>
                     <small>{item.reference}</small>
                     <h2>{item.route || item.airline || t("clientPortal.claims.pendingRoute", { defaultValue: "Route pending" })}</h2>
+                    <p>{item.airline || "—"}</p>
                   </div>
                   <ClientStatusBadge status={item.publicStatus} />
                 </div>
 
                 <div className="client-portal-meta-grid">
-                  <article>
-                    <span>{t("clientPortal.claim.airline", { defaultValue: "Airline" })}</span>
-                    <strong>{item.airline || "—"}</strong>
-                  </article>
                   <article>
                     <span>{t("clientPortal.claim.disruption", { defaultValue: "Disruption" })}</span>
                     <strong>{item.disruptionType || "—"}</strong>
@@ -548,7 +733,7 @@ export function ClientClaimsPage() {
                   </article>
                   <article>
                     <span>{t("clientPortal.claim.documents", { defaultValue: "Documents" })}</span>
-                    <strong>{item.documentsSummary.detail}</strong>
+                    <strong>{item.documentsSummary.detail || item.documentsSummary.label}</strong>
                   </article>
                   <article>
                     <span>{t("clientPortal.claim.payment", { defaultValue: "Payment" })}</span>
@@ -556,10 +741,17 @@ export function ClientClaimsPage() {
                   </article>
                 </div>
 
-                <span className="client-portal-card-link">
-                  {t("clientPortal.actions.openClaim", { defaultValue: "Open claim" })}
-                  <ChevronRight size={16} />
-                </span>
+                <div className="client-portal-claim-card__footer">
+                  <div className="client-portal-soft-chip-row">
+                    <span className="client-portal-soft-chip">{item.airline || "Airline pending"}</span>
+                    <span className="client-portal-soft-chip">{item.documentsSummary.label}</span>
+                    <span className="client-portal-soft-chip">{item.paymentStatus.label}</span>
+                  </div>
+                  <span className="client-portal-card-link">
+                    {t("clientPortal.actions.openClaim", { defaultValue: "Open claim" })}
+                    <ChevronRight size={16} />
+                  </span>
+                </div>
               </LocalizedLink>
             ))}
           </div>
@@ -610,7 +802,7 @@ export function ClientClaimDetailsPage() {
   };
 
   if (state.isLoading) {
-    return <p className="portal-message">{t("clientPortal.loadingClaimDetails", { defaultValue: "Loading claim details..." })}</p>;
+    return <PortalLoadingPage variant="documents" />;
   }
 
   if (state.error) {
@@ -747,7 +939,7 @@ export function ClientDocumentsPage() {
   };
 
   if (state.isLoading) {
-    return <p className="portal-message">{t("clientPortal.loadingDocuments", { defaultValue: "Loading documents..." })}</p>;
+    return <PortalLoadingPage variant="documents" />;
   }
 
   if (state.error) {
@@ -802,7 +994,6 @@ export function ClientDocumentsPage() {
 function ClientAccountPageInner() {
   const { t } = useTranslation();
   const { profile, user, refreshProfile } = useAuth();
-  const currentLanguage = getLanguageByCode(document.documentElement.lang || "en");
   const [form, setForm] = useState({
     full_name: profile?.full_name || user?.user_metadata?.full_name || "",
     email: profile?.email || user?.email || "",
@@ -845,83 +1036,103 @@ function ClientAccountPageInner() {
       <section className="portal-card">
         <PortalSectionHeader
           title={t("clientPortal.account.title", { defaultValue: "Account" })}
-          text={t("clientPortal.account.text", { defaultValue: "Profile details, support, and the settings that are safe to manage here." })}
+          text={t("clientPortal.account.text", { defaultValue: "Personal details, notifications, and support in one place." })}
         />
 
-        <form className="portal-form" onSubmit={submit}>
-          <label>
-            <span>{t("clientPortal.account.fullName", { defaultValue: "Full name" })}</span>
-            <input value={form.full_name} onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))} />
-          </label>
-          <label>
-            <span>{t("clientPortal.account.email", { defaultValue: "Email" })}</span>
-            <input value={form.email} readOnly disabled />
-          </label>
-          <label>
-            <span>{t("clientPortal.account.phone", { defaultValue: "Phone" })}</span>
-            <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
-          </label>
-          {error ? <p className="portal-message is-error">{error}</p> : null}
-          {message ? <p className="portal-message is-notice">{message}</p> : null}
-          <button className="btn btn-primary" type="submit" disabled={isSaving}>
-            {isSaving ? t("clientPortal.account.saving", { defaultValue: "Saving..." }) : t("clientPortal.account.submit", { defaultValue: "Save changes" })}
-          </button>
-        </form>
-      </section>
-
-      <section className="portal-card">
-        <PortalSectionHeader
-          title={t("clientPortal.account.preferences", { defaultValue: "Preferences" })}
-          text={t("clientPortal.account.preferencesText", { defaultValue: "Language is managed through the main header so it stays consistent across the whole website." })}
-        />
-
-        <div className="client-portal-settings-list">
-          <article className="client-portal-settings-item">
-            <div className="client-portal-settings-item__icon"><Globe size={18} /></div>
-            <div>
-              <strong>{t("clientPortal.account.language", { defaultValue: "Language" })}</strong>
-              <span>{currentLanguage.label}</span>
+        <div className="client-portal-account-grid">
+          <section className="client-portal-settings-card">
+            <div className="client-portal-card-heading">
+              <strong>{t("clientPortal.account.personal", { defaultValue: "Personal information" })}</strong>
+              <span>{t("clientPortal.account.personalText", { defaultValue: "Only the details safe to edit here are shown below." })}</span>
             </div>
-          </article>
-          <article className="client-portal-settings-item">
-            <div className="client-portal-settings-item__icon"><Mail size={18} /></div>
-            <div>
-              <strong>{t("clientPortal.account.notifications", { defaultValue: "Claim updates" })}</strong>
-              <span>{t("clientPortal.account.notificationsText", { defaultValue: "Important updates are sent to your account email." })}</span>
+
+            <form className="portal-form" onSubmit={submit}>
+              <label>
+                <span>{t("clientPortal.account.fullName", { defaultValue: "Full name" })}</span>
+                <input value={form.full_name} onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))} />
+              </label>
+              <label>
+                <span>{t("clientPortal.account.email", { defaultValue: "Email" })}</span>
+                <input value={form.email} readOnly disabled />
+              </label>
+              <label>
+                <span>{t("clientPortal.account.phone", { defaultValue: "Phone" })}</span>
+                <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+              </label>
+              {error ? <p className="portal-message is-error">{error}</p> : null}
+              {message ? <p className="portal-message is-notice">{message}</p> : null}
+              <button className="btn btn-primary" type="submit" disabled={isSaving}>
+                {isSaving ? t("clientPortal.account.saving", { defaultValue: "Saving..." }) : t("clientPortal.account.submit", { defaultValue: "Save changes" })}
+              </button>
+            </form>
+          </section>
+
+          <section className="client-portal-settings-card">
+            <div className="client-portal-card-heading">
+              <strong>{t("clientPortal.account.notificationsTitle", { defaultValue: "Notifications" })}</strong>
+              <span>{t("clientPortal.account.notificationsText", { defaultValue: "Claim updates are sent to your account email. Additional preferences can be added later without changing your claim data." })}</span>
             </div>
-          </article>
+
+            <div className="client-portal-toggle-list">
+              <div className="client-portal-toggle-row">
+                <div>
+                  <strong>{t("clientPortal.account.claimUpdates", { defaultValue: "Claim updates" })}</strong>
+                  <span>{t("clientPortal.account.claimUpdatesHelp", { defaultValue: "Enabled for important claim and document updates." })}</span>
+                </div>
+                <button type="button" className="client-portal-switch is-on" aria-pressed="true" disabled>
+                  <span />
+                </button>
+              </div>
+              <div className="client-portal-toggle-row">
+                <div>
+                  <strong>{t("clientPortal.account.marketingEmails", { defaultValue: "Marketing emails" })}</strong>
+                  <span>{t("clientPortal.account.marketingEmailsHelp", { defaultValue: "Preference controls can be connected later without affecting the current portal logic." })}</span>
+                </div>
+                <button type="button" className="client-portal-switch" aria-pressed="false" disabled>
+                  <span />
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
       <section className="portal-card">
         <PortalSectionHeader
-          title={t("clientPortal.account.support", { defaultValue: "Support and legal" })}
-          text={t("clientPortal.account.supportText", { defaultValue: "Need help or want to review our policies? Start here." })}
+          title={t("clientPortal.account.support", { defaultValue: "Support" })}
+          text={t("clientPortal.account.supportText", { defaultValue: "Quick ways to reach us and review important policies." })}
         />
 
         <div className="client-portal-support-grid">
           <a className="client-portal-support-link" href={`mailto:${contactEmail}`}>
             <Mail size={18} />
-            <span>{contactEmail}</span>
+            <div>
+              <strong>{t("clientPortal.account.contactSupport", { defaultValue: "Contact support" })}</strong>
+              <span>{contactEmail}</span>
+            </div>
           </a>
           <LocalizedLink className="client-portal-support-link" to="/contact">
             <Phone size={18} />
-            <span>{t("common.contact", { defaultValue: "Contact" })}</span>
+            <div>
+              <strong>{t("common.contact", { defaultValue: "Contact" })}</strong>
+              <span>{t("clientPortal.account.contactPage", { defaultValue: "Open support page" })}</span>
+            </div>
           </LocalizedLink>
           <LocalizedLink className="client-portal-support-link" to="/privacyPolicy">
             <ShieldCheck size={18} />
-            <span>{t("common.privacyPolicy", { defaultValue: "Privacy Policy" })}</span>
+            <div>
+              <strong>{t("common.privacyPolicy", { defaultValue: "Privacy Policy" })}</strong>
+              <span>{t("clientPortal.account.privacyText", { defaultValue: "Review how your data is handled." })}</span>
+            </div>
           </LocalizedLink>
           <LocalizedLink className="client-portal-support-link" to="/termsOfUse">
             <FileText size={18} />
-            <span>{t("common.termsOfUse", { defaultValue: "Terms of Use" })}</span>
+            <div>
+              <strong>{t("common.termsOfUse", { defaultValue: "Terms of Use" })}</strong>
+              <span>{t("clientPortal.account.termsText", { defaultValue: "Read the service terms and policies." })}</span>
+            </div>
           </LocalizedLink>
         </div>
-
-        <LocalizedLink className="client-portal-text-link" to="/contact">
-          {t("clientPortal.account.help", { defaultValue: "Open support page" })}
-          <ArrowRight size={16} />
-        </LocalizedLink>
       </section>
     </div>
   );
@@ -961,7 +1172,7 @@ export function ClientPaymentsPage() {
   }, []);
 
   if (state.isLoading) {
-    return <p className="portal-message">{t("clientPortal.loadingPayments", { defaultValue: "Loading payment data..." })}</p>;
+    return <PortalLoadingPage variant="payments" />;
   }
 
   if (state.error) {
@@ -995,7 +1206,7 @@ export function ClientPaymentsPage() {
           text={t("clientPortal.payments.text", { defaultValue: "Estimated, approved, and paid amounts appear here only when the data exists." })}
         />
 
-        <div className="client-portal-overview-grid">
+        <div className="client-portal-overview-grid client-portal-payments-grid">
           <article className="client-portal-overview-card">
             <span>{t("clientPortal.payments.estimated", { defaultValue: "Estimated compensation" })}</span>
             <strong>{estimatedAmount !== null ? formatEstimateAmount(estimatedAmount, estimatedCurrency, t) : "—"}</strong>
@@ -1012,6 +1223,21 @@ export function ClientPaymentsPage() {
             <span>{t("clientPortal.payments.payoutStatus", { defaultValue: "Payout status" })}</span>
             <strong>{latestPaymentStatus.label}</strong>
           </article>
+        </div>
+
+        <div className="client-portal-payment-panel">
+          <div className="client-portal-compact-block">
+            <small>{t("clientPortal.payments.latestUpdate", { defaultValue: "Latest payout update" })}</small>
+            <strong>{latestPaymentStatus.label}</strong>
+            <p>
+              {latestPayment?.customer_paid_at
+                ? formatDateTime(latestPayment.customer_paid_at)
+                : latestPayment?.updated_at
+                  ? formatDateTime(latestPayment.updated_at)
+                  : t("clientPortal.payments.awaiting", { defaultValue: "Payment information will appear here when your claim is approved." })}
+            </p>
+          </div>
+          <PaymentProgress status={latestPaymentStatus} t={t} />
         </div>
       </section>
 
