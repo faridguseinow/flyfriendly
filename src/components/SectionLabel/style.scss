@@ -1,19 +1,19 @@
 .section-label {
   width: fit-content;
-  min-height: 32px;
-  margin: 0 auto 8px;
-  padding: 6px 10px;
+  min-height: 28px;
+  margin: 0 auto 6px;
+  padding: 4px 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  gap: 6px;
+  border: 1px solid rgba(60, 101, 255, 0.12);
+  border-radius: 10px;
   color: var(--grey-500);
-  background: #fff;
-  font-size: 16px;
-  line-height: 20px;
-  letter-spacing: 0.1px;
+  background: rgba(255, 255, 255, 0.96);
+  font-size: 14px;
+  line-height: 18px;
+  letter-spacing: 0;
   overflow: hidden;
 
   svg {

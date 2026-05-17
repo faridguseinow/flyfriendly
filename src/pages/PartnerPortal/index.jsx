@@ -57,7 +57,6 @@ export function PartnerPortalLayout() {
     <div className="portal-shell section">
       <div className="portal-head">
         <div>
-          <span className="section-label is-primary">{t("partnerPortal.label", { defaultValue: "Partner Portal" })}</span>
           <h1>{t("partnerPortal.title", { defaultValue: "Your referral account" })}</h1>
           <p>{t("partnerPortal.text", { defaultValue: "Track referral activity, earnings, and payouts from one place." })}</p>
         </div>

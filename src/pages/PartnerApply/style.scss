@@ -1,5 +1,5 @@
 .partner-apply-page {
-  padding-top: 160px;
+  padding-top: 120px !important;
 }
 
 .partner-apply-card {
@@ -175,9 +175,6 @@
 }
 
 @media (max-width: 720px) {
-  .partner-apply-page {
-    padding-top: 108px;
-  }
 
   .partner-apply-card {
     padding: 24px 18px;

@@ -19,7 +19,7 @@ import { ensureCurrentUserProfile } from "../../services/authService.js";
 import { isSupabaseConfigured, requireSupabase } from "../../lib/supabase.js";
 import "./style.scss";
 
-function AuthShell({ eyebrow, title, text, children }) {
+function AuthShell({ title, text, children }) {
   return (
     <main className="auth-page">
       <section className="auth-card">
@@ -27,7 +27,6 @@ function AuthShell({ eyebrow, title, text, children }) {
           <img src={logoImage} alt="" />
           <img src={logoText} alt="Fly Friendly" />
         </LocalizedLink>
-        <span className="section-label is-primary">{eyebrow}</span>
         <h1>{title}</h1>
         <p>{text}</p>
         {children}
@@ -72,7 +71,6 @@ export function LoginPage() {
 
   return (
     <AuthShell
-      eyebrow={t("auth.login.label", { defaultValue: "Account Access" })}
       title={t("auth.login.title", { defaultValue: "Welcome back" })}
       text={t("auth.login.text", { defaultValue: "Sign in to view your claims, documents, and payout updates." })}
     >
@@ -189,7 +187,6 @@ export function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow={t("auth.register.label", { defaultValue: "Create Account" })}
       title={t("auth.register.title", { defaultValue: "Open your Fly Friendly account" })}
       text={t("auth.register.text", { defaultValue: "Create an account to track claims, upload documents, and return to your case at any time." })}
     >
@@ -276,7 +273,6 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      eyebrow={t("auth.forgot.label", { defaultValue: "Reset Access" })}
       title={t("auth.forgot.title", { defaultValue: "Forgot your password?" })}
       text={t("auth.forgot.text", { defaultValue: "Enter your email and we will send you a secure reset link." })}
     >
@@ -495,7 +491,6 @@ export function ResetPasswordPage() {
   if (isRecoveryLoading) {
     return (
       <AuthShell
-        eyebrow={t("auth.reset.label", { defaultValue: "New Password" })}
         title={t("auth.reset.loadingTitle", { defaultValue: "Preparing secure access" })}
         text={t("auth.reset.loadingText", { defaultValue: "Please wait while we verify your password setup link." })}
       >
@@ -507,7 +502,6 @@ export function ResetPasswordPage() {
   if (!isRecoveryReady) {
     return (
       <AuthShell
-        eyebrow={t("auth.reset.label", { defaultValue: "New Password" })}
         title={t("auth.reset.invalidTitle", { defaultValue: "Link unavailable" })}
         text={t("auth.reset.invalidText", { defaultValue: "This password setup link could not be verified." })}
       >
@@ -522,7 +516,6 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell
-      eyebrow={t("auth.reset.label", { defaultValue: "New Password" })}
       title={t("auth.reset.title", { defaultValue: "Choose a new password" })}
       text={t("auth.reset.text", { defaultValue: "Set a secure password for your Fly Friendly account." })}
     >

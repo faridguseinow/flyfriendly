@@ -75,21 +75,6 @@
   }
 }
 
-.admin-cases-page__clear,
-.admin-cases-page__export {
-  min-height: 38px;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 10px;
-  color: #4d5b6c;
-  background: #fff;
-  cursor: pointer;
-  font: inherit;
-}
-
 .admin-cases-page__workspace {
   position: relative;
   min-height: 72vh;

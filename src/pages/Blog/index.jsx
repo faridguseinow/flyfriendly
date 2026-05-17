@@ -1,9 +1,8 @@
-import { ArrowRight, CalendarDays, Newspaper, Search, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
-import SectionLabel from "../../components/SectionLabel/index.jsx";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
 import { getArticles } from "./articles.js";
@@ -63,7 +62,6 @@ function Blog() {
   return (
     <>
       <section className="blog-hero section">
-        <SectionLabel icon={Newspaper}>{t("home.resourcesLabel")}</SectionLabel>
         <h1>{t("home.resourcesTitle")}</h1>
         <p>{t("home.resourcesText")}</p>
         <form className="blog-search" role="search">
@@ -96,7 +94,6 @@ function Blog() {
 
         {filteredArticles.length === 0 ? (
           <div className="blog-empty">
-            <SectionLabel icon={Search}>{t("blog.noResultsLabel", { defaultValue: "No results" })}</SectionLabel>
             <h2>{t("blog.noResultsTitle", { defaultValue: "No matching guides yet" })}</h2>
             <p>{t("blog.noResultsText", { defaultValue: "Try a different keyword or explore our latest air passenger rights resources." })}</p>
           </div>
@@ -105,7 +102,6 @@ function Blog() {
 
       <section className="blog-cta band">
         <div className="blog-cta__inner">
-          <SectionLabel icon={Sparkles}>{t("common.checkCompensation")}</SectionLabel>
           <h2>{t("home.calculatorTitle")}</h2>
           <p>{t("home.calculatorText")}</p>
           <LocalizedLink to="/claim/eligibility" className="btn btn-primary">{t("common.startYourClaim")}</LocalizedLink>

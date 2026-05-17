@@ -165,7 +165,6 @@ export default function PartnerApplyPage() {
     return (
       <main className="partner-apply-page section">
         <div className="partner-apply-card partner-apply-card--success">
-          <span className="section-label is-primary">{t("partnerApply.label", { defaultValue: "Partner Application" })}</span>
           <div className="partner-apply-success-icon">
             <CheckCircle2 size={34} />
           </div>
@@ -200,7 +199,6 @@ export default function PartnerApplyPage() {
   return (
     <main className="partner-apply-page section">
       <div className="partner-apply-card">
-        <span className="section-label is-primary">{t("partnerApply.label", { defaultValue: "Partner Application" })}</span>
         <h1>{t("partnerApply.title", { defaultValue: "Apply to become a Fly Friendly partner" })}</h1>
         <p>{t("partnerApply.text", { defaultValue: "Tell us about your audience, channels, and market fit. We will review your application before creating any partner account or referral access." })}</p>
 

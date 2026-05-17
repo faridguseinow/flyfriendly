@@ -27,14 +27,10 @@ padding: 16px;  background: #f7fbff;
   align-items: center;
   gap: 10px;
 
-  img:first-child {
+  img {
     width: 44px;
     height: 44px;
     border-radius: 8px;
-  }
-
-  img:last-child {
-    width: 140px;
   }
 }
 
@@ -206,23 +202,6 @@ padding: 16px;  background: #f7fbff;
   border-radius: 8px;
   color: #20242e;
   background: #fff;
-}
-
-.admin-link-button {
-  min-height: 36px;
-  padding: 0 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line-strong);
-  gap: 8px;
-  border-radius: 10px;
-  color: var(--primary);
-  background: #fff;
-  font: inherit;
-  font-size: 14px;
-  line-height: 20px;
-  cursor: pointer;
 }
 
 .admin-grid {

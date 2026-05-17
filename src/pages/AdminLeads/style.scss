@@ -75,21 +75,6 @@
   }
 }
 
-.admin-leads-page__clear,
-.admin-leads-page__export {
-  min-height: 38px;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 10px;
-  color: #4d5b6c;
-  background: #fff;
-  cursor: pointer;
-  font: inherit;
-}
-
 .admin-leads-page__workspace {
   position: relative;
   min-height: 72vh;

@@ -97,8 +97,7 @@
 
   &:hover,
   &[aria-expanded="true"] {
-    transform: translateY(-1px);
-    border-color: rgba(17, 152, 255, 0.28);
+    border-color: rgba(17, 81, 255, 0.28);
     color: var(--primary);
     box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
   }
@@ -169,7 +168,7 @@
   border-radius: 20px;
   color: var(--primary);
   background:
-    radial-gradient(circle at 30% 20%, rgba(17, 152, 255, 0.18), transparent 60%),
+    radial-gradient(circle at 30% 20%, rgba(17, 69, 255, 0.18), transparent 60%),
     linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
   box-shadow: inset 0 0 0 1px rgba(17, 152, 255, 0.08);
 
@@ -188,7 +187,7 @@
 }
 
 .account-dropdown__eyebrow {
-  color: #8a94a6;
+  color: #8a8fa6;
   font-size: 12px;
   line-height: 16px;
   font-weight: 800;
@@ -249,20 +248,17 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border-radius: 22px;
+  border-radius: 12px;
   font-size: 18px;
   line-height: 24px;
   font-weight: 700;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, color 180ms ease;
 
   &:hover {
-    transform: translateY(-1px);
+    background: #fff;
+    color: var(--primary-dark);
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba(17, 152, 255, 0.24);
-    outline-offset: 3px;
-  }
 }
 
 .account-dropdown__primary,
@@ -270,7 +266,7 @@
   width: 100%;
   color: #fff;
   background: var(--primary);
-  box-shadow: 0 0 0 4px #e0ebff, 0 14px 28px rgba(5, 164, 255, 0.22);
+  box-shadow: 0 0 0 4px #e0ebff, 0 14px 28px rgba(5, 84, 255, 0);
 }
 
 .account-dropdown__link,
@@ -674,7 +670,6 @@
       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
       font-size: 21px;
       line-height: 28px;
-      font-weight: 600;
       letter-spacing: 0;
       transition: transform 180ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease;
 
@@ -818,7 +813,6 @@
     color: #4b5563;
     font-size: 14px;
     line-height: 20px;
-    font-weight: 700;
   }
 
   .mobile-language-picker__current {
@@ -835,7 +829,6 @@
       color: #0f172a;
       font-size: 14px;
       line-height: 18px;
-      font-weight: 700;
     }
   }
 

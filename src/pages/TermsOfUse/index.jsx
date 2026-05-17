@@ -1,6 +1,4 @@
 import { Trans, useTranslation } from "react-i18next";
-import SectionLabel from "../../components/SectionLabel/index.jsx";
-import { Scale } from "lucide-react";
 import "../Legal/style.scss";
 
 function TermsOfUse() {
@@ -10,7 +8,6 @@ function TermsOfUse() {
   return (
     <main className="legal-page">
       <header className="legal-hero">
-        <SectionLabel icon={Scale}>{t("legal.label")}</SectionLabel>
         <h1>{t("legal.terms.title")}</h1>
         <p>{t("legal.terms.intro")}</p>
         <span className="legal-updated">{t("legal.updated")}</span>

@@ -1,9 +1,8 @@
-import { ArrowLeft, CalendarDays, Clock3, Newspaper } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router-dom";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
-import SectionLabel from "../../components/SectionLabel/index.jsx";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
 import { getArticles } from "./articles.js";
@@ -68,7 +67,6 @@ function BlogArticle() {
     <>
       <article className="article-page">
         <LocalizedLink to="/blog" className="article-back"><ArrowLeft size={18} strokeWidth={2} aria-hidden="true" /> {t("blog.backToBlog", { defaultValue: "Back to blog" })}</LocalizedLink>
-        <SectionLabel icon={Newspaper}>{t("home.resourcesLabel")}</SectionLabel>
         <h1>{article.title}</h1>
         <div className="article-meta">
           <span><CalendarDays size={18} strokeWidth={2} aria-hidden="true" /> {article.date}</span>
@@ -91,7 +89,6 @@ function BlogArticle() {
       </article>
 
       <section className="article-related section">
-        <SectionLabel icon={Newspaper}>{t("blog.relatedLabel", { defaultValue: "Keep reading" })}</SectionLabel>
         <h2>{t("blog.relatedTitle", { defaultValue: "More travel guides" })}</h2>
         <div className="article-related__grid">
           {relatedArticles.map((item) => (

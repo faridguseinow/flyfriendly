@@ -371,7 +371,7 @@ function Navbar() {
                         onClose={closeLanguageModal}
                         onSelectLanguage={selectLanguage}
                       />
-                    <LocalizedLink className="account-dropdown__primary" to="/auth/login" role="menuitem" onClick={closeMenu}>
+                    <LocalizedLink className="account-dropdown__primary btn-primary" to="/auth/login" role="menuitem" onClick={closeMenu}>
                       {t("claimModal.logIn", { defaultValue: "Sign in" })}
                     </LocalizedLink>
                   </div>

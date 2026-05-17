@@ -122,7 +122,7 @@
       padding: 0 8px;
       border-radius: 999px;
       background: #eef5ff;
-      color: #0b74c7;
+      color: var(--primary);
       font-size: 12px;
       font-weight: 700;
     }
@@ -176,7 +176,7 @@
 }
 
 .admin-documents-page__folder-top {
-  color: #0b74c7;
+  color: var(--primary);
 }
 
 .admin-documents-page__folder-meta {
@@ -200,7 +200,7 @@
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 12px;
   background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
-  color: #0b74c7;
+  color: var(--primary);
 
   img {
     width: 100%;

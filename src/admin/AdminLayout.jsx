@@ -94,6 +94,22 @@ function RailButton({ section, isActive, onSelect }) {
   );
 }
 
+function MobileSectionButton({ section, isActive, onSelect }) {
+  const Icon = section.icon;
+
+  return (
+    <button
+      type="button"
+      className={`admin-mobile-section-button${isActive ? " is-active" : ""}`}
+      onClick={onSelect}
+      aria-pressed={isActive}
+    >
+      <Icon size={16} strokeWidth={1.9} />
+      <span>{section.label}</span>
+    </button>
+  );
+}
+
 function dedupeNavigationItems(items = []) {
   const seenPaths = new Set();
 
@@ -144,7 +160,6 @@ export function AdminLoginPage() {
       <section className="admin-auth-card">
         <div className="admin-brand">
           <img src={logoImage} alt="" />
-          <img src={logoText} alt="Fly Friendly" />
         </div>
         <h1>Admin sign in</h1>
         <p>Use an internal account with an assigned Fly Friendly admin role.</p>
@@ -179,7 +194,6 @@ export function AdminForbiddenPage() {
       <section className="admin-auth-card">
         <div className="admin-brand">
           <img src={logoImage} alt="" />
-          <img src={logoText} alt="Fly Friendly" />
         </div>
         <h1>Access restricted</h1>
         <p>Your account is authenticated, but it does not have permission to access this admin area.</p>
@@ -496,11 +510,35 @@ function AdminLayout() {
           <span>Section</span>
           <strong>{activeSection?.label || "Admin"}</strong>
         </div>
+        <div className="admin-mobile-sections" aria-label="Admin sections">
+          {navSections.map((section) => (
+            <MobileSectionButton
+              key={section.key}
+              section={section}
+              isActive={section.key === activeSection?.key}
+              onSelect={() => goToSection(section)}
+            />
+          ))}
+        </div>
         <nav className="admin-section-nav sidebar-scroll compact-nav-group" aria-label={activeSection?.label || "Admin section pages"}>
           {(activeSection?.pages || []).map((item) => (
             <SectionLink key={item.path} item={item} onNavigate={() => setIsSidebarOpen(false)} />
           ))}
         </nav>
+        <div className="admin-mobile-account">
+          <div className="admin-user-chip">
+            <span>Email</span>
+            <strong>{currentUserEmail}</strong>
+          </div>
+          <div className="admin-user-chip">
+            <span>Role</span>
+            <strong>{currentRoleLabel}</strong>
+          </div>
+          <button type="button" className="admin-logout" onClick={signOut}>
+            <LogOut size={16} />
+            <span>Log out</span>
+          </button>
+        </div>
       </aside>
 
       <div className="admin-workspace">

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  BadgeCheck,
   Calendar,
   Check,
   ChevronLeft,
@@ -1450,7 +1449,6 @@ function ClaimFlow() {
         <ClaimHeader />
         <main className="claim-shell">
           <section className="claim-main">
-            <span className="section-label is-primary"><BadgeCheck size={16} fill="currentColor" aria-hidden="true" /> {t("claim.heroLabel")}</span>
             <h1>{t("claim.heroTitle")}</h1>
             <p>{t("common.globalReachCopy")}</p>
             {syncError && <p className="claim-sync is-error">{syncError}</p>}
