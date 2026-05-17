@@ -1,0 +1,241 @@
+:root {
+  --btn-min-height: 56px;
+  --btn-padding-x: 24px;
+  --btn-padding-y: 6px;
+  --btn-gap: 10px;
+  --btn-radius: 12px;
+  --btn-font-size: 20px;
+  --btn-line-height: 28px;
+  --btn-font-weight: 400;
+  --btn-border-color: rgba(201, 231, 251, 0.92);
+  --btn-bg: #fff;
+  --btn-color: var(--primary);
+  --btn-hover-bg: #f7faff;
+  --btn-hover-border-color: rgba(60, 101, 255, 0.22);
+  --btn-hover-color: var(--primary);
+  --btn-primary-bg: var(--primary);
+  --btn-primary-border-color: rgba(60, 101, 255, 0.18);
+  --btn-primary-color: #fff;
+  --btn-primary-hover-bg: #fff;
+  --btn-primary-hover-border-color: rgba(60, 101, 255, 0.26);
+  --btn-primary-hover-color: var(--primary-dark);
+  --btn-primary-active-bg: var(--primary-dark);
+  --btn-primary-active-color: #fff;
+  --btn-danger-bg: #fff5f5;
+  --btn-danger-border-color: rgba(220, 38, 38, 0.16);
+  --btn-danger-color: #b42318;
+  --btn-danger-hover-bg: #ffecec;
+  --btn-danger-hover-border-color: rgba(220, 38, 38, 0.22);
+  --btn-danger-hover-color: #9f1d1d;
+  --icon-btn-size: 38px;
+  --icon-btn-radius: 10px;
+}
+
+.admin-shell,
+.admin-auth-page {
+  --btn-min-height: 40px;
+  --btn-padding-x: 14px;
+  --btn-padding-y: 0;
+  --btn-gap: 8px;
+  --btn-radius: 12px;
+  --btn-font-size: 13px;
+  --btn-line-height: 18px;
+  --btn-font-weight: 600;
+}
+
+/* Centralized button styles keep structure intact while exposing one place to tune them.
+   Sensitive per-page overrides should only adjust layout, not button visuals. */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn--primary,
+.btn--ghost,
+.admin-btn,
+.admin-btn-primary,
+.admin-btn-secondary,
+.admin-btn-ghost,
+.admin-btn-danger,
+.admin-link-button,
+.admin-logout,
+.about-btn-secondary,
+.ref-btn-secondary,
+.admin-cases-page__clear,
+.admin-cases-page__export,
+.admin-leads-page__clear,
+.admin-leads-page__export {
+  min-height: var(--btn-min-height);
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--btn-gap);
+  border: 1px solid var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  cursor: pointer;
+  white-space: normal;
+  text-align: center;
+  text-decoration: none;
+  font: inherit;
+  font-size: var(--btn-font-size);
+  line-height: var(--btn-line-height);
+  font-weight: var(--btn-font-weight);
+  box-shadow: none;
+  appearance: none;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+
+  svg {
+    color: currentColor;
+    flex: 0 0 auto;
+  }
+}
+
+.btn:hover,
+.btn-secondary:hover,
+.btn--ghost:hover,
+.admin-btn:hover,
+.admin-btn-secondary:hover,
+.admin-btn-ghost:hover,
+.admin-link-button:hover,
+.admin-logout:hover,
+.about-btn-secondary:hover,
+.ref-btn-secondary:hover,
+.admin-cases-page__clear:hover,
+.admin-cases-page__export:hover,
+.admin-leads-page__clear:hover,
+.admin-leads-page__export:hover {
+  background: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border-color);
+  color: var(--btn-hover-color);
+  box-shadow: none;
+}
+
+.btn:active,
+.btn-secondary:active,
+.btn--ghost:active,
+.admin-btn:active,
+.admin-btn-secondary:active,
+.admin-btn-ghost:active,
+.admin-link-button:active,
+.admin-logout:active,
+.about-btn-secondary:active,
+.ref-btn-secondary:active,
+.admin-cases-page__clear:active,
+.admin-cases-page__export:active,
+.admin-leads-page__clear:active,
+.admin-leads-page__export:active {
+  transform: scale(0.99);
+}
+
+.btn-primary,
+.btn--primary,
+.admin-btn-primary {
+  border-color: var(--btn-primary-border-color);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-color);
+}
+
+.btn-primary:hover,
+.btn--primary:hover,
+.admin-btn-primary:hover {
+  background: var(--btn-primary-hover-bg);
+  border-color: var(--btn-primary-hover-border-color);
+  color: var(--btn-primary-hover-color);
+}
+
+.btn-primary:active,
+.btn--primary:active,
+.admin-btn-primary:active {
+  background: var(--btn-primary-active-bg);
+  color: var(--btn-primary-active-color);
+  transform: scale(0.99);
+}
+
+.admin-btn-danger,
+.admin-link-button.is-danger {
+  border-color: var(--btn-danger-border-color);
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-color);
+}
+
+.admin-btn-danger:hover,
+.admin-link-button.is-danger:hover {
+  background: var(--btn-danger-hover-bg);
+  border-color: var(--btn-danger-hover-border-color);
+  color: var(--btn-danger-hover-color);
+}
+
+.btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn--primary:disabled,
+.btn--ghost:disabled,
+.admin-btn:disabled,
+.admin-btn-primary:disabled,
+.admin-btn-secondary:disabled,
+.admin-btn-ghost:disabled,
+.admin-btn-danger:disabled,
+.admin-link-button:disabled,
+.admin-logout:disabled,
+.admin-cases-page__clear:disabled,
+.admin-cases-page__export:disabled,
+.admin-leads-page__clear:disabled,
+.admin-leads-page__export:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-small,
+.admin-btn-sm {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.admin-shell .admin-btn-sm {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.admin-side-panel__close,
+.admin-detail-drawer__close,
+.admin-cases-page__close {
+  width: var(--icon-btn-size);
+  height: var(--icon-btn-size);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--btn-border-color);
+  border-radius: var(--icon-btn-radius);
+  background: #fff;
+  color: var(--btn-color);
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+
+  svg {
+    color: currentColor;
+  }
+}
+
+.admin-side-panel__close:hover,
+.admin-detail-drawer__close:hover,
+.admin-cases-page__close:hover {
+  background: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border-color);
+  color: var(--btn-hover-color);
+}
+
+.admin-side-panel__close:active,
+.admin-detail-drawer__close:active,
+.admin-cases-page__close:active {
+  transform: scale(0.99);
+}
