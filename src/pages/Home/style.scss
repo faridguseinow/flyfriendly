@@ -29,7 +29,6 @@
   }
 }
 
-
 .hero__ambient {
   position: absolute;
   pointer-events: none;
@@ -64,7 +63,6 @@
   }
 }
 
-
 .benefit-grid,
 .step-grid,
 .article-grid {
@@ -84,17 +82,16 @@
   border: 1px solid var(--line);
   border-radius: 40px;
   background: #fff;
-  box-shadow: inset 0 0 0 8px #fff, 0 0 6px 2px rgba(0, 0, 0, 0.05);
 }
 
 .mini-card {
   min-height: 300px;
   padding: 32px 24px;
-  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
+  transition: transform 240ms ease, border-color 240ms ease, background 240ms ease;
 
   .icon {
     margin: 0 auto 16px;
-    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
+    transition: transform 240ms ease, border-color 240ms ease, background 240ms ease;
   }
 
   h3 {
@@ -107,12 +104,10 @@
     transform: translateY(-10px) scale(1.01);
     border-color: #dceeff;
     background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
-    box-shadow: inset 0 0 0 8px #fff, 0 24px 40px rgba(20, 58, 110, 0.14);
   }
 
   &:hover .icon {
     transform: translateY(-4px) scale(1.08);
-    box-shadow: 0 14px 24px rgba(5, 164, 255, 0.16);
   }
 }
 
@@ -545,7 +540,6 @@
     border-radius: 18px;
     color: #fff;
     background: rgba(74, 52, 37, 0.2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 20px rgba(0, 0, 0, 0.12);
     backdrop-filter: blur(6px);
   }
 
@@ -570,7 +564,7 @@
   position: relative;
   overflow: hidden;
   text-align: center;
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition: transform 220ms ease;
 
   &:hover {
     transform: translateY(-4px);
@@ -630,7 +624,7 @@
     height: 64px;
     border-radius: 50%;
     background: #fff;
-    transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+    transition: transform 260ms ease, border-color 260ms ease;
   }
 }
 
@@ -686,7 +680,6 @@
     border: 1px solid var(--line-strong);
     border-radius: 20px;
     background: #fff;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   }
 
   .document-icon:nth-child(1) {
@@ -712,7 +705,6 @@
     border: 0;
     border-radius: 14px;
     background: var(--line);
-    box-shadow: none;
   }
 
   span {
@@ -727,17 +719,14 @@
 .step-card-process:hover {
   .step-node-main {
     transform: translateX(-50%) translateY(-8px) scale(1.08);
-    box-shadow: 0 18px 34px rgba(5, 164, 255, 0.16);
   }
 
   .step-node-left {
     transform: translate(-10px, 8px) rotate(-10deg) scale(1.06);
-    box-shadow: 0 16px 30px rgba(5, 164, 255, 0.14);
   }
 
   .step-node-right {
     transform: translate(10px, 8px) rotate(10deg) scale(1.06);
-    box-shadow: 0 16px 30px rgba(5, 164, 255, 0.14);
   }
 
   .step-line-left {
@@ -762,7 +751,6 @@
 
   .document-icon:nth-child(3) {
     transform: translateY(8px) scale(1.03);
-    box-shadow: 0 20px 34px rgba(5, 164, 255, 0.13);
   }
 
   .document-icon .icon {
@@ -778,24 +766,21 @@
 .step-card-money:hover {
   .money-node-main {
     transform: translateX(-50%) translateY(-10px) scale(1.08);
-    box-shadow: 0 18px 34px rgba(5, 164, 255, 0.16);
   }
 
   .money-node-left {
     transform: translate(-12px, 8px) rotate(-4deg) scale(1.04);
-    box-shadow: 0 16px 28px rgba(5, 164, 255, 0.12);
   }
 
   .money-node-right {
     transform: translate(12px, 8px) rotate(4deg) scale(1.04);
-    box-shadow: 0 16px 28px rgba(5, 164, 255, 0.12);
   }
 }
 
 .step-line,
 .document-icon,
 .document-icon span {
-  transition: transform 260ms ease, opacity 260ms ease, background 260ms ease, box-shadow 260ms ease;
+  transition: transform 260ms ease, opacity 260ms ease, background 260ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -905,7 +890,7 @@
   position: relative;
   z-index: 1;
   padding: 28px;
-  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  transition: transform 220ms ease, border-color 220ms ease;
 
   &::after {
     content: "";
@@ -929,7 +914,6 @@
     z-index: 3;
     transform: translateY(-5px);
     border-color: #e8f4ff;
-    box-shadow: inset 0 0 0 8px #fff, 0 18px 36px rgba(5, 164, 255, 0.1);
   }
 
   &:hover::after {
@@ -984,7 +968,7 @@
   min-height: 546px;
   padding: 24px;
   text-align: left;
-  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, background 240ms ease;
+  transition: transform 240ms ease, border-color 240ms ease, background 240ms ease;
 
   img {
     width: 100%;
@@ -1011,7 +995,6 @@
     transform: translateY(-10px);
     border-color: #dceeff;
     background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
-    box-shadow: inset 0 0 0 8px #fff, 0 24px 42px rgba(20, 58, 110, 0.14);
   }
 
   &:hover img {
@@ -1104,18 +1087,16 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   text-align: left;
-  box-shadow: none;
 }
 
 .faq-item {
   border: 1px solid var(--line);
   border-radius: 40px;
   background: #fff;
-  transition: border-radius 180ms ease, box-shadow 180ms ease;
+  transition: border-radius 180ms ease;
 }
 
 .faq-item.is-open {
-  box-shadow: inset 0 0 0 8px #fff, 0 0 6px 2px rgba(0, 0, 0, 0.05);
 }
 
 .faq-item__toggle {

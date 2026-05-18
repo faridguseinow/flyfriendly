@@ -18,7 +18,6 @@
   border: 1px solid rgba(226, 236, 248, 0.86);
   border-radius: 100px;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 20px 54px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(18px);
   pointer-events: auto;
 }
@@ -58,13 +57,12 @@
   a {
     padding: 9px 16px;
     border-radius: 100px;
-    transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    transition: color 180ms ease, background 180ms ease;
 
     &:hover,
     &.active {
       color: var(--primary);
       background: #fff;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
     }
   }
 }
@@ -91,15 +89,13 @@
   border-radius: 999px;
   color: #1f2937;
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
   cursor: pointer;
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, color 180ms ease;
+  transition: transform 180ms ease, border-color 180ms ease, color 180ms ease;
 
   &:hover,
   &[aria-expanded="true"] {
     border-color: rgba(17, 81, 255, 0.28);
     color: var(--primary);
-    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
   }
 
   &:focus-visible {
@@ -130,7 +126,6 @@
   border: 1px solid rgba(226, 236, 248, 0.96);
   border-radius: 32px;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.16);
   backdrop-filter: blur(18px);
   animation: accountDropdownReveal 180ms ease-out both;
   transform-origin: top right;
@@ -170,7 +165,6 @@
   background:
     radial-gradient(circle at 30% 20%, rgba(17, 69, 255, 0.18), transparent 60%),
     linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
-  box-shadow: inset 0 0 0 1px rgba(17, 152, 255, 0.08);
 
   img {
     width: 100%;
@@ -229,7 +223,6 @@
 .account-dropdown__row .language-current {
   min-height: 48px;
   padding: 0 16px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .account-dropdown__row--guest .account-dropdown__primary {
@@ -252,7 +245,7 @@
   font-size: 18px;
   line-height: 24px;
   font-weight: 700;
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, color 180ms ease;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
 
   &:hover {
     background: #fff;
@@ -266,7 +259,6 @@
   width: 100%;
   color: #fff;
   background: var(--primary);
-  box-shadow: 0 0 0 4px #e0ebff, 0 14px 28px rgba(5, 84, 255, 0);
 }
 
 .account-dropdown__link,
@@ -339,7 +331,6 @@
   border: 1px solid rgba(217, 231, 251, 0.96);
   border-radius: 24px;
   background: #fff;
-  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.18);
 }
 
 .language-modal__close {
@@ -403,13 +394,12 @@
   color: #1f2937;
   background: #fff;
   text-align: left;
-  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
   cursor: pointer;
 
   &:hover {
     border-color: #d6e8fb;
     background: #f8fbff;
-    box-shadow: 0 12px 24px rgba(31, 122, 224, 0.08);
     transform: translateY(-2px);
   }
 
@@ -462,8 +452,6 @@
   display: none;
 }
 
-
-
 @media (max-width: 1140px) {
 
   .hero__ambient {
@@ -489,7 +477,6 @@
     padding: 8px 10px 8px 16px;
     gap: 12px;
     background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
   }
 
   .brand {
@@ -521,7 +508,6 @@
     border: 0;
     border-radius: 50%;
     background: var(--primary);
-    box-shadow: 0 0 0 4px #e0f3ff, 0 8px 18px rgba(5, 164, 255, 0.2);
     cursor: pointer;
     overflow: hidden;
 
@@ -661,13 +647,14 @@
 
     a {
       min-height: 60px;
-      display: grid;
-      place-items: center;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
       border: 1px solid rgba(226, 236, 248, 0.94);
       border-radius: 18px;
       color: var(--grey-500);
       background: rgba(255, 255, 255, 0.78);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
       font-size: 21px;
       line-height: 28px;
       letter-spacing: 0;
@@ -691,7 +678,6 @@
     border-radius: 18px;
     color: #fff;
     background: var(--primary);
-    box-shadow: 0 0 0 4px #e0f3ff, 0 2px 4px 1px rgba(0, 0, 0, 0.05);
     font-size: 21px;
     line-height: 28px;
     font-weight: 700;
@@ -708,7 +694,6 @@
     border: 1px solid rgba(226, 236, 248, 0.94);
     border-radius: 22px;
     background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
     text-align: left;
     place-items: initial;
 
@@ -804,7 +789,6 @@
     border: 1px solid #dfe9f6;
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
     text-align: left;
     cursor: pointer;
   }
@@ -1018,12 +1002,10 @@
 
 @media (max-width: 620px) {
 
-
   .mobile-language-picker__trigger {
     min-height: 48px;
     padding: 0 12px;
   }
-
 
   .mobile-language-picker__flag {
     font-size: 18px;

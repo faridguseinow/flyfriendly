@@ -127,12 +127,11 @@
     border: 1px solid var(--line);
     border-radius: 14px;
     background: #fff;
-    transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    transition: border-color 160ms ease, background 160ms ease;
 
     &.is-active {
       border-color: rgba(32, 169, 255, 0.24);
       background: #f5fbff;
-      box-shadow: 0 10px 20px rgba(32, 169, 255, 0.08);
     }
 
     input {

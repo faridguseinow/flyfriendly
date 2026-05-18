@@ -17,7 +17,6 @@
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 
   select,
   input {
@@ -89,7 +88,6 @@
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
 
 .admin-cases-page__list-pane {
@@ -162,7 +160,7 @@
   background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background 160ms ease, box-shadow 160ms ease;
+  transition: background 160ms ease;
 }
 
 .admin-cases-page__case-row:hover {
@@ -171,7 +169,6 @@
 
 .admin-cases-page__case-row.is-active {
   background: linear-gradient(180deg, #f8fcff 0%, #eef6ff 100%);
-  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .admin-cases-page__case-main {
@@ -571,7 +568,6 @@
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 20px;
   background: #fff;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
 }
 
 .admin-cases-page__task-modal-header {

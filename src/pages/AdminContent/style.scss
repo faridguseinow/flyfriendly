@@ -52,13 +52,12 @@
     border-radius: 16px;
     background: #fff;
     cursor: pointer;
-    transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+    transition: border-color 140ms ease, transform 140ms ease;
 
     &:hover,
     &.is-active {
       border-color: rgba(24, 151, 243, 0.35);
       transform: translateY(-1px);
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
     }
 
     strong {

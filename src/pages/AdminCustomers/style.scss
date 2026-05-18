@@ -66,7 +66,6 @@
     padding: 0;
     border: 0;
     background: transparent;
-    box-shadow: none;
     outline: none;
   }
 }
@@ -166,7 +165,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background 160ms ease, box-shadow 160ms ease;
+  transition: background 160ms ease;
 
   &:hover {
     background: rgba(245, 249, 255, 0.88);
@@ -174,7 +173,6 @@
 
   &.is-active {
     background: rgba(236, 244, 255, 0.95);
-    box-shadow: inset 3px 0 0 #0584ff;
   }
 
   &:focus-visible {
@@ -501,7 +499,6 @@
     border: 1px solid rgba(148, 163, 184, 0.18);
     border-radius: 16px;
     background: #fff;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
 
     > span {
       display: grid;

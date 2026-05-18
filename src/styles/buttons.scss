@@ -81,7 +81,6 @@
   font-size: var(--btn-font-size);
   line-height: var(--btn-line-height);
   font-weight: var(--btn-font-weight);
-  box-shadow: none;
   appearance: none;
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
 
@@ -108,7 +107,6 @@
   background: var(--btn-hover-bg);
   border-color: var(--btn-hover-border-color);
   color: var(--btn-hover-color);
-  box-shadow: none;
 }
 
 .btn:active,
@@ -185,7 +183,6 @@
   opacity: 0.58;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
 .btn-small,
@@ -218,7 +215,6 @@
   background: #fff;
   color: var(--btn-color);
   cursor: pointer;
-  box-shadow: none;
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
 
   svg {

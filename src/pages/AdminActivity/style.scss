@@ -91,7 +91,7 @@
   text-align: left;
   color: inherit;
   cursor: pointer;
-  transition: background 160ms ease, box-shadow 160ms ease;
+  transition: background 160ms ease;
 
   &:hover {
     background: rgba(245, 249, 255, 0.88);
@@ -99,7 +99,6 @@
 
   &.is-active {
     background: rgba(236, 244, 255, 0.95);
-    box-shadow: inset 3px 0 0 #0584ff;
   }
 
   > span {
