@@ -406,6 +406,7 @@
 }
 
 .client-portal-main {
+  padding: 48px 0;
   min-width: 0;
 }
 
@@ -1212,13 +1213,11 @@
   padding: 18px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 250, 255, 0.98) 100%),
-    repeating-linear-gradient(
-      45deg,
+    repeating-linear-gradient(45deg,
       rgba(214, 229, 245, 0.2) 0,
       rgba(214, 229, 245, 0.2) 10px,
       rgba(255, 255, 255, 0.2) 10px,
-      rgba(255, 255, 255, 0.2) 20px
-    );
+      rgba(255, 255, 255, 0.2) 20px);
 
   img {
     max-width: 100%;
@@ -1323,13 +1322,11 @@
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 250, 255, 0.98) 100%),
-    repeating-linear-gradient(
-      180deg,
+    repeating-linear-gradient(180deg,
       rgba(124, 143, 170, 0.05) 0,
       rgba(124, 143, 170, 0.05) 1px,
       transparent 1px,
-      transparent 18px
-    );
+      transparent 18px);
 
   img {
     width: 100%;
@@ -1365,13 +1362,11 @@
   border-radius: 16px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 248, 253, 0.98) 100%),
-    repeating-linear-gradient(
-      180deg,
+    repeating-linear-gradient(180deg,
       rgba(124, 143, 170, 0.05) 0,
       rgba(124, 143, 170, 0.05) 1px,
       transparent 1px,
-      transparent 18px
-    );
+      transparent 18px);
 
   canvas {
     width: 100%;
@@ -1438,6 +1433,7 @@
 }
 
 .client-portal-toggle-row {
+
   strong,
   span {
     display: block;

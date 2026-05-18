@@ -1705,7 +1705,7 @@ function ClientAccountPageInner() {
         />
 
         <div className="client-portal-account-grid">
-          <section className="client-portal-settings-card">
+          {/* <section className="client-portal-settings-card">
             <div className="client-portal-card-heading">
               <strong>{t("clientPortal.account.personal", { defaultValue: "Personal information" })}</strong>
               <span>{t("clientPortal.account.personalText", { defaultValue: "Only the details safe to edit here are shown below." })}</span>
@@ -1730,7 +1730,7 @@ function ClientAccountPageInner() {
                 {isSaving ? t("clientPortal.account.saving", { defaultValue: "Saving..." }) : t("clientPortal.account.submit", { defaultValue: "Save changes" })}
               </button>
             </form>
-          </section>
+          </section> */}
 
           <section className="client-portal-settings-card">
             <div className="client-portal-card-heading">
