@@ -932,7 +932,7 @@ function ClaimStatusDrawer({ claim, isOpen, onClose }) {
   );
 }
 
-function DocumentStatusCard({ item, previewUrl, onOpen }) {
+function DocumentStatusCard({ item, previewUrl, onOpen, action = null, busy = false }) {
   const status = item.latestDocument
     ? getClientDocumentStatus(item.latestDocument.status, item.latestDocument.kind)
     : { key: item.statusKey, label: item.statusLabel, tone: item.statusTone };
@@ -957,6 +957,11 @@ function DocumentStatusCard({ item, previewUrl, onOpen }) {
       {item.latestDocument ? (
         <button type="button" className="client-portal-inline-button" onClick={() => onOpen(item.latestDocument)}>
           Open
+        </button>
+      ) : action ? (
+        <button type="button" className="btn btn-primary btn-small client-portal-document-card__action" onClick={action.onClick} disabled={busy}>
+          {busy ? <LoaderCircle size={16} className="is-spinning" /> : <Upload size={16} />}
+          <span>{action.label}</span>
         </button>
       ) : null}
     </article>
@@ -1506,24 +1511,37 @@ export function ClientClaimsPage() {
 export function ClientClaimDetailsPage() {
   const { t } = useTranslation();
   const { id } = useParams();
+  const filePickerRef = useRef(null);
   const [state, setState] = useState({ isLoading: true, error: "", data: null });
   const [statusDrawerOpen, setStatusDrawerOpen] = useState(false);
+  const [pickerContext, setPickerContext] = useState(null);
+  const [actionBusy, setActionBusy] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
-    setState({ isLoading: true, error: "", data: null });
 
-    fetchClientClaimDetails(id)
-      .then((data) => {
+    const loadClaimDetails = async (preserveData = false) => {
+      setState((current) => ({
+        isLoading: true,
+        error: "",
+        data: preserveData ? current.data : null,
+      }));
+
+      try {
+        const data = await fetchClientClaimDetails(id);
         if (active) {
           setState({ isLoading: false, error: "", data });
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         if (active) {
           setState({ isLoading: false, error: error.message || "Could not load claim details.", data: null });
         }
-      });
+      }
+    };
+
+    void loadClaimDetails();
 
     return () => {
       active = false;
@@ -1551,6 +1569,55 @@ export function ClientClaimDetailsPage() {
   }
 
   const claim = state.data?.claim || null;
+  const claimLeadId = claim ? (claim.kind === "lead" ? claim.id : claim.raw?.lead_id || null) : null;
+  const canUploadMissingDocuments = Boolean(claimLeadId) && !["approved", "rejected", "paid"].includes(claim?.publicStatus?.key || "");
+
+  const reloadClaimDetails = async () => {
+    setState((current) => ({ ...current, isLoading: true }));
+
+    try {
+      const data = await fetchClientClaimDetails(id);
+      setState({ isLoading: false, error: "", data });
+    } catch (error) {
+      setState({ isLoading: false, error: error.message || "Could not load claim details.", data: null });
+    }
+  };
+
+  const requestFilePicker = (context) => {
+    setActionError("");
+    setNotice("");
+    setPickerContext(context);
+    filePickerRef.current?.click();
+  };
+
+  const handleFilePickerChange = async (event) => {
+    const file = event.target.files?.[0];
+    const currentContext = pickerContext;
+    event.target.value = "";
+    setPickerContext(null);
+
+    if (!file || !currentContext || !claimLeadId) {
+      return;
+    }
+
+    setActionBusy(currentContext.documentType);
+    setActionError("");
+    setNotice("");
+
+    try {
+      await uploadClientDocument({
+        leadId: claimLeadId,
+        documentType: currentContext.documentType,
+        file,
+      });
+      setNotice("Document uploaded successfully.");
+      await reloadClaimDetails();
+    } catch (error) {
+      setActionError(error.message || "Could not upload the document.");
+    } finally {
+      setActionBusy("");
+    }
+  };
 
   if (!claim) {
     return <p className="portal-empty">{t("clientPortal.claimDetails.empty", { defaultValue: "This claim is not available in your account." })}</p>;
@@ -1559,6 +1626,13 @@ export function ClientClaimDetailsPage() {
   return (
     <div className="client-portal-page">
       <section className="portal-card">
+        <input
+          ref={filePickerRef}
+          type="file"
+          accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
+          hidden
+          onChange={handleFilePickerChange}
+        />
         <ClaimHeroCard
           claim={claim}
           t={t}
@@ -1570,6 +1644,8 @@ export function ClientClaimDetailsPage() {
 
       <section className="portal-card">
         <PortalSectionHeader title={t("clientPortal.documents.requiredTitle", { defaultValue: "Required documents" })} />
+        {notice ? <p className="portal-message is-notice">{notice}</p> : null}
+        {actionError ? <p className="portal-message is-error">{actionError}</p> : null}
 
         <div className="client-portal-documents-grid">
           {claim.requiredDocuments.map((item) => (
@@ -1578,6 +1654,17 @@ export function ClientClaimDetailsPage() {
               item={item}
               previewUrl={item.latestDocument ? (item.latestDocument.signature_data_url || previewUrls[item.latestDocument.id] || "") : ""}
               onOpen={openDocument}
+              action={
+                !item.latestDocument && canUploadMissingDocuments && item.key !== "signature"
+                  ? {
+                      label: item.key === "passport"
+                        ? t("clientPortal.actions.uploadPassport", { defaultValue: "Upload passport" })
+                        : t("clientPortal.actions.uploadBoardingPass", { defaultValue: "Upload boarding pass" }),
+                      onClick: () => requestFilePicker({ documentType: item.key }),
+                    }
+                  : null
+              }
+              busy={actionBusy === item.key}
             />
           ))}
         </div>

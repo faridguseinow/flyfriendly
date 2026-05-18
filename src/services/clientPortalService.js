@@ -412,7 +412,7 @@ function buildClaimRowFromLead(lead, context) {
     ...(context.leadDocumentsByLeadId.get(lead.id) || []),
     ...(context.signaturesByLeadId.get(lead.id) || []),
   ];
-  const requiredDocuments = buildRequiredDocumentSummary(relatedDocuments);
+  const requiredDocuments = buildClientManagedRequiredDocuments(relatedDocuments);
   const documentsSummary = buildDocumentsSummary(requiredDocuments);
   const publicStatus = getClientClaimStatus(lead.status, lead.stage, requiredDocuments, null);
 
@@ -450,7 +450,7 @@ function buildClaimRowFromCase(caseRow, context) {
     ...(context.caseDocumentsByCaseId.get(caseRow.id) || []),
     ...(caseRow.lead_id ? (context.signaturesByLeadId.get(caseRow.lead_id) || []) : []),
   ];
-  const requiredDocuments = buildRequiredDocumentSummary(relatedDocuments);
+  const requiredDocuments = buildClientManagedRequiredDocuments(relatedDocuments);
   const documentsSummary = buildDocumentsSummary(requiredDocuments);
   const paymentStatus = getClientPaymentStatus(
     finance?.payment_status || caseRow.payout_status || null,
