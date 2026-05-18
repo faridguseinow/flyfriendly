@@ -318,6 +318,7 @@
   grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
+  min-width: 0;
 }
 
 .client-portal-sidebar {
@@ -408,19 +409,23 @@
 .client-portal-main {
   padding: 28px 0;
   min-width: 0;
+  overflow-x: hidden;
 }
 
 .client-portal-main__viewport {
   min-height: calc(100svh - 172px);
+  min-width: 0;
 }
 
 .client-portal-page {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .client-portal-page .portal-card {
   padding: 14px;
+  min-width: 0;
   border-radius: 22px;
   border-color: rgba(223, 233, 246, 0.9);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.035);
@@ -762,6 +767,8 @@
 
 .client-portal-progress,
 .client-portal-payment-progress {
+  width: 100%;
+  min-width: 0;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(88px, 1fr);
@@ -893,6 +900,8 @@
 }
 
 .client-portal-claim-hero {
+  min-width: 0;
+  max-width: 100%;
   padding: 16px;
   display: grid;
   gap: 14px;
@@ -916,6 +925,7 @@
 .client-portal-claim-hero__footer {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 .client-portal-claim-hero__top {
