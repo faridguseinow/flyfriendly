@@ -1263,14 +1263,6 @@ export function ClientDashboardPage() {
     };
   }, []);
 
-  if (state.isLoading) {
-    return <PortalLoadingPage variant="dashboard" />;
-  }
-
-  if (state.error) {
-    return <p className="portal-message is-error">{state.error}</p>;
-  }
-
   const claimRows = state.data?.claimRows || [];
   const activeClaim = claimRows.find((item) => !["paid", "rejected"].includes(item.publicStatus.key)) || claimRows[0] || null;
   const action = getClaimAction(activeClaim, t);
@@ -1296,6 +1288,14 @@ export function ClientDashboardPage() {
       // Dashboard stays quiet; the documents page is the full management surface.
     }
   };
+
+  if (state.isLoading) {
+    return <PortalLoadingPage variant="dashboard" />;
+  }
+
+  if (state.error) {
+    return <p className="portal-message is-error">{state.error}</p>;
+  }
 
   if (!claimRows.length) {
     return (
