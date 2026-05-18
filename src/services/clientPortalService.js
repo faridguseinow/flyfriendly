@@ -335,6 +335,35 @@ function buildRequiredDocumentSummary(records = []) {
   });
 }
 
+function buildClientManagedRequiredDocuments(records = []) {
+  const sorted = sortByNewest(records);
+
+  return REQUIRED_CLIENT_DOCUMENTS.map((definition) => {
+    const matches = sorted.filter((item) => getDocumentTypeKey(item.document_type, item.kind) === definition.key);
+    const latest = definition.key === "signature"
+      ? (matches[0] || null)
+      : (matches.find((item) => item.ownerType === "lead") || matches[0] || null);
+    const statusMeta = latest ? getClientDocumentStatus(latest.status, latest.kind) : DOCUMENT_STATUS_META.missing;
+
+    return {
+      ...definition,
+      latestDocument: latest,
+      statusKey: statusMeta.key,
+      statusLabel: statusMeta.label,
+      statusTone: statusMeta.tone,
+      uploadedAt: latest?.created_at || latest?.signed_at || "",
+    };
+  });
+}
+
+function buildClientFacingDocuments(records = []) {
+  return sortByNewest(
+    buildClientManagedRequiredDocuments(records)
+      .map((item) => item.latestDocument)
+      .filter(Boolean),
+  );
+}
+
 function buildDocumentsSummary(requiredDocuments = []) {
   const availableCount = requiredDocuments.filter((item) => item.statusKey !== "missing").length;
   const needsAttention = requiredDocuments.some((item) => ["missing", "rejected"].includes(item.statusKey));
@@ -728,15 +757,16 @@ export async function fetchClientClaimDetails(claimId) {
       leadSignatures: leadSignatures.error ? [] : (leadSignatures.data || []),
     };
     const claim = buildClaimRows(data)[0] || null;
+    const visibleDocuments = buildClientFacingDocuments([
+      ...(leadDocuments.data || []).map(normalizeLeadDocument),
+      ...(caseDocuments.data || []).map(normalizeCaseDocument),
+      ...((leadSignatures.error ? [] : (leadSignatures.data || [])).map(normalizeLeadSignature)),
+    ]);
 
     return {
       type: "case",
       claim,
-      documents: sortByNewest([
-        ...(leadDocuments.data || []).map(normalizeLeadDocument),
-        ...(caseDocuments.data || []).map(normalizeCaseDocument),
-        ...((leadSignatures.error ? [] : (leadSignatures.data || [])).map(normalizeLeadSignature)),
-      ]),
+      documents: attachDocumentManagement(visibleDocuments, claim ? [claim] : []),
       finance: finance.error ? null : (finance.data || null),
     };
   }
@@ -782,14 +812,15 @@ export async function fetchClientClaimDetails(claimId) {
     caseDocuments: [],
     leadSignatures: leadSignatures.error ? [] : (leadSignatures.data || []),
   })[0] || null;
+  const visibleDocuments = buildClientFacingDocuments([
+    ...(leadDocuments.data || []).map(normalizeLeadDocument),
+    ...((leadSignatures.error ? [] : (leadSignatures.data || [])).map(normalizeLeadSignature)),
+  ]);
 
   return {
     type: "lead",
     claim,
-    documents: sortByNewest([
-      ...(leadDocuments.data || []).map(normalizeLeadDocument),
-      ...((leadSignatures.error ? [] : (leadSignatures.data || [])).map(normalizeLeadSignature)),
-    ]),
+    documents: attachDocumentManagement(visibleDocuments, claim ? [claim] : []),
     finance: null,
   };
 }
@@ -805,10 +836,12 @@ export async function fetchClientDocuments() {
   ]);
 
   const documents = attachDocumentManagement(
-    normalizedDocuments.filter((item) => ["passport", "boarding_pass", "signature"].includes(getDocumentTypeKey(item.document_type, item.kind))),
+    buildClientFacingDocuments(
+      normalizedDocuments.filter((item) => ["passport", "boarding_pass", "signature"].includes(getDocumentTypeKey(item.document_type, item.kind))),
+    ),
     claimRows,
   );
-  const requiredDocuments = buildRequiredDocumentSummary(documents);
+  const requiredDocuments = buildClientManagedRequiredDocuments(documents);
 
   return {
     documents,

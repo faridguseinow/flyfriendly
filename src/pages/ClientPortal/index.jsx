@@ -752,7 +752,7 @@ function ClaimRouteStop({ stop, compact = false }) {
   );
 }
 
-function ClaimHeroCard({ claim, t, compact = false, footer = null, onOpenStatus = null }) {
+function ClaimHeroCard({ claim, t, compact = false, footer = null, onOpenStatus = null, showChips = compact }) {
   const routeStops = getClaimRouteStops(claim);
 
   return (
@@ -790,11 +790,13 @@ function ClaimHeroCard({ claim, t, compact = false, footer = null, onOpenStatus 
         </article>
       </div>
 
-      <div className="client-portal-claim-hero__chips">
-        <span className="client-portal-hero-chip">{claim.disruptionType || "Flight disruption"}</span>
-        <span className="client-portal-hero-chip">{claim.paymentStatus.label}</span>
-        <span className="client-portal-hero-chip">{claim.documentsSummary.detail || claim.documentsSummary.label}</span>
-      </div>
+      {showChips ? (
+        <div className="client-portal-claim-hero__chips">
+          <span className="client-portal-hero-chip">{claim.disruptionType || "Flight disruption"}</span>
+          <span className="client-portal-hero-chip">{claim.paymentStatus.label}</span>
+          <span className="client-portal-hero-chip">{claim.documentsSummary.detail || claim.documentsSummary.label}</span>
+        </div>
+      ) : null}
 
       {footer ? <div className="client-portal-claim-hero__footer">{footer}</div> : null}
 
@@ -998,13 +1000,10 @@ function ManagedDocumentCard({
   item,
   previewUrl,
   canUpload,
-  canDelete,
-  canReplace,
   busy,
   progress,
   onPreview,
   onUpload,
-  onDelete,
 }) {
   const document = item.latestDocument || null;
   const status = document
@@ -1023,13 +1022,30 @@ function ManagedDocumentCard({
 
   return (
     <article
-      className={`client-portal-doc-manager-card${busy ? " is-busy" : ""}${canUpload ? " is-uploadable" : ""}`}
+      className={`client-portal-doc-manager-card${busy ? " is-busy" : ""}${canUpload ? " is-uploadable" : ""}${document ? " is-previewable" : ""}`}
       onDragOver={(event) => {
         if (canUpload) {
           event.preventDefault();
         }
       }}
       onDrop={handleDrop}
+      onClick={() => {
+        if (document) {
+          onPreview(document);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (!document) {
+          return;
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onPreview(document);
+        }
+      }}
+      role={document ? "button" : undefined}
+      tabIndex={document ? 0 : undefined}
     >
       <div className="client-portal-doc-manager-card__preview">
         {previewUrl ? <img src={previewUrl} alt="" /> : <Icon size={24} />}
@@ -1047,31 +1063,16 @@ function ManagedDocumentCard({
         <div className="client-portal-doc-manager-card__meta">
           <span>{document ? getDocumentFormatLabel(document) : "Upload required"}</span>
           <span>{document ? getDocumentExtension(document) : "PNG / JPG / PDF"}</span>
-          <span>{document?.claimReference || "Current claim"}</span>
         </div>
 
-        <div className="client-portal-doc-manager-card__actions">
-          {document ? (
-            <button type="button" className="btn btn-secondary btn-small" onClick={() => onPreview(document)} disabled={busy}>
-              <Eye size={16} />
-              <span>Preview</span>
-            </button>
-          ) : null}
-
-          {canUpload ? (
+        {!document && canUpload ? (
+          <div className="client-portal-doc-manager-card__actions">
             <button type="button" className="btn btn-primary btn-small" onClick={() => onUpload()} disabled={busy}>
               {busy ? <LoaderCircle size={16} className="is-spinning" /> : <Upload size={16} />}
-              <span>{canReplace ? "Replace" : "Upload"}</span>
+              <span>Upload</span>
             </button>
-          ) : null}
-
-          {document && canDelete ? (
-            <button type="button" className="btn btn-secondary btn-small" onClick={() => onDelete(document)} disabled={busy}>
-              <Trash2 size={16} />
-              <span>Delete</span>
-            </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {busy ? <UploadProgress value={progress} busy /> : null}
       </div>
@@ -1129,7 +1130,20 @@ function ManagedUploadedDocumentRow({
   );
 }
 
-function DocumentPreviewDrawer({ document, url, isLoading, error, zoom, onZoomIn, onZoomOut, onOpenFull, onClose }) {
+function DocumentPreviewDrawer({
+  document,
+  url,
+  isLoading,
+  error,
+  zoom,
+  actionBusy = false,
+  onZoomIn,
+  onZoomOut,
+  onOpenFull,
+  onReplace,
+  onDelete,
+  onClose,
+}) {
   if (!document) {
     return null;
   }
@@ -1160,6 +1174,18 @@ function DocumentPreviewDrawer({ document, url, isLoading, error, zoom, onZoomIn
               <button type="button" className="btn btn-secondary btn-small" onClick={onOpenFull}>
                 <Eye size={16} />
                 <span>Open full</span>
+              </button>
+            ) : null}
+            {document.canReplace ? (
+              <button type="button" className="btn btn-primary btn-small" onClick={onReplace} disabled={actionBusy}>
+                {actionBusy ? <LoaderCircle size={16} className="is-spinning" /> : <RefreshCw size={16} />}
+                <span>Replace</span>
+              </button>
+            ) : null}
+            {document.canDelete ? (
+              <button type="button" className="btn btn-secondary btn-small" onClick={onDelete} disabled={actionBusy}>
+                <Trash2 size={16} />
+                <span>Delete</span>
               </button>
             ) : null}
             <button type="button" className="btn btn-secondary btn-small" onClick={onClose}>
@@ -1318,6 +1344,7 @@ export function ClientDashboardPage() {
           <ClaimHeroCard
             claim={activeClaim}
             t={t}
+            showChips={false}
             footer={(
               <div className="client-portal-cta-row">
                 <LocalizedLink className="btn btn-primary" to={action.to}>{action.label}</LocalizedLink>
@@ -1363,7 +1390,6 @@ export function ClientDashboardPage() {
             <section className="portal-card client-portal-dashboard-card client-portal-dashboard-card--documents">
               <div className="client-portal-dashboard-card__head">
                 <strong>{t("clientPortal.documents.requiredTitle", { defaultValue: "Required documents" })}</strong>
-                <span>{t("clientPortal.documents.requiredText", { defaultValue: "Passport / ID, boarding pass, and signature only." })}</span>
               </div>
               <div className="client-portal-documents-grid">
                 {activeClaim.requiredDocuments.map((item) => (
@@ -1536,16 +1562,14 @@ export function ClientClaimDetailsPage() {
         <ClaimHeroCard
           claim={claim}
           t={t}
+          showChips={false}
           onOpenStatus={() => setStatusDrawerOpen(true)}
         />
         <ClaimProgress status={claim.publicStatus} t={t} />
       </section>
 
       <section className="portal-card">
-        <PortalSectionHeader
-          title={t("clientPortal.documents.requiredTitle", { defaultValue: "Required documents" })}
-          text={t("clientPortal.documents.requiredText", { defaultValue: "Only the documents that matter for your claim are shown here." })}
-        />
+        <PortalSectionHeader title={t("clientPortal.documents.requiredTitle", { defaultValue: "Required documents" })} />
 
         <div className="client-portal-documents-grid">
           {claim.requiredDocuments.map((item) => (
@@ -1557,28 +1581,6 @@ export function ClientClaimDetailsPage() {
             />
           ))}
         </div>
-      </section>
-
-      <section className="portal-card">
-        <PortalSectionHeader
-          title={t("clientPortal.documents.uploadedTitle", { defaultValue: "Uploaded files" })}
-          text={t("clientPortal.documents.uploadedText", { defaultValue: "These are the files already attached to this claim." })}
-        />
-
-        {uploadedDocuments.length ? (
-          <div className="client-portal-uploaded-list">
-            {uploadedDocuments.map((document) => (
-              <UploadedDocumentRow
-                key={`${document.kind}-${document.id}`}
-                document={document}
-                previewUrl={document.signature_data_url || previewUrls[document.id] || ""}
-                onOpen={openDocument}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="portal-empty">{t("clientPortal.documents.none", { defaultValue: "No files are attached to this claim yet." })}</p>
-        )}
       </section>
 
       <ClaimStatusDrawer
@@ -1745,7 +1747,7 @@ export function ClientDocumentsPage() {
   const handleDeleteDocument = async (document) => {
     const confirmed = window.confirm("Remove this document from your claim?");
     if (!confirmed) {
-      return;
+      return false;
     }
 
     const actionKey = `document-${document.id}`;
@@ -1757,8 +1759,10 @@ export function ClientDocumentsPage() {
       await deleteClientDocument(document);
       setNotice("Document removed.");
       await loadDocuments(true);
+      return true;
     } catch (error) {
       setActionError(error.message || "Could not remove the document.");
+      return false;
     } finally {
       finishBusyState(actionKey);
     }
@@ -1830,10 +1834,7 @@ export function ClientDocumentsPage() {
   return (
     <div className="client-portal-page">
       <section className="portal-card">
-        <PortalSectionHeader
-          title={t("clientPortal.documents.title", { defaultValue: "Documents" })}
-          text={t("clientPortal.documents.text", { defaultValue: "Passport / ID, boarding pass, and signature are the only customer documents surfaced here." })}
-        />
+        <PortalSectionHeader title={t("clientPortal.documents.title", { defaultValue: "Documents" })} />
 
         <input
           ref={filePickerRef}
@@ -1850,7 +1851,7 @@ export function ClientDocumentsPage() {
           <div className="client-portal-documents-banner">
             <div>
               <strong>Uploads enabled</strong>
-              <span>{`New documents will be attached to ${state.uploadTarget.claimReference}.`}</span>
+              <span>{state.uploadTarget.claimReference}</span>
             </div>
             <ClientStatusBadge status={{ key: state.uploadTarget.publicStatusKey, label: formatStatusLabel(state.uploadTarget.publicStatusKey, "Under review"), tone: state.uploadTarget.publicStatusKey === "documents_needed" ? "warning" : "info" }} />
           </div>
@@ -1865,13 +1866,10 @@ export function ClientDocumentsPage() {
               item={item}
               previewUrl={item.latestDocument ? (item.latestDocument.signature_data_url || previewUrls[item.latestDocument.id] || "") : ""}
               canUpload={item.key !== "signature" && Boolean(state.uploadTarget?.leadId) && (!item.latestDocument || item.latestDocument.canReplace)}
-              canDelete={Boolean(item.latestDocument?.canDelete)}
-              canReplace={Boolean(item.latestDocument?.canReplace)}
               busy={Boolean(busyMap[item.latestDocument ? `document-${item.latestDocument.id}` : `slot-${item.key}`])}
               progress={progressMap[item.latestDocument ? `document-${item.latestDocument.id}` : `slot-${item.key}`] || 0}
               onPreview={openDocument}
               onUpload={(file) => runUploadAction({ documentType: item.key, file, replaceDocument: item.latestDocument?.canReplace ? item.latestDocument : null })}
-              onDelete={handleDeleteDocument}
             />
           ))}
         </div>
@@ -1881,7 +1879,7 @@ export function ClientDocumentsPage() {
             <div className="client-portal-documents-signature-panel__head">
               <div>
                 <strong>Signature / Consent</strong>
-                <span>{canAddSignature ? "Add your signature to complete the required documents." : "Signature will unlock when an editable claim is available."}</span>
+                <span>{canAddSignature ? "Add signature" : "Locked right now"}</span>
               </div>
               <ClientStatusBadge status={{ key: signatureItem.statusKey, label: signatureItem.statusLabel, tone: signatureItem.statusTone }} />
             </div>
@@ -1920,11 +1918,31 @@ export function ClientDocumentsPage() {
         isLoading={preview.isLoading}
         error={preview.error}
         zoom={preview.zoom}
+        actionBusy={preview.document ? Boolean(busyMap[`document-${preview.document.id}`]) : false}
         onZoomIn={() => setPreview((current) => ({ ...current, zoom: Math.min(2.6, current.zoom + 0.2) }))}
         onZoomOut={() => setPreview((current) => ({ ...current, zoom: Math.max(1, current.zoom - 0.2) }))}
         onOpenFull={() => {
           if (preview.url) {
             window.open(preview.url, "_blank", "noopener,noreferrer");
+          }
+        }}
+        onReplace={() => {
+          if (preview.document?.canReplace) {
+            requestFilePicker({
+              documentType: preview.document.document_type,
+              replaceDocument: preview.document,
+            });
+          }
+        }}
+        onDelete={async () => {
+          if (!preview.document?.canDelete) {
+            return;
+          }
+
+          const currentDocument = preview.document;
+          const removed = await handleDeleteDocument(currentDocument);
+          if (removed) {
+            setPreview({ document: null, url: "", isLoading: false, error: "", zoom: 1 });
           }
         }}
         onClose={() => setPreview({ document: null, url: "", isLoading: false, error: "", zoom: 1 })}
@@ -1976,10 +1994,7 @@ function ClientAccountPageInner() {
   return (
     <div className="client-portal-page">
       <section className="portal-card">
-        <PortalSectionHeader
-          title={t("clientPortal.account.title", { defaultValue: "Account" })}
-          text={t("clientPortal.account.text", { defaultValue: "Personal details, notifications, and support in one place." })}
-        />
+        <PortalSectionHeader title={t("clientPortal.account.title", { defaultValue: "Account" })} />
 
         <div className="client-portal-account-grid">
           {/* <section className="client-portal-settings-card">
@@ -2012,12 +2027,10 @@ function ClientAccountPageInner() {
           <section className="client-portal-settings-card">
             <div className="client-portal-card-heading">
               <strong>{t("clientPortal.account.notificationsTitle", { defaultValue: "Notifications" })}</strong>
-              <span>{t("clientPortal.account.notificationsText", { defaultValue: "Claim updates are still sent to your account email. Personal notification settings are coming soon." })}</span>
             </div>
 
             <div className="client-portal-soon-card">
               <span className="client-portal-soon-badge">Soon</span>
-              <strong>{t("clientPortal.account.notificationsSoonTitle", { defaultValue: "Notification preferences are not ready yet" })}</strong>
               <p>{t("clientPortal.account.notificationsSoonText", { defaultValue: "Soon you will be able to personalize claim and marketing notifications from your account." })}</p>
             </div>
           </section>
@@ -2025,10 +2038,7 @@ function ClientAccountPageInner() {
       </section>
 
       <section className="portal-card">
-        <PortalSectionHeader
-          title={t("clientPortal.account.support", { defaultValue: "Support" })}
-          text={t("clientPortal.account.supportText", { defaultValue: "Quick ways to reach us and review important policies." })}
-        />
+        <PortalSectionHeader title={t("clientPortal.account.support", { defaultValue: "Support" })} />
 
         <div className="client-portal-support-grid">
           <a className="client-portal-support-link" href={`mailto:${contactEmail}`}>
@@ -2042,21 +2052,18 @@ function ClientAccountPageInner() {
             <Phone size={18} />
             <div>
               <strong>{t("common.contact", { defaultValue: "Contact" })}</strong>
-              <span>{t("clientPortal.account.contactPage", { defaultValue: "Open support page" })}</span>
             </div>
           </LocalizedLink>
           <LocalizedLink className="client-portal-support-link" to="/privacyPolicy">
             <ShieldCheck size={18} />
             <div>
               <strong>{t("common.privacyPolicy", { defaultValue: "Privacy Policy" })}</strong>
-              <span>{t("clientPortal.account.privacyText", { defaultValue: "Review how your data is handled." })}</span>
             </div>
           </LocalizedLink>
           <LocalizedLink className="client-portal-support-link" to="/termsOfUse">
             <FileText size={18} />
             <div>
               <strong>{t("common.termsOfUse", { defaultValue: "Terms of Use" })}</strong>
-              <span>{t("clientPortal.account.termsText", { defaultValue: "Read the service terms and policies." })}</span>
             </div>
           </LocalizedLink>
         </div>
