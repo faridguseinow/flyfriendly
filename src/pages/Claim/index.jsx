@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Calendar,
   Check,
@@ -1079,17 +1079,20 @@ function ApprovedResult({ data }) {
 
 function ClaimFlow() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toLocalizedPath = useLocalizedPath();
   const { t, i18n } = useTranslation();
   const { stage = "eligibility", lang } = useParams();
   const [searchParams] = useSearchParams();
   const storedClaim = readStoredClaimDraft();
+  const navigationClaimState = location.state?.claimFlow || null;
   const [data, setData] = useState(() => ({
     ...storedClaim,
-    departure: searchParams.get("departure") || storedClaim.departure,
-    destination: searchParams.get("destination") || storedClaim.destination,
+    ...(navigationClaimState?.data || {}),
+    departure: searchParams.get("departure") || navigationClaimState?.data?.departure || storedClaim.departure,
+    destination: searchParams.get("destination") || navigationClaimState?.data?.destination || storedClaim.destination,
   }));
-  const [files, setFiles] = useState({});
+  const [files, setFiles] = useState(() => navigationClaimState?.files || {});
   const [departureMatches, setDepartureMatches] = useState([]);
   const [destinationMatches, setDestinationMatches] = useState([]);
   const [airlineMatches, setAirlineMatches] = useState([]);
@@ -1117,7 +1120,17 @@ function ClaimFlow() {
     window.localStorage.setItem(CLAIM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
   }, [currentLanguageCode, data, stage]);
 
-  const go = (nextStage) => navigate(toLocalizedPath(`/claim/${nextStage}`));
+  const go = (nextStage, nextData = data, nextFiles = files) => navigate(
+    toLocalizedPath(`/claim/${nextStage}`),
+    {
+      state: {
+        claimFlow: {
+          data: nextData,
+          files: nextFiles,
+        },
+      },
+    },
+  );
 
   useEffect(() => {
     if (!["documents", "finish"].includes(stage)) {
