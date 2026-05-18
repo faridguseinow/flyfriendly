@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { NavLink, Outlet, useParams } from "react-router-dom";
+import { Outlet, useLocation, useParams } from "react-router-dom";
 import {
   ArrowRight,
   CheckCircle2,
@@ -32,7 +32,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
   deleteClientDocument,
@@ -47,7 +47,6 @@ import {
   saveClientProfile,
   uploadClientDocument,
 } from "../../services/clientPortalService.js";
-import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { contactEmail } from "../../constants/site.js";
 import { saveLeadSignature } from "../../services/leadService.js";
 import "./style.scss";
@@ -765,12 +764,12 @@ function PaymentProgress({ status, t }) {
 
 function ClientPortalNavLink({ to, icon: Icon, label, end = false, mobile = false, avatarUrl = "" }) {
   return (
-    <NavLink to={to} end={end} className={({ isActive }) => `client-portal-nav__link${mobile ? " is-mobile" : ""}${isActive ? " is-active" : ""}`}>
+    <LocalizedNavLink to={to} end={end} className={({ isActive }) => `client-portal-nav__link${mobile ? " is-mobile" : ""}${isActive ? " is-active" : ""}`}>
       <span className="client-portal-nav__icon">
         {avatarUrl && mobile ? <img src={avatarUrl} alt="" className="client-portal-nav__avatar" /> : <Icon size={18} />}
       </span>
       <span className="client-portal-nav__label">{label}</span>
-    </NavLink>
+    </LocalizedNavLink>
   );
 }
 
@@ -1269,17 +1268,17 @@ function DocumentPreviewDrawer({
 
 export function ClientPortalLayout() {
   const { t } = useTranslation();
-  const toLocalizedPath = useLocalizedPath();
+  const location = useLocation();
   const { profile, user } = useAuth();
   const avatarUrl = getIdentityAvatarUrl(profile, user);
 
   const navItems = useMemo(() => ([
-    { label: t("clientPortal.nav.home", { defaultValue: "Home" }), path: toLocalizedPath("/client/dashboard"), icon: House, end: true },
-    { label: t("clientPortal.nav.claims", { defaultValue: "Claims" }), path: toLocalizedPath("/client/claims"), icon: FileText },
-    { label: t("clientPortal.nav.documents", { defaultValue: "Documents" }), path: toLocalizedPath("/client/documents"), icon: FolderOpen },
-    { label: t("clientPortal.nav.payments", { defaultValue: "Payments" }), path: toLocalizedPath("/client/payments"), icon: CircleDollarSign },
-    { label: t("clientPortal.nav.account", { defaultValue: "Account" }), path: toLocalizedPath("/client/account"), icon: UserRound },
-  ]), [t, toLocalizedPath]);
+    { label: t("clientPortal.nav.home", { defaultValue: "Home" }), path: "/client/dashboard", icon: House, end: true },
+    { label: t("clientPortal.nav.claims", { defaultValue: "Claims" }), path: "/client/claims", icon: FileText },
+    { label: t("clientPortal.nav.documents", { defaultValue: "Documents" }), path: "/client/documents", icon: FolderOpen },
+    { label: t("clientPortal.nav.payments", { defaultValue: "Payments" }), path: "/client/payments", icon: CircleDollarSign },
+    { label: t("clientPortal.nav.account", { defaultValue: "Account" }), path: "/client/account", icon: UserRound },
+  ]), [t]);
 
   return (
     <div className="client-portal-shell section">
@@ -1293,7 +1292,7 @@ export function ClientPortalLayout() {
         </aside>
 
         <main className="client-portal-main">
-          <div className="client-portal-main__viewport">
+          <div key={location.pathname} className="client-portal-main__viewport">
             <Outlet />
           </div>
         </main>
