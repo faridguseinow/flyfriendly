@@ -348,8 +348,7 @@
   color: #6b7280;
   transition: transform 180ms ease, color 180ms ease, background 180ms ease;
 
-  &.is-active,
-  &:hover {
+  &.is-active {
     color: var(--primary-dark);
     background: linear-gradient(180deg, #f6fbff 0%, #eef7ff 100%);
   }
@@ -364,6 +363,14 @@
   border-radius: 12px;
   color: inherit;
   background: rgba(17, 152, 255, 0.08);
+}
+
+.client-portal-nav__avatar {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: inherit;
 }
 
 .client-portal-nav__label {
@@ -381,6 +388,8 @@
   gap: 5px;
   border-radius: 18px;
   text-align: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 
   .client-portal-nav__icon {
     width: 28px;
@@ -1767,6 +1776,37 @@
   gap: 10px;
 }
 
+.client-portal-page--account {
+  gap: 14px;
+}
+
+.client-portal-account-card {
+  padding: 16px;
+}
+
+.client-portal-account-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.client-portal-account-section {
+  display: grid;
+  gap: 10px;
+}
+
+.client-portal-account-section + .client-portal-account-section {
+  padding-top: 16px;
+  border-top: 1px solid rgba(223, 233, 246, 0.9);
+}
+
+.client-portal-account-form {
+  gap: 10px;
+}
+
+.client-portal-account-submit {
+  width: 100%;
+}
+
 .client-portal-card-heading {
   margin-bottom: 12px;
   display: grid;
@@ -2129,13 +2169,15 @@
   left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
   bottom: max(12px, env(safe-area-inset-bottom));
-  z-index: 60;
+  z-index: 120;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
   padding: 7px;
   border-radius: 24px;
   will-change: transform;
+  pointer-events: auto;
 }
 
 .is-spinning {
@@ -2230,6 +2272,16 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .client-portal-account-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .client-portal-account-submit,
+  .client-portal-account-form .portal-message {
+    grid-column: 1 / -1;
+  }
+
   .client-portal-documents-signature-panel__form {
     grid-template-columns: 1fr;
     align-items: start;
@@ -2261,6 +2313,22 @@
 
   .client-portal-dashboard-card--documents {
     grid-column: 1 / -1;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .client-portal-nav__link {
+    &:hover {
+      color: var(--primary-dark);
+      background: linear-gradient(180deg, #f6fbff 0%, #eef7ff 100%);
+    }
+  }
+
+  .client-portal-nav__link.is-mobile {
+    &:hover {
+      background: linear-gradient(180deg, rgba(17, 152, 255, 0.12) 0%, rgba(17, 152, 255, 0.08) 100%);
+      transform: translateY(-1px);
+    }
   }
 }
 

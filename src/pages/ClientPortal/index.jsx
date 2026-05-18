@@ -156,6 +156,42 @@ function formatStatusLabel(value, fallback = "Unknown") {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function getIdentityAvatarUrl(profile, user) {
+  const metadata = user?.user_metadata || {};
+  const identityData = Array.isArray(user?.identities)
+    ? user.identities
+      .map((identity) => identity?.identity_data || null)
+      .find((identity) => identity?.avatar_url || identity?.picture || identity?.photo_url || identity?.photoURL)
+    : null;
+
+  return profile?.avatar_url
+    || metadata.avatar_url
+    || metadata.picture
+    || metadata.photo_url
+    || metadata.photoURL
+    || identityData?.avatar_url
+    || identityData?.picture
+    || identityData?.photo_url
+    || identityData?.photoURL
+    || "";
+}
+
+function splitFullName(value) {
+  const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) {
+    return { firstName: "", lastName: "" };
+  }
+
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: "" };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
 function normalizeCountryLookup(value) {
   return String(value || "")
     .normalize("NFD")
@@ -726,11 +762,11 @@ function PaymentProgress({ status, t }) {
   );
 }
 
-function ClientPortalNavLink({ to, icon: Icon, label, end = false, mobile = false }) {
+function ClientPortalNavLink({ to, icon: Icon, label, end = false, mobile = false, avatarUrl = "" }) {
   return (
     <NavLink to={to} end={end} className={({ isActive }) => `client-portal-nav__link${mobile ? " is-mobile" : ""}${isActive ? " is-active" : ""}`}>
       <span className="client-portal-nav__icon">
-        <Icon size={18} />
+        {avatarUrl && mobile ? <img src={avatarUrl} alt="" className="client-portal-nav__avatar" /> : <Icon size={18} />}
       </span>
       <span className="client-portal-nav__label">{label}</span>
     </NavLink>
@@ -1233,6 +1269,8 @@ function DocumentPreviewDrawer({
 export function ClientPortalLayout() {
   const { t } = useTranslation();
   const toLocalizedPath = useLocalizedPath();
+  const { profile, user } = useAuth();
+  const avatarUrl = getIdentityAvatarUrl(profile, user);
 
   const navItems = useMemo(() => ([
     { label: t("clientPortal.nav.home", { defaultValue: "Home" }), path: toLocalizedPath("/client/dashboard"), icon: House, end: true },
@@ -1262,7 +1300,15 @@ export function ClientPortalLayout() {
 
       <nav className="client-portal-mobile-nav" aria-label={t("clientPortal.navLabel", { defaultValue: "Client account sections" })}>
         {navItems.map((item) => (
-          <ClientPortalNavLink key={`mobile-${item.path}`} to={item.path} icon={item.icon} label={item.label} end={item.end} mobile />
+          <ClientPortalNavLink
+            key={`mobile-${item.path}`}
+            to={item.path}
+            icon={item.icon}
+            label={item.label}
+            end={item.end}
+            mobile
+            avatarUrl={item.path.endsWith("/client/account") ? avatarUrl : ""}
+          />
         ))}
       </nav>
     </div>
@@ -2041,8 +2087,10 @@ export function ClientDocumentsPage() {
 function ClientAccountPageInner() {
   const { t } = useTranslation();
   const { profile, user, refreshProfile } = useAuth();
+  const initialNameParts = splitFullName(profile?.full_name || user?.user_metadata?.full_name || "");
   const [form, setForm] = useState({
-    full_name: profile?.full_name || user?.user_metadata?.full_name || "",
+    first_name: initialNameParts.firstName,
+    last_name: initialNameParts.lastName,
     email: profile?.email || user?.email || "",
     phone: profile?.phone || user?.user_metadata?.phone || "",
   });
@@ -2051,8 +2099,10 @@ function ClientAccountPageInner() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    const nextNameParts = splitFullName(profile?.full_name || user?.user_metadata?.full_name || "");
     setForm({
-      full_name: profile?.full_name || user?.user_metadata?.full_name || "",
+      first_name: nextNameParts.firstName,
+      last_name: nextNameParts.lastName,
       email: profile?.email || user?.email || "",
       phone: profile?.phone || user?.user_metadata?.phone || "",
     });
@@ -2066,7 +2116,7 @@ function ClientAccountPageInner() {
 
     try {
       await saveClientProfile({
-        full_name: form.full_name,
+        full_name: [form.first_name, form.last_name].filter(Boolean).join(" ").trim(),
         phone: form.phone,
       });
       await refreshProfile();
@@ -2079,21 +2129,22 @@ function ClientAccountPageInner() {
   };
 
   return (
-    <div className="client-portal-page">
-      <section className="portal-card">
-        <PortalSectionHeader title={t("clientPortal.account.title", { defaultValue: "Account" })} />
-
-        <div className="client-portal-account-grid">
-          {/* <section className="client-portal-settings-card">
+    <div className="client-portal-page client-portal-page--account">
+      <section className="portal-card client-portal-account-card">
+        <div className="client-portal-account-stack">
+          <section className="client-portal-account-section">
             <div className="client-portal-card-heading">
               <strong>{t("clientPortal.account.personal", { defaultValue: "Personal information" })}</strong>
-              <span>{t("clientPortal.account.personalText", { defaultValue: "Only the details safe to edit here are shown below." })}</span>
             </div>
 
-            <form className="portal-form" onSubmit={submit}>
+            <form className="portal-form client-portal-account-form" onSubmit={submit}>
               <label>
-                <span>{t("clientPortal.account.fullName", { defaultValue: "Full name" })}</span>
-                <input value={form.full_name} onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))} />
+                <span>{t("clientPortal.account.firstName", { defaultValue: "First name" })}</span>
+                <input value={form.first_name} onChange={(event) => setForm((current) => ({ ...current, first_name: event.target.value }))} />
+              </label>
+              <label>
+                <span>{t("clientPortal.account.lastName", { defaultValue: "Last name" })}</span>
+                <input value={form.last_name} onChange={(event) => setForm((current) => ({ ...current, last_name: event.target.value }))} />
               </label>
               <label>
                 <span>{t("clientPortal.account.email", { defaultValue: "Email" })}</span>
@@ -2105,13 +2156,13 @@ function ClientAccountPageInner() {
               </label>
               {error ? <p className="portal-message is-error">{error}</p> : null}
               {message ? <p className="portal-message is-notice">{message}</p> : null}
-              <button className="btn btn-primary" type="submit" disabled={isSaving}>
+              <button className="btn btn-primary client-portal-account-submit" type="submit" disabled={isSaving}>
                 {isSaving ? t("clientPortal.account.saving", { defaultValue: "Saving..." }) : t("clientPortal.account.submit", { defaultValue: "Save changes" })}
               </button>
             </form>
-          </section> */}
+          </section>
 
-          <section className="client-portal-settings-card">
+          <section className="client-portal-account-section">
             <div className="client-portal-card-heading">
               <strong>{t("clientPortal.account.notificationsTitle", { defaultValue: "Notifications" })}</strong>
             </div>
@@ -2121,13 +2172,13 @@ function ClientAccountPageInner() {
               <p>{t("clientPortal.account.notificationsSoonText", { defaultValue: "Soon you will be able to personalize claim and marketing notifications from your account." })}</p>
             </div>
           </section>
-        </div>
-      </section>
 
-      <section className="portal-card">
-        <PortalSectionHeader title={t("clientPortal.account.support", { defaultValue: "Support" })} />
+          <section className="client-portal-account-section">
+            <div className="client-portal-card-heading">
+              <strong>{t("clientPortal.account.support", { defaultValue: "Support" })}</strong>
+            </div>
 
-        <div className="client-portal-support-grid">
+            <div className="client-portal-support-grid">
           <a className="client-portal-support-link" href={`mailto:${contactEmail}`}>
             <Mail size={18} />
             <div>
@@ -2153,6 +2204,8 @@ function ClientAccountPageInner() {
               <strong>{t("common.termsOfUse", { defaultValue: "Terms of Use" })}</strong>
             </div>
           </LocalizedLink>
+            </div>
+          </section>
         </div>
       </section>
     </div>
