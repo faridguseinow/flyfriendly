@@ -426,6 +426,96 @@
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.035);
 }
 
+.client-portal-dashboard-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.client-portal-dashboard-card {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.client-portal-dashboard-card__head {
+  display: grid;
+  gap: 4px;
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 17px;
+  }
+}
+
+.client-portal-dashboard-note {
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid rgba(223, 233, 246, 0.88);
+  border-radius: 16px;
+  color: #16506c;
+  background: #eef8ff;
+
+  span {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+  }
+}
+
+.client-portal-dashboard-summary {
+  display: grid;
+  gap: 10px;
+
+  article {
+    padding: 12px 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(223, 233, 246, 0.9);
+  }
+
+  article:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  span,
+  strong {
+    display: block;
+  }
+
+  span {
+    color: #6b7890;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
+    text-align: right;
+  }
+}
+
 .client-portal-section-header {
   margin-bottom: 14px;
   display: flex;
@@ -2133,6 +2223,15 @@
   .client-portal-loading-hero {
     grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
   }
+
+  .client-portal-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .client-portal-dashboard-card--documents {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (min-width: 900px) {
@@ -2141,7 +2240,7 @@
   }
 
   .client-portal-claims-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   .client-portal-claim-hero.is-compact .client-portal-claim-hero__facts {
@@ -2170,6 +2269,15 @@
 
   .client-portal-account-grid {
     grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  }
+
+  .client-portal-dashboard-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  }
+
+  .client-portal-dashboard-card--documents {
+    grid-column: auto;
+    grid-row: span 2;
   }
 }
 

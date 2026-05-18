@@ -1273,9 +1273,29 @@ export function ClientDashboardPage() {
 
   const claimRows = state.data?.claimRows || [];
   const activeClaim = claimRows.find((item) => !["paid", "rejected"].includes(item.publicStatus.key)) || claimRows[0] || null;
-  const claimsNeedingAttention = claimRows.filter((item) => item.publicStatus.key === "documents_needed").length;
-  const paidClaims = claimRows.filter((item) => item.publicStatus.key === "paid").length;
   const action = getClaimAction(activeClaim, t);
+  const dashboardDocuments = (activeClaim?.requiredDocuments || []).map((item) => item.latestDocument).filter(Boolean);
+  const dashboardPreviewUrls = useDocumentPreviewUrls(dashboardDocuments);
+  const actionRequired = Boolean(
+    activeClaim
+    && (activeClaim.publicStatus.key === "documents_needed" || activeClaim.documentsSummary?.needsAttention),
+  );
+  const compensationCurrency = activeClaim?.finance?.currency || activeClaim?.estimate?.currency || "EUR";
+  const approvedAmount = Number.isFinite(Number(activeClaim?.finance?.compensation_amount))
+    ? Number(activeClaim.finance.compensation_amount)
+    : null;
+  const paidAmount = Number.isFinite(Number(activeClaim?.finance?.customer_payout))
+    ? Number(activeClaim.finance.customer_payout)
+    : null;
+
+  const openDashboardDocument = async (document) => {
+    try {
+      const url = document.signature_data_url || dashboardPreviewUrls[document.id] || await getClientDocumentDownloadUrl(document);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      // Dashboard stays quiet; the documents page is the full management surface.
+    }
+  };
 
   if (!claimRows.length) {
     return (
@@ -1293,62 +1313,96 @@ export function ClientDashboardPage() {
 
   return (
     <div className="client-portal-page">
-      <div className="client-portal-overview-grid">
-        <article className="client-portal-overview-card">
-          <span>{t("clientPortal.overview.totalClaims", { defaultValue: "Claims" })}</span>
-          <strong>{claimRows.length}</strong>
-        </article>
-        <article className="client-portal-overview-card">
-          <span>{t("clientPortal.overview.documents", { defaultValue: "Needs attention" })}</span>
-          <strong>{claimsNeedingAttention}</strong>
-        </article>
-        <article className="client-portal-overview-card">
-          <span>{t("clientPortal.overview.paid", { defaultValue: "Paid" })}</span>
-          <strong>{paidClaims}</strong>
-        </article>
-      </div>
+      {activeClaim ? (
+        <>
+          <ClaimHeroCard
+            claim={activeClaim}
+            t={t}
+            footer={(
+              <div className="client-portal-cta-row">
+                <LocalizedLink className="btn btn-primary" to={action.to}>{action.label}</LocalizedLink>
+                <LocalizedLink className="client-portal-text-link" to={`/client/claims/${activeClaim.id}`}>
+                  {t("clientPortal.actions.claimDetails", { defaultValue: "Claim details" })}
+                  <ArrowRight size={16} />
+                </LocalizedLink>
+              </div>
+            )}
+          />
 
-      <section className="portal-card client-portal-hero-card">
-        <PortalSectionHeader
-          title={t("clientPortal.home.title", { defaultValue: "Home" })}
-          text={t("clientPortal.home.text", { defaultValue: "Your latest claim, current status, and the next action that matters." })}
-          action={<LocalizedLink className="btn btn-secondary" to="/claim/eligibility">{t("clientPortal.home.newClaim", { defaultValue: "Start new claim" })}</LocalizedLink>}
-        />
-
-        {activeClaim ? (
-          <div className="client-portal-current-claim">
-            <div className="client-portal-current-claim__main">
-              <ClaimHeroCard
-                claim={activeClaim}
-                t={t}
-                footer={(
-                  <div className="client-portal-cta-row">
-                    <LocalizedLink className="btn btn-primary" to={action.to}>{action.label}</LocalizedLink>
-                    {activeClaim.publicStatus.key === "documents_needed" ? (
-                      <LocalizedLink className="btn btn-secondary" to="/client/documents">
-                        {t("clientPortal.actions.uploadDocuments", { defaultValue: "Upload documents" })}
-                      </LocalizedLink>
-                    ) : null}
-                    <LocalizedLink className="client-portal-text-link" to={`/client/claims/${activeClaim.id}`}>
-                      {t("clientPortal.actions.claimDetails", { defaultValue: "Claim details" })}
-                      <ArrowRight size={16} />
-                    </LocalizedLink>
-                  </div>
-                )}
-              />
-            </div>
-
-            <div className="client-portal-current-claim__side">
-              <div className="client-portal-compact-block">
-                <small>{t("clientPortal.home.progressTitle", { defaultValue: "Claim status" })}</small>
-                <strong>{activeClaim.publicStatus.label}</strong>
-                <p>{activeClaim.publicStatus.explanation}</p>
+          <div className="client-portal-dashboard-grid">
+            <section className="portal-card client-portal-dashboard-card">
+              <div className="client-portal-dashboard-card__head">
+                <strong>{t("clientPortal.home.progressTitle", { defaultValue: "Claim status" })}</strong>
               </div>
               <ClaimProgress status={activeClaim.publicStatus} t={t} />
-            </div>
+            </section>
+
+            <section className="portal-card client-portal-dashboard-card">
+              <div className="client-portal-dashboard-card__head">
+                <strong>{actionRequired
+                  ? t("clientPortal.home.actionRequired", { defaultValue: "Action required" })
+                  : t("clientPortal.home.noAction", { defaultValue: "No action needed" })}
+                </strong>
+                <span>{actionRequired
+                  ? t("clientPortal.home.actionReason", { defaultValue: "We still need one or more required documents before we can continue your claim." })
+                  : t("clientPortal.home.noActionText", { defaultValue: "We will notify you when the status changes." })}
+                </span>
+              </div>
+              {actionRequired ? (
+                <LocalizedLink className="btn btn-primary" to="/client/documents">
+                  {t("clientPortal.actions.uploadDocuments", { defaultValue: "Upload documents" })}
+                </LocalizedLink>
+              ) : (
+                <div className="client-portal-dashboard-note">
+                  <CheckCircle2 size={18} />
+                  <span>{t("clientPortal.home.monitoring", { defaultValue: "Your claim is moving forward with the documents already attached." })}</span>
+                </div>
+              )}
+            </section>
+
+            <section className="portal-card client-portal-dashboard-card client-portal-dashboard-card--documents">
+              <div className="client-portal-dashboard-card__head">
+                <strong>{t("clientPortal.documents.requiredTitle", { defaultValue: "Required documents" })}</strong>
+                <span>{t("clientPortal.documents.requiredText", { defaultValue: "Passport / ID, boarding pass, and signature only." })}</span>
+              </div>
+              <div className="client-portal-documents-grid">
+                {activeClaim.requiredDocuments.map((item) => (
+                  <DocumentStatusCard
+                    key={item.key}
+                    item={item}
+                    previewUrl={item.latestDocument ? (item.latestDocument.signature_data_url || dashboardPreviewUrls[item.latestDocument.id] || "") : ""}
+                    onOpen={openDashboardDocument}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section className="portal-card client-portal-dashboard-card">
+              <div className="client-portal-dashboard-card__head">
+                <strong>{t("clientPortal.payments.title", { defaultValue: "Compensation" })}</strong>
+              </div>
+              <div className="client-portal-dashboard-summary">
+                <article>
+                  <span>{t("clientPortal.claim.compensation", { defaultValue: "Possible compensation" })}</span>
+                  <strong>{formatEstimateAmount(activeClaim.estimate?.amount, activeClaim.estimate?.currency, t)}</strong>
+                </article>
+                <article>
+                  <span>{t("clientPortal.payments.approvedAmount", { defaultValue: "Approved amount" })}</span>
+                  <strong>{approvedAmount !== null ? formatCurrencyValue(approvedAmount, compensationCurrency) : "—"}</strong>
+                </article>
+                <article>
+                  <span>{t("clientPortal.payments.paidAmount", { defaultValue: "Paid amount" })}</span>
+                  <strong>{paidAmount !== null ? formatCurrencyValue(paidAmount, compensationCurrency) : "—"}</strong>
+                </article>
+                <article>
+                  <span>{t("clientPortal.claim.payment", { defaultValue: "Payment status" })}</span>
+                  <strong>{activeClaim.paymentStatus.label}</strong>
+                </article>
+              </div>
+            </section>
           </div>
-        ) : null}
-      </section>
+        </>
+      ) : null}
     </div>
   );
 }
