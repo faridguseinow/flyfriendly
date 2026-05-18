@@ -67,6 +67,8 @@ const CLIENT_PAYMENT_STEPS = [
   { key: "paid", label: "Paid" },
 ];
 
+const EMPTY_LIST = [];
+
 const COUNTRY_CODE_BY_NAME = {
   azerbaijan: "AZ",
   "azerbaijan republic": "AZ",
@@ -108,6 +110,14 @@ const COUNTRY_CODE_BY_NAME = {
   usa: "US",
   canada: "CA",
 };
+
+function debugClientPortal(event, payload) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
+  console.log(`[client-portal] ${event}`, payload);
+}
 
 function formatDate(value) {
   if (!value) return "—";
@@ -552,7 +562,7 @@ function useDocumentPreviewUrls(documents) {
     const targets = documents.filter((item) => isImageDocument(item) && !item.signature_data_url && item.file_path && item.bucket);
 
     if (!targets.length) {
-      setPreviewUrls({});
+      setPreviewUrls((current) => (Object.keys(current).length ? {} : current));
       return;
     }
 
@@ -570,7 +580,21 @@ function useDocumentPreviewUrls(documents) {
         return;
       }
 
-      setPreviewUrls(Object.fromEntries(entries.filter(([, value]) => value)));
+      const nextPreviewUrls = Object.fromEntries(entries.filter(([, value]) => value));
+
+      setPreviewUrls((current) => {
+        const currentKeys = Object.keys(current);
+        const nextKeys = Object.keys(nextPreviewUrls);
+
+        if (
+          currentKeys.length === nextKeys.length
+          && currentKeys.every((key) => current[key] === nextPreviewUrls[key])
+        ) {
+          return current;
+        }
+
+        return nextPreviewUrls;
+      });
     });
 
     return () => {
@@ -1280,6 +1304,25 @@ export function ClientPortalLayout() {
     { label: t("clientPortal.nav.account", { defaultValue: "Account" }), path: "/client/account", icon: UserRound },
   ]), [t]);
 
+  const activeNavItem = useMemo(
+    () => navItems.find((item) => {
+      if (item.end) {
+        return location.pathname.endsWith("/client/dashboard");
+      }
+
+      return location.pathname.includes(item.path);
+    })?.label || "unknown",
+    [location.pathname, navItems],
+  );
+
+  useEffect(() => {
+    debugClientPortal("layout", {
+      pathname: location.pathname,
+      activeNavItem,
+      navItems: navItems.map((item) => item.path),
+    });
+  }, [location.pathname, activeNavItem, navItems]);
+
   return (
     <div className="client-portal-shell section">
       <div className="client-portal-layout">
@@ -1322,7 +1365,15 @@ export function ClientPortalLayout() {
 
 export function ClientDashboardPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const [state, setState] = useState({ isLoading: true, error: "", data: null });
+
+  useEffect(() => {
+    debugClientPortal("rendered-page", {
+      pathname: location.pathname,
+      component: "ClientDashboardPage",
+    });
+  }, [location.pathname]);
 
   useEffect(() => {
     let active = true;
@@ -1345,10 +1396,13 @@ export function ClientDashboardPage() {
     };
   }, []);
 
-  const claimRows = state.data?.claimRows || [];
+  const claimRows = state.data?.claimRows || EMPTY_LIST;
   const activeClaim = claimRows.find((item) => !["paid", "rejected"].includes(item.publicStatus.key)) || claimRows[0] || null;
   const action = getClaimAction(activeClaim, t);
-  const dashboardDocuments = (activeClaim?.requiredDocuments || []).map((item) => item.latestDocument).filter(Boolean);
+  const dashboardDocuments = useMemo(
+    () => (activeClaim?.requiredDocuments || EMPTY_LIST).map((item) => item.latestDocument).filter(Boolean),
+    [activeClaim],
+  );
   const dashboardPreviewUrls = useDocumentPreviewUrls(dashboardDocuments);
   const actionRequired = Boolean(
     activeClaim
@@ -1491,7 +1545,15 @@ export function ClientDashboardPage() {
 
 export function ClientClaimsPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const [state, setState] = useState({ isLoading: true, error: "", rows: [] });
+
+  useEffect(() => {
+    debugClientPortal("rendered-page", {
+      pathname: location.pathname,
+      component: "ClientClaimsPage",
+    });
+  }, [location.pathname]);
 
   useEffect(() => {
     let active = true;
@@ -1561,6 +1623,7 @@ export function ClientClaimsPage() {
 
 export function ClientClaimDetailsPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const { id } = useParams();
   const filePickerRef = useRef(null);
   const [state, setState] = useState({ isLoading: true, error: "", data: null });
@@ -1569,6 +1632,14 @@ export function ClientClaimDetailsPage() {
   const [actionBusy, setActionBusy] = useState("");
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    debugClientPortal("rendered-page", {
+      pathname: location.pathname,
+      component: "ClientClaimDetailsPage",
+      claimId: id,
+    });
+  }, [location.pathname, id]);
 
   useEffect(() => {
     let active = true;
@@ -1599,7 +1670,7 @@ export function ClientClaimDetailsPage() {
     };
   }, [id]);
 
-  const uploadedDocuments = state.data?.documents || [];
+  const uploadedDocuments = useMemo(() => state.data?.documents || EMPTY_LIST, [state.data?.documents]);
   const previewUrls = useDocumentPreviewUrls(uploadedDocuments);
 
   const openDocument = async (document) => {
@@ -1732,6 +1803,7 @@ export function ClientClaimDetailsPage() {
 
 export function ClientDocumentsPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const { profile, user } = useAuth();
   const filePickerRef = useRef(null);
   const uploadTimersRef = useRef({});
@@ -1745,6 +1817,13 @@ export function ClientDocumentsPage() {
   const [signatureDataUrl, setSignatureDataUrl] = useState("");
   const [signatureAccepted, setSignatureAccepted] = useState(false);
   const [isSavingSignature, setIsSavingSignature] = useState(false);
+
+  useEffect(() => {
+    debugClientPortal("rendered-page", {
+      pathname: location.pathname,
+      component: "ClientDocumentsPage",
+    });
+  }, [location.pathname]);
 
   const clearBusyState = (actionKey) => {
     const timer = uploadTimersRef.current[actionKey];
@@ -2091,6 +2170,7 @@ export function ClientDocumentsPage() {
 
 function ClientAccountPageInner() {
   const { t } = useTranslation();
+  const location = useLocation();
   const { profile, user, refreshProfile } = useAuth();
   const initialNameParts = splitFullName(profile?.full_name || user?.user_metadata?.full_name || "");
   const [form, setForm] = useState({
@@ -2102,6 +2182,13 @@ function ClientAccountPageInner() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    debugClientPortal("rendered-page", {
+      pathname: location.pathname,
+      component: "ClientAccountPage",
+    });
+  }, [location.pathname]);
 
   useEffect(() => {
     const nextNameParts = splitFullName(profile?.full_name || user?.user_metadata?.full_name || "");
@@ -2227,7 +2314,15 @@ export function ClientProfilePage() {
 
 export function ClientPaymentsPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const [state, setState] = useState({ isLoading: true, error: "", data: null });
+
+  useEffect(() => {
+    debugClientPortal("rendered-page", {
+      pathname: location.pathname,
+      component: "ClientPaymentsPage",
+    });
+  }, [location.pathname]);
 
   useEffect(() => {
     let active = true;
