@@ -805,6 +805,52 @@
   gap: 10px;
 }
 
+.client-portal-documents-signature-panel {
+  margin-top: 10px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(223, 233, 246, 0.95);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+}
+
+.client-portal-documents-signature-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+
+  span {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.client-portal-documents-signature-panel__form {
+  display: grid;
+  gap: 10px;
+}
+
+.client-portal-documents-signature-panel__controls {
+  display: grid;
+  gap: 10px;
+}
+
 .client-portal-documents-banner {
   margin-bottom: 12px;
   padding: 12px 14px;
@@ -1342,6 +1388,14 @@
     min-height: 34px;
     padding: 0 12px;
   }
+
+  &.is-compact {
+    min-height: 156px;
+
+    canvas {
+      height: 156px;
+    }
+  }
 }
 
 .client-portal-signature-consent {
@@ -1364,6 +1418,10 @@
     color: var(--ink-soft);
     font-size: 12px;
     line-height: 18px;
+  }
+
+  &.is-compact {
+    padding: 10px 12px;
   }
 }
 
@@ -1627,6 +1685,11 @@
   .client-portal-documents-manager-grid,
   .client-portal-support-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-portal-documents-signature-panel__form {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
+    align-items: start;
   }
 
   .client-portal-signature-summary {
