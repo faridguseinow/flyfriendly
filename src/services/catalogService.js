@@ -539,14 +539,16 @@ export async function findAirportByCode(code) {
 
   try {
     const client = requireSupabase();
-    const { data, error } = await client
-      .from("airports")
-      .select(AIRPORT_FIELDS)
-      .or(`iata_code.eq.${normalizedCode},icao_code.eq.${normalizedCode},ident.eq.${normalizedCode}`)
-      .limit(5);
+    const results = await Promise.all([
+      client.from("airports").select(AIRPORT_FIELDS).eq("iata_code", normalizedCode).limit(5),
+      client.from("airports").select(AIRPORT_FIELDS).eq("icao_code", normalizedCode).limit(5),
+      client.from("airports").select(AIRPORT_FIELDS).eq("ident", normalizedCode).limit(5),
+    ]);
 
-    if (!error && data?.length) {
-      const exact = data.find((airport) =>
+    const rows = results.flatMap(({ data, error }) => (error ? [] : data || []));
+
+    if (rows.length) {
+      const exact = rows.find((airport) =>
         [airport.iata_code, airport.icao_code, airport.ident]
           .filter(Boolean)
           .map((value) => String(value).toUpperCase())

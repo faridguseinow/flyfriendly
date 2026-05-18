@@ -102,6 +102,15 @@ function formatEstimateAmount(amount, currency = "EUR", t) {
   });
 }
 
+function formatStatusLabel(value, fallback = "Unknown") {
+  const input = String(value || "").trim();
+  if (!input) return fallback;
+
+  return input
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
 function getStatusIcon(tone) {
   if (tone === "success") return CheckCircle2;
   if (tone === "warning") return TriangleAlert;
@@ -1351,7 +1360,7 @@ export function ClientDocumentsPage() {
               <strong>Uploads enabled</strong>
               <span>{`New documents will be attached to ${state.uploadTarget.claimReference}.`}</span>
             </div>
-            <ClientStatusBadge status={{ key: state.uploadTarget.publicStatusKey, label: normalizeLabel(state.uploadTarget.publicStatusKey, "Under review"), tone: state.uploadTarget.publicStatusKey === "documents_needed" ? "warning" : "info" }} />
+            <ClientStatusBadge status={{ key: state.uploadTarget.publicStatusKey, label: formatStatusLabel(state.uploadTarget.publicStatusKey, "Under review"), tone: state.uploadTarget.publicStatusKey === "documents_needed" ? "warning" : "info" }} />
           </div>
         ) : (
           <p className="portal-message is-notice">Document changes are locked for the claims currently attached to your account.</p>
