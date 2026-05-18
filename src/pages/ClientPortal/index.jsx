@@ -585,7 +585,9 @@ function ClaimProgress({ status, t }) {
         const state = getProgressState(status?.key, step.key);
         return (
           <div key={step.key} className={`client-portal-progress__step is-${state}`}>
-            <span className="client-portal-progress__dot" aria-hidden="true" />
+            <span className="client-portal-progress__dot" aria-hidden="true">
+              {state === "completed" ? <CheckCircle2 size={12} /> : null}
+            </span>
             <span>{t(`clientPortal.status.${step.key}`, { defaultValue: step.label })}</span>
           </div>
         );

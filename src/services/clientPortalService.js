@@ -190,10 +190,20 @@ function hasDocumentAttention(documentStatus) {
   return Boolean(documentStatus?.needsAttention);
 }
 
+function hasAllRequiredDocuments(documentStatus) {
+  if (!Array.isArray(documentStatus) || !documentStatus.length) {
+    return false;
+  }
+
+  return documentStatus.every((item) => !["missing", "rejected"].includes(item?.statusKey));
+}
+
 export function getClientClaimStatus(internalStatus, stage, documentStatus, paymentStatus) {
   const normalizedStatus = String(internalStatus || "").toLowerCase();
-  const normalizedStage = String(stage || "").toLowerCase();
   const payment = getClientPaymentStatus(paymentStatus);
+  const documentsNeedAttention = hasDocumentAttention(documentStatus);
+  const documentsReady = hasAllRequiredDocuments(documentStatus);
+  const explicitlyNeedsDocuments = ["documents_pending", "missing_documents", "needs_documents"].includes(normalizedStatus);
 
   if (payment.key === "paid") {
     return {
@@ -226,9 +236,8 @@ export function getClientClaimStatus(internalStatus, stage, documentStatus, paym
   }
 
   if (
-    hasDocumentAttention(documentStatus)
-    || ["documents_pending", "missing_documents", "needs_documents"].includes(normalizedStatus)
-    || normalizedStage === "documents"
+    documentsNeedAttention
+    || (explicitlyNeedsDocuments && !documentsReady)
   ) {
     return {
       key: "documents_needed",

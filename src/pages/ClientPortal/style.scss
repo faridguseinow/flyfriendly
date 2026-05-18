@@ -308,7 +308,7 @@
 }
 
 .client-portal-shell {
-  padding-top: 96px;
+  padding-top: 112px;
   padding-bottom: calc(92px + env(safe-area-inset-bottom));
   text-align: left;
 }
@@ -406,12 +406,12 @@
 }
 
 .client-portal-main {
-  padding: 48px 0;
+  padding: 28px 0;
   min-width: 0;
 }
 
 .client-portal-main__viewport {
-  min-height: calc(100svh - 164px);
+  min-height: calc(100svh - 172px);
 }
 
 .client-portal-page {
@@ -587,7 +587,7 @@
 
 .client-portal-meta-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
 
   article {
@@ -725,13 +725,28 @@
 
 .client-portal-progress__dot,
 .client-portal-payment-progress__dot {
-  width: 9px;
-  height: 9px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
   border-radius: 50%;
   background: #c8d6ea;
 }
 
-.client-portal-progress__step.is-completed .client-portal-progress__dot,
+.client-portal-progress__step.is-completed {
+  border-color: rgba(34, 197, 94, 0.18);
+  background: #effcf4;
+
+  span:last-child {
+    color: #137a43;
+  }
+}
+
+.client-portal-progress__step.is-completed .client-portal-progress__dot {
+  color: #fff;
+  background: #22c55e;
+}
+
 .client-portal-progress__step.is-current .client-portal-progress__dot,
 .client-portal-payment-progress__step.is-completed .client-portal-payment-progress__dot,
 .client-portal-payment-progress__step.is-current .client-portal-payment-progress__dot {
@@ -1677,6 +1692,10 @@
     justify-items: end;
   }
 
+  .client-portal-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .client-portal-documents-grid,
   .client-portal-documents-manager-grid,
   .client-portal-support-grid {
@@ -1684,7 +1703,7 @@
   }
 
   .client-portal-documents-signature-panel__form {
-    grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
+    grid-template-columns: 1fr;
     align-items: start;
   }
 
@@ -1727,6 +1746,10 @@
 
   .client-portal-documents-manager-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-portal-documents-signature-panel__form {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
   }
 
   .client-portal-payments-grid {
