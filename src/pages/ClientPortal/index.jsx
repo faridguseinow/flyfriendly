@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -1298,19 +1299,24 @@ export function ClientPortalLayout() {
         </main>
       </div>
 
-      <nav className="client-portal-mobile-nav" aria-label={t("clientPortal.navLabel", { defaultValue: "Client account sections" })}>
-        {navItems.map((item) => (
-          <ClientPortalNavLink
-            key={`mobile-${item.path}`}
-            to={item.path}
-            icon={item.icon}
-            label={item.label}
-            end={item.end}
-            mobile
-            avatarUrl={item.path.endsWith("/client/account") ? avatarUrl : ""}
-          />
-        ))}
-      </nav>
+      {typeof document !== "undefined"
+        ? createPortal(
+            <nav className="client-portal-mobile-nav" aria-label={t("clientPortal.navLabel", { defaultValue: "Client account sections" })}>
+              {navItems.map((item) => (
+                <ClientPortalNavLink
+                  key={`mobile-${item.path}`}
+                  to={item.path}
+                  icon={item.icon}
+                  label={item.label}
+                  end={item.end}
+                  mobile
+                  avatarUrl={item.path.endsWith("/client/account") ? avatarUrl : ""}
+                />
+              ))}
+            </nav>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

@@ -307,7 +307,7 @@
 
 .client-portal-shell {
   padding-top: 112px;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
   text-align: left;
 }
 
@@ -2176,7 +2176,6 @@
   gap: 4px;
   padding: 7px;
   border-radius: 24px;
-  will-change: transform;
   pointer-events: auto;
 }
 
@@ -2313,6 +2312,214 @@
 
   .client-portal-dashboard-card--documents {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .client-portal-shell {
+    padding-top: 104px;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+
+  .client-portal-main {
+    padding: 18px 0 0;
+  }
+
+  .client-portal-page {
+    gap: 10px;
+  }
+
+  .client-portal-page .portal-card,
+  .client-portal-hero-card,
+  .client-portal-account-card {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .client-portal-section-header {
+    margin-bottom: 10px;
+    gap: 8px;
+
+    h2 {
+      font-size: 18px;
+      line-height: 1.08;
+    }
+
+    p {
+      font-size: 12px;
+      line-height: 17px;
+    }
+  }
+
+  .client-portal-dashboard-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .client-portal-claim-hero {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 22px;
+  }
+
+  .client-portal-claim-hero__meta {
+    gap: 3px;
+
+    span {
+      font-size: 9px;
+      line-height: 11px;
+    }
+
+    strong {
+      font-size: 13px;
+      line-height: 17px;
+    }
+  }
+
+  .client-portal-route-stop {
+    padding: 10px;
+    gap: 8px;
+    border-radius: 16px;
+  }
+
+  .client-portal-route-stop__flag {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    font-size: 15px;
+  }
+
+  .client-portal-route-stop__copy {
+    small {
+      font-size: 9px;
+      line-height: 11px;
+    }
+
+    strong {
+      font-size: 22px;
+    }
+
+    span {
+      font-size: 11px;
+      line-height: 14px;
+    }
+  }
+
+  .client-portal-claim-hero__connector {
+    gap: 8px;
+
+    div {
+      width: 32px;
+      height: 32px;
+      flex-basis: 32px;
+    }
+  }
+
+  .client-portal-claim-hero__facts {
+    gap: 8px;
+
+    article {
+      padding: 10px;
+      border-radius: 16px;
+    }
+
+    article small {
+      font-size: 9px;
+      line-height: 11px;
+    }
+
+    article strong {
+      margin-top: 5px;
+      font-size: 14px;
+      line-height: 18px;
+    }
+  }
+
+  .client-portal-claim-hero__status-button,
+  .client-portal-cta-row .btn {
+    min-height: 44px;
+  }
+
+  .client-portal-progress,
+  .client-portal-payment-progress {
+    gap: 6px;
+    grid-auto-columns: minmax(80px, 1fr);
+  }
+
+  .client-portal-progress__step,
+  .client-portal-payment-progress__step {
+    padding: 8px 7px;
+    gap: 6px;
+    border-radius: 14px;
+
+    span:last-child {
+      font-size: 10px;
+      line-height: 13px;
+    }
+  }
+
+  .client-portal-progress__dot,
+  .client-portal-payment-progress__dot {
+    width: 16px;
+    height: 16px;
+  }
+
+  .client-portal-document-card,
+  .client-portal-doc-manager-card,
+  .client-portal-support-link {
+    padding: 11px;
+    border-radius: 16px;
+  }
+
+  .client-portal-document-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .client-portal-document-card__copy {
+    gap: 5px;
+
+    strong {
+      font-size: 13px;
+      line-height: 17px;
+    }
+
+    small {
+      font-size: 11px;
+      line-height: 14px;
+    }
+  }
+
+  .client-portal-document-card > .client-portal-inline-button,
+  .client-portal-document-card > .client-portal-document-card__action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .client-portal-mobile-nav {
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    gap: 3px;
+    padding: 6px;
+    border-radius: 22px;
+  }
+
+  .client-portal-nav__link.is-mobile {
+    min-height: 52px;
+    padding: 5px 2px 4px;
+    gap: 4px;
+    border-radius: 16px;
+
+    .client-portal-nav__icon {
+      width: 26px;
+      height: 26px;
+      flex-basis: 26px;
+    }
+
+    .client-portal-nav__label {
+      font-size: 9px;
+      line-height: 11px;
+    }
   }
 }
 
