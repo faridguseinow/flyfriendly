@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -6,24 +6,33 @@ import {
   ChevronRight,
   CircleDollarSign,
   Clock3,
+  Eye,
   FileImage,
   FileText,
   FolderOpen,
   House,
+  LoaderCircle,
   Mail,
   Phone,
+  RefreshCw,
   ShieldCheck,
   Signature,
   Ticket,
   TriangleAlert,
+  Trash2,
+  Upload,
   UserRound,
   UserSquare2,
+  X,
   XCircle,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
+  deleteClientDocument,
   fetchClientClaimDetails,
   fetchClientClaims,
   fetchClientDashboardData,
@@ -31,7 +40,9 @@ import {
   getClientDocumentDownloadUrl,
   getClientDocumentStatus,
   getClientPaymentStatus,
+  replaceClientDocument,
   saveClientProfile,
+  uploadClientDocument,
 } from "../../services/clientPortalService.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { contactEmail } from "../../constants/site.js";
@@ -146,6 +157,16 @@ function getDocumentFormatLabel(document) {
   if (mime.includes("pdf")) return "PDF";
   if (mime.startsWith("image/")) return "Image";
   return "Uploaded file";
+}
+
+function getDocumentExtension(document) {
+  if (document?.kind === "signature") {
+    return "PNG";
+  }
+
+  const fileName = String(document?.file_name || "");
+  const match = fileName.match(/\.([a-z0-9]+)$/i);
+  return match ? match[1].toUpperCase() : "FILE";
 }
 
 function getClaimAction(claim, t) {
@@ -479,6 +500,219 @@ function UploadedDocumentRow({ document, previewUrl, onOpen }) {
           Open
         </button>
       </div>
+    </div>
+  );
+}
+
+function UploadProgress({ value = 0, busy = false }) {
+  return (
+    <div className={`client-portal-upload-progress${busy ? " is-busy" : ""}`} aria-hidden="true">
+      <span style={{ width: `${Math.max(8, Math.min(100, value || 0))}%` }} />
+    </div>
+  );
+}
+
+function ManagedDocumentCard({
+  item,
+  previewUrl,
+  canUpload,
+  canDelete,
+  canReplace,
+  busy,
+  progress,
+  onPreview,
+  onUpload,
+  onDelete,
+}) {
+  const document = item.latestDocument || null;
+  const status = document
+    ? getClientDocumentStatus(document.status, document.kind)
+    : { key: item.statusKey, label: item.statusLabel, tone: item.statusTone };
+  const Icon = getDocumentIcon(document || { document_type: item.key });
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    if (!canUpload) return;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      onUpload(file);
+    }
+  };
+
+  return (
+    <article
+      className={`client-portal-doc-manager-card${busy ? " is-busy" : ""}${canUpload ? " is-uploadable" : ""}`}
+      onDragOver={(event) => {
+        if (canUpload) {
+          event.preventDefault();
+        }
+      }}
+      onDrop={handleDrop}
+    >
+      <div className="client-portal-doc-manager-card__preview">
+        {previewUrl ? <img src={previewUrl} alt="" /> : <Icon size={24} />}
+      </div>
+
+      <div className="client-portal-doc-manager-card__body">
+        <div className="client-portal-doc-manager-card__head">
+          <div>
+            <strong>{item.label}</strong>
+            <small>{document?.created_at ? formatDateTime(document.created_at) : "No file uploaded yet"}</small>
+          </div>
+          <ClientStatusBadge status={status} />
+        </div>
+
+        <div className="client-portal-doc-manager-card__meta">
+          <span>{document ? getDocumentFormatLabel(document) : "Upload required"}</span>
+          <span>{document ? getDocumentExtension(document) : "PNG / JPG / PDF"}</span>
+          <span>{document?.claimReference || "Current claim"}</span>
+        </div>
+
+        <div className="client-portal-doc-manager-card__actions">
+          {document ? (
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => onPreview(document)} disabled={busy}>
+              <Eye size={16} />
+              <span>Preview</span>
+            </button>
+          ) : null}
+
+          {canUpload ? (
+            <button type="button" className="btn btn-primary btn-small" onClick={() => onUpload()} disabled={busy}>
+              {busy ? <LoaderCircle size={16} className="is-spinning" /> : <Upload size={16} />}
+              <span>{canReplace ? "Replace" : "Upload"}</span>
+            </button>
+          ) : null}
+
+          {document && canDelete ? (
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => onDelete(document)} disabled={busy}>
+              <Trash2 size={16} />
+              <span>Delete</span>
+            </button>
+          ) : null}
+        </div>
+
+        {busy ? <UploadProgress value={progress} busy /> : null}
+      </div>
+    </article>
+  );
+}
+
+function ManagedUploadedDocumentRow({
+  document,
+  previewUrl,
+  busy,
+  progress,
+  onPreview,
+  onReplace,
+  onDelete,
+}) {
+  const status = getClientDocumentStatus(document.status, document.kind);
+  const Icon = getDocumentIcon(document);
+  const label = getDocumentLabel(document);
+
+  return (
+    <div className={`client-portal-uploaded-row is-managed${busy ? " is-busy" : ""}`}>
+      <div className="client-portal-uploaded-row__thumb">
+        {previewUrl ? <img src={previewUrl} alt="" /> : <Icon size={20} />}
+      </div>
+      <div className="client-portal-uploaded-row__copy">
+        <strong>{label}</strong>
+        <span>{getDocumentFormatLabel(document)} · {getDocumentExtension(document)}</span>
+        <small>{formatDateTime(document.created_at)}</small>
+      </div>
+      <div className="client-portal-uploaded-row__meta">
+        <ClientStatusBadge status={status} />
+        <small>{document.claimReference || "Current claim"}</small>
+      </div>
+      <div className="client-portal-uploaded-row__actions">
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => onPreview(document)} disabled={busy}>
+          <Eye size={16} />
+          <span>Preview</span>
+        </button>
+        {document.canReplace ? (
+          <button type="button" className="btn btn-primary btn-small" onClick={() => onReplace(document)} disabled={busy}>
+            {busy ? <LoaderCircle size={16} className="is-spinning" /> : <RefreshCw size={16} />}
+            <span>Replace</span>
+          </button>
+        ) : null}
+        {document.canDelete ? (
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => onDelete(document)} disabled={busy}>
+            <Trash2 size={16} />
+            <span>Delete</span>
+          </button>
+        ) : null}
+      </div>
+      {busy ? <UploadProgress value={progress} busy /> : null}
+    </div>
+  );
+}
+
+function DocumentPreviewDrawer({ document, url, isLoading, error, zoom, onZoomIn, onZoomOut, onOpenFull, onClose }) {
+  if (!document) {
+    return null;
+  }
+
+  const isImage = isImageDocument(document);
+  const isPdf = isPdfDocument(document);
+
+  return (
+    <div className="client-portal-preview-layer" onClick={onClose}>
+      <aside className="client-portal-preview-drawer" onClick={(event) => event.stopPropagation()}>
+        <div className="client-portal-preview-drawer__head">
+          <div>
+            <strong>{getDocumentLabel(document)}</strong>
+            <small>{document.created_at ? formatDateTime(document.created_at) : "Document preview"}</small>
+          </div>
+          <div className="client-portal-preview-drawer__tools">
+            {isImage ? (
+              <>
+                <button type="button" className="btn btn-secondary btn-small" onClick={onZoomOut}>
+                  <ZoomOut size={16} />
+                </button>
+                <button type="button" className="btn btn-secondary btn-small" onClick={onZoomIn}>
+                  <ZoomIn size={16} />
+                </button>
+              </>
+            ) : null}
+            {url ? (
+              <button type="button" className="btn btn-secondary btn-small" onClick={onOpenFull}>
+                <Eye size={16} />
+                <span>Open full</span>
+              </button>
+            ) : null}
+            <button type="button" className="btn btn-secondary btn-small" onClick={onClose}>
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="client-portal-preview-drawer__body">
+          {isLoading ? (
+            <div className="client-portal-preview-placeholder">
+              <LoaderCircle size={24} className="is-spinning" />
+              <span>Loading preview…</span>
+            </div>
+          ) : error ? (
+            <div className="client-portal-preview-placeholder is-error">
+              <TriangleAlert size={20} />
+              <span>{error}</span>
+            </div>
+          ) : isImage && url ? (
+            <div className="client-portal-preview-image">
+              <img src={url} alt="" style={{ transform: `scale(${zoom})` }} />
+            </div>
+          ) : isPdf && url ? (
+            <iframe title={getDocumentLabel(document)} src={url} className="client-portal-preview-frame" />
+          ) : url ? (
+            <iframe title={getDocumentLabel(document)} src={url} className="client-portal-preview-frame" />
+          ) : (
+            <div className="client-portal-preview-placeholder">
+              <FileText size={22} />
+              <span>Preview is not available.</span>
+            </div>
+          )}
+        </div>
+      </aside>
     </div>
   );
 }
@@ -899,43 +1133,189 @@ export function ClientClaimDetailsPage() {
 
 export function ClientDocumentsPage() {
   const { t } = useTranslation();
-  const [state, setState] = useState({ isLoading: true, error: "", documents: [], requiredDocuments: [] });
+  const filePickerRef = useRef(null);
+  const uploadTimersRef = useRef({});
+  const [state, setState] = useState({ isLoading: true, error: "", documents: [], requiredDocuments: [], uploadTarget: null });
+  const [pickerContext, setPickerContext] = useState(null);
+  const [notice, setNotice] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [busyMap, setBusyMap] = useState({});
+  const [progressMap, setProgressMap] = useState({});
+  const [preview, setPreview] = useState({ document: null, url: "", isLoading: false, error: "", zoom: 1 });
+
+  const clearBusyState = (actionKey) => {
+    const timer = uploadTimersRef.current[actionKey];
+    if (timer) {
+      window.clearInterval(timer);
+      delete uploadTimersRef.current[actionKey];
+    }
+
+    setBusyMap((current) => {
+      const next = { ...current };
+      delete next[actionKey];
+      return next;
+    });
+    setProgressMap((current) => {
+      const next = { ...current };
+      delete next[actionKey];
+      return next;
+    });
+  };
+
+  const beginBusyState = (actionKey) => {
+    clearBusyState(actionKey);
+    setBusyMap((current) => ({ ...current, [actionKey]: true }));
+    setProgressMap((current) => ({ ...current, [actionKey]: 14 }));
+
+    uploadTimersRef.current[actionKey] = window.setInterval(() => {
+      setProgressMap((current) => ({
+        ...current,
+        [actionKey]: Math.min(92, (current[actionKey] || 14) + 11),
+      }));
+    }, 180);
+  };
+
+  const finishBusyState = (actionKey) => {
+    const timer = uploadTimersRef.current[actionKey];
+    if (timer) {
+      window.clearInterval(timer);
+      delete uploadTimersRef.current[actionKey];
+    }
+
+    setProgressMap((current) => ({ ...current, [actionKey]: 100 }));
+    window.setTimeout(() => {
+      clearBusyState(actionKey);
+    }, 180);
+  };
+
+  const loadDocuments = async (silent = false) => {
+    if (!silent) {
+      setState({ isLoading: true, error: "", documents: [], requiredDocuments: [], uploadTarget: null });
+    }
+
+    try {
+      const data = await fetchClientDocuments();
+      setState({
+        isLoading: false,
+        error: "",
+        documents: data.documents || [],
+        requiredDocuments: data.requiredDocuments || [],
+        uploadTarget: data.uploadTarget || null,
+      });
+    } catch (error) {
+      setState({
+        isLoading: false,
+        error: error.message || "Could not load documents.",
+        documents: [],
+        requiredDocuments: [],
+        uploadTarget: null,
+      });
+    }
+  };
 
   useEffect(() => {
-    let active = true;
-    setState({ isLoading: true, error: "", documents: [], requiredDocuments: [] });
-
-    fetchClientDocuments()
-      .then((data) => {
-        if (active) {
-          setState({
-            isLoading: false,
-            error: "",
-            documents: data.documents || [],
-            requiredDocuments: data.requiredDocuments || [],
-          });
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load documents.", documents: [], requiredDocuments: [] });
-        }
-      });
-
+    void loadDocuments();
     return () => {
-      active = false;
+      Object.values(uploadTimersRef.current).forEach((timer) => window.clearInterval(timer));
+      uploadTimersRef.current = {};
     };
   }, []);
 
   const previewUrls = useDocumentPreviewUrls(state.documents);
 
   const openDocument = async (document) => {
+    setPreview({ document, url: "", isLoading: true, error: "", zoom: 1 });
+
     try {
       const url = document.signature_data_url || previewUrls[document.id] || await getClientDocumentDownloadUrl(document);
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch {
-      // Keep the page stable if a preview fails.
+      setPreview({ document, url, isLoading: false, error: "", zoom: 1 });
+    } catch (error) {
+      setPreview({
+        document,
+        url: "",
+        isLoading: false,
+        error: error.message || "Preview is not available.",
+        zoom: 1,
+      });
     }
+  };
+
+  const requestFilePicker = (context) => {
+    setActionError("");
+    setNotice("");
+    setPickerContext(context);
+    filePickerRef.current?.click();
+  };
+
+  const runUploadAction = async ({ documentType, file, replaceDocument = null }) => {
+    if (!file) {
+      requestFilePicker({ documentType, replaceDocument });
+      return;
+    }
+
+    const actionKey = replaceDocument ? `document-${replaceDocument.id}` : `slot-${documentType}`;
+    beginBusyState(actionKey);
+    setActionError("");
+    setNotice("");
+
+    try {
+      if (replaceDocument) {
+        await replaceClientDocument(replaceDocument, file);
+        setNotice("Replacement uploaded successfully.");
+      } else {
+        await uploadClientDocument({
+          leadId: state.uploadTarget?.leadId,
+          documentType,
+          file,
+        });
+        setNotice("Document uploaded successfully.");
+      }
+
+      await loadDocuments(true);
+    } catch (error) {
+      setActionError(error.message || "Could not upload the document.");
+    } finally {
+      finishBusyState(actionKey);
+    }
+  };
+
+  const handleDeleteDocument = async (document) => {
+    const confirmed = window.confirm("Remove this document from your claim?");
+    if (!confirmed) {
+      return;
+    }
+
+    const actionKey = `document-${document.id}`;
+    beginBusyState(actionKey);
+    setActionError("");
+    setNotice("");
+
+    try {
+      await deleteClientDocument(document);
+      setNotice("Document removed.");
+      await loadDocuments(true);
+    } catch (error) {
+      setActionError(error.message || "Could not remove the document.");
+    } finally {
+      finishBusyState(actionKey);
+    }
+  };
+
+  const handleFilePickerChange = async (event) => {
+    const file = event.target.files?.[0];
+    const currentContext = pickerContext;
+    event.target.value = "";
+    setPickerContext(null);
+
+    if (!file || !currentContext) {
+      return;
+    }
+
+    await runUploadAction({
+      documentType: currentContext.documentType,
+      replaceDocument: currentContext.replaceDocument || null,
+      file,
+    });
   };
 
   if (state.isLoading) {
@@ -954,13 +1334,43 @@ export function ClientDocumentsPage() {
           text={t("clientPortal.documents.text", { defaultValue: "Passport / ID, boarding pass, and signature are the only customer documents surfaced here." })}
         />
 
-        <div className="client-portal-documents-grid">
+        <input
+          ref={filePickerRef}
+          type="file"
+          accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
+          hidden
+          onChange={handleFilePickerChange}
+        />
+
+        {notice ? <p className="portal-message is-notice">{notice}</p> : null}
+        {actionError ? <p className="portal-message is-error">{actionError}</p> : null}
+
+        {state.uploadTarget?.leadId ? (
+          <div className="client-portal-documents-banner">
+            <div>
+              <strong>Uploads enabled</strong>
+              <span>{`New documents will be attached to ${state.uploadTarget.claimReference}.`}</span>
+            </div>
+            <ClientStatusBadge status={{ key: state.uploadTarget.publicStatusKey, label: normalizeLabel(state.uploadTarget.publicStatusKey, "Under review"), tone: state.uploadTarget.publicStatusKey === "documents_needed" ? "warning" : "info" }} />
+          </div>
+        ) : (
+          <p className="portal-message is-notice">Document changes are locked for the claims currently attached to your account.</p>
+        )}
+
+        <div className="client-portal-documents-manager-grid">
           {state.requiredDocuments.map((item) => (
-            <DocumentStatusCard
+            <ManagedDocumentCard
               key={item.key}
               item={item}
               previewUrl={item.latestDocument ? (item.latestDocument.signature_data_url || previewUrls[item.latestDocument.id] || "") : ""}
-              onOpen={openDocument}
+              canUpload={item.key !== "signature" && Boolean(state.uploadTarget?.leadId) && (!item.latestDocument || item.latestDocument.canReplace)}
+              canDelete={Boolean(item.latestDocument?.canDelete)}
+              canReplace={Boolean(item.latestDocument?.canReplace)}
+              busy={Boolean(busyMap[item.latestDocument ? `document-${item.latestDocument.id}` : `slot-${item.key}`])}
+              progress={progressMap[item.latestDocument ? `document-${item.latestDocument.id}` : `slot-${item.key}`] || 0}
+              onPreview={openDocument}
+              onUpload={(file) => runUploadAction({ documentType: item.key, file, replaceDocument: item.latestDocument?.canReplace ? item.latestDocument : null })}
+              onDelete={handleDeleteDocument}
             />
           ))}
         </div>
@@ -975,11 +1385,15 @@ export function ClientDocumentsPage() {
         {state.documents.length ? (
           <div className="client-portal-uploaded-list">
             {state.documents.map((document) => (
-              <UploadedDocumentRow
+              <ManagedUploadedDocumentRow
                 key={`${document.kind}-${document.id}`}
                 document={document}
                 previewUrl={document.signature_data_url || previewUrls[document.id] || ""}
-                onOpen={openDocument}
+                busy={Boolean(busyMap[`document-${document.id}`])}
+                progress={progressMap[`document-${document.id}`] || 0}
+                onPreview={openDocument}
+                onReplace={(item) => requestFilePicker({ documentType: item.document_type, replaceDocument: item })}
+                onDelete={handleDeleteDocument}
               />
             ))}
           </div>
@@ -987,6 +1401,22 @@ export function ClientDocumentsPage() {
           <p className="portal-empty">{t("clientPortal.documents.empty", { defaultValue: "Documents will appear here after they are added to your claim." })}</p>
         )}
       </section>
+
+      <DocumentPreviewDrawer
+        document={preview.document}
+        url={preview.url}
+        isLoading={preview.isLoading}
+        error={preview.error}
+        zoom={preview.zoom}
+        onZoomIn={() => setPreview((current) => ({ ...current, zoom: Math.min(2.6, current.zoom + 0.2) }))}
+        onZoomOut={() => setPreview((current) => ({ ...current, zoom: Math.max(1, current.zoom - 0.2) }))}
+        onOpenFull={() => {
+          if (preview.url) {
+            window.open(preview.url, "_blank", "noopener,noreferrer");
+          }
+        }}
+        onClose={() => setPreview({ document: null, url: "", isLoading: false, error: "", zoom: 1 })}
+      />
     </div>
   );
 }

@@ -799,6 +799,155 @@
   gap: 10px;
 }
 
+.client-portal-documents-manager-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.client-portal-documents-banner {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(223, 233, 246, 0.94);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fbfdff 0%, #f4f9ff 100%);
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 17px;
+    font-weight: 700;
+  }
+
+  span {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 17px;
+  }
+}
+
+.client-portal-doc-manager-card {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border: 1px solid rgba(223, 233, 246, 0.95);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+
+  &.is-uploadable:hover {
+    border-color: rgba(17, 152, 255, 0.2);
+    background: linear-gradient(180deg, #ffffff 0%, #f4faff 100%);
+    transform: translateY(-1px);
+  }
+}
+
+.client-portal-doc-manager-card__preview {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 16px;
+  color: var(--primary);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(17, 152, 255, 0.16), transparent 60%),
+    linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.client-portal-doc-manager-card__body {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.client-portal-doc-manager-card__head {
+  display: grid;
+  gap: 8px;
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+
+  small {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.client-portal-doc-manager-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  span {
+    min-height: 24px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    color: #5f7087;
+    background: #f4f8fc;
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 700;
+  }
+}
+
+.client-portal-doc-manager-card__actions,
+.client-portal-uploaded-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .btn {
+    min-height: 34px;
+  }
+}
+
+.client-portal-upload-progress {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eaf1f8;
+
+  span {
+    height: 100%;
+    display: block;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1aa1ff 0%, #0f7be8 100%);
+    transition: width 180ms ease;
+  }
+}
+
 .client-portal-document-card {
   padding: 13px;
   display: grid;
@@ -878,6 +1027,11 @@
   background: #fff;
 }
 
+.client-portal-uploaded-row.is-managed {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+}
+
 .client-portal-uploaded-row__copy {
   min-width: 0;
   display: grid;
@@ -920,6 +1074,121 @@
     font-size: 11px;
     line-height: 14px;
   }
+}
+
+.client-portal-uploaded-row__actions {
+  grid-column: 1 / -1;
+}
+
+.client-portal-preview-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(6px);
+}
+
+.client-portal-preview-drawer {
+  width: min(100%, 620px);
+  height: 100%;
+  padding: 18px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  border-left: 1px solid rgba(223, 233, 246, 0.94);
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.client-portal-preview-drawer__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
+  }
+
+  small {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.client-portal-preview-drawer__tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.client-portal-preview-drawer__body {
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(223, 233, 246, 0.94);
+  border-radius: 20px;
+  background: #f8fbff;
+}
+
+.client-portal-preview-placeholder,
+.client-portal-preview-image {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+}
+
+.client-portal-preview-placeholder {
+  gap: 10px;
+  color: var(--muted);
+  text-align: center;
+
+  &.is-error {
+    color: #a23737;
+  }
+}
+
+.client-portal-preview-image {
+  overflow: auto;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 250, 255, 0.98) 100%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(214, 229, 245, 0.2) 0,
+      rgba(214, 229, 245, 0.2) 10px,
+      rgba(255, 255, 255, 0.2) 10px,
+      rgba(255, 255, 255, 0.2) 20px
+    );
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    transform-origin: center center;
+    transition: transform 180ms ease;
+    border-radius: 18px;
+  }
+}
+
+.client-portal-preview-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  border: 0;
+  background: #fff;
 }
 
 .client-portal-account-grid,
@@ -1142,6 +1411,10 @@
   will-change: transform;
 }
 
+.is-spinning {
+  animation: clientPortalSpin 0.9s linear infinite;
+}
+
 @keyframes clientPortalShimmer {
   0% {
     background-position: 200% 0;
@@ -1149,6 +1422,12 @@
 
   100% {
     background-position: -200% 0;
+  }
+}
+
+@keyframes clientPortalSpin {
+  100% {
+    transform: rotate(360deg);
   }
 }
 
@@ -1195,8 +1474,19 @@
   }
 
   .client-portal-documents-grid,
+  .client-portal-documents-manager-grid,
   .client-portal-support-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-portal-uploaded-row.is-managed {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .client-portal-uploaded-row__actions {
+    grid-column: auto;
+    justify-content: flex-end;
   }
 
   .client-portal-loading-hero {
@@ -1219,6 +1509,10 @@
 
   .client-portal-documents-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .client-portal-documents-manager-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .client-portal-payments-grid {
@@ -1298,6 +1592,10 @@
 
   .client-portal-payment-progress {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .client-portal-documents-manager-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

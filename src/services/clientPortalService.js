@@ -1,7 +1,8 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { calculateDistanceCompensationEstimate } from "../lib/compensationDistance.js";
 import { findAirportByCode } from "./catalogService.js";
-import { getCurrentProfile, syncCurrentUserClaimData, updateCurrentProfile } from "./authService.js";
+import { getCurrentUser, getCurrentProfile, syncCurrentUserClaimData, updateCurrentProfile } from "./authService.js";
+import { uploadLeadDocument } from "./leadService.js";
 
 const REQUIRED_CLIENT_DOCUMENTS = [
   { key: "passport", label: "Passport / ID" },
@@ -16,6 +17,14 @@ const DOCUMENT_STATUS_META = {
   approved: { key: "approved", label: "Approved", tone: "success" },
   rejected: { key: "rejected", label: "Rejected", tone: "danger" },
 };
+
+const CLIENT_DOCUMENT_ACCEPTED_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "application/pdf",
+]);
+
+const CLIENT_DOCUMENT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.code === "42703" || error?.message?.includes("column");
@@ -105,6 +114,20 @@ function getDocumentTypeKey(type, kind = "document") {
   if (value.includes("boarding")) return "boarding_pass";
   if (value.includes("booking") || value.includes("ticket")) return "booking";
   return "other";
+}
+
+function getClaimLeadId(claim) {
+  if (!claim) return null;
+  if (claim.kind === "lead") return claim.id;
+  return claim.raw?.lead_id || null;
+}
+
+function isClaimFinalized(claim) {
+  return ["approved", "rejected", "paid"].includes(String(claim?.publicStatus?.key || "").toLowerCase());
+}
+
+function canClaimAcceptClientDocumentUpdates(claim) {
+  return Boolean(getClaimLeadId(claim)) && !isClaimFinalized(claim);
 }
 
 export function getClientDocumentStatus(status, kind = "document") {
@@ -466,6 +489,78 @@ function buildClaimRows({ leads, cases, finance, leadDocuments, caseDocuments, l
     .sort((left, right) => toTimestamp(right.submittedAt || right.created_at) - toTimestamp(left.submittedAt || left.created_at));
 }
 
+function pickDocumentUploadTarget(claimRows = []) {
+  return claimRows.find((item) => item.publicStatus?.key === "documents_needed" && canClaimAcceptClientDocumentUpdates(item))
+    || claimRows.find((item) => canClaimAcceptClientDocumentUpdates(item))
+    || null;
+}
+
+function createClaimMaps(claimRows = []) {
+  const claimsByLeadId = new Map();
+  const claimsByCaseId = new Map();
+
+  claimRows.forEach((claim) => {
+    const leadId = getClaimLeadId(claim);
+    if (leadId) {
+      claimsByLeadId.set(leadId, claim);
+    }
+
+    if (claim.kind === "case") {
+      claimsByCaseId.set(claim.id, claim);
+    }
+  });
+
+  return {
+    claimsByLeadId,
+    claimsByCaseId,
+  };
+}
+
+function getDocumentClaim(document, claimMaps) {
+  if (!document) return null;
+
+  if (document.ownerType === "case") {
+    return claimMaps.claimsByCaseId.get(document.ownerId) || null;
+  }
+
+  return claimMaps.claimsByLeadId.get(document.ownerId) || null;
+}
+
+function canClientReplaceOrDeleteDocument(document, claimMaps) {
+  if (!document || document.kind === "signature") {
+    return false;
+  }
+
+  if (document.ownerType !== "lead") {
+    return false;
+  }
+
+  const claim = getDocumentClaim(document, claimMaps);
+  if (!canClaimAcceptClientDocumentUpdates(claim)) {
+    return false;
+  }
+
+  const status = getClientDocumentStatus(document.status, document.kind);
+  return !["pending_review", "approved"].includes(status.key);
+}
+
+function attachDocumentManagement(documents = [], claimRows = []) {
+  const claimMaps = createClaimMaps(claimRows);
+
+  return documents.map((document) => {
+    const claim = getDocumentClaim(document, claimMaps);
+
+    return {
+      ...document,
+      claimReference: claim?.reference || "",
+      claimStatusKey: claim?.publicStatus?.key || "",
+      canReplace: canClientReplaceOrDeleteDocument(document, claimMaps),
+      canDelete: canClientReplaceOrDeleteDocument(document, claimMaps),
+      canPreview: Boolean(document.signature_data_url || (document.bucket && document.file_path)),
+    };
+  });
+}
+
 async function fetchPortalBaseData() {
   const client = requireSupabase();
 
@@ -688,17 +783,30 @@ export async function fetchClientClaimDetails(claimId) {
 
 export async function fetchClientDocuments() {
   const data = await fetchPortalBaseData();
+  const claimRows = buildClaimRows(data);
+  const uploadTarget = pickDocumentUploadTarget(claimRows);
   const normalizedDocuments = sortByNewest([
     ...(data.leadDocuments || []).map(normalizeLeadDocument),
     ...(data.caseDocuments || []).map(normalizeCaseDocument),
     ...(data.leadSignatures || []).map(normalizeLeadSignature),
   ]);
 
-  const requiredDocuments = buildRequiredDocumentSummary(normalizedDocuments);
+  const documents = attachDocumentManagement(
+    normalizedDocuments.filter((item) => ["passport", "boarding_pass", "signature"].includes(getDocumentTypeKey(item.document_type, item.kind))),
+    claimRows,
+  );
+  const requiredDocuments = buildRequiredDocumentSummary(documents);
 
   return {
-    documents: normalizedDocuments.filter((item) => ["passport", "boarding_pass", "signature"].includes(getDocumentTypeKey(item.document_type, item.kind))),
+    documents,
     requiredDocuments,
+    uploadTarget: uploadTarget ? {
+      claimId: uploadTarget.id,
+      claimKind: uploadTarget.kind,
+      claimReference: uploadTarget.reference,
+      leadId: getClaimLeadId(uploadTarget),
+      publicStatusKey: uploadTarget.publicStatus?.key || "",
+    } : null,
   };
 }
 
@@ -727,7 +835,7 @@ export async function getClientDocumentDownloadUrl(document) {
   for (const bucket of buckets) {
     const { data, error } = await client.storage
       .from(bucket)
-      .createSignedUrl(document.file_path, 60);
+      .createSignedUrl(document.file_path, 300);
 
     if (!error && data?.signedUrl) {
       return data.signedUrl;
@@ -737,6 +845,86 @@ export async function getClientDocumentDownloadUrl(document) {
   }
 
   throw lastError || new Error("Could not open the document.");
+}
+
+function getDocumentPurgeAfterDate() {
+  return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function getUploadDocumentType(type) {
+  const normalized = getDocumentTypeKey(type);
+  if (normalized === "passport") return "passport";
+  if (normalized === "boarding_pass") return "boarding_pass";
+  return normalized;
+}
+
+function validateClientDocumentFile(file) {
+  if (!file) {
+    throw new Error("Please choose a file.");
+  }
+
+  const mimeType = String(file.type || "").toLowerCase();
+  const fileName = String(file.name || "").toLowerCase();
+  const hasSupportedExtension = [".png", ".jpg", ".jpeg", ".pdf"].some((suffix) => fileName.endsWith(suffix));
+
+  if (!CLIENT_DOCUMENT_ACCEPTED_MIME_TYPES.has(mimeType) && !hasSupportedExtension) {
+    throw new Error("Only PNG, JPG, JPEG, and PDF files are supported.");
+  }
+
+  if (Number(file.size || 0) > CLIENT_DOCUMENT_MAX_FILE_SIZE) {
+    throw new Error("The file is too large. Maximum size is 25 MB.");
+  }
+}
+
+async function softDeleteLeadDocument(document) {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+
+  const { error } = await client
+    .from("lead_documents")
+    .update({
+      status: "deleted",
+      deleted_at: new Date().toISOString(),
+      deleted_by: user?.id || null,
+      purge_after: getDocumentPurgeAfterDate(),
+    })
+    .eq("id", document.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function uploadClientDocument({ leadId, documentType, file }) {
+  if (!leadId) {
+    throw new Error("This claim is not accepting document uploads right now.");
+  }
+
+  const normalizedType = getUploadDocumentType(documentType);
+  if (!["passport", "boarding_pass"].includes(normalizedType)) {
+    throw new Error("This document type cannot be uploaded here.");
+  }
+
+  validateClientDocumentFile(file);
+  await uploadLeadDocument(leadId, normalizedType, file);
+}
+
+export async function replaceClientDocument(document, file) {
+  if (!document?.canReplace || document.ownerType !== "lead") {
+    throw new Error("This document cannot be replaced right now.");
+  }
+
+  validateClientDocumentFile(file);
+  await uploadLeadDocument(document.ownerId, getUploadDocumentType(document.document_type), file);
+  await softDeleteLeadDocument(document);
+}
+
+export async function deleteClientDocument(document) {
+  if (!document?.canDelete || document.ownerType !== "lead") {
+    throw new Error("This document cannot be removed right now.");
+  }
+
+  await softDeleteLeadDocument(document);
 }
 
 export async function saveClientProfile(input) {
