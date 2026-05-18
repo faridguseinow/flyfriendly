@@ -633,7 +633,7 @@ function FileRow({ file, done, onRemove }) {
   );
 }
 
-function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions }) {
+function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions, isSaving }) {
   const { t } = useTranslation();
 
   return (
@@ -729,13 +729,15 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
       </section>
       <div className="claim-actions">
         <span />
-        <button className="btn btn-primary" type="submit">{t("common.next")}</button>
+        <button className="btn btn-primary" type="submit" disabled={isSaving}>
+          {isSaving ? t("common.saving") : t("common.next")}
+        </button>
       </div>
     </form>
   );
 }
 
-function ContactStep({ data, onChange, onNext, onBack, emailError }) {
+function ContactStep({ data, onChange, onNext, onBack, emailError, isSaving }) {
   const { t } = useTranslation();
 
   return (
@@ -758,7 +760,9 @@ function ContactStep({ data, onChange, onNext, onBack, emailError }) {
       </section>
       <div className="claim-actions">
         <button className="claim-back" type="button" onClick={onBack}>{t("common.back")}</button>
-        <button className="btn btn-primary" type="submit">{t("common.next")}</button>
+        <button className="btn btn-primary" type="submit" disabled={isSaving}>
+          {isSaving ? t("common.saving") : t("common.next")}
+        </button>
       </div>
     </form>
   );
@@ -1326,6 +1330,10 @@ function ClaimFlow() {
   const submit = async (nextStage, event) => {
     event.preventDefault();
 
+    if (isSaving) {
+      return;
+    }
+
     setSyncError("");
     setSyncNotice("");
 
@@ -1430,7 +1438,7 @@ function ClaimFlow() {
   const renderStage = () => {
     if (stage === "denied") return <DeniedResult data={data} />;
     if (stage === "approved") return <ApprovedResult data={data} />;
-    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} emailError={emailError} />;
+    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} emailError={emailError} isSaving={isSaving} />;
     if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
     if (stage === "finish") {
       return (
@@ -1452,6 +1460,7 @@ function ClaimFlow() {
         onNext={(event) => submit("contact", event)}
         airportOptions={{ departure: departureMatches, destination: destinationMatches }}
         airlineOptions={airlineMatches}
+        isSaving={isSaving}
       />
     );
   };

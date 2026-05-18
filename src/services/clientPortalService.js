@@ -524,6 +524,7 @@ function buildClaimRows({ leads, cases, finance, leadDocuments, caseDocuments, l
   const caseRows = (cases || []).map((item) => buildClaimRowFromCase(item, context));
   const leadRows = (leads || [])
     .filter((item) => !caseLeadIds.has(item.id))
+    .filter((item) => Boolean(item.submitted_at) || !["new", "draft"].includes(String(item.status || "").toLowerCase()))
     .map((item) => buildClaimRowFromLead(item, context));
 
   return caseRows
