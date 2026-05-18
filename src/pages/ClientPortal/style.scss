@@ -784,25 +784,425 @@
 }
 
 .client-portal-claim-card {
-  padding: 14px;
-  display: grid;
-  gap: 12px;
-  border: 1px solid rgba(223, 233, 246, 0.95);
-  border-radius: 20px;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.03);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  padding: 0;
+  display: block;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  box-shadow: none;
+  transition: transform 180ms ease;
 
   &:hover {
     transform: translateY(-1px);
-    border-color: rgba(17, 152, 255, 0.18);
-    box-shadow: 0 16px 34px rgba(17, 152, 255, 0.07);
   }
 }
 
 .client-portal-claim-card__footer {
   align-items: center;
   justify-content: space-between;
+}
+
+.client-portal-claim-hero {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 78% 20%, rgba(255, 255, 255, 0.18), transparent 20%),
+    radial-gradient(circle at 96% 32%, rgba(255, 123, 149, 0.62), transparent 20%),
+    linear-gradient(112deg, #18459f 0%, #1f58c2 46%, #1187eb 82%, #ff6f7f 108%);
+  box-shadow: 0 20px 44px rgba(21, 71, 160, 0.18);
+}
+
+.client-portal-claim-hero.is-compact {
+  padding: 14px;
+  gap: 12px;
+}
+
+.client-portal-claim-hero__top,
+.client-portal-claim-hero__journey,
+.client-portal-claim-hero__facts,
+.client-portal-claim-hero__footer {
+  display: grid;
+  gap: 10px;
+}
+
+.client-portal-claim-hero__top {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.client-portal-claim-hero__meta {
+  display: grid;
+  gap: 4px;
+
+  span,
+  strong {
+    display: block;
+  }
+
+  span {
+    color: rgba(232, 241, 255, 0.78);
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  strong {
+    color: #fff;
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+}
+
+.client-portal-claim-hero .client-portal-status-badge {
+  width: fit-content;
+  color: #0b5ea3;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.client-portal-claim-hero__journey {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+
+.client-portal-route-stop {
+  min-width: 0;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.client-portal-route-stop__flag {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  color: #dce9ff;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 18px;
+}
+
+.client-portal-route-stop__copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+
+  small,
+  strong,
+  span {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: rgba(223, 236, 255, 0.74);
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  strong {
+    color: #fff;
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  span {
+    color: rgba(237, 244, 255, 0.86);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.client-portal-route-stop.is-compact {
+  padding: 10px;
+
+  .client-portal-route-stop__flag {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    font-size: 16px;
+  }
+
+  .client-portal-route-stop__copy strong {
+    font-size: 26px;
+  }
+}
+
+.client-portal-claim-hero__connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: rgba(235, 243, 255, 0.9);
+
+  span {
+    height: 1px;
+    flex: 1 1 auto;
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  div {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.client-portal-claim-hero__facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.client-portal-claim-hero__facts article,
+.client-portal-hero-chip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.client-portal-claim-hero__facts article {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 18px;
+
+  small,
+  strong {
+    display: block;
+  }
+
+  small {
+    color: rgba(223, 236, 255, 0.74);
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  strong {
+    margin-top: 6px;
+    color: #fff;
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
+  }
+}
+
+.client-portal-claim-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.client-portal-hero-chip {
+  min-height: 30px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  color: rgba(248, 251, 255, 0.9);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+}
+
+.client-portal-claim-hero__status-button {
+  width: fit-content;
+}
+
+.client-portal-claim-hero__footer .client-portal-card-link,
+.client-portal-claim-hero__footer .client-portal-text-link {
+  color: #fff;
+}
+
+.client-portal-claim-hero__footer .btn.btn-primary {
+  color: var(--primary-dark);
+  background: #fff;
+}
+
+.client-portal-status-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.client-portal-status-drawer-layer__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+.client-portal-status-drawer {
+  position: relative;
+  width: min(100%, 480px);
+  height: 100%;
+  padding: 18px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  border-left: 1px solid rgba(223, 233, 246, 0.94);
+  background: #fff;
+  overflow: hidden;
+}
+
+.client-portal-status-drawer__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 800;
+  }
+
+  span {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.client-portal-status-drawer__close {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(223, 233, 246, 0.94);
+  border-radius: 50%;
+  color: #5d6e88;
+  background: #f7fbff;
+}
+
+.client-portal-status-drawer__timeline {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.client-portal-status-drawer__item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+
+  &.is-danger .client-portal-status-drawer__dot {
+    color: #fff;
+    background: #ff6d7b;
+  }
+}
+
+.client-portal-status-drawer__rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 24px;
+    bottom: -12px;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    background: #16b67b;
+  }
+}
+
+.client-portal-status-drawer__item:last-child .client-portal-status-drawer__rail::after {
+  display: none;
+}
+
+.client-portal-status-drawer__item.is-danger .client-portal-status-drawer__rail::after {
+  background: #ff9aa4;
+}
+
+.client-portal-status-drawer__dot {
+  width: 20px;
+  height: 20px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #16b67b;
+}
+
+.client-portal-status-drawer__item.is-current .client-portal-status-drawer__dot {
+  background: var(--primary);
+}
+
+.client-portal-status-drawer__card {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  border-radius: 18px;
+  background: #f5f8fe;
+
+  strong,
+  small,
+  p {
+    margin: 0;
+    display: block;
+  }
+
+  strong {
+    color: #123772;
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 800;
+  }
+
+  small {
+    color: #7b8ca5;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  p {
+    color: #163b78;
+    font-size: 14px;
+    line-height: 26px;
+  }
 }
 
 .client-portal-empty-card {
@@ -1692,6 +2092,14 @@
     justify-items: end;
   }
 
+  .client-portal-claim-hero__top {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .client-portal-claim-hero__journey {
+    grid-template-columns: minmax(0, 1fr) minmax(56px, auto) minmax(0, 1fr);
+  }
+
   .client-portal-meta-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1734,6 +2142,10 @@
 
   .client-portal-claims-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-portal-claim-hero.is-compact .client-portal-claim-hero__facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .client-portal-meta-grid {
