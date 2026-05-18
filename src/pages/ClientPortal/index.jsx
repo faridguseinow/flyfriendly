@@ -46,6 +46,7 @@ import {
 } from "../../services/clientPortalService.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { contactEmail } from "../../constants/site.js";
+import { saveLeadSignature } from "../../services/leadService.js";
 import "./style.scss";
 
 const CLIENT_STATUS_STEPS = [
@@ -176,6 +177,178 @@ function getDocumentExtension(document) {
   const fileName = String(document?.file_name || "");
   const match = fileName.match(/\.([a-z0-9]+)$/i);
   return match ? match[1].toUpperCase() : "FILE";
+}
+
+function SignaturePadField({ value, onChange, ariaLabel, clearLabel = "Clear" }) {
+  const canvasRef = useRef(null);
+  const isDrawingRef = useRef(false);
+  const activePointerIdRef = useRef(null);
+  const pointsRef = useRef([]);
+
+  const configureContext = (context) => {
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#1f4b99";
+    context.fillStyle = "#1f4b99";
+    context.lineWidth = 2.2;
+    context.shadowColor = "rgba(20, 47, 97, 0.14)";
+    context.shadowBlur = 0.6;
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+    context.scale(ratio, ratio);
+    configureContext(context);
+
+    if (value) {
+      const image = new Image();
+      image.onload = () => context.drawImage(image, 0, 0, rect.width, rect.height);
+      image.src = value;
+    }
+  }, [value]);
+
+  const point = (event) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      pressure: event.pressure && event.pressure > 0 ? event.pressure : 0.5,
+    };
+  };
+
+  const midpoint = (first, second) => ({
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2,
+  });
+
+  const strokeWidthForPoint = (current, previous) => {
+    if (!previous) return 2.2;
+    const distance = Math.hypot(current.x - previous.x, current.y - previous.y);
+    const pressureBoost = (current.pressure || 0.5) * 0.65;
+    const speedPenalty = Math.min(distance / 18, 0.9);
+    return Math.max(1.6, Math.min(2.8, 2.55 + pressureBoost - speedPenalty));
+  };
+
+  const drawDot = (context, current) => {
+    context.beginPath();
+    context.arc(current.x, current.y, 1.3, 0, Math.PI * 2);
+    context.fill();
+  };
+
+  const drawSegment = (context, currentPoint) => {
+    const points = pointsRef.current;
+    points.push(currentPoint);
+
+    if (points.length === 1) {
+      drawDot(context, currentPoint);
+      return;
+    }
+
+    if (points.length === 2) {
+      const previous = points[0];
+      context.beginPath();
+      context.lineWidth = strokeWidthForPoint(currentPoint, previous);
+      context.moveTo(previous.x, previous.y);
+      context.lineTo(currentPoint.x, currentPoint.y);
+      context.stroke();
+      return;
+    }
+
+    const lastIndex = points.length - 1;
+    const previousPoint = points[lastIndex - 1];
+    const pointBeforePrevious = points[lastIndex - 2];
+    const start = midpoint(pointBeforePrevious, previousPoint);
+    const end = midpoint(previousPoint, currentPoint);
+
+    context.beginPath();
+    context.lineWidth = strokeWidthForPoint(currentPoint, previousPoint);
+    context.moveTo(start.x, start.y);
+    context.quadraticCurveTo(previousPoint.x, previousPoint.y, end.x, end.y);
+    context.stroke();
+
+    if (points.length > 6) {
+      points.shift();
+    }
+  };
+
+  const applyPointerSamples = (event) => {
+    if (!isDrawingRef.current || activePointerIdRef.current !== event.pointerId) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    const samples = typeof event.getCoalescedEvents === "function" ? event.getCoalescedEvents() : [event];
+
+    for (const sample of samples) {
+      drawSegment(context, point(sample));
+    }
+  };
+
+  const beginSignature = (event) => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    const startPoint = point(event);
+    canvas.setPointerCapture(event.pointerId);
+    activePointerIdRef.current = event.pointerId;
+    isDrawingRef.current = true;
+    pointsRef.current = [startPoint];
+    drawDot(context, startPoint);
+  };
+
+  const drawSignature = (event) => {
+    applyPointerSamples(event);
+  };
+
+  const endSignature = (event) => {
+    if (!isDrawingRef.current) return;
+
+    applyPointerSamples(event);
+
+    const canvas = canvasRef.current;
+    if (event?.pointerId !== undefined && canvas.hasPointerCapture?.(event.pointerId)) {
+      canvas.releasePointerCapture(event.pointerId);
+    }
+
+    isDrawingRef.current = false;
+    activePointerIdRef.current = null;
+    pointsRef.current = [];
+    onChange(canvas.toDataURL("image/png"));
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    configureContext(context);
+    isDrawingRef.current = false;
+    activePointerIdRef.current = null;
+    pointsRef.current = [];
+    onChange("");
+  };
+
+  return (
+    <div className="client-portal-signature-pad">
+      <canvas
+        ref={canvasRef}
+        onPointerDown={beginSignature}
+        onPointerMove={drawSignature}
+        onPointerUp={endSignature}
+        onPointerLeave={endSignature}
+        onPointerCancel={endSignature}
+        aria-label={ariaLabel}
+      />
+      <button type="button" onClick={clearSignature}>{clearLabel}</button>
+    </div>
+  );
 }
 
 function getClaimAction(claim, t) {
@@ -1385,32 +1558,6 @@ export function ClientDocumentsPage() {
         </div>
       </section>
 
-      <section className="portal-card">
-        <PortalSectionHeader
-          title={t("clientPortal.documents.uploadedTitle", { defaultValue: "Uploaded files" })}
-          text={t("clientPortal.documents.uploadedText", { defaultValue: "You can review the files already attached to your account here." })}
-        />
-
-        {state.documents.length ? (
-          <div className="client-portal-uploaded-list">
-            {state.documents.map((document) => (
-              <ManagedUploadedDocumentRow
-                key={`${document.kind}-${document.id}`}
-                document={document}
-                previewUrl={document.signature_data_url || previewUrls[document.id] || ""}
-                busy={Boolean(busyMap[`document-${document.id}`])}
-                progress={progressMap[`document-${document.id}`] || 0}
-                onPreview={openDocument}
-                onReplace={(item) => requestFilePicker({ documentType: item.document_type, replaceDocument: item })}
-                onDelete={handleDeleteDocument}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="portal-empty">{t("clientPortal.documents.empty", { defaultValue: "Documents will appear here after they are added to your claim." })}</p>
-        )}
-      </section>
-
       <DocumentPreviewDrawer
         document={preview.document}
         url={preview.url}
@@ -1441,6 +1588,17 @@ function ClientAccountPageInner() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState("");
+  const [signatureAccepted, setSignatureAccepted] = useState(false);
+  const [signatureState, setSignatureState] = useState({
+    isLoading: true,
+    error: "",
+    latestSignature: null,
+    uploadTarget: null,
+  });
+  const [signatureMessage, setSignatureMessage] = useState("");
+  const [signatureError, setSignatureError] = useState("");
+  const [isSavingSignature, setIsSavingSignature] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -1449,6 +1607,31 @@ function ClientAccountPageInner() {
       phone: profile?.phone || user?.user_metadata?.phone || "",
     });
   }, [profile, user]);
+
+  const loadSignatureState = async () => {
+    try {
+      const data = await fetchClientDocuments();
+      const signatureRequirement = (data.requiredDocuments || []).find((item) => item.key === "signature") || null;
+
+      setSignatureState({
+        isLoading: false,
+        error: "",
+        latestSignature: signatureRequirement?.latestDocument || null,
+        uploadTarget: data.uploadTarget || null,
+      });
+    } catch (loadError) {
+      setSignatureState({
+        isLoading: false,
+        error: loadError.message || "Could not load signature details.",
+        latestSignature: null,
+        uploadTarget: null,
+      });
+    }
+  };
+
+  useEffect(() => {
+    void loadSignatureState();
+  }, []);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -1467,6 +1650,46 @@ function ClientAccountPageInner() {
       setError(saveError.message || t("clientPortal.account.error", { defaultValue: "Could not update your account." }));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const submitSignature = async (event) => {
+    event.preventDefault();
+    setSignatureMessage("");
+    setSignatureError("");
+
+    if (!signatureState.uploadTarget?.leadId) {
+      setSignatureError(t("clientPortal.account.signatureLocked", { defaultValue: "Signature can be added when an active claim is available." }));
+      return;
+    }
+
+    if (!signatureDataUrl) {
+      setSignatureError(t("claim.status.signatureRequired", { defaultValue: "Please sign and accept the terms before submitting." }));
+      return;
+    }
+
+    if (!signatureAccepted) {
+      setSignatureError(t("claim.status.signatureRequired", { defaultValue: "Please sign and accept the terms before submitting." }));
+      return;
+    }
+
+    setIsSavingSignature(true);
+
+    try {
+      await saveLeadSignature(signatureState.uploadTarget.leadId, {
+        fullName: form.full_name,
+        email: form.email,
+        signatureDataUrl,
+        termsAccepted: true,
+      });
+      setSignatureDataUrl("");
+      setSignatureAccepted(false);
+      setSignatureMessage(t("clientPortal.account.signatureSaved", { defaultValue: "Signature added to your claim." }));
+      await loadSignatureState();
+    } catch (saveError) {
+      setSignatureError(saveError.message || t("clientPortal.account.signatureError", { defaultValue: "Could not save your signature." }));
+    } finally {
+      setIsSavingSignature(false);
     }
   };
 
@@ -1509,30 +1732,89 @@ function ClientAccountPageInner() {
           <section className="client-portal-settings-card">
             <div className="client-portal-card-heading">
               <strong>{t("clientPortal.account.notificationsTitle", { defaultValue: "Notifications" })}</strong>
-              <span>{t("clientPortal.account.notificationsText", { defaultValue: "Claim updates are sent to your account email. Additional preferences can be added later without changing your claim data." })}</span>
+              <span>{t("clientPortal.account.notificationsText", { defaultValue: "Claim updates are still sent to your account email. Personal notification settings are coming soon." })}</span>
             </div>
 
-            <div className="client-portal-toggle-list">
-              <div className="client-portal-toggle-row">
-                <div>
-                  <strong>{t("clientPortal.account.claimUpdates", { defaultValue: "Claim updates" })}</strong>
-                  <span>{t("clientPortal.account.claimUpdatesHelp", { defaultValue: "Enabled for important claim and document updates." })}</span>
-                </div>
-                <button type="button" className="client-portal-switch is-on" aria-pressed="true" disabled>
-                  <span />
-                </button>
-              </div>
-              <div className="client-portal-toggle-row">
-                <div>
-                  <strong>{t("clientPortal.account.marketingEmails", { defaultValue: "Marketing emails" })}</strong>
-                  <span>{t("clientPortal.account.marketingEmailsHelp", { defaultValue: "Preference controls can be connected later without affecting the current portal logic." })}</span>
-                </div>
-                <button type="button" className="client-portal-switch" aria-pressed="false" disabled>
-                  <span />
-                </button>
-              </div>
+            <div className="client-portal-soon-card">
+              <span className="client-portal-soon-badge">Soon</span>
+              <strong>{t("clientPortal.account.notificationsSoonTitle", { defaultValue: "Notification preferences are not ready yet" })}</strong>
+              <p>{t("clientPortal.account.notificationsSoonText", { defaultValue: "Soon you will be able to personalize claim and marketing notifications from your account." })}</p>
             </div>
           </section>
+        </div>
+      </section>
+
+      <section className="portal-card">
+        <PortalSectionHeader
+          title={t("clientPortal.account.signatureTitle", { defaultValue: "Signature / Consent" })}
+          text={t("clientPortal.account.signatureText", { defaultValue: "Add your signature here if it is still missing from the current claim." })}
+        />
+
+        <div className="client-portal-account-grid">
+          <section className="client-portal-settings-card">
+            <div className="client-portal-card-heading">
+              <strong>{t("clientPortal.account.signatureStatusTitle", { defaultValue: "Current signature status" })}</strong>
+              <span>{t("clientPortal.account.signatureStatusText", { defaultValue: "Your claim needs one valid signature on file." })}</span>
+            </div>
+
+            {signatureState.isLoading ? (
+              <p className="portal-empty">{t("clientPortal.account.loadingSignature", { defaultValue: "Checking signature status..." })}</p>
+            ) : signatureState.error ? (
+              <p className="portal-message is-error">{signatureState.error}</p>
+            ) : signatureState.latestSignature ? (
+              <div className="client-portal-signature-summary">
+                <div className="client-portal-signature-summary__preview">
+                  <img src={signatureState.latestSignature.signature_data_url} alt="Saved signature" />
+                </div>
+                <div className="client-portal-signature-summary__copy">
+                  <strong>{t("clientPortal.account.signatureOnFile", { defaultValue: "Signature on file" })}</strong>
+                  <span>{formatDateTime(signatureState.latestSignature.signed_at || signatureState.latestSignature.created_at)}</span>
+                </div>
+                <LocalizedLink className="btn btn-secondary" to="/client/documents">
+                  {t("clientPortal.account.reviewDocuments", { defaultValue: "Review documents" })}
+                </LocalizedLink>
+              </div>
+            ) : (
+              <div className="client-portal-signature-empty">
+                <strong>{t("clientPortal.account.signatureMissing", { defaultValue: "Signature missing" })}</strong>
+                <span>{signatureState.uploadTarget?.leadId
+                  ? t("clientPortal.account.signatureMissingHelp", { defaultValue: "Add your signature now so your active claim keeps moving." })
+                  : t("clientPortal.account.signatureLocked", { defaultValue: "Signature can be added when an active claim is available." })}
+                </span>
+              </div>
+            )}
+          </section>
+
+          {!signatureState.latestSignature ? (
+            <section className="client-portal-settings-card">
+              <div className="client-portal-card-heading">
+                <strong>{t("clientPortal.account.addSignature", { defaultValue: "Add signature" })}</strong>
+                <span>{t("clientPortal.account.addSignatureHelp", { defaultValue: "Use your finger or mouse to sign inside the box." })}</span>
+              </div>
+
+              <form className="portal-form" onSubmit={submitSignature}>
+                <SignaturePadField
+                  value={signatureDataUrl}
+                  onChange={setSignatureDataUrl}
+                  ariaLabel={t("claim.finish.digitalSignature", { defaultValue: "Digital Signature" })}
+                  clearLabel={t("claim.finish.clear", { defaultValue: "Clear" })}
+                />
+                <label className="client-portal-signature-consent">
+                  <input
+                    type="checkbox"
+                    checked={signatureAccepted}
+                    onChange={(event) => setSignatureAccepted(event.target.checked)}
+                  />
+                  <span>{t("claim.finish.termsLabel", { defaultValue: "I agree with the terms and confirm that the provided information is accurate." })}</span>
+                </label>
+                {signatureError ? <p className="portal-message is-error">{signatureError}</p> : null}
+                {signatureMessage ? <p className="portal-message is-notice">{signatureMessage}</p> : null}
+                <button className="btn btn-primary" type="submit" disabled={isSavingSignature || !signatureState.uploadTarget?.leadId}>
+                  {isSavingSignature ? t("clientPortal.account.signatureSaving", { defaultValue: "Saving..." }) : t("clientPortal.account.saveSignature", { defaultValue: "Save signature" })}
+                </button>
+              </form>
+            </section>
+          ) : null}
         </div>
       </section>
 

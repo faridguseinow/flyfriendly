@@ -1217,6 +1217,156 @@
   }
 }
 
+.client-portal-soon-card,
+.client-portal-signature-summary,
+.client-portal-signature-empty {
+  padding: 14px;
+  border: 1px solid rgba(223, 233, 246, 0.94);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+}
+
+.client-portal-soon-card {
+  display: grid;
+  gap: 8px;
+
+  strong {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+
+  p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+.client-portal-soon-badge {
+  width: fit-content;
+  min-height: 24px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  color: var(--primary-dark);
+  background: #eef5ff;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.client-portal-signature-summary {
+  display: grid;
+  gap: 12px;
+
+  .btn {
+    width: fit-content;
+  }
+}
+
+.client-portal-signature-summary__preview {
+  width: 100%;
+  min-height: 132px;
+  overflow: hidden;
+  border: 1px solid rgba(223, 233, 246, 0.94);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 250, 255, 0.98) 100%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(124, 143, 170, 0.05) 0,
+      rgba(124, 143, 170, 0.05) 1px,
+      transparent 1px,
+      transparent 18px
+    );
+
+  img {
+    width: 100%;
+    height: 132px;
+    object-fit: contain;
+  }
+}
+
+.client-portal-signature-summary__copy,
+.client-portal-signature-empty {
+  display: grid;
+  gap: 4px;
+
+  strong {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 17px;
+  }
+}
+
+.client-portal-signature-pad {
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+  border: 2px dashed #d8e0ea;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 248, 253, 0.98) 100%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(124, 143, 170, 0.05) 0,
+      rgba(124, 143, 170, 0.05) 1px,
+      transparent 1px,
+      transparent 18px
+    );
+
+  canvas {
+    width: 100%;
+    height: 220px;
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+  }
+
+  button {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    min-height: 34px;
+    padding: 0 12px;
+  }
+}
+
+.client-portal-signature-consent {
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid rgba(223, 233, 246, 0.94);
+  border-radius: 16px;
+  background: #f8fbff;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex: 0 0 auto;
+  }
+
+  span {
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
 .client-portal-toggle-row,
 .client-portal-support-link {
   padding: 13px;
@@ -1477,6 +1627,11 @@
   .client-portal-documents-manager-grid,
   .client-portal-support-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-portal-signature-summary {
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) auto;
+    align-items: center;
   }
 
   .client-portal-uploaded-row.is-managed {
