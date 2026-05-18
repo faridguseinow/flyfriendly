@@ -1,6 +1,7 @@
 .claim-page {
   min-height: 100dvh;
   padding: 132px 24px 36px;
+  overflow-x: hidden;
   background: #eaf2fa;
 }
 
@@ -12,6 +13,7 @@
   width: min(var(--site-max-width), 100%);
   margin: 0 auto;
   padding: 40px;
+  min-width: 0;
   border: 1px solid rgba(201, 231, 251, 0.95);
   border-radius: 40px;
   background: #fff;
@@ -48,6 +50,7 @@
   grid-template-columns: minmax(0, 1fr) 390px;
   gap: 24px;
   align-items: start;
+  min-width: 0;
 }
 
 .claim-main,
@@ -61,6 +64,8 @@
 .claim-main {
   min-height: 620px;
   padding: 32px;
+  min-width: 0;
+  overflow-x: hidden;
   text-align: left;
 
   .section-label {
@@ -175,6 +180,7 @@
 .claim-result {
   display: grid;
   gap: 24px;
+  min-width: 0;
 }
 
 .claim-estimate-card {
@@ -256,6 +262,7 @@
 
 .claim-question {
   padding: 24px;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 32px;
   background: #fff;
@@ -787,6 +794,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
 
   .btn {
     min-height: 48px;
@@ -823,12 +831,15 @@
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   margin-bottom: 18px;
+  min-width: 0;
 }
 
 .upload-box {
   position: relative;
   min-height: 220px;
   padding: 28px;
+  min-width: 0;
+  max-width: 100%;
   display: grid;
   place-items: center;
   text-align: center;
@@ -857,6 +868,7 @@
   b,
   small {
     display: block;
+    min-width: 0;
   }
 
   strong {
@@ -865,6 +877,8 @@
     font-size: 20px;
     line-height: 28px;
     font-weight: 400;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   em {
@@ -882,6 +896,7 @@
     color: #989fab;
     font-size: 14px;
     line-height: 20px;
+    overflow-wrap: anywhere;
   }
 
   mark {
@@ -907,6 +922,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
+  min-width: 0;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   color: var(--primary);
@@ -921,6 +937,13 @@
 
   small {
     color: #989fab;
+  }
+
+  strong,
+  small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   span {
@@ -959,6 +982,8 @@
   width: 100%;
   min-height: 150px;
   padding: 18px;
+  max-width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   outline: 0;
