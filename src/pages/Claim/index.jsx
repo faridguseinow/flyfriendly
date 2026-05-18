@@ -1318,14 +1318,21 @@ function ClaimFlow() {
     setData((current) => ({ ...current, signatureDataUrl }));
   };
 
-  const ensureLead = async () => {
-    if (data.leadId) {
-      return data.leadId;
+  const ensureLead = async (payload = data) => {
+    if (payload.leadId) {
+      return {
+        leadId: payload.leadId,
+        nextData: payload,
+      };
     }
 
-    const lead = await createLead(withCurrentLanguage());
-    setData((current) => ({ ...current, leadId: lead.id, leadCode: lead.lead_code }));
-    return lead.id;
+    const lead = await createLead(withCurrentLanguage(payload));
+    const nextData = { ...payload, leadId: lead.id, leadCode: lead.lead_code };
+    setData(nextData);
+    return {
+      leadId: lead.id,
+      nextData,
+    };
   };
   const submit = async (nextStage, event) => {
     event.preventDefault();
@@ -1340,8 +1347,10 @@ function ClaimFlow() {
     if (stage === "eligibility" && data.delayDuration === "less_than_3") {
       if (isSupabaseConfigured) {
         try {
-          const leadId = await ensureLead();
+          const { leadId, nextData } = await ensureLead();
           await submitLead(leadId, withCurrentLanguage(), "not_eligible");
+          clearStoredClaimDraft();
+          go("denied", nextData, files);
         } catch (error) {
           setSyncError(error.message || t("claim.status.saveLeadError"));
           return;
@@ -1349,8 +1358,6 @@ function ClaimFlow() {
       }
 
       setSyncNotice(t("claim.status.notEligible"));
-      clearStoredClaimDraft();
-      go("denied");
       return;
     }
 
@@ -1373,7 +1380,7 @@ function ClaimFlow() {
     setIsSaving(true);
 
     try {
-      const leadId = await ensureLead();
+      const { leadId, nextData } = await ensureLead();
 
       if (stage === "eligibility") {
         await saveLeadStep(leadId, "contact", withCurrentLanguage());
@@ -1427,7 +1434,7 @@ function ClaimFlow() {
       if (stage !== "finish") {
         setSyncNotice(t("common.savedInSupabase"));
       }
-      go(nextStage);
+      go(nextStage, nextData, files);
     } catch (error) {
       setSyncError(error.message || t("claim.status.saveClaimError"));
     } finally {
