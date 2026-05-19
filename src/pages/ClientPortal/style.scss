@@ -350,7 +350,7 @@
   transition: transform 180ms ease, color 180ms ease, background 180ms ease;
 
   &.is-active {
-    color: var(--primary-dark);
+    color: var(--primary);
     background: linear-gradient(180deg, #f6fbff 0%, #eef7ff 100%);
   }
 }
@@ -730,18 +730,18 @@
 .client-portal-status-badge {
   min-height: 30px;
   padding: 0 10px;
-  display: inline-flex;
+  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 6px;
   border-radius: 999px;
   font-size: 12px;
   line-height: 16px;
   font-weight: 700;
-  white-space: nowrap;
+  white-space: wrap;
 
   &.is-info {
-    color: #086bb8;
-    background: #eaf6ff;
+    color: var(--primary);
   }
 
   &.is-success {
@@ -1309,8 +1309,6 @@
 }
 
 .client-portal-documents-grid {
-  display: flex;
-  flex-wrap: wrap;
   gap: 10px;
 }
 
