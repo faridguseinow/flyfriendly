@@ -24,7 +24,7 @@
   &.is-primary {
     position: relative;
     color: #fff;
-    border: 2px solid #c9e7fb;
+    border: 2px solid #c9d8fb;
     background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
 
     &::before,
@@ -40,18 +40,6 @@
       background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.18) 38%, rgba(255, 255, 255, 0.62) 50%, rgba(255, 255, 255, 0.16) 62%, rgba(255, 255, 255, 0));
       transform: skewX(-18deg);
       animation: sectionLabelShimmer 3.2s ease-in-out infinite;
-    }
-
-    &::after {
-      top: 50%;
-      left: 14px;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.12) 42%, rgba(255, 255, 255, 0) 72%);
-      transform: translateY(-50%);
-      filter: blur(1px);
-      animation: sectionLabelGlowPulse 2.6s ease-in-out infinite;
     }
 
     svg {

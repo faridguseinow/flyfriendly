@@ -239,10 +239,7 @@ function Home() {
             <div>
               <IconBadge icon={BadgeAlert} />
               <h3>{disruptionCards.deniedTitle}</h3>
-              <p>{disruptionCards.deniedText}</p>
-              <LocalizedLink to="/claim/eligibility" className="btn btn-small"><Search size={16} strokeWidth={2} aria-hidden="true" /> {t("common.checkYourEligibility")}</LocalizedLink>
-              <LocalizedLink to="/claim/eligibility" className="btn btn-small"><FileText size={16} strokeWidth={2} aria-hidden="true" /> {t("common.startYourClaim")}</LocalizedLink>
-            </div>
+              <p>{disruptionCards.deniedText}</p>            </div>
           </article>
         </div>
       </section>
