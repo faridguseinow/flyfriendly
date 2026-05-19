@@ -795,5 +795,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Secções da conta do cliente",
+    "signOut": "Terminar sessão",
+    "nav": {
+      "home": "Início",
+      "claims": "Pedidos",
+      "documents": "Documentos",
+      "payments": "Pagamentos",
+      "account": "Conta"
+    },
+    "estimate": {
+      "pending": "Estimativa pendente",
+      "upTo": "Até {{amount}}"
+    },
+    "actions": {
+      "startClaim": "Iniciar novo pedido",
+      "viewDocuments": "Ver documentos",
+      "viewClaim": "Ver pedido",
+      "claimDetails": "Detalhes do pedido",
+      "uploadDocuments": "Carregar documentos",
+      "openClaim": "Abrir pedido",
+      "uploadPassport": "Carregar passaporte",
+      "uploadBoardingPass": "Carregar cartão de embarque"
+    },
+    "progress": "Progresso do pedido",
+    "status": {
+      "submitted": "Enviado",
+      "under_review": "Em análise",
+      "documents_needed": "Documentos necessários",
+      "approved": "Aprovado",
+      "rejected": "Rejeitado",
+      "paid": "Pago"
+    },
+    "claim": {
+      "airlinePending": "Companhia pendente",
+      "compensation": "Compensação possível",
+      "submitted": "Enviado",
+      "documents": "Documentos",
+      "payment": "Estado do pagamento",
+      "viewStatus": "Ver estado do pedido",
+      "airport": "Aeroporto",
+      "flightDisruption": "Perturbação do voo"
+    },
+    "statusDrawer": {
+      "close": "Fechar detalhes do estado",
+      "title": "Detalhes do estado",
+      "received": {
+        "title": "Pedido recebido",
+        "text": "Obrigado por enviar o seu pedido. Guardámos os dados do seu voo e manteremos aqui as próximas atualizações."
+      },
+      "accepted": {
+        "title": "Pedido aceite",
+        "text": "Revimos os dados básicos do seu pedido e o processo de compensação já está em andamento."
+      },
+      "documentsNeeded": {
+        "title": "Documentos necessários",
+        "text": "Ainda precisamos de um ou mais documentos obrigatórios antes de continuar este pedido."
+      },
+      "underReview": {
+        "title": "Pedido em análise",
+        "text": "O seu pedido está atualmente em análise com base nas informações e documentos anexados ao caso."
+      },
+      "approved": {
+        "title": "Compensação aprovada",
+        "text": "O seu pedido foi aprovado. Estamos a preparar a próxima etapa de pagamento da compensação."
+      },
+      "approvedPaid": {
+        "text": "O seu pedido foi aprovado e passou com sucesso para a fase de pagamento."
+      },
+      "paid": {
+        "title": "Compensação paga",
+        "text": "A sua compensação foi paga. Pode rever os detalhes na secção de Pagamentos."
+      },
+      "closed": {
+        "title": "Pedido encerrado",
+        "text": "Não conseguimos aprovar este pedido com base nas informações atualmente disponíveis no seu processo."
+      }
+    },
+    "home": {
+      "emptyTitle": "Ainda não existem pedidos",
+      "emptyText": "Inicie o seu primeiro pedido para acompanhar aqui a compensação, os documentos e os pagamentos.",
+      "start": "Iniciar o primeiro pedido",
+      "progressTitle": "Estado do pedido",
+      "actionRequired": "Ação necessária",
+      "noAction": "Nenhuma ação necessária",
+      "actionReason": "Ainda precisamos de um ou mais documentos obrigatórios para continuar o seu pedido.",
+      "noActionText": "Avisaremos quando o estado mudar.",
+      "monitoring": "O seu pedido está a avançar com os documentos já anexados."
+    },
+    "claims": {
+      "title": "Pedidos",
+      "text": "Todos os pedidos associados à sua conta, simplificados em atualizações seguras para o cliente.",
+      "newClaim": "Iniciar novo pedido",
+      "empty": "Ainda não existem pedidos associados à sua conta."
+    },
+    "claimDetails": {
+      "empty": "Este pedido não está disponível na sua conta."
+    },
+    "documents": {
+      "requiredTitle": "Documentos obrigatórios",
+      "title": "Documentos",
+      "noFile": "Ainda não foi carregado nenhum ficheiro",
+      "signatureConsent": "Assinatura / Consentimento",
+      "passportId": "Passaporte / ID",
+      "boardingPass": "Cartão de embarque",
+      "document": "Documento",
+      "digitalSignature": "Assinatura digital",
+      "image": "Imagem",
+      "uploadedFile": "Ficheiro carregado",
+      "uploadRequired": "Carregamento necessário",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Pedido atual",
+      "preview": "Pré-visualizar",
+      "replace": "Substituir",
+      "delete": "Eliminar",
+      "previewTitle": "Pré-visualização do documento",
+      "openFull": "Abrir completo",
+      "loadingPreview": "A carregar pré-visualização…",
+      "previewUnavailable": "A pré-visualização não está disponível.",
+      "open": "Abrir",
+      "upload": "Carregar",
+      "replacementSuccess": "Substituição carregada com sucesso.",
+      "uploadSuccess": "Documento carregado com sucesso.",
+      "uploadError": "Não foi possível carregar o documento.",
+      "removeConfirm": "Remover este documento do seu pedido?",
+      "removeSuccess": "Documento removido.",
+      "removeError": "Não foi possível remover o documento.",
+      "signatureUnavailable": "A assinatura pode ser adicionada quando existir um pedido ativo disponível.",
+      "signatureAdded": "Assinatura adicionada com sucesso.",
+      "signatureSaveError": "Não foi possível guardar a assinatura.",
+      "uploadsEnabled": "Carregamentos ativados",
+      "lockedMessage": "As alterações de documentos estão bloqueadas para os pedidos atualmente associados à sua conta.",
+      "addSignature": "Adicionar assinatura",
+      "lockedNow": "Bloqueado neste momento",
+      "saveSignature": "Guardar assinatura",
+      "summary": {
+        "none": "Nenhum documento carregado",
+        "noneDetail": "O passaporte / ID, o cartão de embarque e a assinatura aparecerão aqui.",
+        "partial": "{{count}}/3 documentos obrigatórios estão disponíveis.",
+        "complete": "Todos os documentos obrigatórios foram recebidos",
+        "completeDetail": "O passaporte / ID, o cartão de embarque e a assinatura estão anexados.",
+        "uploaded": "Documentos carregados"
+      },
+      "status": {
+        "missing": "Em falta",
+        "uploaded": "Carregado",
+        "pending_review": "Pendente de revisão",
+        "approved": "Aprovado",
+        "rejected": "Rejeitado"
+      }
+    },
+    "payments": {
+      "title": "Pagamentos",
+      "text": "Os montantes estimados, aprovados e pagos aparecem aqui apenas quando existirem dados.",
+      "estimated": "Compensação estimada",
+      "approvedAmount": "Montante aprovado",
+      "paidAmount": "Montante pago",
+      "payoutStatus": "Estado do pagamento",
+      "latestUpdate": "Última atualização do pagamento",
+      "awaiting": "As informações de pagamento aparecerão aqui quando o seu pedido for aprovado.",
+      "history": "Histórico de pagamentos",
+      "historyText": "Pagamentos aprovados e transferências concluídas serão listados aqui.",
+      "empty": "As informações de pagamento aparecerão aqui quando o seu pedido for aprovado.",
+      "progress": "Progresso do pagamento",
+      "status": {
+        "not_started": "Não iniciado",
+        "pending": "Pendente",
+        "approved": "Aprovado",
+        "paid": "Pago"
+      }
+    },
+    "account": {
+      "saved": "Os dados da conta foram atualizados.",
+      "error": "Não foi possível atualizar a sua conta.",
+      "personal": "Informações pessoais",
+      "firstName": "Primeiro nome",
+      "lastName": "Apelido",
+      "email": "Email",
+      "phone": "Telefone",
+      "language": "Idioma",
+      "saving": "A guardar...",
+      "submit": "Guardar alterações",
+      "notificationsTitle": "Notificações",
+      "notificationsSoonText": "Em breve poderá personalizar notificações de pedidos e marketing a partir da sua conta.",
+      "support": "Apoio",
+      "contactSupport": "Contactar apoio"
+    },
+    "errors": {
+      "loadAccount": "Não foi possível carregar a sua conta.",
+      "loadClaims": "Não foi possível carregar os pedidos.",
+      "loadClaimDetails": "Não foi possível carregar os detalhes do pedido.",
+      "loadDocuments": "Não foi possível carregar os documentos.",
+      "loadPayments": "Não foi possível carregar os pagamentos."
+    }
   }
 }

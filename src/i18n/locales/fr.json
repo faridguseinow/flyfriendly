@@ -795,5 +795,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Sections du compte client",
+    "signOut": "Se déconnecter",
+    "nav": {
+      "home": "Accueil",
+      "claims": "Réclamations",
+      "documents": "Documents",
+      "payments": "Paiements",
+      "account": "Compte"
+    },
+    "estimate": {
+      "pending": "Estimation en attente",
+      "upTo": "Jusqu’à {{amount}}"
+    },
+    "actions": {
+      "startClaim": "Commencer une nouvelle réclamation",
+      "viewDocuments": "Voir les documents",
+      "viewClaim": "Voir la réclamation",
+      "claimDetails": "Détails de la réclamation",
+      "uploadDocuments": "Téléverser les documents",
+      "openClaim": "Ouvrir la réclamation",
+      "uploadPassport": "Téléverser le passeport",
+      "uploadBoardingPass": "Téléverser la carte d’embarquement"
+    },
+    "progress": "Progression de la réclamation",
+    "status": {
+      "submitted": "Envoyée",
+      "under_review": "En cours de révision",
+      "documents_needed": "Documents requis",
+      "approved": "Approuvée",
+      "rejected": "Refusée",
+      "paid": "Payée"
+    },
+    "claim": {
+      "airlinePending": "Compagnie en attente",
+      "compensation": "Indemnisation possible",
+      "submitted": "Envoyée",
+      "documents": "Documents",
+      "payment": "Statut du paiement",
+      "viewStatus": "Voir le statut de la réclamation",
+      "airport": "Aéroport",
+      "flightDisruption": "Perturbation du vol"
+    },
+    "statusDrawer": {
+      "close": "Fermer les détails du statut",
+      "title": "Détails du statut",
+      "received": {
+        "title": "Réclamation reçue",
+        "text": "Merci d’avoir soumis votre réclamation. Nous avons enregistré les détails de votre vol et afficherons ici les prochaines mises à jour."
+      },
+      "accepted": {
+        "title": "Réclamation acceptée",
+        "text": "Nous avons vérifié les informations de base de votre demande et votre réclamation avance désormais dans le processus d’indemnisation."
+      },
+      "documentsNeeded": {
+        "title": "Documents requis",
+        "text": "Nous avons encore besoin d’un ou plusieurs documents obligatoires avant de poursuivre cette réclamation."
+      },
+      "underReview": {
+        "title": "Réclamation en cours de révision",
+        "text": "Votre réclamation est actuellement étudiée sur la base des informations et des documents joints à votre dossier."
+      },
+      "approved": {
+        "title": "Indemnisation approuvée",
+        "text": "Votre réclamation a été approuvée. Nous préparons la prochaine étape de versement de votre indemnisation."
+      },
+      "approvedPaid": {
+        "text": "Votre réclamation a été approuvée et est passée avec succès à l’étape de paiement."
+      },
+      "paid": {
+        "title": "Indemnisation payée",
+        "text": "Votre indemnisation a été versée. Vous pouvez consulter les détails dans la section Paiements."
+      },
+      "closed": {
+        "title": "Réclamation clôturée",
+        "text": "Nous n’avons pas pu approuver cette réclamation sur la base des informations actuellement disponibles dans votre dossier."
+      }
+    },
+    "home": {
+      "emptyTitle": "Aucune réclamation pour le moment",
+      "emptyText": "Commencez votre première réclamation pour suivre ici l’indemnisation, les documents et les paiements.",
+      "start": "Commencer votre première réclamation",
+      "progressTitle": "Statut de la réclamation",
+      "actionRequired": "Action requise",
+      "noAction": "Aucune action requise",
+      "actionReason": "Nous avons encore besoin d’un ou plusieurs documents obligatoires pour poursuivre votre réclamation.",
+      "noActionText": "Nous vous informerons lorsque le statut changera.",
+      "monitoring": "Votre réclamation avance avec les documents déjà joints."
+    },
+    "claims": {
+      "title": "Réclamations",
+      "text": "Toutes les réclamations liées à votre compte, simplifiées en mises à jour adaptées au client.",
+      "newClaim": "Commencer une nouvelle réclamation",
+      "empty": "Aucune réclamation n’est encore liée à votre compte."
+    },
+    "claimDetails": {
+      "empty": "Cette réclamation n’est pas disponible dans votre compte."
+    },
+    "documents": {
+      "requiredTitle": "Documents requis",
+      "title": "Documents",
+      "noFile": "Aucun fichier téléversé pour le moment",
+      "signatureConsent": "Signature / Consentement",
+      "passportId": "Passeport / ID",
+      "boardingPass": "Carte d’embarquement",
+      "document": "Document",
+      "digitalSignature": "Signature numérique",
+      "image": "Image",
+      "uploadedFile": "Fichier téléversé",
+      "uploadRequired": "Téléversement requis",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Réclamation en cours",
+      "preview": "Aperçu",
+      "replace": "Remplacer",
+      "delete": "Supprimer",
+      "previewTitle": "Aperçu du document",
+      "openFull": "Ouvrir en entier",
+      "loadingPreview": "Chargement de l’aperçu…",
+      "previewUnavailable": "L’aperçu n’est pas disponible.",
+      "open": "Ouvrir",
+      "upload": "Téléverser",
+      "replacementSuccess": "Le remplacement a bien été téléversé.",
+      "uploadSuccess": "Le document a bien été téléversé.",
+      "uploadError": "Impossible de téléverser le document.",
+      "removeConfirm": "Supprimer ce document de votre réclamation ?",
+      "removeSuccess": "Document supprimé.",
+      "removeError": "Impossible de supprimer le document.",
+      "signatureUnavailable": "La signature peut être ajoutée lorsqu’une réclamation active est disponible.",
+      "signatureAdded": "Signature ajoutée avec succès.",
+      "signatureSaveError": "Impossible d’enregistrer la signature.",
+      "uploadsEnabled": "Téléversement activé",
+      "lockedMessage": "Les modifications de documents sont verrouillées pour les réclamations actuellement liées à votre compte.",
+      "addSignature": "Ajouter une signature",
+      "lockedNow": "Actuellement verrouillé",
+      "saveSignature": "Enregistrer la signature",
+      "summary": {
+        "none": "Aucun document téléversé",
+        "noneDetail": "Le passeport / ID, la carte d’embarquement et la signature apparaîtront ici.",
+        "partial": "{{count}}/3 documents requis sont disponibles.",
+        "complete": "Tous les documents requis ont été reçus",
+        "completeDetail": "Le passeport / ID, la carte d’embarquement et la signature sont joints.",
+        "uploaded": "Documents téléversés"
+      },
+      "status": {
+        "missing": "Manquant",
+        "uploaded": "Téléversé",
+        "pending_review": "En attente de révision",
+        "approved": "Approuvé",
+        "rejected": "Rejeté"
+      }
+    },
+    "payments": {
+      "title": "Paiements",
+      "text": "Les montants estimés, approuvés et versés apparaissent ici uniquement lorsque les données existent.",
+      "estimated": "Indemnisation estimée",
+      "approvedAmount": "Montant approuvé",
+      "paidAmount": "Montant versé",
+      "payoutStatus": "Statut du versement",
+      "latestUpdate": "Dernière mise à jour du versement",
+      "awaiting": "Les informations de paiement apparaîtront ici lorsque votre réclamation sera approuvée.",
+      "history": "Historique des paiements",
+      "historyText": "Les versements approuvés et les transferts terminés seront listés ici.",
+      "empty": "Les informations de paiement apparaîtront ici lorsque votre réclamation sera approuvée.",
+      "progress": "Progression du paiement",
+      "status": {
+        "not_started": "Non commencé",
+        "pending": "En attente",
+        "approved": "Approuvé",
+        "paid": "Payé"
+      }
+    },
+    "account": {
+      "saved": "Les informations du compte ont été mises à jour.",
+      "error": "Impossible de mettre à jour votre compte.",
+      "personal": "Informations personnelles",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "language": "Langue",
+      "saving": "Enregistrement...",
+      "submit": "Enregistrer les modifications",
+      "notificationsTitle": "Notifications",
+      "notificationsSoonText": "Vous pourrez bientôt personnaliser les notifications de réclamation et de marketing depuis votre compte.",
+      "support": "Assistance",
+      "contactSupport": "Contacter l’assistance"
+    },
+    "errors": {
+      "loadAccount": "Impossible de charger votre compte.",
+      "loadClaims": "Impossible de charger les réclamations.",
+      "loadClaimDetails": "Impossible de charger les détails de la réclamation.",
+      "loadDocuments": "Impossible de charger les documents.",
+      "loadPayments": "Impossible de charger les paiements."
+    }
   }
 }

@@ -233,7 +233,7 @@ function parseRouteStop(value) {
       city: "",
       country: "",
       flag: "",
-      label: "Route pending",
+      label: "—",
     };
   }
 
@@ -295,30 +295,36 @@ function getDocumentIcon(document) {
   return FileText;
 }
 
-function getDocumentLabel(value) {
+function getDocumentLabel(value, t) {
   const type = String(value?.document_type || value?.key || value || "").toLowerCase();
 
   if (value?.kind === "signature" || type.includes("signature") || type.includes("consent")) {
-    return "Signature / Consent";
+    return t("clientPortal.documents.signatureConsent", { defaultValue: "Signature / Consent" });
   }
 
   if (type.includes("passport") || type.includes("id")) {
-    return "Passport / ID";
+    return t("clientPortal.documents.passportId", { defaultValue: "Passport / ID" });
   }
 
   if (type.includes("boarding")) {
-    return "Boarding Pass";
+    return t("clientPortal.documents.boardingPass", { defaultValue: "Boarding Pass" });
   }
 
-  return "Document";
+  return t("clientPortal.documents.document", { defaultValue: "Document" });
 }
 
-function getDocumentFormatLabel(document) {
+function getDocumentFormatLabel(document, t) {
   const mime = String(document?.mime_type || "").toLowerCase();
-  if (document?.kind === "signature") return "Digital signature";
+  if (document?.kind === "signature") {
+    return t("clientPortal.documents.digitalSignature", { defaultValue: "Digital signature" });
+  }
+
   if (mime.includes("pdf")) return "PDF";
-  if (mime.startsWith("image/")) return "Image";
-  return "Uploaded file";
+  if (mime.startsWith("image/")) {
+    return t("clientPortal.documents.image", { defaultValue: "Image" });
+  }
+
+  return t("clientPortal.documents.uploadedFile", { defaultValue: "Uploaded file" });
 }
 
 function getDocumentExtension(document) {
@@ -733,13 +739,14 @@ function PortalLoadingPage({ variant = "default" }) {
 }
 
 function ClientStatusBadge({ status }) {
+  const { t } = useTranslation();
   const tone = status?.tone || "neutral";
   const Icon = getStatusIcon(tone);
 
   return (
     <span className={`client-portal-status-badge is-${tone}`}>
       <Icon size={14} />
-      <span>{status?.label || "Under review"}</span>
+      <span>{status?.label || t("clientPortal.status.under_review", { defaultValue: "Under review" })}</span>
     </span>
   );
 }
@@ -799,13 +806,15 @@ function ClientPortalNavLink({ to, icon: Icon, label, end = false, mobile = fals
 }
 
 function ClaimRouteStop({ stop, compact = false }) {
+  const { t } = useTranslation();
+
   return (
     <div className={`client-portal-route-stop${compact ? " is-compact" : ""}`}>
       <div className="client-portal-route-stop__flag" aria-hidden="true">
         {stop.flag || <Globe2 size={14} />}
       </div>
       <div className="client-portal-route-stop__copy">
-        <small>{stop.country || "Airport"}</small>
+        <small>{stop.country || t("clientPortal.claim.airport", { defaultValue: "Airport" })}</small>
         <strong>{stop.code}</strong>
         <span>{stop.city || stop.label}</span>
       </div>
@@ -853,7 +862,7 @@ function ClaimHeroCard({ claim, t, compact = false, footer = null, onOpenStatus 
 
       {showChips ? (
         <div className="client-portal-claim-hero__chips">
-          <span className="client-portal-hero-chip">{claim.disruptionType || "Flight disruption"}</span>
+          <span className="client-portal-hero-chip">{claim.disruptionType || t("clientPortal.claim.flightDisruption", { defaultValue: "Flight disruption" })}</span>
           <span className="client-portal-hero-chip">{claim.paymentStatus.label}</span>
           <span className="client-portal-hero-chip">{claim.documentsSummary.detail || claim.documentsSummary.label}</span>
         </div>
@@ -870,15 +879,15 @@ function ClaimHeroCard({ claim, t, compact = false, footer = null, onOpenStatus 
   );
 }
 
-function getStatusDrawerItems(claim) {
+function getStatusDrawerItems(claim, t) {
   const currentStatus = String(claim?.publicStatus?.key || "");
   const submittedDate = claim?.submittedAt || claim?.created_at || "";
   const items = [
     {
       key: "submitted",
-      title: "Claim received",
+      title: t("clientPortal.statusDrawer.received.title", { defaultValue: "Claim received" }),
       date: submittedDate,
-      text: "Thank you for submitting your claim. We saved your flight details and will keep the next updates here.",
+      text: t("clientPortal.statusDrawer.received.text", { defaultValue: "Thank you for submitting your claim. We saved your flight details and will keep the next updates here." }),
       state: "completed",
     },
   ];
@@ -886,9 +895,9 @@ function getStatusDrawerItems(claim) {
   if (["under_review", "documents_needed", "approved", "paid", "rejected"].includes(currentStatus)) {
     items.push({
       key: "under_review",
-      title: "Claim accepted",
+      title: t("clientPortal.statusDrawer.accepted.title", { defaultValue: "Claim accepted" }),
       date: submittedDate,
-      text: "We reviewed the basic details of your request and your claim is now moving through the compensation process.",
+      text: t("clientPortal.statusDrawer.accepted.text", { defaultValue: "We reviewed the basic details of your request and your claim is now moving through the compensation process." }),
       state: currentStatus === "under_review" ? "current" : "completed",
     });
   }
@@ -896,17 +905,17 @@ function getStatusDrawerItems(claim) {
   if (currentStatus === "documents_needed") {
     items.push({
       key: "documents_needed",
-      title: "Documents needed",
+      title: t("clientPortal.statusDrawer.documentsNeeded.title", { defaultValue: "Documents needed" }),
       date: submittedDate,
-      text: "We still need one or more required documents from you before we can continue processing this claim.",
+      text: t("clientPortal.statusDrawer.documentsNeeded.text", { defaultValue: "We still need one or more required documents from you before we can continue processing this claim." }),
       state: "current",
     });
   } else if (["under_review", "approved", "paid"].includes(currentStatus)) {
     items.push({
       key: "processing",
-      title: "Claim under review",
+      title: t("clientPortal.statusDrawer.underReview.title", { defaultValue: "Claim under review" }),
       date: submittedDate,
-      text: "Your claim is currently under review based on the information and documents attached to your case.",
+      text: t("clientPortal.statusDrawer.underReview.text", { defaultValue: "Your claim is currently under review based on the information and documents attached to your case." }),
       state: currentStatus === "under_review" ? "current" : "completed",
     });
   }
@@ -914,9 +923,9 @@ function getStatusDrawerItems(claim) {
   if (currentStatus === "approved") {
     items.push({
       key: "approved",
-      title: "Compensation approved",
+      title: t("clientPortal.statusDrawer.approved.title", { defaultValue: "Compensation approved" }),
       date: submittedDate,
-      text: "Your claim has been approved. We are preparing the next payout step for your compensation.",
+      text: t("clientPortal.statusDrawer.approved.text", { defaultValue: "Your claim has been approved. We are preparing the next payout step for your compensation." }),
       state: "current",
     });
   }
@@ -924,16 +933,16 @@ function getStatusDrawerItems(claim) {
   if (currentStatus === "paid") {
     items.push({
       key: "approved",
-      title: "Compensation approved",
+      title: t("clientPortal.statusDrawer.approved.title", { defaultValue: "Compensation approved" }),
       date: submittedDate,
-      text: "Your claim was approved and moved successfully to payout.",
+      text: t("clientPortal.statusDrawer.approvedPaid.text", { defaultValue: "Your claim was approved and moved successfully to payout." }),
       state: "completed",
     });
     items.push({
       key: "paid",
-      title: "Compensation paid",
+      title: t("clientPortal.statusDrawer.paid.title", { defaultValue: "Compensation paid" }),
       date: submittedDate,
-      text: "Your compensation has been paid. You can review the payment details in the Payments section.",
+      text: t("clientPortal.statusDrawer.paid.text", { defaultValue: "Your compensation has been paid. You can review the payment details in the Payments section." }),
       state: "current",
     });
   }
@@ -941,9 +950,9 @@ function getStatusDrawerItems(claim) {
   if (currentStatus === "rejected") {
     items.push({
       key: "rejected",
-      title: "Claim closed",
+      title: t("clientPortal.statusDrawer.closed.title", { defaultValue: "Claim closed" }),
       date: submittedDate,
-      text: "We could not approve this claim based on the information currently available in your file.",
+      text: t("clientPortal.statusDrawer.closed.text", { defaultValue: "We could not approve this claim based on the information currently available in your file." }),
       state: "danger",
     });
   }
@@ -952,19 +961,26 @@ function getStatusDrawerItems(claim) {
 }
 
 function ClaimStatusDrawer({ claim, isOpen, onClose }) {
+  const { t } = useTranslation();
+
   if (!isOpen || !claim) {
     return null;
   }
 
-  const items = getStatusDrawerItems(claim);
+  const items = getStatusDrawerItems(claim, t);
 
   return (
     <div className="client-portal-status-drawer-layer" role="dialog" aria-modal="true">
-      <button type="button" className="client-portal-status-drawer-layer__backdrop" onClick={onClose} aria-label="Close status details" />
+      <button
+        type="button"
+        className="client-portal-status-drawer-layer__backdrop"
+        onClick={onClose}
+        aria-label={t("clientPortal.statusDrawer.close", { defaultValue: "Close status details" })}
+      />
       <aside className="client-portal-status-drawer">
         <div className="client-portal-status-drawer__head">
           <div>
-            <strong>Status details</strong>
+            <strong>{t("clientPortal.statusDrawer.title", { defaultValue: "Status details" })}</strong>
             <span>{claim.reference}</span>
           </div>
           <button type="button" className="client-portal-status-drawer__close" onClick={onClose}>
@@ -994,6 +1010,7 @@ function ClaimStatusDrawer({ claim, isOpen, onClose }) {
 }
 
 function DocumentStatusCard({ item, previewUrl, onOpen, action = null, busy = false }) {
+  const { t } = useTranslation();
   const status = item.latestDocument
     ? getClientDocumentStatus(item.latestDocument.status, item.latestDocument.kind)
     : { key: item.statusKey, label: item.statusLabel, tone: item.statusTone };
@@ -1013,11 +1030,11 @@ function DocumentStatusCard({ item, previewUrl, onOpen, action = null, busy = fa
       <div className="client-portal-document-card__copy">
         <strong>{item.label}</strong>
         <ClientStatusBadge status={status} />
-        <small>{item.uploadedAt ? formatDateTime(item.uploadedAt) : "No file uploaded yet"}</small>
+        <small>{item.uploadedAt ? formatDateTime(item.uploadedAt) : t("clientPortal.documents.noFile", { defaultValue: "No file uploaded yet" })}</small>
       </div>
       {item.latestDocument ? (
         <button type="button" className="client-portal-inline-button" onClick={() => onOpen(item.latestDocument)}>
-          Open
+          {t("clientPortal.documents.open", { defaultValue: "Open" })}
         </button>
       ) : action ? (
         <button type="button" className="btn btn-primary btn-small client-portal-document-card__action" onClick={action.onClick} disabled={busy}>
@@ -1030,9 +1047,10 @@ function DocumentStatusCard({ item, previewUrl, onOpen, action = null, busy = fa
 }
 
 function UploadedDocumentRow({ document, previewUrl, onOpen }) {
+  const { t } = useTranslation();
   const status = getClientDocumentStatus(document.status, document.kind);
   const Icon = getDocumentIcon(document);
-  const label = getDocumentLabel(document);
+  const label = getDocumentLabel(document, t);
 
   return (
     <div className="client-portal-uploaded-row">
@@ -1041,13 +1059,13 @@ function UploadedDocumentRow({ document, previewUrl, onOpen }) {
       </div>
       <div className="client-portal-uploaded-row__copy">
         <strong>{label}</strong>
-        <span>{getDocumentFormatLabel(document)}</span>
+        <span>{getDocumentFormatLabel(document, t)}</span>
         <small>{formatDateTime(document.created_at)}</small>
       </div>
       <div className="client-portal-uploaded-row__meta">
         <ClientStatusBadge status={status} />
         <button type="button" className="client-portal-inline-button" onClick={() => onOpen(document)}>
-          Open
+          {t("clientPortal.documents.open", { defaultValue: "Open" })}
         </button>
       </div>
     </div>
@@ -1071,6 +1089,7 @@ function ManagedDocumentCard({
   onPreview,
   onUpload,
 }) {
+  const { t } = useTranslation();
   const document = item.latestDocument || null;
   const status = document
     ? getClientDocumentStatus(document.status, document.kind)
@@ -1121,21 +1140,21 @@ function ManagedDocumentCard({
         <div className="client-portal-doc-manager-card__head">
           <div>
             <strong>{item.label}</strong>
-            <small>{document?.created_at ? formatDateTime(document.created_at) : "No file uploaded yet"}</small>
+            <small>{document?.created_at ? formatDateTime(document.created_at) : t("clientPortal.documents.noFile", { defaultValue: "No file uploaded yet" })}</small>
           </div>
           <ClientStatusBadge status={status} />
         </div>
 
         <div className="client-portal-doc-manager-card__meta">
-          <span>{document ? getDocumentFormatLabel(document) : "Upload required"}</span>
-          <span>{document ? getDocumentExtension(document) : "PNG / JPG / PDF"}</span>
+          <span>{document ? getDocumentFormatLabel(document, t) : t("clientPortal.documents.uploadRequired", { defaultValue: "Upload required" })}</span>
+          <span>{document ? getDocumentExtension(document) : t("clientPortal.documents.formats", { defaultValue: "PNG / JPG / PDF" })}</span>
         </div>
 
         {!document && canUpload ? (
           <div className="client-portal-doc-manager-card__actions">
             <button type="button" className="btn btn-primary btn-small" onClick={() => onUpload()} disabled={busy}>
               {busy ? <LoaderCircle size={16} className="is-spinning" /> : <Upload size={16} />}
-              <span>Upload</span>
+              <span>{t("clientPortal.documents.upload", { defaultValue: "Upload" })}</span>
             </button>
           </div>
         ) : null}
@@ -1155,9 +1174,10 @@ function ManagedUploadedDocumentRow({
   onReplace,
   onDelete,
 }) {
+  const { t } = useTranslation();
   const status = getClientDocumentStatus(document.status, document.kind);
   const Icon = getDocumentIcon(document);
-  const label = getDocumentLabel(document);
+  const label = getDocumentLabel(document, t);
 
   return (
     <div className={`client-portal-uploaded-row is-managed${busy ? " is-busy" : ""}`}>
@@ -1166,28 +1186,28 @@ function ManagedUploadedDocumentRow({
       </div>
       <div className="client-portal-uploaded-row__copy">
         <strong>{label}</strong>
-        <span>{getDocumentFormatLabel(document)} · {getDocumentExtension(document)}</span>
+        <span>{getDocumentFormatLabel(document, t)} · {getDocumentExtension(document)}</span>
         <small>{formatDateTime(document.created_at)}</small>
       </div>
       <div className="client-portal-uploaded-row__meta">
         <ClientStatusBadge status={status} />
-        <small>{document.claimReference || "Current claim"}</small>
+        <small>{document.claimReference || t("clientPortal.documents.currentClaim", { defaultValue: "Current claim" })}</small>
       </div>
       <div className="client-portal-uploaded-row__actions">
         <button type="button" className="btn btn-secondary btn-small" onClick={() => onPreview(document)} disabled={busy}>
           <Eye size={16} />
-          <span>Preview</span>
+          <span>{t("clientPortal.documents.preview", { defaultValue: "Preview" })}</span>
         </button>
         {document.canReplace ? (
           <button type="button" className="btn btn-primary btn-small" onClick={() => onReplace(document)} disabled={busy}>
             {busy ? <LoaderCircle size={16} className="is-spinning" /> : <RefreshCw size={16} />}
-            <span>Replace</span>
+            <span>{t("clientPortal.documents.replace", { defaultValue: "Replace" })}</span>
           </button>
         ) : null}
         {document.canDelete ? (
           <button type="button" className="btn btn-secondary btn-small" onClick={() => onDelete(document)} disabled={busy}>
             <Trash2 size={16} />
-            <span>Delete</span>
+            <span>{t("clientPortal.documents.delete", { defaultValue: "Delete" })}</span>
           </button>
         ) : null}
       </div>
@@ -1210,6 +1230,7 @@ function DocumentPreviewDrawer({
   onDelete,
   onClose,
 }) {
+  const { t } = useTranslation();
   if (!document) {
     return null;
   }
@@ -1222,8 +1243,8 @@ function DocumentPreviewDrawer({
       <aside className="client-portal-preview-drawer" onClick={(event) => event.stopPropagation()}>
         <div className="client-portal-preview-drawer__head">
           <div>
-            <strong>{getDocumentLabel(document)}</strong>
-            <small>{document.created_at ? formatDateTime(document.created_at) : "Document preview"}</small>
+            <strong>{getDocumentLabel(document, t)}</strong>
+            <small>{document.created_at ? formatDateTime(document.created_at) : t("clientPortal.documents.previewTitle", { defaultValue: "Document preview" })}</small>
           </div>
           <div className="client-portal-preview-drawer__tools">
             {isImage ? (
@@ -1239,19 +1260,19 @@ function DocumentPreviewDrawer({
             {url ? (
               <button type="button" className="btn btn-secondary btn-small" onClick={onOpenFull}>
                 <Eye size={16} />
-                <span>Open full</span>
+                <span>{t("clientPortal.documents.openFull", { defaultValue: "Open full" })}</span>
               </button>
             ) : null}
             {document.canReplace ? (
               <button type="button" className="btn btn-primary btn-small" onClick={onReplace} disabled={actionBusy}>
                 {actionBusy ? <LoaderCircle size={16} className="is-spinning" /> : <RefreshCw size={16} />}
-                <span>Replace</span>
+                <span>{t("clientPortal.documents.replace", { defaultValue: "Replace" })}</span>
               </button>
             ) : null}
             {document.canDelete ? (
               <button type="button" className="btn btn-secondary btn-small" onClick={onDelete} disabled={actionBusy}>
                 <Trash2 size={16} />
-                <span>Delete</span>
+                <span>{t("clientPortal.documents.delete", { defaultValue: "Delete" })}</span>
               </button>
             ) : null}
             <button type="button" className="btn btn-secondary btn-small" onClick={onClose}>
@@ -1264,7 +1285,7 @@ function DocumentPreviewDrawer({
           {isLoading ? (
             <div className="client-portal-preview-placeholder">
               <LoaderCircle size={24} className="is-spinning" />
-              <span>Loading preview…</span>
+              <span>{t("clientPortal.documents.loadingPreview", { defaultValue: "Loading preview…" })}</span>
             </div>
           ) : error ? (
             <div className="client-portal-preview-placeholder is-error">
@@ -1276,13 +1297,13 @@ function DocumentPreviewDrawer({
               <img src={url} alt="" style={{ transform: `scale(${zoom})` }} />
             </div>
           ) : isPdf && url ? (
-            <iframe title={getDocumentLabel(document)} src={url} className="client-portal-preview-frame" />
+            <iframe title={getDocumentLabel(document, t)} src={url} className="client-portal-preview-frame" />
           ) : url ? (
-            <iframe title={getDocumentLabel(document)} src={url} className="client-portal-preview-frame" />
+            <iframe title={getDocumentLabel(document, t)} src={url} className="client-portal-preview-frame" />
           ) : (
             <div className="client-portal-preview-placeholder">
               <FileText size={22} />
-              <span>Preview is not available.</span>
+              <span>{t("clientPortal.documents.previewUnavailable", { defaultValue: "Preview is not available." })}</span>
             </div>
           )}
         </div>
@@ -1388,7 +1409,7 @@ export function ClientDashboardPage() {
       })
       .catch((error) => {
         if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load your account.", data: null });
+          setState({ isLoading: false, error: error.message || t("clientPortal.errors.loadAccount", { defaultValue: "Could not load your account." }), data: null });
         }
       });
 
@@ -1568,7 +1589,7 @@ export function ClientClaimsPage() {
       })
       .catch((error) => {
         if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load claims.", rows: [] });
+          setState({ isLoading: false, error: error.message || t("clientPortal.errors.loadClaims", { defaultValue: "Could not load claims." }), rows: [] });
         }
       });
 
@@ -1659,7 +1680,7 @@ export function ClientClaimDetailsPage() {
         }
       } catch (error) {
         if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load claim details.", data: null });
+          setState({ isLoading: false, error: error.message || t("clientPortal.errors.loadClaimDetails", { defaultValue: "Could not load claim details." }), data: null });
         }
       }
     };
@@ -1702,7 +1723,7 @@ export function ClientClaimDetailsPage() {
       const data = await fetchClientClaimDetails(id);
       setState({ isLoading: false, error: "", data });
     } catch (error) {
-      setState({ isLoading: false, error: error.message || "Could not load claim details.", data: null });
+      setState({ isLoading: false, error: error.message || t("clientPortal.errors.loadClaimDetails", { defaultValue: "Could not load claim details." }), data: null });
     }
   };
 
@@ -1733,10 +1754,10 @@ export function ClientClaimDetailsPage() {
         documentType: currentContext.documentType,
         file,
       });
-      setNotice("Document uploaded successfully.");
+      setNotice(t("clientPortal.documents.uploadSuccess", { defaultValue: "Document uploaded successfully." }));
       await reloadClaimDetails();
     } catch (error) {
-      setActionError(error.message || "Could not upload the document.");
+      setActionError(error.message || t("clientPortal.documents.uploadError", { defaultValue: "Could not upload the document." }));
     } finally {
       setActionBusy("");
     }
@@ -1888,7 +1909,7 @@ export function ClientDocumentsPage() {
     } catch (error) {
       setState({
         isLoading: false,
-        error: error.message || "Could not load documents.",
+        error: error.message || t("clientPortal.errors.loadDocuments", { defaultValue: "Could not load documents." }),
         documents: [],
         requiredDocuments: [],
         uploadTarget: null,
@@ -1917,7 +1938,7 @@ export function ClientDocumentsPage() {
         document,
         url: "",
         isLoading: false,
-        error: error.message || "Preview is not available.",
+        error: error.message || t("clientPortal.documents.previewUnavailable", { defaultValue: "Preview is not available." }),
         zoom: 1,
       });
     }
@@ -1944,26 +1965,26 @@ export function ClientDocumentsPage() {
     try {
       if (replaceDocument) {
         await replaceClientDocument(replaceDocument, file);
-        setNotice("Replacement uploaded successfully.");
+        setNotice(t("clientPortal.documents.replacementSuccess", { defaultValue: "Replacement uploaded successfully." }));
       } else {
         await uploadClientDocument({
           leadId: state.uploadTarget?.leadId,
           documentType,
           file,
         });
-        setNotice("Document uploaded successfully.");
+        setNotice(t("clientPortal.documents.uploadSuccess", { defaultValue: "Document uploaded successfully." }));
       }
 
       await loadDocuments(true);
     } catch (error) {
-      setActionError(error.message || "Could not upload the document.");
+      setActionError(error.message || t("clientPortal.documents.uploadError", { defaultValue: "Could not upload the document." }));
     } finally {
       finishBusyState(actionKey);
     }
   };
 
   const handleDeleteDocument = async (document) => {
-    const confirmed = window.confirm("Remove this document from your claim?");
+    const confirmed = window.confirm(t("clientPortal.documents.removeConfirm", { defaultValue: "Remove this document from your claim?" }));
     if (!confirmed) {
       return false;
     }
@@ -1975,11 +1996,11 @@ export function ClientDocumentsPage() {
 
     try {
       await deleteClientDocument(document);
-      setNotice("Document removed.");
+      setNotice(t("clientPortal.documents.removeSuccess", { defaultValue: "Document removed." }));
       await loadDocuments(true);
       return true;
     } catch (error) {
-      setActionError(error.message || "Could not remove the document.");
+      setActionError(error.message || t("clientPortal.documents.removeError", { defaultValue: "Could not remove the document." }));
       return false;
     } finally {
       finishBusyState(actionKey);
@@ -2012,7 +2033,7 @@ export function ClientDocumentsPage() {
     setNotice("");
 
     if (!state.uploadTarget?.leadId) {
-      setActionError("Signature can be added when an active claim is available.");
+      setActionError(t("clientPortal.documents.signatureUnavailable", { defaultValue: "Signature can be added when an active claim is available." }));
       return;
     }
 
@@ -2032,10 +2053,10 @@ export function ClientDocumentsPage() {
       });
       setSignatureDataUrl("");
       setSignatureAccepted(false);
-      setNotice("Signature added successfully.");
+      setNotice(t("clientPortal.documents.signatureAdded", { defaultValue: "Signature added successfully." }));
       await loadDocuments(true);
     } catch (saveError) {
-      setActionError(saveError.message || "Could not save your signature.");
+      setActionError(saveError.message || t("clientPortal.documents.signatureSaveError", { defaultValue: "Could not save your signature." }));
     } finally {
       setIsSavingSignature(false);
     }
@@ -2068,13 +2089,13 @@ export function ClientDocumentsPage() {
         {state.uploadTarget?.leadId ? (
           <div className="client-portal-documents-banner">
             <div>
-              <strong>Uploads enabled</strong>
+              <strong>{t("clientPortal.documents.uploadsEnabled", { defaultValue: "Uploads enabled" })}</strong>
               <span>{state.uploadTarget.claimReference}</span>
             </div>
             <ClientStatusBadge status={{ key: state.uploadTarget.publicStatusKey, label: formatStatusLabel(state.uploadTarget.publicStatusKey, "Under review"), tone: state.uploadTarget.publicStatusKey === "documents_needed" ? "warning" : "info" }} />
           </div>
         ) : (
-          <p className="portal-message is-notice">Document changes are locked for the claims currently attached to your account.</p>
+          <p className="portal-message is-notice">{t("clientPortal.documents.lockedMessage", { defaultValue: "Document changes are locked for the claims currently attached to your account." })}</p>
         )}
 
         <div className="client-portal-documents-manager-grid">
@@ -2096,8 +2117,8 @@ export function ClientDocumentsPage() {
           <section className="client-portal-documents-signature-panel">
             <div className="client-portal-documents-signature-panel__head">
               <div>
-                <strong>Signature / Consent</strong>
-                <span>{canAddSignature ? "Add signature" : "Locked right now"}</span>
+                <strong>{t("clientPortal.documents.signatureConsent", { defaultValue: "Signature / Consent" })}</strong>
+                <span>{canAddSignature ? t("clientPortal.documents.addSignature", { defaultValue: "Add signature" }) : t("clientPortal.documents.lockedNow", { defaultValue: "Locked right now" })}</span>
               </div>
               <ClientStatusBadge status={{ key: signatureItem.statusKey, label: signatureItem.statusLabel, tone: signatureItem.statusTone }} />
             </div>
@@ -2121,7 +2142,7 @@ export function ClientDocumentsPage() {
                     <span>{t("claim.finish.termsLabel", { defaultValue: "I agree with the terms and confirm that the provided information is accurate." })}</span>
                   </label>
                   <button className="btn btn-primary" type="submit" disabled={isSavingSignature}>
-                    {isSavingSignature ? "Saving..." : "Save signature"}
+                    {isSavingSignature ? t("clientPortal.account.saving", { defaultValue: "Saving..." }) : t("clientPortal.documents.saveSignature", { defaultValue: "Save signature" })}
                   </button>
                 </div>
               </form>
@@ -2350,7 +2371,7 @@ export function ClientPaymentsPage() {
       })
       .catch((error) => {
         if (active) {
-          setState({ isLoading: false, error: error.message || "Could not load payments.", data: null });
+          setState({ isLoading: false, error: error.message || t("clientPortal.errors.loadPayments", { defaultValue: "Could not load payments." }), data: null });
         }
       });
 

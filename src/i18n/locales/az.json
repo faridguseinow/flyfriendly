@@ -795,5 +795,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Müştəri kabinetinin bölmələri",
+    "signOut": "Çıxış et",
+    "nav": {
+      "home": "Əsas",
+      "claims": "İddialar",
+      "documents": "Sənədlər",
+      "payments": "Ödənişlər",
+      "account": "Hesab"
+    },
+    "estimate": {
+      "pending": "Məbləğ gözlənilir",
+      "upTo": "{{amount}}-dək"
+    },
+    "actions": {
+      "startClaim": "Yeni iddia başlat",
+      "viewDocuments": "Sənədlərə bax",
+      "viewClaim": "İddiaya bax",
+      "claimDetails": "İddia detalları",
+      "uploadDocuments": "Sənədləri yüklə",
+      "openClaim": "İddianı aç",
+      "uploadPassport": "Pasportu yüklə",
+      "uploadBoardingPass": "Minik talonunu yüklə"
+    },
+    "progress": "İddia irəliləyişi",
+    "status": {
+      "submitted": "Göndərildi",
+      "under_review": "Baxışdadır",
+      "documents_needed": "Sənədlər lazımdır",
+      "approved": "Təsdiqləndi",
+      "rejected": "Rədd edildi",
+      "paid": "Ödənildi"
+    },
+    "claim": {
+      "airlinePending": "Aviaşirkət gözlənilir",
+      "compensation": "Mümkün kompensasiya",
+      "submitted": "Göndərilib",
+      "documents": "Sənədlər",
+      "payment": "Ödəniş statusu",
+      "viewStatus": "İddia statusuna bax",
+      "airport": "Aeroport",
+      "flightDisruption": "Uçuş pozuntusu"
+    },
+    "statusDrawer": {
+      "close": "Status detallarını bağla",
+      "title": "Status detalları",
+      "received": {
+        "title": "İddia qəbul edildi",
+        "text": "İddianızı göndərdiyiniz üçün təşəkkür edirik. Uçuş məlumatlarınızı saxladıq və növbəti yenilikləri burada göstərəcəyik."
+      },
+      "accepted": {
+        "title": "İddia işə götürüldü",
+        "text": "Sorğunuzun əsas məlumatlarını yoxladıq və iddianız artıq kompensasiya prosesindədir."
+      },
+      "documentsNeeded": {
+        "title": "Sənədlər lazımdır",
+        "text": "İddianı davam etdirmək üçün sizdən bir və ya bir neçə vacib sənəd hələ tələb olunur."
+      },
+      "underReview": {
+        "title": "İddia baxışdadır",
+        "text": "İddianız əlavə olunmuş məlumat və sənədlər əsasında hazırda nəzərdən keçirilir."
+      },
+      "approved": {
+        "title": "Kompensasiya təsdiqləndi",
+        "text": "İddianız təsdiqlənib. Hazırda kompensasiyanın növbəti ödəniş mərhələsini hazırlayırıq."
+      },
+      "approvedPaid": {
+        "text": "İddianız təsdiqləndi və uğurla ödəniş mərhələsinə keçdi."
+      },
+      "paid": {
+        "title": "Kompensasiya ödənildi",
+        "text": "Kompensasiyanız ödənilib. Ödəniş detalları ilə Ödənişlər bölməsində tanış ola bilərsiniz."
+      },
+      "closed": {
+        "title": "İddia bağlandı",
+        "text": "Faylınızdakı mövcud məlumatlara əsasən bu iddianı təsdiqləyə bilmədik."
+      }
+    },
+    "home": {
+      "emptyTitle": "Hələ iddia yoxdur",
+      "emptyText": "Kompensasiya, sənədlər və ödəniş yeniliklərini izləmək üçün ilk iddianızı başladın.",
+      "start": "İlk iddianızı başladın",
+      "progressTitle": "İddia statusu",
+      "actionRequired": "Fəaliyyət tələb olunur",
+      "noAction": "Hazırda addım tələb olunmur",
+      "actionReason": "İddianızı davam etdirmək üçün bizə bir və ya bir neçə vacib sənəd lazımdır.",
+      "noActionText": "Status dəyişəndə sizə xəbər verəcəyik.",
+      "monitoring": "İddianız əlavə olunmuş sənədlərlə irəliləyir."
+    },
+    "claims": {
+      "title": "İddialar",
+      "text": "Hesabınıza bağlı bütün iddialar, müştəri üçün sadələşdirilmiş yeniliklərlə.",
+      "newClaim": "Yeni iddia başlat",
+      "empty": "Hələ hesabınıza heç bir iddia əlavə olunmayıb."
+    },
+    "claimDetails": {
+      "empty": "Bu iddia hesabınızda mövcud deyil."
+    },
+    "documents": {
+      "requiredTitle": "Tələb olunan sənədlər",
+      "title": "Sənədlər",
+      "noFile": "Hələ fayl yüklənməyib",
+      "signatureConsent": "İmza / Razılıq",
+      "passportId": "Pasport / Şəxsiyyət",
+      "boardingPass": "Minik talonu",
+      "document": "Sənəd",
+      "digitalSignature": "Rəqəmsal imza",
+      "image": "Şəkil",
+      "uploadedFile": "Yüklənmiş fayl",
+      "uploadRequired": "Yükləmə tələb olunur",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Cari iddia",
+      "preview": "Ön baxış",
+      "replace": "Dəyişdir",
+      "delete": "Sil",
+      "previewTitle": "Sənəd ön baxışı",
+      "openFull": "Tam aç",
+      "loadingPreview": "Ön baxış yüklənir…",
+      "previewUnavailable": "Ön baxış mövcud deyil.",
+      "open": "Aç",
+      "upload": "Yüklə",
+      "replacementSuccess": "Əvəzləmə uğurla yükləndi.",
+      "uploadSuccess": "Sənəd uğurla yükləndi.",
+      "uploadError": "Sənədi yükləmək mümkün olmadı.",
+      "removeConfirm": "Bu sənəd iddiadan silinsin?",
+      "removeSuccess": "Sənəd silindi.",
+      "removeError": "Sənədi silmək mümkün olmadı.",
+      "signatureUnavailable": "Aktiv iddia olduqda imza əlavə etmək mümkündür.",
+      "signatureAdded": "İmza uğurla əlavə olundu.",
+      "signatureSaveError": "İmzanı saxlamaq mümkün olmadı.",
+      "uploadsEnabled": "Yükləmə aktivdir",
+      "lockedMessage": "Hazırda hesabınıza bağlı iddialar üçün sənəd dəyişiklikləri kilidlənib.",
+      "addSignature": "İmza əlavə et",
+      "lockedNow": "Hazırda kilidlidir",
+      "saveSignature": "İmzanı saxla",
+      "summary": {
+        "none": "Heç bir sənəd yüklənməyib",
+        "noneDetail": "Pasport / şəxsiyyət, minik talonu və imza burada görünəcək.",
+        "partial": "{{count}}/3 tələb olunan sənəd mövcuddur.",
+        "complete": "Bütün tələb olunan sənədlər alınıb",
+        "completeDetail": "Pasport / şəxsiyyət, minik talonu və imza əlavə olunub.",
+        "uploaded": "Sənədlər yüklənib"
+      },
+      "status": {
+        "missing": "Çatışmır",
+        "uploaded": "Yüklənib",
+        "pending_review": "Baxış gözləyir",
+        "approved": "Təsdiqlənib",
+        "rejected": "Rədd edilib"
+      }
+    },
+    "payments": {
+      "title": "Ödənişlər",
+      "text": "Təxmini, təsdiqlənmiş və ödənilmiş məbləğlər yalnız məlumat olduqda göstərilir.",
+      "estimated": "Təxmini kompensasiya",
+      "approvedAmount": "Təsdiqlənmiş məbləğ",
+      "paidAmount": "Ödənilmiş məbləğ",
+      "payoutStatus": "Ödəniş statusu",
+      "latestUpdate": "Son ödəniş yeniliyi",
+      "awaiting": "İddianız təsdiqlənəndə ödəniş məlumatı burada görünəcək.",
+      "history": "Ödəniş tarixçəsi",
+      "historyText": "Təsdiqlənmiş ödənişlər və tamamlanmış köçürmələr burada siyahılanacaq.",
+      "empty": "İddianız təsdiqlənəndə ödəniş məlumatı burada görünəcək.",
+      "progress": "Ödəniş irəliləyişi",
+      "status": {
+        "not_started": "Başlanmayıb",
+        "pending": "Gözləyir",
+        "approved": "Təsdiqləndi",
+        "paid": "Ödənildi"
+      }
+    },
+    "account": {
+      "saved": "Hesab məlumatları yeniləndi.",
+      "error": "Hesabınızı yeniləmək mümkün olmadı.",
+      "personal": "Şəxsi məlumatlar",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-poçt",
+      "phone": "Telefon",
+      "language": "Dil",
+      "saving": "Saxlanılır...",
+      "submit": "Dəyişiklikləri yadda saxla",
+      "notificationsTitle": "Bildirişlər",
+      "notificationsSoonText": "Yaxında hesabınızdan iddia və marketinq bildirişlərini fərdiləşdirə biləcəksiniz.",
+      "support": "Dəstək",
+      "contactSupport": "Dəstəklə əlaqə"
+    },
+    "errors": {
+      "loadAccount": "Hesabınızı yükləmək mümkün olmadı.",
+      "loadClaims": "İddiaları yükləmək mümkün olmadı.",
+      "loadClaimDetails": "İddia detallarını yükləmək mümkün olmadı.",
+      "loadDocuments": "Sənədləri yükləmək mümkün olmadı.",
+      "loadPayments": "Ödənişləri yükləmək mümkün olmadı."
+    }
   }
 }

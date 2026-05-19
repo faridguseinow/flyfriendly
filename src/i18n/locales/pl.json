@@ -795,5 +795,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Sekcje konta klienta",
+    "signOut": "Wyloguj się",
+    "nav": {
+      "home": "Główna",
+      "claims": "Roszczenia",
+      "documents": "Dokumenty",
+      "payments": "Płatności",
+      "account": "Konto"
+    },
+    "estimate": {
+      "pending": "Szacowanie w toku",
+      "upTo": "Do {{amount}}"
+    },
+    "actions": {
+      "startClaim": "Rozpocznij nowe roszczenie",
+      "viewDocuments": "Zobacz dokumenty",
+      "viewClaim": "Zobacz roszczenie",
+      "claimDetails": "Szczegóły roszczenia",
+      "uploadDocuments": "Prześlij dokumenty",
+      "openClaim": "Otwórz roszczenie",
+      "uploadPassport": "Prześlij paszport",
+      "uploadBoardingPass": "Prześlij kartę pokładową"
+    },
+    "progress": "Postęp roszczenia",
+    "status": {
+      "submitted": "Wysłane",
+      "under_review": "W trakcie weryfikacji",
+      "documents_needed": "Potrzebne dokumenty",
+      "approved": "Zatwierdzone",
+      "rejected": "Odrzucone",
+      "paid": "Wypłacone"
+    },
+    "claim": {
+      "airlinePending": "Linia lotnicza oczekiwana",
+      "compensation": "Możliwa rekompensata",
+      "submitted": "Wysłane",
+      "documents": "Dokumenty",
+      "payment": "Status płatności",
+      "viewStatus": "Zobacz status roszczenia",
+      "airport": "Lotnisko",
+      "flightDisruption": "Zakłócenie lotu"
+    },
+    "statusDrawer": {
+      "close": "Zamknij szczegóły statusu",
+      "title": "Szczegóły statusu",
+      "received": {
+        "title": "Roszczenie otrzymane",
+        "text": "Dziękujemy za przesłanie roszczenia. Zapisaliśmy dane Twojego lotu i będziemy tutaj pokazywać kolejne aktualizacje."
+      },
+      "accepted": {
+        "title": "Roszczenie przyjęte",
+        "text": "Sprawdziliśmy podstawowe dane Twojego zgłoszenia i roszczenie jest już w trakcie procesu odszkodowawczego."
+      },
+      "documentsNeeded": {
+        "title": "Potrzebne dokumenty",
+        "text": "Wciąż potrzebujemy jednego lub kilku obowiązkowych dokumentów, aby kontynuować tę sprawę."
+      },
+      "underReview": {
+        "title": "Roszczenie w trakcie weryfikacji",
+        "text": "Twoje roszczenie jest obecnie analizowane na podstawie informacji i dokumentów dołączonych do sprawy."
+      },
+      "approved": {
+        "title": "Rekompensata zatwierdzona",
+        "text": "Twoje roszczenie zostało zatwierdzone. Przygotowujemy kolejny etap wypłaty rekompensaty."
+      },
+      "approvedPaid": {
+        "text": "Twoje roszczenie zostało zatwierdzone i pomyślnie przeszło do etapu wypłaty."
+      },
+      "paid": {
+        "title": "Rekompensata wypłacona",
+        "text": "Twoja rekompensata została wypłacona. Szczegóły znajdziesz w sekcji Płatności."
+      },
+      "closed": {
+        "title": "Roszczenie zamknięte",
+        "text": "Nie mogliśmy zatwierdzić tego roszczenia na podstawie informacji obecnie dostępnych w Twojej sprawie."
+      }
+    },
+    "home": {
+      "emptyTitle": "Brak roszczeń",
+      "emptyText": "Rozpocznij pierwsze roszczenie, aby śledzić tutaj rekompensatę, dokumenty i płatności.",
+      "start": "Rozpocznij pierwsze roszczenie",
+      "progressTitle": "Status roszczenia",
+      "actionRequired": "Wymagane działanie",
+      "noAction": "Brak wymaganych działań",
+      "actionReason": "Wciąż potrzebujemy jednego lub kilku obowiązkowych dokumentów, aby kontynuować Twoje roszczenie.",
+      "noActionText": "Powiadomimy Cię, gdy status się zmieni.",
+      "monitoring": "Twoje roszczenie postępuje z już dołączonymi dokumentami."
+    },
+    "claims": {
+      "title": "Roszczenia",
+      "text": "Wszystkie roszczenia przypisane do Twojego konta, uproszczone do bezpiecznych dla klienta aktualizacji.",
+      "newClaim": "Rozpocznij nowe roszczenie",
+      "empty": "Do Twojego konta nie przypisano jeszcze żadnych roszczeń."
+    },
+    "claimDetails": {
+      "empty": "To roszczenie nie jest dostępne na Twoim koncie."
+    },
+    "documents": {
+      "requiredTitle": "Wymagane dokumenty",
+      "title": "Dokumenty",
+      "noFile": "Nie przesłano jeszcze pliku",
+      "signatureConsent": "Podpis / Zgoda",
+      "passportId": "Paszport / ID",
+      "boardingPass": "Karta pokładowa",
+      "document": "Dokument",
+      "digitalSignature": "Podpis cyfrowy",
+      "image": "Obraz",
+      "uploadedFile": "Przesłany plik",
+      "uploadRequired": "Wymagane przesłanie",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Bieżące roszczenie",
+      "preview": "Podgląd",
+      "replace": "Zastąp",
+      "delete": "Usuń",
+      "previewTitle": "Podgląd dokumentu",
+      "openFull": "Otwórz w całości",
+      "loadingPreview": "Ładowanie podglądu…",
+      "previewUnavailable": "Podgląd nie jest dostępny.",
+      "open": "Otwórz",
+      "upload": "Prześlij",
+      "replacementSuccess": "Nowy plik został pomyślnie przesłany.",
+      "uploadSuccess": "Dokument został pomyślnie przesłany.",
+      "uploadError": "Nie udało się przesłać dokumentu.",
+      "removeConfirm": "Usunąć ten dokument z roszczenia?",
+      "removeSuccess": "Dokument usunięto.",
+      "removeError": "Nie udało się usunąć dokumentu.",
+      "signatureUnavailable": "Podpis można dodać, gdy dostępne jest aktywne roszczenie.",
+      "signatureAdded": "Podpis został pomyślnie dodany.",
+      "signatureSaveError": "Nie udało się zapisać podpisu.",
+      "uploadsEnabled": "Przesyłanie włączone",
+      "lockedMessage": "Zmiany dokumentów są zablokowane dla roszczeń obecnie przypisanych do Twojego konta.",
+      "addSignature": "Dodaj podpis",
+      "lockedNow": "Obecnie zablokowane",
+      "saveSignature": "Zapisz podpis",
+      "summary": {
+        "none": "Nie przesłano żadnych dokumentów",
+        "noneDetail": "Paszport / ID, karta pokładowa i podpis pojawią się tutaj.",
+        "partial": "{{count}}/3 wymaganych dokumentów jest dostępnych.",
+        "complete": "Wszystkie wymagane dokumenty zostały otrzymane",
+        "completeDetail": "Paszport / ID, karta pokładowa i podpis są załączone.",
+        "uploaded": "Dokumenty przesłane"
+      },
+      "status": {
+        "missing": "Brak",
+        "uploaded": "Przesłano",
+        "pending_review": "Oczekuje na weryfikację",
+        "approved": "Zatwierdzono",
+        "rejected": "Odrzucono"
+      }
+    },
+    "payments": {
+      "title": "Płatności",
+      "text": "Szacowane, zatwierdzone i wypłacone kwoty pojawiają się tutaj tylko wtedy, gdy dane są dostępne.",
+      "estimated": "Szacowana rekompensata",
+      "approvedAmount": "Zatwierdzona kwota",
+      "paidAmount": "Wypłacona kwota",
+      "payoutStatus": "Status wypłaty",
+      "latestUpdate": "Ostatnia aktualizacja wypłaty",
+      "awaiting": "Informacje o płatności pojawią się tutaj, gdy Twoje roszczenie zostanie zatwierdzone.",
+      "history": "Historia płatności",
+      "historyText": "Zatwierdzone wypłaty i zakończone przelewy będą tutaj wymienione.",
+      "empty": "Informacje o płatności pojawią się tutaj, gdy Twoje roszczenie zostanie zatwierdzone.",
+      "progress": "Postęp płatności",
+      "status": {
+        "not_started": "Nie rozpoczęto",
+        "pending": "Oczekujące",
+        "approved": "Zatwierdzone",
+        "paid": "Wypłacone"
+      }
+    },
+    "account": {
+      "saved": "Dane konta zostały zaktualizowane.",
+      "error": "Nie udało się zaktualizować konta.",
+      "personal": "Dane osobowe",
+      "firstName": "Imię",
+      "lastName": "Nazwisko",
+      "email": "E-mail",
+      "phone": "Telefon",
+      "language": "Język",
+      "saving": "Zapisywanie...",
+      "submit": "Zapisz zmiany",
+      "notificationsTitle": "Powiadomienia",
+      "notificationsSoonText": "Wkrótce będzie można personalizować powiadomienia dotyczące roszczeń i marketingu w swoim koncie.",
+      "support": "Wsparcie",
+      "contactSupport": "Skontaktuj się ze wsparciem"
+    },
+    "errors": {
+      "loadAccount": "Nie udało się wczytać Twojego konta.",
+      "loadClaims": "Nie udało się wczytać roszczeń.",
+      "loadClaimDetails": "Nie udało się wczytać szczegółów roszczenia.",
+      "loadDocuments": "Nie udało się wczytać dokumentów.",
+      "loadPayments": "Nie udało się wczytać płatności."
+    }
   }
 }

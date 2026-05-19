@@ -795,5 +795,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Secciones de la cuenta",
+    "signOut": "Cerrar sesión",
+    "nav": {
+      "home": "Inicio",
+      "claims": "Reclamaciones",
+      "documents": "Documentos",
+      "payments": "Pagos",
+      "account": "Cuenta"
+    },
+    "estimate": {
+      "pending": "Estimación pendiente",
+      "upTo": "Hasta {{amount}}"
+    },
+    "actions": {
+      "startClaim": "Iniciar nueva reclamación",
+      "viewDocuments": "Ver documentos",
+      "viewClaim": "Ver reclamación",
+      "claimDetails": "Detalles de la reclamación",
+      "uploadDocuments": "Subir documentos",
+      "openClaim": "Abrir reclamación",
+      "uploadPassport": "Subir pasaporte",
+      "uploadBoardingPass": "Subir tarjeta de embarque"
+    },
+    "progress": "Progreso de la reclamación",
+    "status": {
+      "submitted": "Enviada",
+      "under_review": "En revisión",
+      "documents_needed": "Faltan documentos",
+      "approved": "Aprobada",
+      "rejected": "Rechazada",
+      "paid": "Pagada"
+    },
+    "claim": {
+      "airlinePending": "Aerolínea pendiente",
+      "compensation": "Posible compensación",
+      "submitted": "Enviada",
+      "documents": "Documentos",
+      "payment": "Estado del pago",
+      "viewStatus": "Ver estado de la reclamación",
+      "airport": "Aeropuerto",
+      "flightDisruption": "Incidencia de vuelo"
+    },
+    "statusDrawer": {
+      "close": "Cerrar detalles del estado",
+      "title": "Detalles del estado",
+      "received": {
+        "title": "Reclamación recibida",
+        "text": "Gracias por enviar tu reclamación. Hemos guardado los datos de tu vuelo y mostraremos aquí las próximas actualizaciones."
+      },
+      "accepted": {
+        "title": "Reclamación aceptada",
+        "text": "Hemos revisado los datos básicos de tu solicitud y tu reclamación ya avanza en el proceso de compensación."
+      },
+      "documentsNeeded": {
+        "title": "Faltan documentos",
+        "text": "Aún necesitamos uno o varios documentos obligatorios antes de continuar con esta reclamación."
+      },
+      "underReview": {
+        "title": "Reclamación en revisión",
+        "text": "Tu reclamación está en revisión según la información y los documentos adjuntos a tu caso."
+      },
+      "approved": {
+        "title": "Compensación aprobada",
+        "text": "Tu reclamación ha sido aprobada. Estamos preparando el siguiente paso de pago de tu compensación."
+      },
+      "approvedPaid": {
+        "text": "Tu reclamación fue aprobada y pasó correctamente a la fase de pago."
+      },
+      "paid": {
+        "title": "Compensación pagada",
+        "text": "Tu compensación ha sido pagada. Puedes revisar los detalles en la sección de Pagos."
+      },
+      "closed": {
+        "title": "Reclamación cerrada",
+        "text": "No pudimos aprobar esta reclamación con la información disponible actualmente en tu expediente."
+      }
+    },
+    "home": {
+      "emptyTitle": "Aún no hay reclamaciones",
+      "emptyText": "Inicia tu primera reclamación para seguir aquí la compensación, los documentos y los pagos.",
+      "start": "Iniciar tu primera reclamación",
+      "progressTitle": "Estado de la reclamación",
+      "actionRequired": "Acción requerida",
+      "noAction": "No se requiere acción",
+      "actionReason": "Aún necesitamos uno o varios documentos obligatorios para continuar con tu reclamación.",
+      "noActionText": "Te avisaremos cuando cambie el estado.",
+      "monitoring": "Tu reclamación sigue avanzando con los documentos ya adjuntos."
+    },
+    "claims": {
+      "title": "Reclamaciones",
+      "text": "Todas las reclamaciones vinculadas a tu cuenta, simplificadas en actualizaciones seguras para el cliente.",
+      "newClaim": "Iniciar nueva reclamación",
+      "empty": "Todavía no hay reclamaciones vinculadas a tu cuenta."
+    },
+    "claimDetails": {
+      "empty": "Esta reclamación no está disponible en tu cuenta."
+    },
+    "documents": {
+      "requiredTitle": "Documentos obligatorios",
+      "title": "Documentos",
+      "noFile": "Aún no se ha subido ningún archivo",
+      "signatureConsent": "Firma / Consentimiento",
+      "passportId": "Pasaporte / ID",
+      "boardingPass": "Tarjeta de embarque",
+      "document": "Documento",
+      "digitalSignature": "Firma digital",
+      "image": "Imagen",
+      "uploadedFile": "Archivo subido",
+      "uploadRequired": "Se requiere subida",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Reclamación actual",
+      "preview": "Vista previa",
+      "replace": "Reemplazar",
+      "delete": "Eliminar",
+      "previewTitle": "Vista previa del documento",
+      "openFull": "Abrir completo",
+      "loadingPreview": "Cargando vista previa…",
+      "previewUnavailable": "La vista previa no está disponible.",
+      "open": "Abrir",
+      "upload": "Subir",
+      "replacementSuccess": "Reemplazo subido correctamente.",
+      "uploadSuccess": "Documento subido correctamente.",
+      "uploadError": "No se pudo subir el documento.",
+      "removeConfirm": "¿Eliminar este documento de tu reclamación?",
+      "removeSuccess": "Documento eliminado.",
+      "removeError": "No se pudo eliminar el documento.",
+      "signatureUnavailable": "La firma se puede añadir cuando haya una reclamación activa disponible.",
+      "signatureAdded": "Firma añadida correctamente.",
+      "signatureSaveError": "No se pudo guardar la firma.",
+      "uploadsEnabled": "Subidas habilitadas",
+      "lockedMessage": "Los cambios de documentos están bloqueados para las reclamaciones actualmente vinculadas a tu cuenta.",
+      "addSignature": "Añadir firma",
+      "lockedNow": "Bloqueado por ahora",
+      "saveSignature": "Guardar firma",
+      "summary": {
+        "none": "No hay documentos subidos",
+        "noneDetail": "Aquí aparecerán el pasaporte / ID, la tarjeta de embarque y la firma.",
+        "partial": "{{count}}/3 documentos obligatorios están disponibles.",
+        "complete": "Todos los documentos obligatorios recibidos",
+        "completeDetail": "El pasaporte / ID, la tarjeta de embarque y la firma están adjuntos.",
+        "uploaded": "Documentos subidos"
+      },
+      "status": {
+        "missing": "Falta",
+        "uploaded": "Subido",
+        "pending_review": "Pendiente de revisión",
+        "approved": "Aprobado",
+        "rejected": "Rechazado"
+      }
+    },
+    "payments": {
+      "title": "Pagos",
+      "text": "Los importes estimados, aprobados y pagados aparecerán aquí solo cuando existan datos.",
+      "estimated": "Compensación estimada",
+      "approvedAmount": "Importe aprobado",
+      "paidAmount": "Importe pagado",
+      "payoutStatus": "Estado del pago",
+      "latestUpdate": "Última actualización del pago",
+      "awaiting": "La información de pago aparecerá aquí cuando se apruebe tu reclamación.",
+      "history": "Historial de pagos",
+      "historyText": "Los pagos aprobados y las transferencias completadas aparecerán aquí.",
+      "empty": "La información de pago aparecerá aquí cuando se apruebe tu reclamación.",
+      "progress": "Progreso del pago",
+      "status": {
+        "not_started": "No iniciado",
+        "pending": "Pendiente",
+        "approved": "Aprobado",
+        "paid": "Pagado"
+      }
+    },
+    "account": {
+      "saved": "Datos de la cuenta actualizados.",
+      "error": "No se pudo actualizar tu cuenta.",
+      "personal": "Información personal",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo electrónico",
+      "phone": "Teléfono",
+      "language": "Idioma",
+      "saving": "Guardando...",
+      "submit": "Guardar cambios",
+      "notificationsTitle": "Notificaciones",
+      "notificationsSoonText": "Pronto podrás personalizar las notificaciones de reclamaciones y marketing desde tu cuenta.",
+      "support": "Soporte",
+      "contactSupport": "Contactar con soporte"
+    },
+    "errors": {
+      "loadAccount": "No se pudo cargar tu cuenta.",
+      "loadClaims": "No se pudieron cargar las reclamaciones.",
+      "loadClaimDetails": "No se pudieron cargar los detalles de la reclamación.",
+      "loadDocuments": "No se pudieron cargar los documentos.",
+      "loadPayments": "No se pudieron cargar los pagos."
+    }
   }
 }

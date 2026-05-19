@@ -797,5 +797,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Client account sections",
+    "signOut": "Sign out",
+    "nav": {
+      "home": "Home",
+      "claims": "Claims",
+      "documents": "Documents",
+      "payments": "Payments",
+      "account": "Account"
+    },
+    "estimate": {
+      "pending": "Estimate pending",
+      "upTo": "Up to {{amount}}"
+    },
+    "actions": {
+      "startClaim": "Start new claim",
+      "viewDocuments": "View documents",
+      "viewClaim": "View claim",
+      "claimDetails": "Claim details",
+      "uploadDocuments": "Upload documents",
+      "openClaim": "Open claim",
+      "uploadPassport": "Upload passport",
+      "uploadBoardingPass": "Upload boarding pass"
+    },
+    "progress": "Claim progress",
+    "status": {
+      "submitted": "Submitted",
+      "under_review": "Under review",
+      "documents_needed": "Documents needed",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "paid": "Paid"
+    },
+    "claim": {
+      "airlinePending": "Airline pending",
+      "compensation": "Possible compensation",
+      "submitted": "Submitted",
+      "documents": "Documents",
+      "payment": "Payment status",
+      "viewStatus": "View claim status",
+      "airport": "Airport",
+      "flightDisruption": "Flight disruption"
+    },
+    "statusDrawer": {
+      "close": "Close status details",
+      "title": "Status details",
+      "received": {
+        "title": "Claim received",
+        "text": "Thank you for submitting your claim. We saved your flight details and will keep the next updates here."
+      },
+      "accepted": {
+        "title": "Claim accepted",
+        "text": "We reviewed the basic details of your request and your claim is now moving through the compensation process."
+      },
+      "documentsNeeded": {
+        "title": "Documents needed",
+        "text": "We still need one or more required documents from you before we can continue processing this claim."
+      },
+      "underReview": {
+        "title": "Claim under review",
+        "text": "Your claim is currently under review based on the information and documents attached to your case."
+      },
+      "approved": {
+        "title": "Compensation approved",
+        "text": "Your claim has been approved. We are preparing the next payout step for your compensation."
+      },
+      "approvedPaid": {
+        "text": "Your claim was approved and moved successfully to payout."
+      },
+      "paid": {
+        "title": "Compensation paid",
+        "text": "Your compensation has been paid. You can review the payment details in the Payments section."
+      },
+      "closed": {
+        "title": "Claim closed",
+        "text": "We could not approve this claim based on the information currently available in your file."
+      }
+    },
+    "home": {
+      "emptyTitle": "No claims yet",
+      "emptyText": "Start your first claim to track compensation, documents, and payout updates here.",
+      "start": "Start your first claim",
+      "progressTitle": "Claim status",
+      "actionRequired": "Action required",
+      "noAction": "No action needed",
+      "actionReason": "We still need one or more required documents before we can continue your claim.",
+      "noActionText": "We will notify you when the status changes.",
+      "monitoring": "Your claim is moving forward with the documents already attached."
+    },
+    "claims": {
+      "title": "Claims",
+      "text": "Every claim attached to your account, simplified into customer-safe updates.",
+      "newClaim": "Start new claim",
+      "empty": "No claims have been attached to your account yet."
+    },
+    "claimDetails": {
+      "empty": "This claim is not available in your account."
+    },
+    "documents": {
+      "requiredTitle": "Required documents",
+      "title": "Documents",
+      "noFile": "No file uploaded yet",
+      "signatureConsent": "Signature / Consent",
+      "passportId": "Passport / ID",
+      "boardingPass": "Boarding Pass",
+      "document": "Document",
+      "digitalSignature": "Digital signature",
+      "image": "Image",
+      "uploadedFile": "Uploaded file",
+      "uploadRequired": "Upload required",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Current claim",
+      "preview": "Preview",
+      "replace": "Replace",
+      "delete": "Delete",
+      "previewTitle": "Document preview",
+      "openFull": "Open full",
+      "loadingPreview": "Loading preview…",
+      "previewUnavailable": "Preview is not available.",
+      "open": "Open",
+      "upload": "Upload",
+      "replacementSuccess": "Replacement uploaded successfully.",
+      "uploadSuccess": "Document uploaded successfully.",
+      "uploadError": "Could not upload the document.",
+      "removeConfirm": "Remove this document from your claim?",
+      "removeSuccess": "Document removed.",
+      "removeError": "Could not remove the document.",
+      "signatureUnavailable": "Signature can be added when an active claim is available.",
+      "signatureAdded": "Signature added successfully.",
+      "signatureSaveError": "Could not save your signature.",
+      "uploadsEnabled": "Uploads enabled",
+      "lockedMessage": "Document changes are locked for the claims currently attached to your account.",
+      "addSignature": "Add signature",
+      "lockedNow": "Locked right now",
+      "saveSignature": "Save signature",
+      "summary": {
+        "none": "No documents uploaded",
+        "noneDetail": "Passport / ID, boarding pass, and signature will appear here.",
+        "partial": "{{count}}/3 required documents are on file.",
+        "complete": "All required documents received",
+        "completeDetail": "Passport / ID, boarding pass, and signature are attached.",
+        "uploaded": "Documents uploaded"
+      },
+      "status": {
+        "missing": "Missing",
+        "uploaded": "Uploaded",
+        "pending_review": "Pending review",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    },
+    "payments": {
+      "title": "Payments",
+      "text": "Estimated, approved, and paid amounts appear here only when the data exists.",
+      "estimated": "Estimated compensation",
+      "approvedAmount": "Approved amount",
+      "paidAmount": "Paid amount",
+      "payoutStatus": "Payout status",
+      "latestUpdate": "Latest payout update",
+      "awaiting": "Payment information will appear here when your claim is approved.",
+      "history": "Payment history",
+      "historyText": "Approved payouts and completed transfers will be listed here.",
+      "empty": "Payment information will appear here when your claim is approved.",
+      "progress": "Payment progress",
+      "status": {
+        "not_started": "Not started",
+        "pending": "Pending",
+        "approved": "Approved",
+        "paid": "Paid"
+      }
+    },
+    "account": {
+      "saved": "Account details updated.",
+      "error": "Could not update your account.",
+      "personal": "Personal information",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "language": "Language",
+      "saving": "Saving...",
+      "submit": "Save changes",
+      "notificationsTitle": "Notifications",
+      "notificationsSoonText": "Soon you will be able to personalize claim and marketing notifications from your account.",
+      "support": "Support",
+      "contactSupport": "Contact support"
+    },
+    "errors": {
+      "loadAccount": "Could not load your account.",
+      "loadClaims": "Could not load claims.",
+      "loadClaimDetails": "Could not load claim details.",
+      "loadDocuments": "Could not load documents.",
+      "loadPayments": "Could not load payments."
+    }
   }
 }

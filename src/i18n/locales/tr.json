@@ -795,5 +795,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Müşteri hesabı bölümleri",
+    "signOut": "Çıkış yap",
+    "nav": {
+      "home": "Ana sayfa",
+      "claims": "Talepler",
+      "documents": "Belgeler",
+      "payments": "Ödemeler",
+      "account": "Hesap"
+    },
+    "estimate": {
+      "pending": "Tahmin bekleniyor",
+      "upTo": "{{amount}} tutarına kadar"
+    },
+    "actions": {
+      "startClaim": "Yeni talep başlat",
+      "viewDocuments": "Belgeleri görüntüle",
+      "viewClaim": "Talebi görüntüle",
+      "claimDetails": "Talep detayları",
+      "uploadDocuments": "Belgeleri yükle",
+      "openClaim": "Talebi aç",
+      "uploadPassport": "Pasaport yükle",
+      "uploadBoardingPass": "Biniş kartını yükle"
+    },
+    "progress": "Talep ilerlemesi",
+    "status": {
+      "submitted": "Gönderildi",
+      "under_review": "İnceleniyor",
+      "documents_needed": "Belgeler gerekli",
+      "approved": "Onaylandı",
+      "rejected": "Reddedildi",
+      "paid": "Ödendi"
+    },
+    "claim": {
+      "airlinePending": "Havayolu bekleniyor",
+      "compensation": "Olası tazminat",
+      "submitted": "Gönderildi",
+      "documents": "Belgeler",
+      "payment": "Ödeme durumu",
+      "viewStatus": "Talep durumunu görüntüle",
+      "airport": "Havalimanı",
+      "flightDisruption": "Uçuş aksaması"
+    },
+    "statusDrawer": {
+      "close": "Durum ayrıntılarını kapat",
+      "title": "Durum ayrıntıları",
+      "received": {
+        "title": "Talep alındı",
+        "text": "Talebinizi gönderdiğiniz için teşekkür ederiz. Uçuş bilgilerinizi kaydettik ve sonraki güncellemeleri burada göstereceğiz."
+      },
+      "accepted": {
+        "title": "Talep kabul edildi",
+        "text": "Başvurunuzun temel bilgilerini inceledik ve talebiniz artık tazminat sürecinde ilerliyor."
+      },
+      "documentsNeeded": {
+        "title": "Belgeler gerekli",
+        "text": "Bu talebi sürdürebilmemiz için sizden hâlâ bir veya daha fazla zorunlu belge gerekiyor."
+      },
+      "underReview": {
+        "title": "Talep inceleniyor",
+        "text": "Talebiniz şu anda dosyanıza eklenen bilgiler ve belgelere göre inceleniyor."
+      },
+      "approved": {
+        "title": "Tazminat onaylandı",
+        "text": "Talebiniz onaylandı. Tazminatınız için bir sonraki ödeme adımını hazırlıyoruz."
+      },
+      "approvedPaid": {
+        "text": "Talebiniz onaylandı ve başarıyla ödeme aşamasına geçti."
+      },
+      "paid": {
+        "title": "Tazminat ödendi",
+        "text": "Tazminatınız ödendi. Ayrıntıları Ödemeler bölümünde inceleyebilirsiniz."
+      },
+      "closed": {
+        "title": "Talep kapatıldı",
+        "text": "Dosyanızdaki mevcut bilgilere göre bu talebi onaylayamadık."
+      }
+    },
+    "home": {
+      "emptyTitle": "Henüz talep yok",
+      "emptyText": "Tazminat, belgeler ve ödeme güncellemelerini burada takip etmek için ilk talebinizi başlatın.",
+      "start": "İlk talebinizi başlatın",
+      "progressTitle": "Talep durumu",
+      "actionRequired": "İşlem gerekiyor",
+      "noAction": "Şu anda işlem gerekmiyor",
+      "actionReason": "Talebinizi sürdürebilmemiz için hâlâ bir veya daha fazla zorunlu belgeye ihtiyacımız var.",
+      "noActionText": "Durum değiştiğinde sizi bilgilendireceğiz.",
+      "monitoring": "Talebiniz mevcut belgelerle ilerliyor."
+    },
+    "claims": {
+      "title": "Talepler",
+      "text": "Hesabınıza bağlı tüm talepler, müşteri için güvenli güncellemeler halinde sadeleştirildi.",
+      "newClaim": "Yeni talep başlat",
+      "empty": "Hesabınıza henüz hiç talep bağlanmadı."
+    },
+    "claimDetails": {
+      "empty": "Bu talep hesabınızda mevcut değil."
+    },
+    "documents": {
+      "requiredTitle": "Gerekli belgeler",
+      "title": "Belgeler",
+      "noFile": "Henüz dosya yüklenmedi",
+      "signatureConsent": "İmza / Onay",
+      "passportId": "Pasaport / Kimlik",
+      "boardingPass": "Biniş kartı",
+      "document": "Belge",
+      "digitalSignature": "Dijital imza",
+      "image": "Görsel",
+      "uploadedFile": "Yüklenen dosya",
+      "uploadRequired": "Yükleme gerekli",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Mevcut talep",
+      "preview": "Önizleme",
+      "replace": "Değiştir",
+      "delete": "Sil",
+      "previewTitle": "Belge önizlemesi",
+      "openFull": "Tam aç",
+      "loadingPreview": "Önizleme yükleniyor…",
+      "previewUnavailable": "Önizleme kullanılamıyor.",
+      "open": "Aç",
+      "upload": "Yükle",
+      "replacementSuccess": "Yeni belge başarıyla yüklendi.",
+      "uploadSuccess": "Belge başarıyla yüklendi.",
+      "uploadError": "Belge yüklenemedi.",
+      "removeConfirm": "Bu belge talebinizden silinsin mi?",
+      "removeSuccess": "Belge silindi.",
+      "removeError": "Belge silinemedi.",
+      "signatureUnavailable": "Aktif bir talep mevcut olduğunda imza eklenebilir.",
+      "signatureAdded": "İmza başarıyla eklendi.",
+      "signatureSaveError": "İmza kaydedilemedi.",
+      "uploadsEnabled": "Yükleme etkin",
+      "lockedMessage": "Hesabınıza bağlı mevcut talepler için belge değişiklikleri kilitlidir.",
+      "addSignature": "İmza ekle",
+      "lockedNow": "Şu anda kilitli",
+      "saveSignature": "İmzayı kaydet",
+      "summary": {
+        "none": "Hiç belge yüklenmedi",
+        "noneDetail": "Pasaport / kimlik, biniş kartı ve imza burada görünecek.",
+        "partial": "Gerekli 3 belgeden {{count}} tanesi mevcut.",
+        "complete": "Gerekli tüm belgeler alındı",
+        "completeDetail": "Pasaport / kimlik, biniş kartı ve imza eklendi.",
+        "uploaded": "Belgeler yüklendi"
+      },
+      "status": {
+        "missing": "Eksik",
+        "uploaded": "Yüklendi",
+        "pending_review": "İnceleme bekleniyor",
+        "approved": "Onaylandı",
+        "rejected": "Reddedildi"
+      }
+    },
+    "payments": {
+      "title": "Ödemeler",
+      "text": "Tahmini, onaylanan ve ödenen tutarlar yalnızca veri mevcut olduğunda burada görünür.",
+      "estimated": "Tahmini tazminat",
+      "approvedAmount": "Onaylanan tutar",
+      "paidAmount": "Ödenen tutar",
+      "payoutStatus": "Ödeme durumu",
+      "latestUpdate": "Son ödeme güncellemesi",
+      "awaiting": "Talebiniz onaylandığında ödeme bilgisi burada görünecektir.",
+      "history": "Ödeme geçmişi",
+      "historyText": "Onaylanan ödemeler ve tamamlanan transferler burada listelenecektir.",
+      "empty": "Talebiniz onaylandığında ödeme bilgisi burada görünecektir.",
+      "progress": "Ödeme ilerlemesi",
+      "status": {
+        "not_started": "Başlamadı",
+        "pending": "Beklemede",
+        "approved": "Onaylandı",
+        "paid": "Ödendi"
+      }
+    },
+    "account": {
+      "saved": "Hesap bilgileri güncellendi.",
+      "error": "Hesabınız güncellenemedi.",
+      "personal": "Kişisel bilgiler",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-posta",
+      "phone": "Telefon",
+      "language": "Dil",
+      "saving": "Kaydediliyor...",
+      "submit": "Değişiklikleri kaydet",
+      "notificationsTitle": "Bildirimler",
+      "notificationsSoonText": "Yakında hesabınızdan talep ve pazarlama bildirimlerini kişiselleştirebileceksiniz.",
+      "support": "Destek",
+      "contactSupport": "Destek ile iletişime geç"
+    },
+    "errors": {
+      "loadAccount": "Hesabınız yüklenemedi.",
+      "loadClaims": "Talepler yüklenemedi.",
+      "loadClaimDetails": "Talep ayrıntıları yüklenemedi.",
+      "loadDocuments": "Belgeler yüklenemedi.",
+      "loadPayments": "Ödemeler yüklenemedi."
+    }
   }
 }

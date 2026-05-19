@@ -795,5 +795,200 @@
         ]
       }
     ]
+  },
+  "clientPortal": {
+    "navLabel": "Bereiche des Kundenkontos",
+    "signOut": "Abmelden",
+    "nav": {
+      "home": "Start",
+      "claims": "Ansprüche",
+      "documents": "Dokumente",
+      "payments": "Zahlungen",
+      "account": "Konto"
+    },
+    "estimate": {
+      "pending": "Schätzung ausstehend",
+      "upTo": "Bis zu {{amount}}"
+    },
+    "actions": {
+      "startClaim": "Neuen Anspruch starten",
+      "viewDocuments": "Dokumente ansehen",
+      "viewClaim": "Anspruch ansehen",
+      "claimDetails": "Anspruchsdetails",
+      "uploadDocuments": "Dokumente hochladen",
+      "openClaim": "Anspruch öffnen",
+      "uploadPassport": "Pass hochladen",
+      "uploadBoardingPass": "Boardingpass hochladen"
+    },
+    "progress": "Anspruchsfortschritt",
+    "status": {
+      "submitted": "Eingereicht",
+      "under_review": "In Prüfung",
+      "documents_needed": "Dokumente benötigt",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt",
+      "paid": "Ausgezahlt"
+    },
+    "claim": {
+      "airlinePending": "Fluggesellschaft ausstehend",
+      "compensation": "Mögliche Entschädigung",
+      "submitted": "Eingereicht",
+      "documents": "Dokumente",
+      "payment": "Auszahlungsstatus",
+      "viewStatus": "Anspruchsstatus ansehen",
+      "airport": "Flughafen",
+      "flightDisruption": "Flugstörung"
+    },
+    "statusDrawer": {
+      "close": "Statusdetails schließen",
+      "title": "Statusdetails",
+      "received": {
+        "title": "Anspruch erhalten",
+        "text": "Vielen Dank für das Einreichen Ihres Anspruchs. Wir haben Ihre Flugdaten gespeichert und zeigen die nächsten Aktualisierungen hier an."
+      },
+      "accepted": {
+        "title": "Anspruch angenommen",
+        "text": "Wir haben die grundlegenden Angaben Ihres Antrags geprüft und Ihr Anspruch befindet sich nun im Entschädigungsprozess."
+      },
+      "documentsNeeded": {
+        "title": "Dokumente benötigt",
+        "text": "Wir benötigen noch ein oder mehrere Pflichtdokumente, bevor wir diesen Anspruch weiterbearbeiten können."
+      },
+      "underReview": {
+        "title": "Anspruch in Prüfung",
+        "text": "Ihr Anspruch wird derzeit auf Basis der beigefügten Informationen und Dokumente geprüft."
+      },
+      "approved": {
+        "title": "Entschädigung genehmigt",
+        "text": "Ihr Anspruch wurde genehmigt. Wir bereiten den nächsten Auszahlungsschritt für Ihre Entschädigung vor."
+      },
+      "approvedPaid": {
+        "text": "Ihr Anspruch wurde genehmigt und erfolgreich in die Auszahlungsphase überführt."
+      },
+      "paid": {
+        "title": "Entschädigung ausgezahlt",
+        "text": "Ihre Entschädigung wurde ausgezahlt. Details finden Sie im Bereich Zahlungen."
+      },
+      "closed": {
+        "title": "Anspruch geschlossen",
+        "text": "Wir konnten diesen Anspruch auf Grundlage der derzeit in Ihrer Akte verfügbaren Informationen nicht genehmigen."
+      }
+    },
+    "home": {
+      "emptyTitle": "Noch keine Ansprüche",
+      "emptyText": "Starten Sie Ihren ersten Anspruch, um hier Entschädigung, Dokumente und Auszahlungen zu verfolgen.",
+      "start": "Ersten Anspruch starten",
+      "progressTitle": "Anspruchsstatus",
+      "actionRequired": "Aktion erforderlich",
+      "noAction": "Keine Aktion erforderlich",
+      "actionReason": "Wir benötigen noch ein oder mehrere Pflichtdokumente, bevor wir Ihren Anspruch fortsetzen können.",
+      "noActionText": "Wir benachrichtigen Sie, wenn sich der Status ändert.",
+      "monitoring": "Ihr Anspruch wird mit den bereits angehängten Dokumenten weiterbearbeitet."
+    },
+    "claims": {
+      "title": "Ansprüche",
+      "text": "Alle mit Ihrem Konto verknüpften Ansprüche, vereinfacht in kundenfreundlichen Updates.",
+      "newClaim": "Neuen Anspruch starten",
+      "empty": "Ihrem Konto sind noch keine Ansprüche zugeordnet."
+    },
+    "claimDetails": {
+      "empty": "Dieser Anspruch ist in Ihrem Konto nicht verfügbar."
+    },
+    "documents": {
+      "requiredTitle": "Erforderliche Dokumente",
+      "title": "Dokumente",
+      "noFile": "Noch keine Datei hochgeladen",
+      "signatureConsent": "Unterschrift / Zustimmung",
+      "passportId": "Pass / ID",
+      "boardingPass": "Boardingpass",
+      "document": "Dokument",
+      "digitalSignature": "Digitale Unterschrift",
+      "image": "Bild",
+      "uploadedFile": "Hochgeladene Datei",
+      "uploadRequired": "Upload erforderlich",
+      "formats": "PNG / JPG / PDF",
+      "currentClaim": "Aktueller Anspruch",
+      "preview": "Vorschau",
+      "replace": "Ersetzen",
+      "delete": "Löschen",
+      "previewTitle": "Dokumentvorschau",
+      "openFull": "Voll öffnen",
+      "loadingPreview": "Vorschau wird geladen…",
+      "previewUnavailable": "Vorschau ist nicht verfügbar.",
+      "open": "Öffnen",
+      "upload": "Hochladen",
+      "replacementSuccess": "Ersatz erfolgreich hochgeladen.",
+      "uploadSuccess": "Dokument erfolgreich hochgeladen.",
+      "uploadError": "Das Dokument konnte nicht hochgeladen werden.",
+      "removeConfirm": "Dieses Dokument aus Ihrem Anspruch entfernen?",
+      "removeSuccess": "Dokument entfernt.",
+      "removeError": "Das Dokument konnte nicht entfernt werden.",
+      "signatureUnavailable": "Eine Unterschrift kann hinzugefügt werden, wenn ein aktiver Anspruch verfügbar ist.",
+      "signatureAdded": "Unterschrift erfolgreich hinzugefügt.",
+      "signatureSaveError": "Die Unterschrift konnte nicht gespeichert werden.",
+      "uploadsEnabled": "Uploads aktiviert",
+      "lockedMessage": "Dokumentenänderungen sind für die derzeit mit Ihrem Konto verknüpften Ansprüche gesperrt.",
+      "addSignature": "Unterschrift hinzufügen",
+      "lockedNow": "Derzeit gesperrt",
+      "saveSignature": "Unterschrift speichern",
+      "summary": {
+        "none": "Keine Dokumente hochgeladen",
+        "noneDetail": "Pass / ID, Boardingpass und Unterschrift werden hier angezeigt.",
+        "partial": "{{count}}/3 erforderliche Dokumente liegen vor.",
+        "complete": "Alle erforderlichen Dokumente erhalten",
+        "completeDetail": "Pass / ID, Boardingpass und Unterschrift sind beigefügt.",
+        "uploaded": "Dokumente hochgeladen"
+      },
+      "status": {
+        "missing": "Fehlt",
+        "uploaded": "Hochgeladen",
+        "pending_review": "Prüfung ausstehend",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt"
+      }
+    },
+    "payments": {
+      "title": "Zahlungen",
+      "text": "Geschätzte, genehmigte und ausgezahlte Beträge erscheinen hier nur, wenn Daten vorhanden sind.",
+      "estimated": "Geschätzte Entschädigung",
+      "approvedAmount": "Genehmigter Betrag",
+      "paidAmount": "Ausgezahlter Betrag",
+      "payoutStatus": "Auszahlungsstatus",
+      "latestUpdate": "Letzte Zahlungsaktualisierung",
+      "awaiting": "Zahlungsinformationen werden hier angezeigt, sobald Ihr Anspruch genehmigt ist.",
+      "history": "Zahlungsverlauf",
+      "historyText": "Genehmigte Auszahlungen und abgeschlossene Überweisungen werden hier aufgeführt.",
+      "empty": "Zahlungsinformationen werden hier angezeigt, sobald Ihr Anspruch genehmigt ist.",
+      "progress": "Zahlungsfortschritt",
+      "status": {
+        "not_started": "Nicht begonnen",
+        "pending": "Ausstehend",
+        "approved": "Genehmigt",
+        "paid": "Bezahlt"
+      }
+    },
+    "account": {
+      "saved": "Kontodaten aktualisiert.",
+      "error": "Ihr Konto konnte nicht aktualisiert werden.",
+      "personal": "Persönliche Informationen",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "language": "Sprache",
+      "saving": "Wird gespeichert...",
+      "submit": "Änderungen speichern",
+      "notificationsTitle": "Benachrichtigungen",
+      "notificationsSoonText": "Bald können Sie Anspruchs- und Marketing-Benachrichtigungen in Ihrem Konto personalisieren.",
+      "support": "Support",
+      "contactSupport": "Support kontaktieren"
+    },
+    "errors": {
+      "loadAccount": "Ihr Konto konnte nicht geladen werden.",
+      "loadClaims": "Ansprüche konnten nicht geladen werden.",
+      "loadClaimDetails": "Anspruchsdetails konnten nicht geladen werden.",
+      "loadDocuments": "Dokumente konnten nicht geladen werden.",
+      "loadPayments": "Zahlungen konnten nicht geladen werden."
+    }
   }
 }

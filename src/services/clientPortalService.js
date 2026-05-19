@@ -3,11 +3,16 @@ import { calculateDistanceCompensationEstimate } from "../lib/compensationDistan
 import { findAirportByCode } from "./catalogService.js";
 import { getCurrentUser, getCurrentProfile, syncCurrentUserClaimData, updateCurrentProfile } from "./authService.js";
 import { uploadLeadDocument } from "./leadService.js";
+import i18n from "../i18n/index.js";
+
+function t(key, defaultValue, options = {}) {
+  return i18n.t(key, { defaultValue, ...options });
+}
 
 const REQUIRED_CLIENT_DOCUMENTS = [
-  { key: "passport", label: "Passport / ID" },
-  { key: "boarding_pass", label: "Boarding Pass" },
-  { key: "signature", label: "Signature / Consent" },
+  { key: "passport", labelKey: "clientPortal.documents.passportId", defaultLabel: "Passport / ID" },
+  { key: "boarding_pass", labelKey: "clientPortal.documents.boardingPass", defaultLabel: "Boarding Pass" },
+  { key: "signature", labelKey: "clientPortal.documents.signatureConsent", defaultLabel: "Signature / Consent" },
 ];
 
 const DOCUMENT_STATUS_META = {
@@ -134,52 +139,52 @@ export function getClientDocumentStatus(status, kind = "document") {
   const value = String(status || "").toLowerCase();
 
   if (!value) {
-    return DOCUMENT_STATUS_META.missing;
+    return { ...DOCUMENT_STATUS_META.missing, label: t("clientPortal.documents.status.missing", DOCUMENT_STATUS_META.missing.label) };
   }
 
   if (kind === "signature" && value === "signed") {
-    return DOCUMENT_STATUS_META.approved;
+    return { ...DOCUMENT_STATUS_META.approved, label: t("clientPortal.documents.status.approved", DOCUMENT_STATUS_META.approved.label) };
   }
 
   if (["approved", "accepted"].includes(value)) {
-    return DOCUMENT_STATUS_META.approved;
+    return { ...DOCUMENT_STATUS_META.approved, label: t("clientPortal.documents.status.approved", DOCUMENT_STATUS_META.approved.label) };
   }
 
   if (["rejected", "declined", "invalid"].includes(value)) {
-    return DOCUMENT_STATUS_META.rejected;
+    return { ...DOCUMENT_STATUS_META.rejected, label: t("clientPortal.documents.status.rejected", DOCUMENT_STATUS_META.rejected.label) };
   }
 
   if (["pending_review", "pending", "review"].includes(value)) {
-    return DOCUMENT_STATUS_META.pending_review;
+    return { ...DOCUMENT_STATUS_META.pending_review, label: t("clientPortal.documents.status.pending_review", DOCUMENT_STATUS_META.pending_review.label) };
   }
 
   if (["missing", "requested", "replacement_requested"].includes(value)) {
-    return DOCUMENT_STATUS_META.missing;
+    return { ...DOCUMENT_STATUS_META.missing, label: t("clientPortal.documents.status.missing", DOCUMENT_STATUS_META.missing.label) };
   }
 
   if (["uploaded", "signed"].includes(value)) {
-    return DOCUMENT_STATUS_META.uploaded;
+    return { ...DOCUMENT_STATUS_META.uploaded, label: t("clientPortal.documents.status.uploaded", DOCUMENT_STATUS_META.uploaded.label) };
   }
 
-  return DOCUMENT_STATUS_META.uploaded;
+  return { ...DOCUMENT_STATUS_META.uploaded, label: t("clientPortal.documents.status.uploaded", DOCUMENT_STATUS_META.uploaded.label) };
 }
 
 export function getClientPaymentStatus(paymentStatus, paidAt = null) {
   const value = String(paymentStatus || "").toLowerCase();
 
   if (paidAt || ["paid", "completed", "payout_completed", "customer_paid"].includes(value)) {
-    return { key: "paid", label: "Paid", tone: "success" };
+    return { key: "paid", label: t("clientPortal.payments.status.paid", "Paid"), tone: "success" };
   }
 
   if (["approved", "ready", "ready_for_payout"].includes(value)) {
-    return { key: "approved", label: "Approved", tone: "success" };
+    return { key: "approved", label: t("clientPortal.payments.status.approved", "Approved"), tone: "success" };
   }
 
   if (["pending", "processing", "scheduled", "awaiting_payment"].includes(value)) {
-    return { key: "pending", label: "Pending", tone: "info" };
+    return { key: "pending", label: t("clientPortal.payments.status.pending", "Pending"), tone: "info" };
   }
 
-  return { key: "not_started", label: "Not started", tone: "neutral" };
+  return { key: "not_started", label: t("clientPortal.payments.status.not_started", "Not started"), tone: "neutral" };
 }
 
 function hasDocumentAttention(documentStatus) {
@@ -208,30 +213,30 @@ export function getClientClaimStatus(internalStatus, stage, documentStatus, paym
   if (payment.key === "paid") {
     return {
       key: "paid",
-      label: "Paid",
+      label: t("clientPortal.status.paid", "Paid"),
       tone: "success",
       step: 5,
-      explanation: "Compensation has been paid.",
+      explanation: t("clientPortal.statusDrawer.paid.text", "Compensation has been paid."),
     };
   }
 
   if (["rejected", "ineligible", "closed_rejected", "denied", "lost"].includes(normalizedStatus)) {
     return {
       key: "rejected",
-      label: "Rejected",
+      label: t("clientPortal.status.rejected", "Rejected"),
       tone: "danger",
       step: 4,
-      explanation: "This claim could not be approved.",
+      explanation: t("clientPortal.statusDrawer.closed.text", "This claim could not be approved."),
     };
   }
 
   if (["approved", "won", "eligible"].includes(normalizedStatus) || payment.key === "approved") {
     return {
       key: "approved",
-      label: "Approved",
+      label: t("clientPortal.status.approved", "Approved"),
       tone: "success",
       step: 4,
-      explanation: "Your claim has been approved.",
+      explanation: t("clientPortal.statusDrawer.approved.text", "Your claim has been approved."),
     };
   }
 
@@ -241,20 +246,20 @@ export function getClientClaimStatus(internalStatus, stage, documentStatus, paym
   ) {
     return {
       key: "documents_needed",
-      label: "Documents needed",
+      label: t("clientPortal.status.documents_needed", "Documents needed"),
       tone: "warning",
       step: 2,
-      explanation: "Some documents still need your attention.",
+      explanation: t("clientPortal.home.actionReason", "Some documents still need your attention."),
     };
   }
 
   if (["submitted", "new", "draft"].includes(normalizedStatus)) {
     return {
       key: "submitted",
-      label: "Submitted",
+      label: t("clientPortal.status.submitted", "Submitted"),
       tone: "info",
       step: 1,
-      explanation: "Your claim was received.",
+      explanation: t("clientPortal.statusDrawer.received.text", "Your claim was received."),
     };
   }
 
@@ -263,19 +268,19 @@ export function getClientClaimStatus(internalStatus, stage, documentStatus, paym
   ) {
     return {
       key: "under_review",
-      label: "Under review",
+      label: t("clientPortal.status.under_review", "Under review"),
       tone: "info",
       step: 2,
-      explanation: "Your claim is being reviewed.",
+      explanation: t("clientPortal.statusDrawer.underReview.text", "Your claim is being reviewed."),
     };
   }
 
   return {
     key: "under_review",
-    label: "Under review",
+    label: t("clientPortal.status.under_review", "Under review"),
     tone: "info",
     step: 2,
-    explanation: "Your claim is being reviewed.",
+    explanation: t("clientPortal.statusDrawer.underReview.text", "Your claim is being reviewed."),
   };
 }
 
@@ -308,7 +313,7 @@ function normalizeLeadSignature(item) {
     ownerType: "lead",
     ownerId: item.lead_id,
     document_type: "signature",
-    file_name: item.signer_name ? `${item.signer_name} signature` : "Signature / Consent",
+    file_name: item.signer_name ? `${item.signer_name} signature` : t("clientPortal.documents.signatureConsent", "Signature / Consent"),
     status: item.terms_accepted ? "signed" : "pending",
     created_at: item.signed_at || item.created_at,
     mime_type: "image/png",
@@ -326,6 +331,7 @@ function buildRequiredDocumentSummary(records = []) {
 
     return {
       ...definition,
+      label: t(definition.labelKey, definition.defaultLabel),
       latestDocument: latest,
       statusKey: statusMeta.key,
       statusLabel: statusMeta.label,
@@ -347,6 +353,7 @@ function buildClientManagedRequiredDocuments(records = []) {
 
     return {
       ...definition,
+      label: t(definition.labelKey, definition.defaultLabel),
       latestDocument: latest,
       statusKey: statusMeta.key,
       statusLabel: statusMeta.label,
@@ -370,8 +377,8 @@ function buildDocumentsSummary(requiredDocuments = []) {
 
   if (!availableCount) {
     return {
-      label: "No documents uploaded",
-      detail: "Passport / ID, boarding pass, and signature will appear here.",
+      label: t("clientPortal.documents.summary.none", "No documents uploaded"),
+      detail: t("clientPortal.documents.summary.noneDetail", "Passport / ID, boarding pass, and signature will appear here."),
       availableCount,
       needsAttention,
     };
@@ -379,8 +386,8 @@ function buildDocumentsSummary(requiredDocuments = []) {
 
   if (needsAttention) {
     return {
-      label: "Documents needed",
-      detail: `${availableCount}/3 required documents are on file.`,
+      label: t("clientPortal.status.documents_needed", "Documents needed"),
+      detail: t("clientPortal.documents.summary.partial", "{{count}}/3 required documents are on file.", { count: availableCount }),
       availableCount,
       needsAttention,
     };
@@ -388,16 +395,16 @@ function buildDocumentsSummary(requiredDocuments = []) {
 
   if (availableCount === REQUIRED_CLIENT_DOCUMENTS.length) {
     return {
-      label: "All required documents received",
-      detail: "Passport / ID, boarding pass, and signature are attached.",
+      label: t("clientPortal.documents.summary.complete", "All required documents received"),
+      detail: t("clientPortal.documents.summary.completeDetail", "Passport / ID, boarding pass, and signature are attached."),
       availableCount,
       needsAttention,
     };
   }
 
   return {
-    label: "Documents uploaded",
-    detail: `${availableCount}/3 required documents are on file.`,
+    label: t("clientPortal.documents.summary.uploaded", "Documents uploaded"),
+    detail: t("clientPortal.documents.summary.partial", "{{count}}/3 required documents are on file.", { count: availableCount }),
     availableCount,
     needsAttention,
   };
@@ -424,7 +431,7 @@ function buildClaimRowFromLead(lead, context) {
     departureLabel: lead.departure_airport || "",
     arrivalLabel: lead.arrival_airport || "",
     route: [lead.departure_airport, lead.arrival_airport].filter(Boolean).join(" → "),
-    disruptionType: normalizeLabel(lead.disruption_type, "Flight disruption"),
+    disruptionType: normalizeLabel(lead.disruption_type, t("clientPortal.claim.flightDisruption", "Flight disruption")),
     submittedAt: lead.submitted_at || lead.created_at,
     created_at: lead.created_at,
     publicStatus,
@@ -466,7 +473,7 @@ function buildClaimRowFromCase(caseRow, context) {
     departureLabel: caseRow.route_from || relatedLead?.departure_airport || "",
     arrivalLabel: caseRow.route_to || relatedLead?.arrival_airport || "",
     route: [caseRow.route_from || relatedLead?.departure_airport, caseRow.route_to || relatedLead?.arrival_airport].filter(Boolean).join(" → "),
-    disruptionType: normalizeLabel(relatedLead?.disruption_type || caseRow.issue_type, "Flight disruption"),
+    disruptionType: normalizeLabel(relatedLead?.disruption_type || caseRow.issue_type, t("clientPortal.claim.flightDisruption", "Flight disruption")),
     submittedAt: relatedLead?.submitted_at || caseRow.created_at,
     created_at: caseRow.created_at,
     publicStatus,
