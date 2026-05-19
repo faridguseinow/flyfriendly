@@ -991,5 +991,28 @@
       "loadDocuments": "Dokumente konnten nicht geladen werden.",
       "loadPayments": "Zahlungen konnten nicht geladen werden."
     }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "Noch kein Konto?",
+      "title": "Willkommen zurück",
+      "text": "Melden Sie sich an, um Ihre Ansprüche, Dokumente und Auszahlungsupdates zu sehen.",
+      "emailDivider": "oder mit E-Mail anmelden",
+      "loading": "Anmeldung...",
+      "submit": "Anmelden",
+      "forgot": "Passwort vergessen?",
+      "registerLink": "Konto erstellen",
+      "error": "Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
+      "googleError": "Mit Google konnte nicht fortgefahren werden. Bitte versuchen Sie es erneut.",
+      "googleButton": "Mit Google fortfahren"
+    },
+    "fields": {
+      "email": "E-Mail",
+      "password": "Passwort"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Passwort eingeben"
+    }
   }
 }

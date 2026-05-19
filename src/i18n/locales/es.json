@@ -991,5 +991,28 @@
       "loadDocuments": "No se pudieron cargar los documentos.",
       "loadPayments": "No se pudieron cargar los pagos."
     }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "¿No tienes una cuenta?",
+      "title": "Bienvenido de nuevo",
+      "text": "Inicia sesión para ver tus reclamaciones, documentos y actualizaciones de pago.",
+      "emailDivider": "o inicia sesión con correo electrónico",
+      "loading": "Iniciando sesión...",
+      "submit": "Iniciar sesión",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "registerLink": "Crear una",
+      "error": "No se pudo iniciar sesión. Verifica tu correo electrónico y contraseña.",
+      "googleError": "No se pudo continuar con Google. Inténtalo de nuevo.",
+      "googleButton": "Continuar con Google"
+    },
+    "fields": {
+      "email": "Correo electrónico",
+      "password": "Contraseña"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Introduce tu contraseña"
+    }
   }
 }

@@ -590,7 +590,7 @@ function buildEmailHtml(
     <div style="padding:28px 12px;background:
       radial-gradient(circle at top left, rgba(31,122,224,0.14), transparent 34%),
       radial-gradient(circle at top right, rgba(25,184,74,0.09), transparent 28%),
-      linear-gradient(180deg,#eef6ff 0%,#f8fbff 100%);
+      linear-gradient(180deg,var(--soft) 0%,#f8fbff 100%);
     ">
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:640px;margin:0 auto;">
         <tr>

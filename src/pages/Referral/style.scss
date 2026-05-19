@@ -5,7 +5,7 @@
 }
 
 body:has(.ref-hero) {
-  background: #fcfcfc;
+  background: var(--soft);
 }
 
 .ref-hero {

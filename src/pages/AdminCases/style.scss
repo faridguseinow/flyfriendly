@@ -168,7 +168,7 @@
 }
 
 .admin-cases-page__case-row.is-active {
-  background: linear-gradient(180deg, #f8fcff 0%, #eef6ff 100%);
+  background: linear-gradient(180deg, #f8fcff 0%, var(--soft) 100%);
 }
 
 .admin-cases-page__case-main {

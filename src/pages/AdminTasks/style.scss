@@ -508,7 +508,7 @@
 
 .admin-tasks-page__day-chip.is-active {
   border-color: rgba(96, 165, 250, 0.4);
-  background: #eef6ff;
+  background: var(--soft);
 }
 
 .admin-tasks-page__deadline-groups {

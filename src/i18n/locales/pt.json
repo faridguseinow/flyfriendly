@@ -991,5 +991,28 @@
       "loadDocuments": "Não foi possível carregar os documentos.",
       "loadPayments": "Não foi possível carregar os pagamentos."
     }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "Ainda não tem uma conta?",
+      "title": "Bem-vindo de volta",
+      "text": "Inicie sessão para ver os seus pedidos, documentos e atualizações de pagamento.",
+      "emailDivider": "ou entre com o e-mail",
+      "loading": "A iniciar sessão...",
+      "submit": "Entrar",
+      "forgot": "Esqueceu-se da palavra-passe?",
+      "registerLink": "Criar conta",
+      "error": "Não foi possível iniciar sessão. Verifique o seu e-mail e a sua palavra-passe.",
+      "googleError": "Não foi possível continuar com o Google. Tente novamente.",
+      "googleButton": "Continuar com o Google"
+    },
+    "fields": {
+      "email": "E-mail",
+      "password": "Palavra-passe"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Introduza a sua palavra-passe"
+    }
   }
 }

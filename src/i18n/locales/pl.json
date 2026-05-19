@@ -79,7 +79,7 @@
     "pleaseWait": "Proszę czekać...",
     "alreadyMember": "Jesteś już członkiem?",
     "notMember": "Nie jesteś członkiem?",
-    "signUp": "Zarejestruj się\nBrakuje",
+    "signUp": "Zarejestruj się",
     "supabaseMissing": "Env Supabase. Dodaj VITE_SUPABASE_URL i VITE_SUPABASE_PUBLISHABLE_KEY.",
     "confirmEmailNotice": "Sprawdź swoją pocztę e-mail, aby potwierdzić konto, a następnie zaloguj się, aby kontynuować.",
     "authError": "Nie można uwierzytelnić. Spróbuj ponownie."
@@ -990,6 +990,29 @@
       "loadClaimDetails": "Nie udało się wczytać szczegółów roszczenia.",
       "loadDocuments": "Nie udało się wczytać dokumentów.",
       "loadPayments": "Nie udało się wczytać płatności."
+    }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "Nie masz jeszcze konta?",
+      "title": "Witamy ponownie",
+      "text": "Zaloguj się, aby zobaczyć swoje roszczenia, dokumenty i aktualizacje wypłat.",
+      "emailDivider": "lub zaloguj się przez e-mail",
+      "loading": "Logowanie...",
+      "submit": "Zaloguj się",
+      "forgot": "Nie pamiętasz hasła?",
+      "registerLink": "Utwórz konto",
+      "error": "Nie udało się zalogować. Sprawdź adres e-mail i hasło.",
+      "googleError": "Nie udało się kontynuować przez Google. Spróbuj ponownie.",
+      "googleButton": "Kontynuuj z Google"
+    },
+    "fields": {
+      "email": "E-mail",
+      "password": "Hasło"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Wprowadź hasło"
     }
   }
 }

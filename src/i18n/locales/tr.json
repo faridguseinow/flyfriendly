@@ -991,5 +991,28 @@
       "loadDocuments": "Belgeler yüklenemedi.",
       "loadPayments": "Ödemeler yüklenemedi."
     }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "Hesabınız yok mu?",
+      "title": "Tekrar hoş geldiniz",
+      "text": "Taleplerinizi, belgelerinizi ve ödeme güncellemelerini görmek için giriş yapın.",
+      "emailDivider": "veya e-posta ile giriş yapın",
+      "loading": "Giriş yapılıyor...",
+      "submit": "Giriş yap",
+      "forgot": "Şifrenizi mi unuttunuz?",
+      "registerLink": "Hesap oluşturun",
+      "error": "Giriş yapılamadı. Lütfen e-posta adresinizi ve şifrenizi kontrol edin.",
+      "googleError": "Google ile devam edilemedi. Lütfen tekrar deneyin.",
+      "googleButton": "Google ile devam et"
+    },
+    "fields": {
+      "email": "E-posta",
+      "password": "Şifre"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Şifrenizi girin"
+    }
   }
 }

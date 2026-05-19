@@ -1,4 +1,5 @@
 import { useState, type ButtonHTMLAttributes } from "react";
+import { useTranslation } from "react-i18next";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase.js";
 import "./GoogleSignInButton.scss";
 
@@ -40,8 +41,10 @@ export function GoogleSignInButton({
   onAuthError,
   ...buttonProps
 }: GoogleSignInButtonProps) {
+  const { t } = useTranslation();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const isDisabled = disabled || isRedirecting || !isSupabaseConfigured || !supabase;
+  const buttonLabel = t("auth.login.googleButton", { defaultValue: "Continue with Google" });
 
   const handleGoogleSignIn = async () => {
     if (isDisabled || !supabase) {
@@ -83,10 +86,10 @@ export function GoogleSignInButton({
       onClick={handleGoogleSignIn}
       disabled={isDisabled}
       aria-busy={isRedirecting}
-      aria-label="Continue with Google"
+      aria-label={buttonLabel}
     >
       {isRedirecting ? <span className="google-sign-in-button__spinner" aria-hidden="true" /> : <GoogleIcon />}
-      <span>Continue with Google</span>
+      <span>{buttonLabel}</span>
     </button>
   );
 }

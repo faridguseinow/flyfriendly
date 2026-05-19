@@ -76,9 +76,17 @@
   gap: 10px;
 }
 
+.nav-actions > .language-switcher .language-current {
+  min-height: 48px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
 .account-menu {
   position: relative;
   display: inline-flex;
+  padding-bottom: 18px;
+  margin-bottom: -18px;
 }
 
 .account-entry {
@@ -117,7 +125,7 @@
 
 .account-dropdown {
   position: absolute;
-  top: calc(100% + 18px);
+  top: 100%;
   right: 0;
   z-index: 75;
   width: min(356px, calc(100vw - 48px));
@@ -165,7 +173,7 @@
   color: var(--primary);
   background:
     radial-gradient(circle at 30% 20%, rgba(17, 69, 255, 0.18), transparent 60%),
-    linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+    linear-gradient(180deg, #f8fbff 0%, var(--soft) 100%);
 
   img {
     width: 100%;
@@ -217,15 +225,6 @@
   align-items: stretch;
 }
 
-.account-dropdown__row .language-switcher {
-  flex: 0 0 auto;
-}
-
-.account-dropdown__row .language-current {
-  min-height: 48px;
-  padding: 0 16px;
-}
-
 .account-dropdown__row--guest .account-dropdown__primary {
   width: auto;
   min-height: 48px;
@@ -234,7 +233,6 @@
 }
 
 .account-dropdown__primary,
-.account-dropdown__claim,
 .account-dropdown__link,
 .account-dropdown__ghost {
   min-height: 54px;
@@ -256,7 +254,7 @@
 }
 
 .account-dropdown__primary,
-.account-dropdown__claim {
+.account-dropdown__status-link {
   width: 100%;
   color: #fff;
   background: var(--primary);
@@ -282,6 +280,55 @@
 
 .account-dropdown__link {
   width: 100%;
+}
+
+.account-dropdown__guest {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+}
+
+.account-dropdown__guest-copy {
+  margin: 0;
+  color: #7d8ba0;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.account-dropdown__guest-register {
+  color: var(--primary);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.account-dropdown__divider {
+  height: 1px;
+  background: rgba(223, 233, 246, 0.96);
+}
+
+.account-dropdown__status-link {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  color: var(--primary-dark);
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+
+  svg {
+    transform: rotate(-90deg);
+  }
+
+  &:hover {
+    background: #fff;
+    color: var(--primary-dark);
+  }
 }
 
 .language-switcher {
@@ -716,7 +763,7 @@
     color: var(--primary);
     background:
       radial-gradient(circle at 30% 20%, rgba(17, 152, 255, 0.18), transparent 60%),
-      linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+      linear-gradient(180deg, #f8fbff 0%, var(--soft) 100%);
 
     img {
       width: 100%;

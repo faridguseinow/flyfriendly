@@ -293,6 +293,16 @@ function Navbar() {
     setIsAccountOpen((current) => !current);
     setIsLanguageOpen(false);
   };
+  const handleAccountMouseEnter = () => {
+    if (typeof window !== "undefined" && window.innerWidth > 1140) {
+      setIsAccountOpen(true);
+    }
+  };
+  const handleAccountMouseLeave = () => {
+    if (typeof window !== "undefined" && window.innerWidth > 1140) {
+      setIsAccountOpen(false);
+    }
+  };
   const handleSignOut = async () => {
     setIsAccountOpen(false);
     setIsMenuOpen(false);
@@ -313,7 +323,15 @@ function Navbar() {
           ))}
         </div>
         <div className="nav-actions">
-          <div className="account-menu" ref={accountMenuRef}>
+          <LanguageSwitcher
+            currentLanguage={currentLanguage}
+            isOpen={isLanguageOpen}
+            onOpen={openLanguageModal}
+            onClose={closeLanguageModal}
+            onSelectLanguage={selectLanguage}
+          />
+
+          <div className="account-menu" ref={accountMenuRef} onMouseEnter={handleAccountMouseEnter} onMouseLeave={handleAccountMouseLeave}>
             <button
               type="button"
               className={`account-entry${avatarImageUrl ? " account-entry--with-photo" : ""}`}
@@ -357,13 +375,6 @@ function Navbar() {
                       <span>{t("nav.myProfile", { defaultValue: "My profile" })}</span>
                     </LocalizedLink>
                     <div className="account-dropdown__row">
-                      <LanguageSwitcher
-                        currentLanguage={currentLanguage}
-                        isOpen={isLanguageOpen}
-                        onOpen={openLanguageModal}
-                        onClose={closeLanguageModal}
-                        onSelectLanguage={selectLanguage}
-                      />
                       <button className="account-dropdown__ghost" type="button" role="menuitem" onClick={handleSignOut}>
                         <LogOut size={18} strokeWidth={2} />
                         <span>{t("clientPortal.signOut", { defaultValue: "Sign out" })}</span>
@@ -371,22 +382,23 @@ function Navbar() {
                     </div>
                   </>
                 ) : (
-                  <div className="account-dropdown__row account-dropdown__row--guest">
-                      <LanguageSwitcher
-                        currentLanguage={currentLanguage}
-                        isOpen={isLanguageOpen}
-                        onOpen={openLanguageModal}
-                        onClose={closeLanguageModal}
-                        onSelectLanguage={selectLanguage}
-                      />
+                  <div className="account-dropdown__guest">
                     <LocalizedLink className="account-dropdown__primary btn-primary" to="/auth/login" role="menuitem" onClick={closeMenu}>
                       {t("claimModal.logIn", { defaultValue: "Sign in" })}
                     </LocalizedLink>
+                    <p className="account-dropdown__guest-copy">
+                      {t("auth.login.registerPrompt", { defaultValue: "Need an account?" })}
+                    </p>
+                    <LocalizedLink className="account-dropdown__guest-register" to="/auth/register" role="menuitem" onClick={closeMenu}>
+                      {t("claimModal.signUp", { defaultValue: "Sign Up" })}
+                    </LocalizedLink>
+                    <div className="account-dropdown__divider" aria-hidden="true" />
+                    <LocalizedLink className="account-dropdown__status-link" to="/auth/login" role="menuitem" onClick={closeMenu}>
+                      <span>{t("clientPortal.claim.viewStatus", { defaultValue: "View claim status" })}</span>
+                      <ChevronDown size={16} strokeWidth={2.2} />
+                    </LocalizedLink>
                   </div>
                 )}
-                <LocalizedLink className="account-dropdown__claim" to="/claim/eligibility" role="menuitem" onClick={startClaim}>
-                  {t("common.startYourClaim")}
-                </LocalizedLink>
               </div>
             ) : null}
           </div>

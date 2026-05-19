@@ -993,5 +993,28 @@
       "loadDocuments": "Could not load documents.",
       "loadPayments": "Could not load payments."
     }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "Need an account?",
+      "title": "Welcome back",
+      "text": "Sign in to view your claims, documents, and payout updates.",
+      "emailDivider": "or sign in with email",
+      "loading": "Signing in...",
+      "submit": "Sign in",
+      "forgot": "Forgot password?",
+      "registerLink": "Create one",
+      "error": "Could not sign in. Please check your email and password.",
+      "googleError": "Could not continue with Google. Please try again.",
+      "googleButton": "Continue with Google"
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Password"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Enter your password"
+    }
   }
 }

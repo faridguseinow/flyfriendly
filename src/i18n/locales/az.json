@@ -991,5 +991,28 @@
       "loadDocuments": "Sənədləri yükləmək mümkün olmadı.",
       "loadPayments": "Ödənişləri yükləmək mümkün olmadı."
     }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "Hesabınız yoxdur?",
+      "title": "Yenidən xoş gəlmisiniz",
+      "text": "İddialarınızı, sənədlərinizi və ödəniş yeniləmələrini görmək üçün daxil olun.",
+      "emailDivider": "və ya e-poçt ilə daxil olun",
+      "loading": "Daxil olunur...",
+      "submit": "Daxil olun",
+      "forgot": "Şifrəni unutmusunuz?",
+      "registerLink": "Hesab yaradın",
+      "error": "Daxil olmaq mümkün olmadı. E-poçtunuzu və şifrənizi yoxlayın.",
+      "googleError": "Google ilə davam etmək mümkün olmadı. Yenidən cəhd edin.",
+      "googleButton": "Google ilə davam edin"
+    },
+    "fields": {
+      "email": "E-poçt",
+      "password": "Şifrə"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Şifrənizi daxil edin"
+    }
   }
 }

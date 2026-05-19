@@ -991,5 +991,28 @@
       "loadDocuments": "Impossibile caricare i documenti.",
       "loadPayments": "Impossibile caricare i pagamenti."
     }
+  },
+  "auth": {
+    "login": {
+      "registerPrompt": "Non hai un account?",
+      "title": "Bentornato",
+      "text": "Accedi per visualizzare le tue richieste, i documenti e gli aggiornamenti sui pagamenti.",
+      "emailDivider": "oppure accedi con l’e-mail",
+      "loading": "Accesso in corso...",
+      "submit": "Accedi",
+      "forgot": "Hai dimenticato la password?",
+      "registerLink": "Creane uno",
+      "error": "Accesso non riuscito. Controlla e-mail e password.",
+      "googleError": "Impossibile continuare con Google. Riprova.",
+      "googleButton": "Continua con Google"
+    },
+    "fields": {
+      "email": "E-mail",
+      "password": "Password"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Inserisci la password"
+    }
   }
 }
