@@ -22,7 +22,8 @@
     "savedInSupabase": "Enregistré dans Supabase.",
     "flyFriendlyHomeAria": "Fly Friendly Accueil",
     "globalReachCopy": "Au service de millions de passagers dans tous les pays, parlant toutes les langues.",
-    "scrollToTop": "Faire défiler vers le haut"
+    "scrollToTop": "Faire défiler vers le haut",
+    "loadingAccount": "Chargement du compte..."
   },
   "nav": {
     "mainNavigation": "Navigation principale",

@@ -22,7 +22,8 @@
     "savedInSupabase": "Supabase'e kaydedildi.",
     "flyFriendlyHomeAria": "Fly Friendly ana sayfa",
     "globalReachCopy": "Tüm ülkelerde, tüm dilleri konuşan milyonlarca yolcuya hizmet veriyoruz.",
-    "scrollToTop": "Yukarıya kaydır"
+    "scrollToTop": "Yukarıya kaydır",
+    "loadingAccount": "Hesap yükleniyor..."
   },
   "nav": {
     "mainNavigation": "Ana gezinme",

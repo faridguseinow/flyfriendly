@@ -22,7 +22,8 @@
     "savedInSupabase": "Збережено в Supabase.",
     "flyFriendlyHomeAria": "Fly Friendly додому",
     "globalReachCopy": "Обслуговує мільйони пасажирів у всіх країнах, розмовляючи всіма мовами.",
-    "scrollToTop": "Прокрутіть догори"
+    "scrollToTop": "Прокрутіть догори",
+    "loadingAccount": "Завантаження акаунта..."
   },
   "nav": {
     "mainNavigation": "Основна навігація",

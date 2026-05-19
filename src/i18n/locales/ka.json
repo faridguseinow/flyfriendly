@@ -22,7 +22,8 @@
     "savedInSupabase": "შენახულია Supabase-ში.",
     "flyFriendlyHomeAria": "Fly Friendly მთავარი",
     "globalReachCopy": "ვემსახურებით მილიონობით მგზავრს ყველა ქვეყანაში, ყველა ენაზე.",
-    "scrollToTop": "ზემოთ დაბრუნება"
+    "scrollToTop": "ზემოთ დაბრუნება",
+    "loadingAccount": "ანგარიში იტვირთება..."
   },
   "nav": {
     "mainNavigation": "მთავარი ნავიგაცია",

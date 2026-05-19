@@ -436,10 +436,6 @@
   border-color: rgba(223, 233, 246, 0.9);
 }
 
-.client-portal-dashboard-grid {
-  display: grid;
-  gap: 12px;
-}
 
 .client-portal-dashboard-card {
   padding: 14px;
@@ -910,7 +906,7 @@
   gap: 14px;
   border-radius: 24px;
   color: #fff;
-  background:var(--primary);
+  background:var(--primary-dark);
 }
 
 .client-portal-claim-hero.is-compact {
@@ -1313,8 +1309,8 @@
 }
 
 .client-portal-documents-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -2303,10 +2299,7 @@
     grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
   }
 
-  .client-portal-dashboard-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
+
 
   .client-portal-dashboard-card--documents {
     grid-column: 1 / -1;
@@ -2573,10 +2566,6 @@
 
   .client-portal-account-grid {
     grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-  }
-
-  .client-portal-dashboard-grid {
-    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
   }
 
   .client-portal-dashboard-card--documents {

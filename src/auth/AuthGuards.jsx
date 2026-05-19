@@ -1,10 +1,13 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../i18n/useLocalizedPath.js";
 import { useAuth } from "./AuthContext.jsx";
 import { getPartnerAccessState, getNormalizedRole, hasAllowedRole } from "./routeUtils.js";
 
 function LoadingState() {
-  return <div className="placeholder-page"><p>Loading account...</p></div>;
+  const { t } = useTranslation();
+
+  return <div className="placeholder-page"><p>{t("common.loadingAccount", { defaultValue: "Loading account..." })}</p></div>;
 }
 
 export function ProtectedRoute() {

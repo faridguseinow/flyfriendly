@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router-dom";
 import Home from "../pages/Home/index.jsx";
 import About from "../pages/About/index.jsx";
@@ -85,11 +86,12 @@ function clearPendingGoogleOAuthRedirect() {
 
 function RedirectToPreferredLanguage() {
   const location = useLocation();
+  const { t } = useTranslation();
   const { loading, isAuthenticated, dashboardPath } = useAuth();
 
   if (hasPendingGoogleOAuthRedirect()) {
     if (loading) {
-      return <div className="placeholder-page"><p>Loading account...</p></div>;
+      return <div className="placeholder-page"><p>{t("common.loadingAccount", { defaultValue: "Loading account..." })}</p></div>;
     }
 
     clearPendingGoogleOAuthRedirect();
