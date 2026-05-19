@@ -1795,7 +1795,7 @@
   gap: 10px;
 }
 
-.client-portal-account-section + .client-portal-account-section {
+.client-portal-account-section+.client-portal-account-section {
   padding-top: 16px;
   border-top: 1px solid rgba(223, 233, 246, 0.9);
 }
@@ -2327,7 +2327,8 @@
   }
 
   .client-portal-page {
-    gap: 10px;
+    padding: 24px 0;
+    gap: 8px;
   }
 
   .client-portal-page .portal-card,
@@ -2490,8 +2491,8 @@
     }
   }
 
-  .client-portal-document-card > .client-portal-inline-button,
-  .client-portal-document-card > .client-portal-document-card__action {
+  .client-portal-document-card>.client-portal-inline-button,
+  .client-portal-document-card>.client-portal-document-card__action {
     grid-column: 1 / -1;
     width: 100%;
   }
@@ -2610,7 +2611,6 @@
 
   .client-portal-main__viewport {
     min-height: calc(100svh - 156px);
-    padding: 16px 0 0;
   }
 
   .client-portal-mobile-nav {
