@@ -978,5 +978,6 @@ export async function saveClientProfile(input) {
   return updateCurrentProfile({
     full_name: input.full_name,
     phone: input.phone,
+    preferred_language: input.preferred_language,
   });
 }
