@@ -34,6 +34,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
+import { languages } from "../../i18n/languages.js";
 import {
   deleteClientDocument,
   fetchClientClaimDetails,
@@ -2178,6 +2179,7 @@ function ClientAccountPageInner() {
     last_name: initialNameParts.lastName,
     email: profile?.email || user?.email || "",
     phone: profile?.phone || user?.user_metadata?.phone || "",
+    preferred_language: profile?.preferred_language || document.documentElement.lang || "en",
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -2197,6 +2199,7 @@ function ClientAccountPageInner() {
       last_name: nextNameParts.lastName,
       email: profile?.email || user?.email || "",
       phone: profile?.phone || user?.user_metadata?.phone || "",
+      preferred_language: profile?.preferred_language || document.documentElement.lang || "en",
     });
   }, [profile, user]);
 
@@ -2210,6 +2213,7 @@ function ClientAccountPageInner() {
       await saveClientProfile({
         full_name: [form.first_name, form.last_name].filter(Boolean).join(" ").trim(),
         phone: form.phone,
+        preferred_language: form.preferred_language,
       });
       await refreshProfile();
       setMessage(t("clientPortal.account.saved", { defaultValue: "Account details updated." }));
@@ -2245,6 +2249,16 @@ function ClientAccountPageInner() {
               <label>
                 <span>{t("clientPortal.account.phone", { defaultValue: "Phone" })}</span>
                 <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+              </label>
+              <label>
+                <span>{t("clientPortal.account.language", { defaultValue: "Language" })}</span>
+                <select value={form.preferred_language} onChange={(event) => setForm((current) => ({ ...current, preferred_language: event.target.value }))}>
+                  {languages.map((language) => (
+                    <option key={language.code} value={language.code}>
+                      {language.flag} {language.nativeLabel}
+                    </option>
+                  ))}
+                </select>
               </label>
               {error ? <p className="portal-message is-error">{error}</p> : null}
               {message ? <p className="portal-message is-notice">{message}</p> : null}

@@ -8,10 +8,11 @@ import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import { socialLinks } from "../../constants/site.js";
-import { getLanguageByCode, languages } from "../../i18n/languages.js";
+import { getLanguageByCode, languages, setStoredLanguage } from "../../i18n/languages.js";
 import { replaceLanguageInPath } from "../../i18n/path.js";
+import { updatePreferredLanguage } from "../../services/authService.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import { resolveProfilePath } from "../../auth/routeUtils.js";
+import { getNormalizedRole, resolveProfilePath } from "../../auth/routeUtils.js";
 import "./style.scss";
 
 function getIdentityAvatarUrl(profile, user) {
@@ -189,8 +190,9 @@ function MobileLanguagePicker({ currentLanguage, isOpen, onToggle, onSelectLangu
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAuthenticated, adminAccess, partnerProfile, profile, user, signOut } = useAuth();
+  const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
   const currentLanguage = location.pathname.split("/").filter(Boolean)[0] || "en";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
@@ -274,7 +276,13 @@ function Navbar() {
   const closeLanguageModal = () => setIsLanguageOpen(false);
   const selectLanguage = (languageCode) => {
     if (languageCode !== currentLanguage) {
+      setStoredLanguage(languageCode);
+      void i18n.changeLanguage(languageCode).catch(() => null);
       navigate(replaceLanguageInPath(`${location.pathname}${location.search}${location.hash}`, languageCode));
+    }
+
+    if (isAuthenticated && (normalizedRole === "client" || normalizedRole === "partner")) {
+      void updatePreferredLanguage(languageCode).catch(() => null);
     }
 
     setIsLanguageOpen(false);

@@ -273,7 +273,8 @@
     font-weight: 600;
   }
 
-  input {
+  input,
+  select {
     min-height: 54px;
     padding: 0 16px;
     border: 1px solid var(--line-strong);

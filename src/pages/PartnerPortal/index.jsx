@@ -3,9 +3,11 @@ import { Gift, HandCoins, Image, Link2, LogOut, PiggyBank, UserRound } from "luc
 import { NavLink, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../auth/AuthContext.jsx";
+import { languages } from "../../i18n/languages.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { getPublicSiteUrl } from "../../lib/siteUrl.js";
 import { fetchPartnerPortalData, normalizePortalError, updateCurrentPartnerPublicProfile } from "../../services/partnerPortalService.js";
+import { updatePreferredLanguage } from "../../services/authService.js";
 import "../ClientPortal/style.scss";
 
 function PortalNavLink({ to, icon: Icon, label }) {
@@ -355,7 +357,7 @@ export function PartnerPayoutsPage() {
 
 export function PartnerProfilePage() {
   const { t } = useTranslation();
-  const { partnerProfile, refreshProfile } = useAuth();
+  const { partnerProfile, profile, refreshProfile } = useAuth();
   const [form, setForm] = useState({
     public_name: partnerProfile?.public_name || partnerProfile?.name || "",
     bio: partnerProfile?.bio || "",
@@ -364,6 +366,7 @@ export function PartnerProfilePage() {
     instagram_url: partnerProfile?.instagram_url || "",
     tiktok_url: partnerProfile?.tiktok_url || "",
     youtube_url: partnerProfile?.youtube_url || "",
+    preferred_language: profile?.preferred_language || document.documentElement.lang || "en",
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -378,8 +381,9 @@ export function PartnerProfilePage() {
       instagram_url: partnerProfile?.instagram_url || "",
       tiktok_url: partnerProfile?.tiktok_url || "",
       youtube_url: partnerProfile?.youtube_url || "",
+      preferred_language: profile?.preferred_language || document.documentElement.lang || "en",
     });
-  }, [partnerProfile]);
+  }, [partnerProfile, profile]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -388,7 +392,10 @@ export function PartnerProfilePage() {
     setIsSaving(true);
 
     try {
-      await updateCurrentPartnerPublicProfile(form);
+      await Promise.all([
+        updateCurrentPartnerPublicProfile(form),
+        updatePreferredLanguage(form.preferred_language),
+      ]);
       await refreshProfile();
       setMessage(t("partnerPortal.profile.saved", { defaultValue: "Partner profile updated." }));
     } catch (saveError) {
@@ -413,6 +420,16 @@ export function PartnerProfilePage() {
         <label><span>{t("partnerPortal.profile.instagram", { defaultValue: "Instagram URL" })}</span><input value={form.instagram_url} onChange={(event) => setForm((current) => ({ ...current, instagram_url: event.target.value }))} /></label>
         <label><span>{t("partnerPortal.profile.tiktok", { defaultValue: "TikTok URL" })}</span><input value={form.tiktok_url} onChange={(event) => setForm((current) => ({ ...current, tiktok_url: event.target.value }))} /></label>
         <label><span>{t("partnerPortal.profile.youtube", { defaultValue: "YouTube URL" })}</span><input value={form.youtube_url} onChange={(event) => setForm((current) => ({ ...current, youtube_url: event.target.value }))} /></label>
+        <label>
+          <span>{t("partnerPortal.profile.language", { defaultValue: "Language" })}</span>
+          <select value={form.preferred_language} onChange={(event) => setForm((current) => ({ ...current, preferred_language: event.target.value }))}>
+            {languages.map((language) => (
+              <option key={language.code} value={language.code}>
+                {language.flag} {language.nativeLabel}
+              </option>
+            ))}
+          </select>
+        </label>
         <label><span>{t("partnerPortal.profile.avatar", { defaultValue: "Avatar URL" })}</span><input value={form.avatar_url} onChange={(event) => setForm((current) => ({ ...current, avatar_url: event.target.value }))} /></label>
         <label><span>{t("partnerPortal.profile.bio", { defaultValue: "Bio" })}</span><input value={form.bio} onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))} /></label>
         {error ? <p className="portal-message is-error">{error}</p> : null}

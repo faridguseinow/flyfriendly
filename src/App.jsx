@@ -1,18 +1,24 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "./layout/Navbar/index.jsx";
 import Footer from "./layout/Footer/index.jsx";
 import AnimatedRoutes from "./routes/index.jsx";
-import { getPathWithoutLanguage } from "./i18n/path.js";
+import i18n from "./i18n/index.js";
+import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "./i18n/languages.js";
+import { getCurrentLanguageFromPath, getPathWithoutLanguage, replaceLanguageInPath } from "./i18n/path.js";
 import { captureReferralFromQueryString } from "./services/referralService.js";
+import { useAuth } from "./auth/AuthContext.jsx";
 
 function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
+  const { loading: authLoading, isAuthenticated, role, profile } = useAuth();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const syncedPreferredLanguageRef = useRef("");
   const normalizedPath = getPathWithoutLanguage(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin") || location.pathname.startsWith("/control-dashboard");
   const isPortalPage = normalizedPath.startsWith("/client") || normalizedPath.startsWith("/partner") || normalizedPath.startsWith("/auth");
@@ -24,6 +30,56 @@ function App() {
   useEffect(() => {
     captureReferralFromQueryString(location.search, location.pathname).catch(() => null);
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      syncedPreferredLanguageRef.current = "";
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (authLoading || !isAuthenticated) {
+      return;
+    }
+
+    if (!["client", "partner"].includes(role) || isAdminPage || normalizedPath === "/auth/reset-password") {
+      return;
+    }
+
+    const preferredLanguage = String(profile?.preferred_language || "").trim().toLowerCase();
+    if (!isSupportedLanguage(preferredLanguage)) {
+      return;
+    }
+
+    const syncSignature = `${profile?.id || "anonymous"}:${preferredLanguage}`;
+    if (syncedPreferredLanguageRef.current === syncSignature) {
+      return;
+    }
+
+    syncedPreferredLanguageRef.current = syncSignature;
+    setStoredLanguage(preferredLanguage);
+
+    if (i18n.language !== preferredLanguage) {
+      void i18n.changeLanguage(preferredLanguage).catch(() => null);
+    }
+
+    const currentLanguage = getCurrentLanguageFromPath(location.pathname) || DEFAULT_LANGUAGE;
+    if (currentLanguage !== preferredLanguage) {
+      navigate(replaceLanguageInPath(`${location.pathname}${location.search}${location.hash}`, preferredLanguage), { replace: true });
+    }
+  }, [
+    authLoading,
+    isAuthenticated,
+    role,
+    profile?.id,
+    profile?.preferred_language,
+    isAdminPage,
+    location.pathname,
+    location.search,
+    location.hash,
+    navigate,
+    normalizedPath,
+  ]);
 
   useEffect(() => {
     const handleScroll = () => {

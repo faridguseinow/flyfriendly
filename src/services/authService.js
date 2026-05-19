@@ -1,7 +1,10 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { buildPublicAuthUrl } from "../lib/siteUrl.js";
+import { getStoredLanguage, isSupportedLanguage } from "../i18n/languages.js";
 
 const PROFILE_SELECTS = [
+  "id, full_name, email, phone, role, preferred_language, created_at",
+  "id, full_name, email, phone, role, preferred_language",
   "id, full_name, email, phone, role, created_at",
   "id, full_name, email, phone, role",
 ];
@@ -31,6 +34,21 @@ function cleanObject(input) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
 
+function normalizeLanguageInput(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return isSupportedLanguage(normalized) ? normalized : null;
+}
+
+function getBrowserPreferredLanguage() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return normalizeLanguageInput(document.documentElement.lang)
+    || normalizeLanguageInput(getStoredLanguage())
+    || null;
+}
+
 function normalizeProfileInput(input = {}) {
   return {
     full_name: input.full_name ?? input.fullName,
@@ -38,6 +56,7 @@ function normalizeProfileInput(input = {}) {
     phone: input.phone,
     role: input.role,
     status: input.status,
+    preferred_language: normalizeLanguageInput(input.preferred_language ?? input.preferredLanguage ?? input.language) ?? undefined,
   };
 }
 
@@ -87,12 +106,14 @@ async function upsertProfile(client, payload) {
       full_name: payload.full_name,
       phone: payload.phone,
       role: payload.role,
+      preferred_language: payload.preferred_language,
     }),
     cleanObject({
       id: payload.id,
       email: payload.email,
       full_name: payload.full_name,
       phone: payload.phone,
+      preferred_language: payload.preferred_language,
     }),
   ];
 
@@ -368,6 +389,7 @@ export async function createProfileForCurrentUser(input = {}) {
     phone: normalized.phone ?? user.user_metadata?.phone ?? null,
     role: normalized.role ?? null,
     status: normalized.status || "active",
+    preferred_language: normalized.preferred_language ?? getBrowserPreferredLanguage() ?? null,
   });
 
   await upsertProfile(client, payload);
@@ -408,6 +430,7 @@ export async function updateCurrentProfile(input = {}) {
     full_name: normalized.full_name,
     email: normalized.email,
     phone: normalized.phone,
+    preferred_language: normalized.preferred_language,
   });
 
   if (!Object.keys(payload).length) {
@@ -424,6 +447,18 @@ export async function updateCurrentProfile(input = {}) {
   }
 
   return getCurrentProfile();
+}
+
+export async function updatePreferredLanguage(language) {
+  const normalizedLanguage = normalizeLanguageInput(language);
+
+  if (!normalizedLanguage) {
+    throw new Error("Unsupported language.");
+  }
+
+  return updateCurrentProfile({
+    preferred_language: normalizedLanguage,
+  });
 }
 
 export async function getCurrentPartnerProfile() {
