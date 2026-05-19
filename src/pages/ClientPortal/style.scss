@@ -910,10 +910,7 @@
   gap: 14px;
   border-radius: 24px;
   color: #fff;
-  background:
-    radial-gradient(circle at 78% 20%, rgba(255, 255, 255, 0.18), transparent 20%),
-    radial-gradient(circle at 96% 32%, rgba(255, 123, 149, 0.62), transparent 20%),
-    linear-gradient(112deg, #18459f 0%, #1f58c2 46%, #1187eb 82%, #ff6f7f 108%);
+  background:var(--primary);
 }
 
 .client-portal-claim-hero.is-compact {
