@@ -413,7 +413,7 @@
 }
 
 .client-portal-main {
-  padding: 28px 0;
+  padding: 0;
   min-width: 0;
   overflow-x: hidden;
 }
@@ -2610,6 +2610,7 @@
 
   .client-portal-main__viewport {
     min-height: calc(100svh - 156px);
+    padding: 16px 0 0;
   }
 
   .client-portal-mobile-nav {
@@ -2651,6 +2652,7 @@
 
   .client-portal-progress {
     grid-template-columns: repeat(6, minmax(0, 1fr));
+    margin-top: 16px;
   }
 
   .client-portal-payment-progress {
