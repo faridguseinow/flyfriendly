@@ -187,7 +187,7 @@ async function createOrUpdateAuthUser(
   password: string,
   metadata: Record<string, unknown>,
 ) {
-  const redirectTo = buildPublicAuthUrl("en", "/auth/reset-password");
+  const redirectTo = buildPublicAuthUrl("/auth/reset-password");
   const recoveryAttempt = await serviceRoleClient.auth.admin.generateLink({
     type: "recovery",
     email,

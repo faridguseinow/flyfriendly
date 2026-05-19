@@ -1,10 +1,11 @@
-export const DEFAULT_PUBLIC_SITE_URL = "https://flyfriendly.vercel.app";
+export const DEFAULT_PUBLIC_SITE_URL = "https://fly-friendly.com";
+export const DEFAULT_LOCAL_SITE_URL = "http://localhost:3000";
 
 function normalizeSiteUrl(value: string | undefined | null) {
   return String(value || "").trim().replace(/\/$/, "");
 }
 
-function isUnsafeLocalUrl(value: string) {
+function isLocalUrl(value: string) {
   try {
     const url = new URL(value);
     const host = String(url.hostname || "").toLowerCase();
@@ -24,15 +25,15 @@ export function getPublicSiteUrl() {
     || Deno.env.get("APP_URL"),
   );
 
-  if (envUrl && !isUnsafeLocalUrl(envUrl)) {
-    return envUrl;
+  if (envUrl) {
+    return isLocalUrl(envUrl) ? envUrl : envUrl;
   }
 
   return DEFAULT_PUBLIC_SITE_URL;
 }
 
-export function buildPublicAuthUrl(language: string, path: string) {
-  const locale = String(language || "en").trim().toLowerCase() || "en";
+export function buildPublicAuthUrl(languageOrPath: string, maybePath?: string) {
+  const path = maybePath ?? languageOrPath;
   const suffix = String(path || "").startsWith("/") ? path : `/${path || ""}`;
-  return `${getPublicSiteUrl()}/${locale}${suffix}`;
+  return `${getPublicSiteUrl()}${suffix}`;
 }

@@ -71,7 +71,7 @@ type AirportRow = {
 };
 
 function normalizeRecoveryActionLink(actionLink: string | null | undefined, language: string) {
-  const canonicalUrl = buildPublicAuthUrl(language, "/auth/reset-password");
+  const canonicalUrl = buildPublicAuthUrl("/auth/reset-password");
   const rawLink = String(actionLink || "").trim();
 
   if (!rawLink) {
@@ -279,7 +279,7 @@ async function createOrRecoverPortalAccount(
   data: ClaimPayload,
 ): Promise<PortalAccountResult> {
   const email = String(data.email || "").trim().toLowerCase();
-  const redirectTo = buildPublicAuthUrl(language, "/auth/reset-password");
+  const redirectTo = buildPublicAuthUrl("/auth/reset-password");
 
   const recoveryAttempt = await supabase.auth.admin.generateLink({
     type: "recovery",
@@ -531,7 +531,7 @@ async function sendConfirmationEmail(
     leadId,
     portalActionUrl: accessLink,
     portalActionLabel: isNewUser ? "Create password" : "Access your portal",
-    portalLoginUrl: buildPublicAuthUrl(language, "/auth/login"),
+    portalLoginUrl: buildPublicAuthUrl("/auth/login"),
   };
 
   const response = await fetch(`${supabaseUrl.replace(/\/$/, "")}/functions/v1/send-claim-confirmation`, {

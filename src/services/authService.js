@@ -242,10 +242,7 @@ export async function signOut() {
 
 export async function resetPassword(email) {
   const client = requireSupabase();
-  const preferredLanguage = typeof window !== "undefined"
-    ? document.documentElement.lang || localStorage.getItem("fly-friendly-language") || "en"
-    : "en";
-  const redirectTo = buildPublicAuthUrl(preferredLanguage, "/auth/reset-password");
+  const redirectTo = buildPublicAuthUrl("/auth/reset-password");
 
   const { data, error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
 

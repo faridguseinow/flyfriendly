@@ -170,7 +170,7 @@ function buildCandidate(base: string, index: number, limit: number) {
 }
 
 function normalizeRecoveryActionLink(actionLink: string | null | undefined, language: string) {
-  const canonicalUrl = buildPublicAuthUrl(language, "/auth/reset-password");
+  const canonicalUrl = buildPublicAuthUrl("/auth/reset-password");
   const rawLink = String(actionLink || "").trim();
 
   if (!rawLink) {
@@ -338,7 +338,7 @@ async function createOrRecoverPortalAccount(
   application: PartnerApplicationRow,
 ): Promise<PortalAccountResult> {
   const email = String(application.email || "").trim().toLowerCase();
-  const redirectTo = buildPublicAuthUrl(language, "/auth/reset-password");
+  const redirectTo = buildPublicAuthUrl("/auth/reset-password");
 
   const recoveryAttempt = await supabase.auth.admin.generateLink({
     type: "recovery",

@@ -375,23 +375,22 @@ Exact next action:
 Current code expects:
 
 - Google OAuth redirect to the public site origin
-- password recovery redirect to localized routes like `/<lang>/auth/reset-password`
+- password recovery redirect to neutral routes like `/auth/reset-password`
 
 Manual Auth config checks in Supabase:
 
 1. Set `Site URL` to the production public origin
 2. Add redirect URLs for:
    - the production origin itself
-   - each localized reset-password route you actually serve
+   - the `www` production origin if you keep it live
+   - neutral auth routes only
 
 Minimum examples:
 
 - `https://fly-friendly.com`
-- `https://fly-friendly.com/en/auth/reset-password`
-- `https://fly-friendly.com/ru/auth/reset-password`
-- `https://fly-friendly.com/az/auth/reset-password`
-
-If you use the additional languages present in `src/i18n/languages.js`, add those localized reset-password URLs too.
+- `https://fly-friendly.com/auth/login`
+- `https://fly-friendly.com/auth/reset-password`
+- `https://www.fly-friendly.com/*`
 
 Consistency rule:
 

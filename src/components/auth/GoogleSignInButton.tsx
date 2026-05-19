@@ -1,9 +1,9 @@
 import { useState, type ButtonHTMLAttributes } from "react";
 import { useTranslation } from "react-i18next";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase.js";
+import { getPublicSiteUrl } from "../../lib/siteUrl.js";
 import "./GoogleSignInButton.scss";
 
-const DEFAULT_REDIRECT_TO = "https://flyfriendly.vercel.app";
 const GOOGLE_OAUTH_PENDING_KEY = "flyfriendly.googleOAuth.pending";
 
 type GoogleSignInButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type" | "onClick"> & {
@@ -35,7 +35,7 @@ function GoogleIcon() {
 }
 
 export function GoogleSignInButton({
-  redirectTo = DEFAULT_REDIRECT_TO,
+  redirectTo = getPublicSiteUrl(),
   disabled = false,
   className = "",
   onAuthError,

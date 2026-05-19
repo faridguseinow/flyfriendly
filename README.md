@@ -28,7 +28,9 @@ supabase functions deploy send-claim-confirmation
 
 ```bash
 supabase secrets set RESEND_API_KEY=your_resend_api_key
+supabase secrets set PUBLIC_SITE_URL=https://fly-friendly.com
 supabase secrets set SITE_URL=https://fly-friendly.com
+supabase secrets set APP_URL=https://fly-friendly.com
 supabase secrets set MAIL_FROM="Fly Friendly <info@fly-friendly.com>"
 supabase secrets set MAIL_REPLY_TO=info@fly-friendly.com
 supabase secrets set LEAD_ALERT_TO=info@fly-friendly.com

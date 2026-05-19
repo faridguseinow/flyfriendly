@@ -133,7 +133,7 @@ async function sendResendEmail({
 
 export async function sendPartnerApplicationReceivedEmail(application: ApplicationEmailPayload) {
   const language = normalizeLanguage(application.preferred_language);
-  const loginUrl = buildPublicAuthUrl(language, "/auth/login");
+  const loginUrl = buildPublicAuthUrl("/auth/login");
   const displayName = normalizeString(application.full_name) || "there";
   const publicName = normalizeString(application.public_name) || "your brand";
 
@@ -191,8 +191,8 @@ export async function sendPartnerApprovalEmail({
 }) {
   const language = normalizeLanguage(application.preferred_language);
   const siteUrl = getPublicSiteUrl();
-  const loginUrl = buildPublicAuthUrl(language, "/auth/login");
-  const actionUrl = normalizeString(account.accessLink) || buildPublicAuthUrl(language, "/auth/reset-password");
+  const loginUrl = buildPublicAuthUrl("/auth/login");
+  const actionUrl = normalizeString(account.accessLink) || buildPublicAuthUrl("/auth/reset-password");
   const actionLabel = account.isNewUser ? "Create password" : "Reset password";
   const displayName = normalizeString(application.full_name) || "there";
   const partnerName = normalizeString(partner.public_name) || normalizeString(partner.name) || "Fly Friendly Partner";
@@ -256,7 +256,7 @@ export async function sendPartnerRejectionEmail({
   notes?: string | null;
 }) {
   const language = normalizeLanguage(application.preferred_language);
-  const loginUrl = buildPublicAuthUrl(language, "/auth/login");
+  const loginUrl = buildPublicAuthUrl("/auth/login");
   const displayName = normalizeString(application.full_name) || "there";
   const safeReason = normalizeString(rejectionReason);
   const safeNotes = normalizeString(notes);
@@ -312,7 +312,7 @@ export async function sendPartnerSuspendedEmail({
   notes?: string | null;
 }) {
   const language = normalizeLanguage(preferredLanguage);
-  const loginUrl = buildPublicAuthUrl(language, "/auth/login");
+  const loginUrl = buildPublicAuthUrl("/auth/login");
   const displayName = normalizeString(fullName) || "there";
   const partnerName = normalizeString(partner.public_name) || normalizeString(partner.name) || "Fly Friendly Partner";
   const safeNotes = normalizeString(notes);
@@ -362,7 +362,7 @@ export async function sendPartnerReactivatedEmail({
 }) {
   const language = normalizeLanguage(preferredLanguage);
   const siteUrl = getPublicSiteUrl();
-  const loginUrl = buildPublicAuthUrl(language, "/auth/login");
+  const loginUrl = buildPublicAuthUrl("/auth/login");
   const displayName = normalizeString(fullName) || "there";
   const partnerName = normalizeString(partner.public_name) || normalizeString(partner.name) || "Fly Friendly Partner";
   const referralPath = normalizeString(partner.referral_link) || "";

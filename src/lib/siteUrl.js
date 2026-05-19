@@ -1,4 +1,5 @@
-const DEFAULT_PUBLIC_SITE_URL = "https://flyfriendly.vercel.app";
+const DEFAULT_PUBLIC_SITE_URL = "https://fly-friendly.com";
+const DEFAULT_LOCAL_SITE_URL = "http://localhost:3000";
 
 function normalizeSiteUrl(value) {
   const url = String(value || "").trim();
@@ -9,7 +10,7 @@ function normalizeSiteUrl(value) {
   return url.replace(/\/$/, "");
 }
 
-function isUnsafeLocalUrl(value) {
+function isLocalUrl(value) {
   try {
     const url = new URL(value);
     const host = String(url.hostname || "").toLowerCase();
@@ -22,6 +23,15 @@ function isUnsafeLocalUrl(value) {
   }
 }
 
+function getBrowserLocalOrigin() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const origin = normalizeSiteUrl(window.location.origin);
+  return origin && isLocalUrl(origin) ? origin : "";
+}
+
 export function getPublicSiteUrl() {
   const envUrl = normalizeSiteUrl(
     import.meta.env.VITE_PUBLIC_SITE_URL
@@ -29,15 +39,15 @@ export function getPublicSiteUrl() {
       || import.meta.env.VITE_APP_URL,
   );
 
-  if (envUrl && !isUnsafeLocalUrl(envUrl)) {
-    return envUrl;
+  if (envUrl) {
+    return isLocalUrl(envUrl) ? (getBrowserLocalOrigin() || DEFAULT_LOCAL_SITE_URL) : envUrl;
   }
 
-  return DEFAULT_PUBLIC_SITE_URL;
+  return getBrowserLocalOrigin() || DEFAULT_PUBLIC_SITE_URL;
 }
 
-export function buildPublicAuthUrl(language, path) {
-  const locale = String(language || "en").trim().toLowerCase() || "en";
+export function buildPublicAuthUrl(languageOrPath, maybePath) {
+  const path = maybePath ?? languageOrPath;
   const suffix = String(path || "").startsWith("/") ? path : `/${path || ""}`;
-  return `${getPublicSiteUrl()}/${locale}${suffix}`;
+  return `${getPublicSiteUrl()}${suffix}`;
 }
