@@ -2161,7 +2161,7 @@
   left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
   bottom: max(12px, env(safe-area-inset-bottom));
-  z-index: 65;
+  z-index: 10;
   isolation: isolate;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
