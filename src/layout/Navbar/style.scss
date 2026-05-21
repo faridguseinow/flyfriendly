@@ -8,7 +8,7 @@
 
 .navbar {
   width: min(var(--site-max-width), 100%);
-  min-height: 76px;
+  min-height: 64px;
   margin: 0 auto;
   padding: 10px 14px 10px 18px;
   display: flex;
@@ -96,7 +96,7 @@
   place-items: center;
   border: 1px solid rgba(226, 236, 248, 0.96);
   border-radius: 999px;
-  color: #1f2937;
+  color: #1f2937c9;
   background: rgba(255, 255, 255, 0.82);
   cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, color 180ms ease;
@@ -341,7 +341,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 999px;
   color: #1f2937;
   background: #fff;
@@ -349,8 +349,10 @@
 }
 
 .language-current__flag {
-  font-size: 18px;
-  line-height: 1;
+  width: 24px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 5px;
 }
 
 .language-current__code {
@@ -458,8 +460,10 @@
 }
 
 .language-option__flag {
-  font-size: 22px;
-  line-height: 1;
+  width: 28px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 5px;
 }
 
 .language-option__copy {
@@ -495,6 +499,7 @@
   letter-spacing: 0.06em;
 }
 
+.mobile-language-picker,
 .menu-toggle,
 .mobile-menu {
   display: none;
@@ -545,11 +550,57 @@
     display: none;
   }
 
+  .mobile-language-picker {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    display: block;
+    background: none;
+    text-align: left;
+  }
+
+  .mobile-language-picker.is-compact {
+    z-index: 3;
+  }
+
+  .mobile-language-picker.is-compact .mobile-language-picker__trigger {
+    min-height: 48px;
+    padding: 0 12px;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .mobile-language-picker.is-compact .mobile-language-picker__current {
+    gap: 8px;
+  }
+
+  .mobile-language-picker.is-compact .mobile-language-picker__current strong {
+    font-size: 14px;
+    line-height: 18px;
+    color: #0f172a;
+  }
+
+  .mobile-language-picker.is-compact .mobile-language-picker__panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    left: auto;
+    width: min(360px, calc(100vw - 40px));
+    margin-top: 0;
+    padding: 14px;
+    border: 0;
+    border-radius: 20px;
+    background: #fff;
+  }
+
   .menu-toggle {
     position: relative;
-    flex: 0 0 52px;
-    width: 52px;
-    height: 52px;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -563,6 +614,18 @@
       outline: 3px solid rgba(17, 152, 255, 0.24);
       outline-offset: 3px;
     }
+  }
+
+  .navbar {
+    justify-content: flex-start;
+  }
+
+  .brand {
+    margin-right: auto;
+  }
+
+  .mobile-language-picker.is-compact {
+    margin-right: 6px;
   }
 
   .menu-toggle__icon {
@@ -752,6 +815,38 @@
     }
   }
 
+  .mobile-menu__account-row {
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 60px;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .mobile-menu__account-row .mobile-menu__account-card {
+    margin-bottom: 0;
+  }
+
+  .mobile-menu__account-signout {
+    min-height: 92px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(226, 236, 248, 0.94);
+    border-radius: 22px;
+    color: var(--primary);
+    background: rgba(255, 255, 255, 0.88);
+    cursor: pointer;
+    transition: transform 180ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      border-color: rgba(17, 152, 255, 0.28);
+      color: var(--primary-dark);
+      background: #fff;
+    }
+  }
+
   .mobile-menu__account-avatar {
     width: 60px;
     height: 60px;
@@ -795,7 +890,7 @@
     }
   }
 
-  .mobile-language-picker {
+  .mobile-menu .mobile-language-picker {
     margin: 18px 0 28px;
     padding: 0 8px;
     background: none;
@@ -945,8 +1040,10 @@
   }
 
   .mobile-language-picker__flag {
-    font-size: 20px;
-    line-height: 1;
+    width: 24px;
+    height: 18px;
+    flex: 0 0 auto;
+    border-radius: 5px;
   }
 
   .mobile-language-picker__copy {
@@ -1049,6 +1146,10 @@
 }
 
 @media (max-width: 620px) {
+  .mobile-language-picker.is-compact .mobile-language-picker__trigger {
+    min-height: 44px;
+    padding: 0 10px;
+  }
 
   .mobile-language-picker__trigger {
     min-height: 48px;
@@ -1056,7 +1157,8 @@
   }
 
   .mobile-language-picker__flag {
-    font-size: 18px;
+    width: 22px;
+    height: 16px;
   }
 
   .mobile-language-picker__copy {

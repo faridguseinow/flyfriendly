@@ -126,6 +126,13 @@
     line-height: 22px;
     font-weight: 400;
   }
+
+  a {
+    color: var(--primary-dark);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 
 .auth-links {

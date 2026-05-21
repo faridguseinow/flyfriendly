@@ -44,6 +44,13 @@
   line-height: 20px;
 }
 
+.claim-flag {
+  width: 22px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+}
+
 .claim-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 390px;
@@ -168,7 +175,7 @@
 
 .claim-step.is-done span {
   color: #fff;
-  background: linear-gradient(180deg, #1fa6ff 0%, #0489e4 100%);
+  background: var(--primary);
 }
 
 .claim-form,
@@ -421,6 +428,47 @@
   }
 }
 
+.claim-phone-field {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  color: var(--primary);
+  background: #fff;
+  min-width: 0;
+
+  input {
+    width: 100%;
+    min-width: 0;
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: 0;
+    color: #20242e;
+    background: transparent;
+    font-size: 16px;
+    line-height: 22px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input::placeholder {
+    color: #989fab;
+  }
+}
+
+.claim-phone-field svg {
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+
+.claim-phone-field.is-error {
+  border-color: #bd1f1f;
+}
+
 .claim-date-picker {
   position: relative;
 }
@@ -449,16 +497,14 @@
 }
 
 .claim-date-picker__panel {
-  position: absolute;
-  top: calc(100% + 12px);
-  left: 0;
-  z-index: 30;
-  width: min(340px, 100%);
+  position: fixed;
+  z-index: 1300;
   padding: 18px;
   border: 1px solid rgba(201, 231, 251, 0.95);
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(16px);
+  overflow-y: auto;
 }
 
 .claim-date-picker__header {
@@ -512,8 +558,7 @@
     line-height: 16px;
     font-weight: 700;
     text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.02em;
   }
 }
 
@@ -550,9 +595,8 @@
   }
 
   &.is-selected {
-    border-color: var(--primary);
     color: #fff;
-    background: linear-gradient(180deg, #1fa6ff 0%, #0588e3 100%);
+    background: var(--primary);
   }
 }
 
@@ -710,24 +754,12 @@
   line-height: 22px;
   background: #fff;
   transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
-
-  input {
-    width: 20px;
-    height: 20px;
-    margin: 0;
-    flex: 0 0 auto;
-    appearance: none;
-    -webkit-appearance: none;
-    border: 1.5px solid #8fa1b8;
-    background: #fff;
-    transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
-    cursor: pointer;
-  }
-
 }
 
 .claim-radio {
   input {
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
   }
 
@@ -743,22 +775,6 @@
 }
 
 .claim-check {
-  input {
-    border-radius: 6px;
-  }
-
-  input:checked {
-    border-color: var(--primary);
-    background-color: var(--primary);
-    background-image:
-      linear-gradient(-45deg, transparent 47%, #fff 47% 57%, transparent 57%),
-      linear-gradient(45deg, transparent 38%, #fff 38% 48%, transparent 48%),
-      linear-gradient(135deg, transparent 55%, #fff 55% 65%, transparent 65%);
-    background-size: 11px 11px, 8px 8px, 14px 14px;
-    background-position: 6px 8px, 4px 10px, 8px 4px;
-    background-repeat: no-repeat;
-  }
-
   &:has(input:checked) {
     border-color: #c9e4fb;
     background: #f7fbff;
@@ -1382,6 +1398,11 @@
     grid-template-columns: 1fr;
   }
 
+  .claim-phone-field {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 10px;
+  }
+
   .claim-option-grid {
     grid-template-columns: 1fr;
   }
@@ -1391,9 +1412,6 @@
   }
 
   .claim-date-picker__panel {
-    left: 0;
-    right: 0;
-    width: 100%;
     padding: 16px;
   }
 

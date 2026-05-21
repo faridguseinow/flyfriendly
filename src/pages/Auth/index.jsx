@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Lock, Mail, Phone, User } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import { GoogleSignInButton } from "../../components/auth/GoogleSignInButton";
@@ -229,7 +229,14 @@ export function RegisterPage() {
         <label className="auth-checkbox">
           <input type="checkbox" checked={form.acceptedLegal} onChange={(event) => setForm((current) => ({ ...current, acceptedLegal: event.target.checked }))} />
           <span>
-            {t("auth.register.legalText", { defaultValue: "I agree to the Terms of Use and Privacy Policy." })}
+            <Trans
+              i18nKey="auth.register.legalText"
+              defaults="I agree to the <termsLink>Terms of Use</termsLink> and <privacyLink>Privacy Policy</privacyLink>."
+              components={{
+                termsLink: <LocalizedLink to="/terms" />,
+                privacyLink: <LocalizedLink to="/privacyPolicy" />,
+              }}
+            />
           </span>
         </label>
         {error ? <p className="auth-message is-error">{error}</p> : null}

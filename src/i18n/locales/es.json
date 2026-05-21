@@ -56,7 +56,8 @@
     "delayedFlights": "Vuelos retrasados",
     "cancelledFlights": "Vuelos cancelados",
     "missedConnections": "Perdidos conexiones",
-    "copyright": "©2026 Fly Friendly"
+    "copyright": "© {{year}} Fly Friendly. Todos los derechos reservados.",
+    "siteCreatedBy": "Sitio web creado por Farid Huseynov."
   },
   "claimModal": {
     "signupTitle": "Crear cuenta de socio",
@@ -189,7 +190,7 @@
   },
   "home": {
     "claimBoxTitle": "Consulta y reclama tu indemnización.",
-    "claimBoxDestinationPlaceholder": "Aeropuerto, ciudad o país de destino",
+    "claimBoxDestinationPlaceholder": "Aeropuerto de llegada",
     "claimBoxNoAirportsFound": "No se encontraron aeropuertos",
     "claimBoxFree": "es gratis",
     "claimBoxMinutes": "Toma minutos",
@@ -198,6 +199,7 @@
     "heroTitle": "¿Vuelo retrasado o cancelado?",
     "heroTitleStrong": "Reclama hasta 600€ ahora.",
     "heroText": "Luchamos por tu derecho a una compensación. Envíe su reclamo en minutos y permítanos manejar la aerolínea.",
+    "scrollBannerTitle": "Solicita hasta 600 € de compensación por un vuelo retrasado o cancelado.",
     "trustLabel": "Alcance global",
     "trustTitle": "Un socio confiable en todo el mundo",
     "benefits": [
@@ -362,7 +364,8 @@
         "question": "¿Están seguros mis datos personales?",
         "answer": "Solo utilizamos su información para procesar su reclamo y comunicarnos con las partes relevantes. Los datos se comparten solo cuando es necesario para obtener una compensación."
       }
-    ]
+    ],
+    "scrollBannerHide": "Ocultar"
   },
   "referral": {
     "heroTag": "# ForCreators&Influencers",
@@ -491,8 +494,8 @@
     "emailError": "Введите корректный dirección de correo electrónico",
     "eligibility": {
       "whereDidYouFly": "¿Dónde voló?",
-      "departurePlaceholder": "Aeropuerto, ciudad o país de salida",
-      "arrivalPlaceholder": "Aeropuerto, ciudad o país de llegada",
+      "departurePlaceholder": "Aeropuerto de salida",
+      "arrivalPlaceholder": "Aeropuerto de llegada",
       "noAirportsFound": "No se encontraron aeropuertos",
       "whichAirline": "¿Con qué aerolínea voló?",
       "searchAirline": "Buscar aerolínea",
@@ -507,7 +510,11 @@
       "scheduledDepartureDate": "¿Cuál era su fecha de salida programada?",
       "directFlight": "¿Fue un vuelo directo?",
       "directYes": "Sí, ese fue directo",
-      "directNo": "No, ese no fue directo"
+      "directNo": "No, ese no fue directo",
+      "connectionCity": "¿En qué ciudad hizo la escala?",
+      "connectionCityPlaceholder": "Ciudad de escala",
+      "connectionCityHelp": "Indique la ciudad donde hizo la conexión.",
+      "connectionCityRequired": "Por favor, indique la ciudad donde hizo la conexión."
     },
     "contact": {
       "title": "Por favor, ingresa tus datos de contacto.",
@@ -519,9 +526,11 @@
       "addressPlaceholder": "Ingrese su ciudad",
       "optional": "Opcional",
       "phone": "Número de contacto (preferiblemente WhatsApp)",
-      "phonePlaceholder": "Ej.: +90 5xx xxx xx xx",
+      "phonePlaceholder": "P. ej.: 050 XXX XX XX",
       "hasWhatsapp": "Sí, este número tiene Whatsapp.",
-      "requiredToProceed": "Requerido para continuar."
+      "requiredToProceed": "Requerido para continuar.",
+      "phoneSearchPlaceholder": "Buscar país",
+      "phoneSearchEmpty": "No se encontraron países coincidentes."
     },
     "documents": {
       "title": "Carga segura de documentos",
@@ -600,6 +609,13 @@
       "emailFailed": "Reclamación enviada, pero el correo electrónico de confirmación no se pudo enviar automáticamente.",
       "customerFallback": "el cliente",
       "removeFile": "Quitar {{file}}"
+    },
+    "datePicker": {
+      "placeholder": "Selecciona una fecha",
+      "previousMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente",
+      "clear": "Borrar",
+      "today": "Hoy"
     }
   },
   "legal": {
@@ -1013,6 +1029,61 @@
     "placeholders": {
       "email": "you@example.com",
       "password": "Introduce tu contraseña"
+    },
+    "register": {
+      "legalText": "Acepto los <termsLink>Términos de uso</termsLink> y la <privacyLink>Política de privacidad</privacyLink>.",
+      "legalRequired": "Por favor, acepta los términos y la política de privacidad."
+    }
+  },
+  "partnerApply": {
+    "loadError": "No se pudo cargar el estado de la solicitud de socio.",
+    "loading": "Cargando solicitud de socio...",
+    "receivedTitle": "Solicitud recibida",
+    "receivedText": "Gracias. Hemos recibido su solicitud de socio y la revisaremos antes de crear una cuenta de socio, un código de referencia o acceso al portal.",
+    "fullName": "Nombre completo",
+    "email": "Correo electrónico",
+    "publicName": "Nombre público",
+    "status": "Estado",
+    "receivedNote": "La aprobación la gestiona por separado el equipo de Fly Friendly. Enviar este formulario no otorga acceso al portal de socios.",
+    "backToProgram": "Volver al programa de socios",
+    "backToDashboard": "Volver al panel",
+    "backToLogin": "Volver al inicio de sesión",
+    "title": "Solicita convertirte en socio de Fly Friendly",
+    "text": "Cuéntanos sobre tu audiencia, tus canales y tu encaje en el mercado. Revisaremos tu solicitud antes de crear una cuenta de socio o acceso de referencia.",
+    "resubmitHint": "Tu solicitud anterior ya no está activa. Puedes enviar una nueva abajo.",
+    "phone": "Teléfono",
+    "country": "País",
+    "preferredLanguage": "Idioma preferido",
+    "selectLanguage": "Seleccionar idioma",
+    "primaryPlatform": "Plataforma principal",
+    "selectPlatform": "Seleccionar plataforma",
+    "audienceSize": "Tamaño de la audiencia",
+    "audienceSizePlaceholder": "p. ej. 50 mil de alcance mensual",
+    "audienceCountries": "Países de la audiencia",
+    "audienceCountriesPlaceholder": "Enumera los países separados por comas o saltos de línea",
+    "website": "URL del sitio web",
+    "instagram": "URL de Instagram",
+    "tiktok": "URL de TikTok",
+    "youtube": "URL de YouTube",
+    "niche": "Nicho o tema",
+    "contentLinks": "Enlaces de contenido",
+    "contentLinksPlaceholder": "Pega enlaces de contenido separados por comas o saltos de línea",
+    "reason": "¿Por qué quieres unirte?",
+    "consent": "Confirmo que la información proporcionada es correcta y acepto ser contactado sobre el programa Fly Friendly Partner.",
+    "legalText": "Acepto los <termsLink>Términos de uso</termsLink> y la <privacyLink>Política de privacidad</privacyLink>.",
+    "legalRequired": "Acepta los términos de uso y la política de privacidad.",
+    "submitting": "Enviando...",
+    "submit": "Enviar solicitud",
+    "error": "No se pudo enviar tu solicitud.",
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "blog": "Blog",
+      "newsletter": "Boletín",
+      "travelAgency": "Agencia de viajes",
+      "community": "Comunidad",
+      "other": "Otro"
     }
   }
 }

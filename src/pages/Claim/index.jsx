@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -17,6 +18,7 @@ import {
   Plane,
   PlaneLanding,
   PlaneTakeoff,
+  Search,
   ShieldCheck,
   User,
   X,
@@ -63,6 +65,144 @@ const languageToLocale = {
 };
 const CLAIM_DRAFT_STORAGE_KEY = "flyFriendlyClaim";
 const CLAIM_DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
+const PHONE_COUNTRY_OPTIONS = [
+  { code: "az", iso: "AZ", label: "Azerbaijan", nativeLabel: "Azərbaycan", dialCode: "+994", localLength: 9, placeholder: "50 123 45 67" },
+  { code: "ru", iso: "RU", label: "Russia", nativeLabel: "Россия", dialCode: "+7", localLength: 10, placeholder: "912 345 67 89" },
+  { code: "tr", iso: "TR", label: "Turkey", nativeLabel: "Türkiye", dialCode: "+90", localLength: 10, placeholder: "532 123 45 67" },
+  { code: "ge", iso: "GE", label: "Georgia", nativeLabel: "საქართველო", dialCode: "+995", localLength: 9, placeholder: "555 12 34 56" },
+  { code: "ua", iso: "UA", label: "Ukraine", nativeLabel: "Україна", dialCode: "+380", localLength: 9, placeholder: "50 123 45 67" },
+  { code: "gb", iso: "GB", label: "United Kingdom", nativeLabel: "United Kingdom", dialCode: "+44", minLength: 9, maxLength: 10, placeholder: "7400 123456" },
+  { code: "de", iso: "DE", label: "Germany", nativeLabel: "Deutschland", dialCode: "+49", minLength: 10, maxLength: 11, placeholder: "1512 3456789" },
+  { code: "pl", iso: "PL", label: "Poland", nativeLabel: "Polska", dialCode: "+48", localLength: 9, placeholder: "512 345 678" },
+  { code: "it", iso: "IT", label: "Italy", nativeLabel: "Italia", dialCode: "+39", localLength: 10, placeholder: "312 345 6789" },
+  { code: "es", iso: "ES", label: "Spain", nativeLabel: "España", dialCode: "+34", localLength: 9, placeholder: "612 34 56 78" },
+  { code: "fr", iso: "FR", label: "France", nativeLabel: "France", dialCode: "+33", localLength: 9, placeholder: "6 12 34 56 78" },
+  { code: "pt", iso: "PT", label: "Portugal", nativeLabel: "Portugal", dialCode: "+351", localLength: 9, placeholder: "912 345 678" },
+  { code: "us", iso: "US", label: "United States", nativeLabel: "United States", dialCode: "+1", localLength: 10, placeholder: "202 555 0186" },
+];
+
+function getPhoneCountryOption(countryCode) {
+  return PHONE_COUNTRY_OPTIONS.find((option) => option.code === countryCode) || PHONE_COUNTRY_OPTIONS[0];
+}
+
+function normalizeDialCode(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 4);
+  return digits ? `+${digits}` : "";
+}
+
+function phoneDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function splitByPattern(digits, pattern) {
+  const parts = [];
+  let offset = 0;
+
+  pattern.forEach((size) => {
+    if (offset >= digits.length) {
+      return;
+    }
+
+    const chunk = digits.slice(offset, offset + size);
+    if (chunk) {
+      parts.push(chunk);
+    }
+    offset += size;
+  });
+
+  if (offset < digits.length) {
+    parts.push(digits.slice(offset));
+  }
+
+  return parts.filter(Boolean);
+}
+
+function formatLocalPhoneNumber(rawValue, countryCode) {
+  const digits = phoneDigits(rawValue);
+  const option = getPhoneCountryOption(countryCode);
+
+  let pattern = [3, 3, 2, 2];
+  if (option.code === "az" || option.code === "ua") pattern = [2, 3, 2, 2];
+  if (option.code === "ru" || option.code === "tr") pattern = [3, 3, 2, 2];
+  if (option.code === "ge") pattern = [3, 2, 2, 2];
+  if (option.code === "fr") pattern = [1, 2, 2, 2, 2];
+  if (option.code === "gb") pattern = [4, 3, 3];
+
+  return splitByPattern(digits, pattern).join(" ");
+}
+
+function buildFullPhoneNumber(dialCode, localNumber) {
+  const normalizedDialCode = normalizeDialCode(dialCode);
+  const localDigits = phoneDigits(localNumber);
+
+  return normalizedDialCode && localDigits ? `${normalizedDialCode}${localDigits}` : normalizedDialCode || localDigits;
+}
+
+function parseStoredPhone(phone, phoneCountry = "", phoneDialCode = "", phoneLocalNumber = "") {
+  if (phoneCountry || phoneDialCode || phoneLocalNumber) {
+    const composed = String(phone || buildFullPhoneNumber(phoneDialCode, phoneLocalNumber) || phoneLocalNumber || "").trim();
+    return {
+      phoneCountry: phoneCountry || "az",
+      phoneDialCode: normalizeDialCode(phoneDialCode) || "",
+      phoneLocalNumber: composed,
+      phone: composed,
+    };
+  }
+
+  const raw = String(phone || "").trim();
+  if (!raw) {
+    return {
+      phoneCountry: "az",
+      phoneDialCode: "",
+      phoneLocalNumber: "",
+      phone: "",
+    };
+  }
+
+  return {
+    phoneCountry: "az",
+    phoneDialCode: "",
+    phoneLocalNumber: raw,
+    phone: raw,
+  };
+}
+
+function getPhoneError(data, t) {
+  const phone = String(data.phone || data.phoneLocalNumber || "").trim();
+  const normalized = phone.replace(/[^\d+()\-\s]/g, "");
+  const digits = phoneDigits(normalized);
+
+  if (!digits) {
+    return t("claim.contact.phoneInvalid", { defaultValue: "Please enter a valid phone number." });
+  }
+
+  if (digits.length < 7 || digits.length > 15) {
+    return t("claim.contact.phoneInvalid", { defaultValue: "Please enter a valid phone number." });
+  }
+
+  if (normalized.startsWith("+") && !/^\+[\d()\-\s]+$/.test(normalized)) {
+    return t("claim.contact.phoneInvalid", { defaultValue: "Please enter a valid phone number." });
+  }
+
+  return "";
+}
+
+function normalizeAirportValue(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function hasSameAirportSelection(data) {
+  const departureId = String(data?.departureAirportId || "").trim();
+  const destinationId = String(data?.destinationAirportId || "").trim();
+
+  if (departureId && destinationId) {
+    return departureId === destinationId;
+  }
+
+  const departureValue = normalizeAirportValue(data?.departure);
+  const destinationValue = normalizeAirportValue(data?.destination);
+  return Boolean(departureValue && destinationValue && departureValue === destinationValue);
+}
 
 function clearStoredClaimDraft() {
   if (typeof window === "undefined") return;
@@ -101,10 +241,11 @@ function readStoredClaimDraft() {
       airlineId: parsed?.airlineId || null,
       airlineSource: parsed?.airlineSource || null,
       date: parsed?.date || "",
-      delayDuration: parsed?.delayDuration || "",
-      direct: parsed?.direct || "",
-      preferredLanguage: parsed?.preferredLanguage || null,
-    };
+    delayDuration: parsed?.delayDuration || "",
+    direct: parsed?.direct || "",
+    connectionCity: parsed?.connectionCity || "",
+    preferredLanguage: parsed?.preferredLanguage || null,
+  };
   } catch {
     clearStoredClaimDraft();
     return {};
@@ -129,6 +270,7 @@ function buildStoredClaimDraft(data, stage, currentLanguageCode) {
     date: data.date || "",
     delayDuration: data.delayDuration || "",
     direct: data.direct || "",
+    connectionCity: data.connectionCity || "",
     preferredLanguage: data.preferredLanguage || currentLanguageCode || null,
   };
 }
@@ -143,7 +285,8 @@ function hasStoredClaimDraftContent(draft) {
       || draft.airlineId
       || draft.date
       || draft.delayDuration
-      || draft.direct,
+      || draft.direct
+      || draft.connectionCity,
   );
 }
 
@@ -233,7 +376,7 @@ function ClaimHeader() {
         <img src={logoImage} alt="" />
         <img src={logoText} alt="Fly Friendly" />
       </LocalizedLink>
-      <span className="claim-lang"><span className="claim-flag" aria-hidden="true">{currentLanguage.flag}</span> {currentLanguage.code.toUpperCase()}</span>
+      <span className="claim-lang"><CountryFlag code={currentLanguage.countryCode} label={currentLanguage.label} className="claim-flag" /> {currentLanguage.code.toUpperCase()}</span>
     </header>
   );
 }
@@ -305,13 +448,35 @@ function Field({
   );
 }
 
+function PhoneField({ data, onChange, error = "", t }) {
+  return (
+    <label className={`claim-phone-field claim-phone-field--plain${error ? " is-error" : ""}`}>
+        <Phone size={18} strokeWidth={1.8} aria-hidden="true" />
+        <input
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          value={data.phone || ""}
+          onChange={(event) => onChange("phone", event.target.value)}
+          placeholder={t("claim.contact.phonePlaceholder")}
+          aria-invalid={Boolean(error)}
+          aria-label={t("claim.contact.phone")}
+        />
+    </label>
+  );
+}
+
 function DatePickerField({ icon: Icon, name, value, onChange }) {
+  const { lang } = useParams();
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const panelRef = useRef(null);
   const { t, i18n } = useTranslation();
-  const locale = getLocale(i18n.resolvedLanguage || i18n.language);
+  const locale = getLocale(getLanguageByCode(lang || i18n.resolvedLanguage || i18n.language).code);
   const selectedDate = parseDateInputValue(value);
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+  const [panelPosition, setPanelPosition] = useState({ top: 0, left: 0, width: 340, maxHeight: 420 });
 
   useEffect(() => {
     if (selectedDate) {
@@ -321,7 +486,7 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
 
   useEffect(() => {
     const onPointerDown = (event) => {
-      if (!rootRef.current?.contains(event.target)) {
+      if (!rootRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) {
         setIsOpen(false);
       }
     };
@@ -340,12 +505,58 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    if (!isOpen || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const updatePosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return;
+      }
+
+      const viewportPadding = 12;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const width = Math.min(Math.max(rect.width, 320), Math.max(280, viewportWidth - (viewportPadding * 2)));
+      const left = Math.min(
+        Math.max(viewportPadding, rect.left),
+        Math.max(viewportPadding, viewportWidth - width - viewportPadding),
+      );
+      const top = Math.min(rect.bottom + 12, viewportHeight - viewportPadding - 260);
+      const maxHeight = Math.max(260, viewportHeight - top - viewportPadding);
+
+      setPanelPosition((current) => {
+        if (
+          current.top === top
+          && current.left === left
+          && current.width === width
+          && current.maxHeight === maxHeight
+        ) {
+          return current;
+        }
+
+        return { top, left, width, maxHeight };
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen]);
+
   const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
   const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
   const valueFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
   const weekdays = Array.from({ length: 7 }, (_, index) => {
     const day = new Date(2024, 0, 1 + index);
-    return weekdayFormatter.format(day);
+    return weekdayFormatter.format(day).replace(/\./g, "");
   });
   const days = buildCalendarDays(viewDate);
   const today = new Date();
@@ -360,7 +571,7 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
 
   return (
     <div className={`claim-date-picker${isOpen ? " is-open" : ""}`} ref={rootRef}>
-      <button type="button" className="claim-field claim-date-picker__trigger" onClick={() => setIsOpen((current) => !current)}>
+      <button type="button" className="claim-field claim-date-picker__trigger" ref={triggerRef} onClick={() => setIsOpen((current) => !current)}>
         <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
         <span className={`claim-date-picker__value${selectedValue ? "" : " is-placeholder"}`}>
           {selectedValue ? valueFormatter.format(selectedDate) : (t("claim.datePicker.placeholder", { defaultValue: "Select date" }))}
@@ -368,8 +579,17 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
         <Calendar size={18} strokeWidth={1.8} aria-hidden="true" />
       </button>
 
-      {isOpen ? (
-        <div className="claim-date-picker__panel">
+      {isOpen && typeof document !== "undefined" ? createPortal(
+        <div
+          className="claim-date-picker__panel"
+          ref={panelRef}
+          style={{
+            top: `${panelPosition.top}px`,
+            left: `${panelPosition.left}px`,
+            width: `${panelPosition.width}px`,
+            maxHeight: `${panelPosition.maxHeight}px`,
+          }}
+        >
           <div className="claim-date-picker__header">
             <button type="button" className="claim-date-picker__nav" onClick={() => setViewDate((current) => addMonths(current, -1))} aria-label={t("claim.datePicker.previousMonth", { defaultValue: "Previous month" })}>
               <ChevronLeft size={18} strokeWidth={2.2} />
@@ -381,7 +601,7 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
           </div>
 
           <div className="claim-date-picker__weekdays">
-            {weekdays.map((label) => <span key={label}>{label.slice(0, 2)}</span>)}
+            {weekdays.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}
           </div>
 
           <div className="claim-date-picker__grid">
@@ -415,7 +635,8 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
               {t("claim.datePicker.today", { defaultValue: "Today" })}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   );
@@ -572,7 +793,7 @@ function PromoCard() {
           <img src={logoImage} alt="" />
           <img src={logoText} alt="Fly Friendly" />
         </LocalizedLink>
-        <span className="claim-lang"><span className="claim-flag" aria-hidden="true">{currentLanguage.flag}</span> {currentLanguage.label}</span>
+        <span className="claim-lang"><CountryFlag code={currentLanguage.countryCode} label={currentLanguage.label} className="claim-flag" /> {currentLanguage.label}</span>
       </div>
       <h2>{t("claim.promoTitle")}</h2>
       <p>{t("claim.promoText")}</p>
@@ -726,6 +947,20 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
         <h3>{t("claim.eligibility.directFlight")}</h3>
         <label className="claim-radio"><input type="radio" name="direct" value="yes" checked={data.direct === "yes"} onChange={onChange} required /> {t("claim.eligibility.directYes")}</label>
         <label className="claim-radio"><input type="radio" name="direct" value="no" checked={data.direct === "no"} onChange={onChange} required /> {t("claim.eligibility.directNo")}</label>
+        {data.direct === "no" ? (
+          <label className="claim-wide-field">
+            <span>{t("claim.eligibility.connectionCity")}</span>
+            <Field
+              icon={MapPin}
+              name="connectionCity"
+              value={data.connectionCity || ""}
+              onChange={onChange}
+              placeholder={t("claim.eligibility.connectionCityPlaceholder")}
+              required
+            />
+            <small className="claim-field-help">{t("claim.eligibility.connectionCityHelp")}</small>
+          </label>
+        ) : null}
       </section>
       <div className="claim-actions">
         <span />
@@ -737,7 +972,7 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
   );
 }
 
-function ContactStep({ data, onChange, onNext, onBack, emailError, isSaving }) {
+function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, emailError, phoneError, isSaving }) {
   const { t } = useTranslation();
 
   return (
@@ -754,7 +989,11 @@ function ContactStep({ data, onChange, onNext, onBack, emailError, isSaving }) {
         </div>
         <label className="claim-wide-field"><span>{t("claim.contact.address")}</span><Field icon={MapPin} name="city" value={data.city} onChange={onChange} placeholder={t("claim.contact.addressPlaceholder")} /></label>
         <small className="claim-field-help">{t("claim.contact.optional")}</small>
-        <label className="claim-wide-field"><span>{t("claim.contact.phone")}</span><Field icon={Phone} name="phone" value={data.phone} onChange={onChange} placeholder={t("claim.contact.phonePlaceholder")} required /></label>
+        <label className="claim-wide-field">
+          <span>{t("claim.contact.phone")}</span>
+          <PhoneField data={data} onChange={onPhoneChange} error={phoneError} t={t} />
+          {phoneError ? <small className="claim-field-error">{phoneError}</small> : null}
+        </label>
         <label className="claim-check"><input type="checkbox" name="whatsapp" checked={Boolean(data.whatsapp)} onChange={onChange} /> {t("claim.contact.hasWhatsapp")}</label>
         <small className="claim-field-help">{t("claim.contact.requiredToProceed")}</small>
       </section>
@@ -1090,12 +1329,19 @@ function ClaimFlow() {
   const [searchParams] = useSearchParams();
   const storedClaim = readStoredClaimDraft();
   const navigationClaimState = location.state?.claimFlow || null;
-  const [data, setData] = useState(() => ({
-    ...storedClaim,
-    ...(navigationClaimState?.data || {}),
-    departure: searchParams.get("departure") || navigationClaimState?.data?.departure || storedClaim.departure,
-    destination: searchParams.get("destination") || navigationClaimState?.data?.destination || storedClaim.destination,
-  }));
+  const [data, setData] = useState(() => {
+    const seed = {
+      ...storedClaim,
+      ...(navigationClaimState?.data || {}),
+      departure: searchParams.get("departure") || navigationClaimState?.data?.departure || storedClaim.departure,
+      destination: searchParams.get("destination") || navigationClaimState?.data?.destination || storedClaim.destination,
+    };
+
+    return {
+      ...seed,
+      ...parseStoredPhone(seed.phone, seed.phoneCountry, seed.phoneDialCode, seed.phoneLocalNumber),
+    };
+  });
   const [files, setFiles] = useState(() => navigationClaimState?.files || {});
   const [departureMatches, setDepartureMatches] = useState([]);
   const [destinationMatches, setDestinationMatches] = useState([]);
@@ -1104,6 +1350,7 @@ function ClaimFlow() {
   const [syncError, setSyncError] = useState("");
   const [syncNotice, setSyncNotice] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const activeIndex = Math.max(0, stages.indexOf(stage));
   const currentLanguageCode = getLanguageByCode(lang || i18n.resolvedLanguage || i18n.language).code;
 
@@ -1244,6 +1491,16 @@ function ClaimFlow() {
       nextData.airlineSource = selectedOption.source || null;
     }
 
+    if (hasSameAirportSelection(nextData)) {
+      setSyncError(
+        t("claim.eligibility.sameAirportError", {
+          defaultValue: "Departure and arrival airports must be different.",
+        }),
+      );
+      return;
+    }
+
+    setSyncError("");
     setData(nextData);
   };
 
@@ -1263,6 +1520,14 @@ function ClaimFlow() {
     if (name === "airline") {
       nextData.airlineId = null;
       nextData.airlineSource = null;
+    }
+
+    if (name === "direct" && value === "yes") {
+      nextData.connectionCity = "";
+    }
+
+    if ((name === "departure" || name === "destination") && syncError) {
+      setSyncError("");
     }
 
     setData(nextData);
@@ -1295,10 +1560,29 @@ function ClaimFlow() {
       nextData.airlineSource = null;
     }
 
+    if ((name === "departure" || name === "destination") && syncError) {
+      setSyncError("");
+    }
+
     setData(nextData);
 
     if (name === "email" && emailError) {
       setEmailError(getEmailError(value, t));
+    }
+  };
+
+  const onPhoneChange = (kind, value) => {
+    const nextPhone = String(value || "").replace(/[^\d+()\-\s]/g, "");
+    const nextData = {
+      ...data,
+      phoneLocalNumber: nextPhone,
+      phone: nextPhone,
+    };
+
+    setData(nextData);
+
+    if (phoneError) {
+      setPhoneError(getPhoneError(nextData, t));
     }
   };
 
@@ -1344,6 +1628,24 @@ function ClaimFlow() {
     setSyncError("");
     setSyncNotice("");
 
+    if (stage === "eligibility" && hasSameAirportSelection(data)) {
+      setSyncError(
+        t("claim.eligibility.sameAirportError", {
+          defaultValue: "Departure and arrival airports must be different.",
+        }),
+      );
+      return;
+    }
+
+    if (stage === "eligibility" && data.direct === "no" && !String(data.connectionCity || "").trim()) {
+      setSyncError(
+        t("claim.eligibility.connectionCityRequired", {
+          defaultValue: "Please enter the city where you changed planes.",
+        }),
+      );
+      return;
+    }
+
     if (stage === "eligibility" && data.delayDuration === "less_than_3") {
       if (isSupabaseConfigured) {
         try {
@@ -1368,7 +1670,14 @@ function ClaimFlow() {
         return;
       }
 
+      const nextPhoneError = getPhoneError(data, t);
+      if (nextPhoneError) {
+        setPhoneError(nextPhoneError);
+        return;
+      }
+
       setEmailError("");
+      setPhoneError("");
     }
 
     if (!isSupabaseConfigured) {
@@ -1445,7 +1754,7 @@ function ClaimFlow() {
   const renderStage = () => {
     if (stage === "denied") return <DeniedResult data={data} />;
     if (stage === "approved") return <ApprovedResult data={data} />;
-    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} emailError={emailError} isSaving={isSaving} />;
+    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onPhoneChange={onPhoneChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} emailError={emailError} phoneError={phoneError} isSaving={isSaving} />;
     if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
     if (stage === "finish") {
       return (
@@ -1465,7 +1774,10 @@ function ClaimFlow() {
         onChange={onChange}
         onSelect={onSelectOption}
         onNext={(event) => submit("contact", event)}
-        airportOptions={{ departure: departureMatches, destination: destinationMatches }}
+        airportOptions={{
+          departure: departureMatches.filter((option) => String(option.id || "") !== String(data.destinationAirportId || "") && normalizeAirportValue(option.label) !== normalizeAirportValue(data.destination)),
+          destination: destinationMatches.filter((option) => String(option.id || "") !== String(data.departureAirportId || "") && normalizeAirportValue(option.label) !== normalizeAirportValue(data.departure)),
+        }}
         airlineOptions={airlineMatches}
         isSaving={isSaving}
       />

@@ -191,6 +191,14 @@
   }
 }
 
+.claim-box__error {
+  margin: 10px 4px 0;
+  color: #bd1f1f;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+}
+
 @media (max-width: 1140px) {
 
   .hero__inner {

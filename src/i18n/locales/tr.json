@@ -56,7 +56,8 @@
     "delayedFlights": "Gecikmeli uçuşlar",
     "cancelledFlights": "İptal edilen uçuşlar",
     "missedConnections": "Kaçırılan bağlantılar",
-    "copyright": "©2026 Fly Friendly"
+    "copyright": "© {{year}} Fly Friendly. Tüm hakları saklıdır.",
+    "siteCreatedBy": "Web sitesi tasarımı - Farid Huseynov."
   },
   "claimModal": {
     "signupTitle": "Ortak hesabı oluştur",
@@ -189,7 +190,7 @@
   },
   "home": {
     "claimBoxTitle": "Kontrol edin ve tazminatınızı talep edin.",
-    "claimBoxDestinationPlaceholder": "Hedef havaalanı, şehir veya ülke",
+    "claimBoxDestinationPlaceholder": "Varış havalimanı",
     "claimBoxNoAirportsFound": "Havaalanı bulunamadı",
     "claimBoxFree": "Ücretsizdir",
     "claimBoxMinutes": "Dakikalar sürer",
@@ -198,6 +199,7 @@
     "heroTitle": "Uçuş rötarlı mı yoksa iptal mi edildi?",
     "heroTitleStrong": "Şimdi 600€'ya kadar talepte bulunun.",
     "heroText": "Tazminat hakkınız için mücadele ediyoruz. Talebinizi dakikalar içinde gönderin ve bırakın havayoluyla ilgilenelim.",
+    "scrollBannerTitle": "Geciken veya iptal edilen uçuş için 600 €'ya kadar tazminat talep edin.",
     "trustLabel": "Küresel Erişim",
     "trustTitle": "Dünya çapında güvenilir bir ortak",
     "benefits": [
@@ -362,7 +364,8 @@
         "question": "Kişisel verilerim güvende mi?",
         "answer": "Bilgilerinizi yalnızca talebinizi işleme koymak ve ilgili taraflarla iletişim kurmak için kullanırız. Veriler yalnızca tazminat almak için gerekli olduğunda paylaşılır."
       }
-    ]
+    ],
+    "scrollBannerHide": "Gizle"
   },
   "referral": {
     "heroTag": "#Yaratıcılar ve Etkileyenler İçin",
@@ -491,8 +494,8 @@
     "emailError": "Введите корректный e-posta adresi",
     "eligibility": {
       "whereDidYouFly": "Nereye uçtunuz?",
-      "departurePlaceholder": "Kalkış havaalanı, şehir veya ülke",
-      "arrivalPlaceholder": "Varış havalimanı, şehir veya ülke",
+      "departurePlaceholder": "Kalkış havalimanı",
+      "arrivalPlaceholder": "Varış havalimanı",
       "noAirportsFound": "Havaalanı bulunamadı",
       "whichAirline": "Hangi havayoluyla uçtunuz?",
       "searchAirline": "Havayolunu ara",
@@ -507,7 +510,11 @@
       "scheduledDepartureDate": "Planlanan kalkış tarihiniz neydi?",
       "directFlight": "Direkt uçuş muydu?",
       "directYes": "Evet, bu doğrudandı",
-      "directNo": "Hayır, bu doğrudan değildi"
+      "directNo": "Hayır, bu doğrudan değildi",
+      "connectionCity": "Aktarmayı hangi şehirde yaptınız?",
+      "connectionCityPlaceholder": "Aktarma şehri",
+      "connectionCityHelp": "Uçak değiştirdiğiniz şehri girin.",
+      "connectionCityRequired": "Lütfen aktarma yaptığınız şehri girin."
     },
     "contact": {
       "title": "Lütfen iletişim bilgilerinizi giriniz.",
@@ -519,9 +526,11 @@
       "addressPlaceholder": "Şehrinizi Girin",
       "optional": "Opsiyonel",
       "phone": "İletişim Numarası (WhatsApp tercih edilir)",
-      "phonePlaceholder": "Örn.: +90 5xx xxx xx xx",
+      "phonePlaceholder": "Örn.: 050 XXX XX XX",
       "hasWhatsapp": "Evet bu numaranın Whatsapp'ı var.",
-      "requiredToProceed": "Devam etmek için gerekli."
+      "requiredToProceed": "Devam etmek için gerekli.",
+      "phoneSearchPlaceholder": "Ülke ara",
+      "phoneSearchEmpty": "Eşleşen ülke bulunamadı."
     },
     "documents": {
       "title": "Güvenli Belge Yükleme",
@@ -600,6 +609,13 @@
       "emailFailed": "Talep gönderildi ancak onay e-postası otomatik olarak gönderilemedi.",
       "customerFallback": "müşteri",
       "removeFile": "Kaldır {{file}}"
+    },
+    "datePicker": {
+      "placeholder": "Tarih seçin",
+      "previousMonth": "Önceki ay",
+      "nextMonth": "Sonraki ay",
+      "clear": "Temizle",
+      "today": "Bugün"
     }
   },
   "legal": {
@@ -1013,6 +1029,61 @@
     "placeholders": {
       "email": "you@example.com",
       "password": "Şifrenizi girin"
+    },
+    "register": {
+      "legalText": "<termsLink>Kullanım Koşulları</termsLink> ve <privacyLink>Gizlilik Politikası</privacyLink>nı kabul ediyorum.",
+      "legalRequired": "Lütfen kullanım koşullarını ve gizlilik politikasını kabul edin."
+    }
+  },
+  "partnerApply": {
+    "loadError": "Partner başvuru durumu yüklenemedi.",
+    "loading": "Partner başvurusu yükleniyor...",
+    "receivedTitle": "Başvuru alındı",
+    "receivedText": "Teşekkür ederiz. Partner başvurunuzu aldık ve herhangi bir partner hesabı, referans kodu veya portal erişimi oluşturmadan önce ekibimiz bunu inceleyecek.",
+    "fullName": "Ad soyad",
+    "email": "E-posta",
+    "publicName": "Herkese açık ad",
+    "status": "Durum",
+    "receivedNote": "Onay Fly Friendly ekibi tarafından ayrı olarak yönetilir. Bu formu göndermek partner portalı erişimi vermez.",
+    "backToProgram": "Partner programına dön",
+    "backToDashboard": "Panele dön",
+    "backToLogin": "Girişe dön",
+    "title": "Fly Friendly partneri olmak için başvurun",
+    "text": "Hedef kitleniz, kanallarınız ve uygunluğunuz hakkında bize bilgi verin. Herhangi bir partner hesabı veya referans erişimi oluşturmadan önce başvurunuzu inceleyeceğiz.",
+    "resubmitHint": "Önceki başvurunuz artık aktif değil. Aşağıdan yeni bir başvuru gönderebilirsiniz.",
+    "phone": "Telefon",
+    "country": "Ülke",
+    "preferredLanguage": "Tercih edilen dil",
+    "selectLanguage": "Dil seçin",
+    "primaryPlatform": "Birincil platform",
+    "selectPlatform": "Platform seçin",
+    "audienceSize": "Kitle büyüklüğü",
+    "audienceSizePlaceholder": "ör. aylık 50 bin erişim",
+    "audienceCountries": "Hedef kitle ülkeleri",
+    "audienceCountriesPlaceholder": "Ülkeleri virgülle veya yeni satırla yazın",
+    "website": "Web sitesi URL",
+    "instagram": "Instagram URL",
+    "tiktok": "TikTok URL",
+    "youtube": "YouTube URL",
+    "niche": "Niş veya konu",
+    "contentLinks": "İçerik bağlantıları",
+    "contentLinksPlaceholder": "Önemli içerik bağlantılarını virgülle veya yeni satırla yapıştırın",
+    "reason": "Neden katılmak istiyorsunuz?",
+    "consent": "Sağlanan bilgilerin doğru olduğunu onaylıyor ve Fly Friendly Partner Programı hakkında benimle iletişime geçilmesini kabul ediyorum.",
+    "legalText": "<termsLink>Kullanım Şartları</termsLink>nı ve <privacyLink>Gizlilik Politikası</privacyLink>nı kabul ediyorum.",
+    "legalRequired": "Lütfen kullanım şartlarını ve gizlilik politikasını kabul edin.",
+    "submitting": "Gönderiliyor...",
+    "submit": "Başvuruyu gönder",
+    "error": "Başvurunuz gönderilemedi.",
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "blog": "Blog",
+      "newsletter": "Bülten",
+      "travelAgency": "Seyahat acentesi",
+      "community": "Topluluk",
+      "other": "Diğer"
     }
   }
 }

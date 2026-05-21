@@ -33,6 +33,7 @@ import {
   Star,
   Timer,
   TrendingUp,
+  X,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
@@ -110,6 +111,8 @@ function Home() {
   const [openFaq, setOpenFaq] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [cmsArticles, setCmsArticles] = useState([]);
+  const [showScrollBanner, setShowScrollBanner] = useState(false);
+  const [hideScrollBanner, setHideScrollBanner] = useState(false);
   const benefits = t("home.benefits", { returnObjects: true });
   const testimonials = t("home.testimonials", { returnObjects: true }).map((item, index) => ({ ...item, image: testimonialImages[index] }));
   const fallbackArticles = getArticles(
@@ -146,6 +149,19 @@ function Home() {
     };
   }, [locale]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollBanner(window.scrollY > 440);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const handleNewsletterSubmit = (event) => {
     event.preventDefault();
 
@@ -165,6 +181,28 @@ function Home() {
 
   return (
     <>
+      <div className={`home-scroll-banner${showScrollBanner && !hideScrollBanner ? " is-visible" : ""}`} aria-hidden={!showScrollBanner || hideScrollBanner}>
+        <button
+          type="button"
+          className="home-scroll-banner__close"
+          aria-label={t("common.close")}
+          onClick={() => setHideScrollBanner(true)}
+        >
+          <X size={18} strokeWidth={2.4} />
+        </button>
+        <div className="home-scroll-banner__copy">
+          <strong>{t("home.scrollBannerTitle")}</strong>
+          <ul>
+            <li><CircleCheck size={16} strokeWidth={2.4} /> {t("home.disruptionCards.allAirlines")}</li>
+            <li><CircleCheck size={16} strokeWidth={2.4} /> {t("home.disruptionCards.allCountries")}</li>
+            <li><CircleCheck size={16} strokeWidth={2.4} /> {t("home.disruptionCards.noWinNoFee")}</li>
+          </ul>
+        </div>
+        <LocalizedLink to="/claim/eligibility" className="home-scroll-banner__button">
+          {t("common.checkCompensation")}
+        </LocalizedLink>
+      </div>
+
       <section className="hero section">
         <span className="hero__ambient hero__ambient--glow" aria-hidden="true" />
         <div className="hero__inner">

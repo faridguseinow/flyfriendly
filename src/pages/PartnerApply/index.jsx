@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { Trans } from "react-i18next";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
+import { languages } from "../../i18n/languages.js";
 import { applyForPartner, getPartnerApplicationState } from "../../services/partnerService.js";
 import "./style.scss";
 
@@ -50,6 +52,7 @@ export default function PartnerApplyPage() {
     content_links: "",
     motivation: "",
     consent_accepted: false,
+    legal_accepted: false,
   });
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,7 +95,7 @@ export default function PartnerApplyPage() {
         if (!active) return;
         setState({
           isLoading: false,
-          error: error.message || "Could not load partner application state.",
+          error: error.message || t("partnerApply.loadError"),
           existing: null,
           application: null,
           profile: null,
@@ -102,7 +105,7 @@ export default function PartnerApplyPage() {
     return () => {
       active = false;
     };
-  }, [i18n.language]);
+  }, [i18n.language, t]);
 
   useEffect(() => {
     if (!state.existing) {
@@ -115,25 +118,24 @@ export default function PartnerApplyPage() {
     navigate(toLocalizedPath(nextPath), { replace: true });
   }, [navigate, state.existing, toLocalizedPath]);
 
-  const languageOptions = useMemo(() => ([
-    { value: "en", label: "English" },
-    { value: "az", label: "Azerbaijani" },
-    { value: "ru", label: "Russian" },
-    { value: "tr", label: "Turkish" },
-    { value: "es", label: "Spanish" },
-    { value: "it", label: "Italian" },
-  ]), []);
+  const languageOptions = useMemo(
+    () => languages.map((language) => ({
+      value: language.code,
+      label: `${language.nativeLabel} (${language.code.toUpperCase()})`,
+    })),
+    [],
+  );
 
   const platformOptions = useMemo(() => ([
-    "Instagram",
-    "TikTok",
-    "YouTube",
-    "Blog",
-    "Newsletter",
-    "Travel agency",
-    "Community",
-    "Other",
-  ]), []);
+    { value: "Instagram", label: t("partnerApply.platforms.instagram") },
+    { value: "TikTok", label: t("partnerApply.platforms.tiktok") },
+    { value: "YouTube", label: t("partnerApply.platforms.youtube") },
+    { value: "Blog", label: t("partnerApply.platforms.blog") },
+    { value: "Newsletter", label: t("partnerApply.platforms.newsletter") },
+    { value: "Travel agency", label: t("partnerApply.platforms.travelAgency") },
+    { value: "Community", label: t("partnerApply.platforms.community") },
+    { value: "Other", label: t("partnerApply.platforms.other") },
+  ]), [t]);
 
   const showReceivedState = Boolean(state.application?.id && ["pending", "approved"].includes(state.application.status));
   const canResubmit = ["rejected", "cancelled"].includes(state.application?.status);
@@ -141,6 +143,12 @@ export default function PartnerApplyPage() {
   const submit = async (event) => {
     event.preventDefault();
     setSubmitError("");
+
+    if (!form.legal_accepted) {
+      setSubmitError(t("partnerApply.legalRequired"));
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -154,7 +162,7 @@ export default function PartnerApplyPage() {
   };
 
   if (state.isLoading) {
-    return <div className="placeholder-page"><p>{t("partnerApply.loading", { defaultValue: "Loading partner application..." })}</p></div>;
+    return <div className="placeholder-page"><p>{t("partnerApply.loading")}</p></div>;
   }
 
   if (state.error) {
@@ -168,26 +176,26 @@ export default function PartnerApplyPage() {
           <div className="partner-apply-success-icon">
             <CheckCircle2 size={34} />
           </div>
-          <h1>{t("partnerApply.receivedTitle", { defaultValue: "Application received" })}</h1>
-          <p>{t("partnerApply.receivedText", { defaultValue: "Thank you. We have received your partner application and our team will review it before creating any partner account, referral code, or portal access." })}</p>
+          <h1>{t("partnerApply.receivedTitle")}</h1>
+          <p>{t("partnerApply.receivedText")}</p>
           <div className="partner-apply-summary">
-            <article><strong>{t("partnerApply.fullName", { defaultValue: "Full name" })}</strong><span>{state.application.full_name}</span></article>
-            <article><strong>{t("partnerApply.email", { defaultValue: "Email" })}</strong><span>{state.application.email}</span></article>
-            <article><strong>{t("partnerApply.publicName", { defaultValue: "Public name" })}</strong><span>{state.application.public_name || "-"}</span></article>
-            <article><strong>{t("partnerApply.status", { defaultValue: "Status" })}</strong><span>{state.application.status}</span></article>
+            <article><strong>{t("partnerApply.fullName")}</strong><span>{state.application.full_name}</span></article>
+            <article><strong>{t("partnerApply.email")}</strong><span>{state.application.email}</span></article>
+            <article><strong>{t("partnerApply.publicName")}</strong><span>{state.application.public_name || "-"}</span></article>
+            <article><strong>{t("partnerApply.status")}</strong><span>{state.application.status}</span></article>
           </div>
-          <p className="partner-apply-note">{t("partnerApply.receivedNote", { defaultValue: "Approval is handled separately by the Fly Friendly team. Submitting this form does not grant partner portal access." })}</p>
+          <p className="partner-apply-note">{t("partnerApply.receivedNote")}</p>
           <div className="partner-apply-actions">
             <LocalizedLink className="btn btn-primary" to="/partner-program">
-              {t("partnerApply.backToProgram", { defaultValue: "Back to partner program" })}
+              {t("partnerApply.backToProgram")}
             </LocalizedLink>
             {state.profile?.id ? (
               <LocalizedLink className="btn btn-secondary" to="/client/dashboard">
-                {t("partnerApply.backToDashboard", { defaultValue: "Back to dashboard" })}
+                {t("partnerApply.backToDashboard")}
               </LocalizedLink>
             ) : (
               <LocalizedLink className="btn btn-secondary" to="/auth/login">
-                {t("partnerApply.backToLogin", { defaultValue: "Back to sign in" })}
+                {t("partnerApply.backToLogin")}
               </LocalizedLink>
             )}
           </div>
@@ -199,26 +207,26 @@ export default function PartnerApplyPage() {
   return (
     <main className="partner-apply-page section">
       <div className="partner-apply-card">
-        <h1>{t("partnerApply.title", { defaultValue: "Apply to become a Fly Friendly partner" })}</h1>
-        <p>{t("partnerApply.text", { defaultValue: "Tell us about your audience, channels, and market fit. We will review your application before creating any partner account or referral access." })}</p>
+        <h1>{t("partnerApply.title")}</h1>
+        <p>{t("partnerApply.text")}</p>
 
         {canResubmit ? (
           <p className="partner-apply-message is-info">
-            {t("partnerApply.resubmitHint", { defaultValue: "Your previous application is no longer active. You can submit a new request below." })}
+            {t("partnerApply.resubmitHint")}
           </p>
         ) : null}
 
         <form className="partner-apply-form" onSubmit={submit}>
           <div className="partner-apply-grid">
             <label>
-              <span>{t("partnerApply.fullName", { defaultValue: "Full name" })}</span>
+              <span>{t("partnerApply.fullName")}</span>
               <div className="partner-apply-input">
                 <UserRound size={18} />
                 <input value={form.full_name} onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))} required />
               </div>
             </label>
             <label>
-              <span>{t("partnerApply.email", { defaultValue: "Email" })}</span>
+              <span>{t("partnerApply.email")}</span>
               <div className="partner-apply-input">
                 <Mail size={18} />
                 <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
@@ -228,14 +236,14 @@ export default function PartnerApplyPage() {
 
           <div className="partner-apply-grid">
             <label>
-              <span>{t("partnerApply.phone", { defaultValue: "Phone" })}</span>
+              <span>{t("partnerApply.phone")}</span>
               <div className="partner-apply-input">
                 <Phone size={18} />
                 <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
               </div>
             </label>
             <label>
-              <span>{t("partnerApply.country", { defaultValue: "Country" })}</span>
+              <span>{t("partnerApply.country")}</span>
               <div className="partner-apply-input">
                 <MapPin size={18} />
                 <input value={form.country} onChange={(event) => setForm((current) => ({ ...current, country: event.target.value }))} required />
@@ -245,17 +253,17 @@ export default function PartnerApplyPage() {
 
           <div className="partner-apply-grid">
             <label>
-              <span>{t("partnerApply.preferredLanguage", { defaultValue: "Preferred language" })}</span>
+              <span>{t("partnerApply.preferredLanguage")}</span>
               <div className="partner-apply-input">
                 <Languages size={18} />
                 <select value={form.preferred_language} onChange={(event) => setForm((current) => ({ ...current, preferred_language: event.target.value }))} required>
-                  <option value="">{t("partnerApply.selectLanguage", { defaultValue: "Select language" })}</option>
+                  <option value="">{t("partnerApply.selectLanguage")}</option>
                   {languageOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
             </label>
             <label>
-              <span>{t("partnerApply.publicName", { defaultValue: "Public name" })}</span>
+              <span>{t("partnerApply.publicName")}</span>
               <div className="partner-apply-input">
                 <UserRound size={18} />
                 <input value={form.public_name} onChange={(event) => setForm((current) => ({ ...current, public_name: event.target.value }))} required />
@@ -265,34 +273,34 @@ export default function PartnerApplyPage() {
 
           <div className="partner-apply-grid">
             <label>
-              <span>{t("partnerApply.primaryPlatform", { defaultValue: "Primary platform" })}</span>
+              <span>{t("partnerApply.primaryPlatform")}</span>
               <div className="partner-apply-input">
                 <Send size={18} />
                 <select value={form.primary_platform} onChange={(event) => setForm((current) => ({ ...current, primary_platform: event.target.value }))} required>
-                  <option value="">{t("partnerApply.selectPlatform", { defaultValue: "Select platform" })}</option>
-                  {platformOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                  <option value="">{t("partnerApply.selectPlatform")}</option>
+                  {platformOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
             </label>
             <label>
-              <span>{t("partnerApply.audienceSize", { defaultValue: "Audience size" })}</span>
+              <span>{t("partnerApply.audienceSize")}</span>
               <div className="partner-apply-input">
                 <Users size={18} />
-                <input value={form.audience_size} onChange={(event) => setForm((current) => ({ ...current, audience_size: event.target.value }))} placeholder={t("partnerApply.audienceSizePlaceholder", { defaultValue: "e.g. 50k monthly reach" })} required />
+                <input value={form.audience_size} onChange={(event) => setForm((current) => ({ ...current, audience_size: event.target.value }))} placeholder={t("partnerApply.audienceSizePlaceholder")} required />
               </div>
             </label>
           </div>
 
           <label>
-            <span>{t("partnerApply.audienceCountries", { defaultValue: "Audience countries" })}</span>
+            <span>{t("partnerApply.audienceCountries")}</span>
             <div className="partner-apply-input is-textarea">
               <Globe2 size={18} />
-              <textarea value={form.audience_countries} onChange={(event) => setForm((current) => ({ ...current, audience_countries: event.target.value }))} rows={3} placeholder={t("partnerApply.audienceCountriesPlaceholder", { defaultValue: "List countries separated by commas or new lines" })} />
+              <textarea value={form.audience_countries} onChange={(event) => setForm((current) => ({ ...current, audience_countries: event.target.value }))} rows={3} placeholder={t("partnerApply.audienceCountriesPlaceholder")} />
             </div>
           </label>
 
           <label>
-            <span>{t("partnerApply.website", { defaultValue: "Website URL" })}</span>
+            <span>{t("partnerApply.website")}</span>
             <div className="partner-apply-input">
               <Globe2 size={18} />
               <input value={form.website_url} onChange={(event) => setForm((current) => ({ ...current, website_url: event.target.value }))} />
@@ -300,7 +308,7 @@ export default function PartnerApplyPage() {
           </label>
 
           <label>
-            <span>{t("partnerApply.instagram", { defaultValue: "Instagram URL" })}</span>
+            <span>{t("partnerApply.instagram")}</span>
             <div className="partner-apply-input">
               <Image size={18} />
               <input value={form.instagram_url} onChange={(event) => setForm((current) => ({ ...current, instagram_url: event.target.value }))} />
@@ -308,7 +316,7 @@ export default function PartnerApplyPage() {
           </label>
 
           <label>
-            <span>{t("partnerApply.tiktok", { defaultValue: "TikTok URL" })}</span>
+            <span>{t("partnerApply.tiktok")}</span>
             <div className="partner-apply-input">
               <Send size={18} />
               <input value={form.tiktok_url} onChange={(event) => setForm((current) => ({ ...current, tiktok_url: event.target.value }))} />
@@ -316,7 +324,7 @@ export default function PartnerApplyPage() {
           </label>
 
           <label>
-            <span>{t("partnerApply.youtube", { defaultValue: "YouTube URL" })}</span>
+            <span>{t("partnerApply.youtube")}</span>
             <div className="partner-apply-input">
               <Video size={18} />
               <input value={form.youtube_url} onChange={(event) => setForm((current) => ({ ...current, youtube_url: event.target.value }))} />
@@ -324,7 +332,7 @@ export default function PartnerApplyPage() {
           </label>
 
           <label>
-            <span>{t("partnerApply.niche", { defaultValue: "Niche or topic" })}</span>
+            <span>{t("partnerApply.niche")}</span>
             <div className="partner-apply-input">
               <MessageSquareText size={18} />
               <input value={form.niche} onChange={(event) => setForm((current) => ({ ...current, niche: event.target.value }))} />
@@ -332,15 +340,15 @@ export default function PartnerApplyPage() {
           </label>
 
           <label>
-            <span>{t("partnerApply.contentLinks", { defaultValue: "Content links" })}</span>
+            <span>{t("partnerApply.contentLinks")}</span>
             <div className="partner-apply-input is-textarea">
               <Link2 size={18} />
-              <textarea value={form.content_links} onChange={(event) => setForm((current) => ({ ...current, content_links: event.target.value }))} rows={4} placeholder={t("partnerApply.contentLinksPlaceholder", { defaultValue: "Paste notable content links separated by commas or new lines" })} />
+              <textarea value={form.content_links} onChange={(event) => setForm((current) => ({ ...current, content_links: event.target.value }))} rows={4} placeholder={t("partnerApply.contentLinksPlaceholder")} />
             </div>
           </label>
 
           <label>
-            <span>{t("partnerApply.reason", { defaultValue: "Why do you want to join?" })}</span>
+            <span>{t("partnerApply.reason")}</span>
             <div className="partner-apply-input is-textarea">
               <MessageSquareText size={18} />
               <textarea value={form.motivation} onChange={(event) => setForm((current) => ({ ...current, motivation: event.target.value }))} rows={5} required />
@@ -354,15 +362,33 @@ export default function PartnerApplyPage() {
               onChange={(event) => setForm((current) => ({ ...current, consent_accepted: event.target.checked }))}
               required
             />
-            <span>{t("partnerApply.consent", { defaultValue: "I confirm that the information provided is accurate and I agree to be contacted about the Fly Friendly Partner Program." })}</span>
+            <span>{t("partnerApply.consent")}</span>
+          </label>
+
+          <label className="partner-apply-consent">
+            <input
+              type="checkbox"
+              checked={form.legal_accepted}
+              onChange={(event) => setForm((current) => ({ ...current, legal_accepted: event.target.checked }))}
+            />
+            <span>
+              <Trans
+                i18nKey="partnerApply.legalText"
+                defaults="I agree to the <termsLink>Terms of Use</termsLink> and <privacyLink>Privacy Policy</privacyLink>."
+                components={{
+                  termsLink: <LocalizedLink to="/terms" />,
+                  privacyLink: <LocalizedLink to="/privacyPolicy" />,
+                }}
+              />
+            </span>
           </label>
 
           {submitError ? <p className="partner-apply-message is-error">{submitError}</p> : null}
 
           <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
             {isSubmitting
-              ? t("partnerApply.submitting", { defaultValue: "Submitting..." })
-              : t("partnerApply.submit", { defaultValue: "Submit application" })}
+              ? t("partnerApply.submitting")
+              : t("partnerApply.submit")}
           </button>
         </form>
       </div>

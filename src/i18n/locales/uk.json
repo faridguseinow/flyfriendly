@@ -56,7 +56,8 @@
     "delayedFlights": "Затримка рейсів",
     "cancelledFlights": "Скасовані рейси",
     "missedConnections": "Пропущені з'єднання",
-    "copyright": "©2026 Fly Friendly"
+    "copyright": "© {{year}} Fly Friendly. Усі права захищені.",
+    "siteCreatedBy": "Створення сайту — Farid Huseynov."
   },
   "claimModal": {
     "signupTitle": "Створіть обліковий запис партнера",
@@ -189,7 +190,7 @@
   },
   "home": {
     "claimBoxTitle": "Перевірте та вимагайте свою компенсацію.",
-    "claimBoxDestinationPlaceholder": "Аеропорт, місто чи країна призначення",
+    "claimBoxDestinationPlaceholder": "Аеропорт прибуття",
     "claimBoxNoAirportsFound": "Аеропорти не знайдено",
     "claimBoxFree": "Це безкоштовно",
     "claimBoxMinutes": "Займає хвилини",
@@ -198,6 +199,7 @@
     "heroTitle": "Рейс затримано чи скасовано?",
     "heroTitleStrong": "Отримайте до €600 зараз.",
     "heroText": "Ми боремося за ваше право на компенсацію. Надішліть претензію за лічені хвилини, і дайте нам обробити авіакомпанію.",
+    "scrollBannerTitle": "Подайте заявку на компенсацію до 600 € за затриманий або скасований рейс.",
     "trustLabel": "Глобальне охоплення",
     "trustTitle": "Надійний партнер у всьому світі",
     "benefits": [
@@ -362,7 +364,8 @@
         "question": "Чи мої особисті дані в безпеці?",
         "answer": "Ми використовуємо вашу інформацію лише для обробки вашої претензії та спілкування з відповідними сторонами. Дані передаються лише тоді, коли це необхідно для отримання компенсації."
       }
-    ]
+    ],
+    "scrollBannerHide": "Сховати"
   },
   "referral": {
     "heroTag": "# ForCreators&Influencers",
@@ -491,8 +494,8 @@
     "emailError": "Введіть правильну електронну адресу",
     "eligibility": {
       "whereDidYouFly": "Куди ти літав?",
-      "departurePlaceholder": "Аеропорт відправлення, місто чи країна",
-      "arrivalPlaceholder": "Аеропорт прибуття, місто чи країна",
+      "departurePlaceholder": "Аеропорт вильоту",
+      "arrivalPlaceholder": "Аеропорт прибуття",
       "noAirportsFound": "Аеропорти не знайдено",
       "whichAirline": "Якою авіакомпанією ви літали?",
       "searchAirline": "Пошук авіакомпанії",
@@ -507,7 +510,11 @@
       "scheduledDepartureDate": "Яка була ваша запланована дата від'їзду?",
       "directFlight": "Це був прямий рейс?",
       "directYes": "Так, це було прямо",
-      "directNo": "Ні, це не було прямо"
+      "directNo": "Ні, це не було прямо",
+      "connectionCity": "У якому місті була пересадка?",
+      "connectionCityPlaceholder": "Місто пересадки",
+      "connectionCityHelp": "Вкажіть місто, де ви пересідали.",
+      "connectionCityRequired": "Будь ласка, вкажіть місто пересадки."
     },
     "contact": {
       "title": "Будь ласка, введіть свою контактну інформацію.",
@@ -519,9 +526,11 @@
       "addressPlaceholder": "Введіть своє місто",
       "optional": "Необов'язково",
       "phone": "Контактний номер (бажано WhatsApp)",
-      "phonePlaceholder": "Наприклад: +90 5xx xxx xx xx",
+      "phonePlaceholder": "Наприклад: 050 XXX XX XX",
       "hasWhatsapp": "Так, на цьому номері є Whatsapp.",
-      "requiredToProceed": "Необхідно для продовження."
+      "requiredToProceed": "Необхідно для продовження.",
+      "phoneSearchPlaceholder": "Знайдіть країну",
+      "phoneSearchEmpty": "Відповідних країн не знайдено."
     },
     "documents": {
       "title": "Безпечне завантаження документів",
@@ -600,6 +609,13 @@
       "emailFailed": "Претензію подано, але електронний лист із підтвердженням не надіслано автоматично.",
       "customerFallback": "клієнт",
       "removeFile": "Видалити {{file}}"
+    },
+    "datePicker": {
+      "placeholder": "Виберіть дату",
+      "previousMonth": "Попередній місяць",
+      "nextMonth": "Наступний місяць",
+      "clear": "Очистити",
+      "today": "Сьогодні"
     }
   },
   "legal": {
@@ -1013,6 +1029,61 @@
     "placeholders": {
       "email": "you@example.com",
       "password": "Введіть пароль"
+    },
+    "register": {
+      "legalText": "Я погоджуюся з <termsLink>Умовами використання</termsLink> та <privacyLink>Політикою конфіденційності</privacyLink>.",
+      "legalRequired": "Будь ласка, прийміть умови використання та політику конфіденційності."
+    }
+  },
+  "partnerApply": {
+    "loadError": "Не вдалося завантажити стан партнерської заявки.",
+    "loading": "Завантаження партнерської заявки...",
+    "receivedTitle": "Заявку отримано",
+    "receivedText": "Дякуємо. Ми отримали вашу партнерську заявку й наша команда розгляне її перед створенням партнерського акаунта, реферального коду або доступу до порталу.",
+    "fullName": "Повне ім’я",
+    "email": "Електронна пошта",
+    "publicName": "Публічне ім’я",
+    "status": "Статус",
+    "receivedNote": "Схвалення виконується окремо командою Fly Friendly. Надсилання цієї форми не надає доступ до партнерського порталу.",
+    "backToProgram": "Назад до партнерської програми",
+    "backToDashboard": "Назад до кабінету",
+    "backToLogin": "Назад до входу",
+    "title": "Подайте заявку, щоб стати партнером Fly Friendly",
+    "text": "Розкажіть про свою аудиторію, канали та відповідність. Ми розглянемо вашу заявку перед створенням партнерського акаунта або реферального доступу.",
+    "resubmitHint": "Ваша попередня заявка більше не активна. Нижче ви можете надіслати нову.",
+    "phone": "Телефон",
+    "country": "Країна",
+    "preferredLanguage": "Бажана мова",
+    "selectLanguage": "Оберіть мову",
+    "primaryPlatform": "Основна платформа",
+    "selectPlatform": "Оберіть платформу",
+    "audienceSize": "Розмір аудиторії",
+    "audienceSizePlaceholder": "наприклад, 50 тис. охоплення на місяць",
+    "audienceCountries": "Країни аудиторії",
+    "audienceCountriesPlaceholder": "Перелічіть країни через кому або з нового рядка",
+    "website": "URL сайту",
+    "instagram": "Instagram URL",
+    "tiktok": "TikTok URL",
+    "youtube": "YouTube URL",
+    "niche": "Ніша або тема",
+    "contentLinks": "Посилання на контент",
+    "contentLinksPlaceholder": "Вставте важливі посилання на контент через кому або з нового рядка",
+    "reason": "Чому ви хочете приєднатися?",
+    "consent": "Я підтверджую, що надана інформація є точною, і погоджуюся, щоб зі мною зв’язалися щодо програми Fly Friendly Partner.",
+    "legalText": "Я погоджуюся з <termsLink>Умовами використання</termsLink> та <privacyLink>Політикою конфіденційності</privacyLink>.",
+    "legalRequired": "Будь ласка, прийміть умови використання та політику конфіденційності.",
+    "submitting": "Надсилання...",
+    "submit": "Надіслати заявку",
+    "error": "Не вдалося надіслати вашу заявку.",
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "blog": "Блог",
+      "newsletter": "Розсилка",
+      "travelAgency": "Туристична агенція",
+      "community": "Спільнота",
+      "other": "Інше"
     }
   }
 }

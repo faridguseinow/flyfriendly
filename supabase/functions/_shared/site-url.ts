@@ -18,6 +18,15 @@ function isLocalUrl(value: string) {
   }
 }
 
+function isVercelPreviewUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return String(url.hostname || "").toLowerCase().endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
 export function getPublicSiteUrl() {
   const envUrl = normalizeSiteUrl(
     Deno.env.get("PUBLIC_SITE_URL")
@@ -26,7 +35,16 @@ export function getPublicSiteUrl() {
   );
 
   if (envUrl) {
-    return isLocalUrl(envUrl) ? envUrl : envUrl;
+    if (isLocalUrl(envUrl)) {
+      return envUrl;
+    }
+
+    // Never expose preview/vercel origins in production auth or email links.
+    if (isVercelPreviewUrl(envUrl)) {
+      return DEFAULT_PUBLIC_SITE_URL;
+    }
+
+    return envUrl;
   }
 
   return DEFAULT_PUBLIC_SITE_URL;

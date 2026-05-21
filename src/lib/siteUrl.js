@@ -23,6 +23,15 @@ function isLocalUrl(value) {
   }
 }
 
+function isVercelPreviewUrl(value) {
+  try {
+    const url = new URL(value);
+    return String(url.hostname || "").toLowerCase().endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
 function getBrowserLocalOrigin() {
   if (typeof window === "undefined") {
     return "";
@@ -40,7 +49,16 @@ export function getPublicSiteUrl() {
   );
 
   if (envUrl) {
-    return isLocalUrl(envUrl) ? (getBrowserLocalOrigin() || DEFAULT_LOCAL_SITE_URL) : envUrl;
+    if (isLocalUrl(envUrl)) {
+      return getBrowserLocalOrigin() || DEFAULT_LOCAL_SITE_URL;
+    }
+
+    // Never expose preview/vercel origins in production auth or email links.
+    if (isVercelPreviewUrl(envUrl)) {
+      return DEFAULT_PUBLIC_SITE_URL;
+    }
+
+    return envUrl;
   }
 
   return getBrowserLocalOrigin() || DEFAULT_PUBLIC_SITE_URL;

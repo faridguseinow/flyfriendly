@@ -4,6 +4,7 @@ import { ChevronDown, CircleUserRound, LogOut, UserRound, X } from "lucide-react
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
+import CountryFlag from "../../components/CountryFlag/index.jsx";
 import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
@@ -51,7 +52,7 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLa
         aria-label={t("languageSwitcher.open")}
         onClick={onOpen}
       >
-        <span className="language-current__flag" aria-hidden="true">{currentLanguageOption.flag}</span>
+        <CountryFlag code={currentLanguageOption.countryCode} label={currentLanguageOption.label} className="language-current__flag" />
         <span className="language-current__code">{currentLanguageOption.code.toUpperCase()}</span>
       </button>
 
@@ -82,7 +83,7 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLa
                     className={`language-option${language.code === currentLanguage ? " is-active" : ""}`}
                     onClick={() => onSelectLanguage(language.code)}
                   >
-                    <span className="language-option__flag" aria-hidden="true">{language.flag}</span>
+                    <CountryFlag code={language.countryCode} label={language.label} className="language-option__flag" />
                     <span className="language-option__copy">
                       <strong>{language.label}</strong>
                       <small>{language.nativeLabel}</small>
@@ -103,7 +104,7 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLa
                     className={`language-option${language.code === currentLanguage ? " is-active" : ""}`}
                     onClick={() => onSelectLanguage(language.code)}
                   >
-                    <span className="language-option__flag" aria-hidden="true">{language.flag}</span>
+                    <CountryFlag code={language.countryCode} label={language.label} className="language-option__flag" />
                     <span className="language-option__copy">
                       <strong>{language.label}</strong>
                       <small>{language.nativeLabel}</small>
@@ -121,18 +122,18 @@ function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLa
   );
 }
 
-function MobileLanguagePicker({ currentLanguage, isOpen, onToggle, onSelectLanguage }) {
+function MobileLanguagePicker({ currentLanguage, isOpen, onToggle, onSelectLanguage, compact = false }) {
   const { t } = useTranslation();
   const currentLanguageOption = getLanguageByCode(currentLanguage);
   const mainLanguages = useMemo(() => languages.filter((language) => language.group === "main"), []);
   const additionalLanguages = useMemo(() => languages.filter((language) => language.group === "additional"), []);
 
   return (
-    <section className={`mobile-language-picker${isOpen ? " is-open" : ""}`} aria-label={t("languageSwitcher.title")}>
+    <section className={`mobile-language-picker${isOpen ? " is-open" : ""}${compact ? " is-compact" : ""}`} aria-label={t("languageSwitcher.title")}>
       <button className="mobile-language-picker__trigger" type="button" onClick={onToggle} aria-expanded={isOpen}>
-        <span className="mobile-language-picker__label">{t("languageSwitcher.title")}</span>
+        {!compact ? <span className="mobile-language-picker__label">{t("languageSwitcher.title")}</span> : null}
         <span className="mobile-language-picker__current">
-          <span aria-hidden="true">{currentLanguageOption.flag}</span>
+          <CountryFlag code={currentLanguageOption.countryCode} label={currentLanguageOption.label} className="mobile-language-picker__flag" />
           <strong>{currentLanguageOption.code.toUpperCase()}</strong>
           <ChevronDown size={16} strokeWidth={2.2} />
         </span>
@@ -150,7 +151,7 @@ function MobileLanguagePicker({ currentLanguage, isOpen, onToggle, onSelectLangu
                   className={`mobile-language-picker__option${language.code === currentLanguage ? " is-active" : ""}`}
                   onClick={() => onSelectLanguage(language.code)}
                 >
-                  <span className="mobile-language-picker__flag" aria-hidden="true">{language.flag}</span>
+                  <CountryFlag code={language.countryCode} label={language.label} className="mobile-language-picker__flag" />
                   <span className="mobile-language-picker__copy">
                     <strong>{language.label}</strong>
                     <small>{language.nativeLabel}</small>
@@ -171,7 +172,7 @@ function MobileLanguagePicker({ currentLanguage, isOpen, onToggle, onSelectLangu
                   className={`mobile-language-picker__option${language.code === currentLanguage ? " is-active" : ""}`}
                   onClick={() => onSelectLanguage(language.code)}
                 >
-                  <span className="mobile-language-picker__flag" aria-hidden="true">{language.flag}</span>
+                  <CountryFlag code={language.countryCode} label={language.label} className="mobile-language-picker__flag" />
                   <span className="mobile-language-picker__copy">
                     <strong>{language.label}</strong>
                     <small>{language.nativeLabel}</small>
@@ -403,6 +404,13 @@ function Navbar() {
             ) : null}
           </div>
         </div>
+        <MobileLanguagePicker
+          currentLanguage={currentLanguage}
+          isOpen={isLanguageOpen}
+          onToggle={() => setIsLanguageOpen((current) => !current)}
+          onSelectLanguage={selectLanguage}
+          compact
+        />
         <button
           className="menu-toggle"
           type="button"
@@ -430,7 +438,8 @@ function Navbar() {
               </LocalizedNavLink>
             ))}
             {isAuthenticated ? (
-              <LocalizedLink className="mobile-menu__account-card" to={profilePath} onClick={closeMenu}>
+              <div className="mobile-menu__account-row">
+                <LocalizedLink className="mobile-menu__account-card" to={profilePath} onClick={closeMenu}>
                   <div className="mobile-menu__account-avatar" aria-hidden="true">
                     {avatarImageUrl ? (
                       <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
@@ -442,7 +451,16 @@ function Navbar() {
                     <strong>{displayName}</strong>
                     {accountEmail ? <small>{accountEmail}</small> : null}
                   </div>
-              </LocalizedLink>
+                </LocalizedLink>
+                <button
+                  type="button"
+                  className="mobile-menu__account-signout"
+                  aria-label={t("clientPortal.signOut", { defaultValue: "Sign out" })}
+                  onClick={handleSignOut}
+                >
+                  <LogOut size={20} strokeWidth={2.1} />
+                </button>
+              </div>
             ) : (
               <LocalizedLink to="/auth/login" onClick={closeMenu}>
                 {t("claimModal.logIn", { defaultValue: "Sign in" })}
@@ -453,13 +471,6 @@ function Navbar() {
           <LocalizedLink className="mobile-menu__claim" to="/claim/eligibility" onClick={startClaim}>
             {t("common.startYourClaim")}
           </LocalizedLink>
-
-          <MobileLanguagePicker
-            currentLanguage={currentLanguage}
-            isOpen={isLanguageOpen}
-            onToggle={() => setIsLanguageOpen((current) => !current)}
-            onSelectLanguage={selectLanguage}
-          />
 
           <div className="mobile-menu__socials" aria-label={t("footer.socialAria")}>
             {socialLinks.map((item) => (

@@ -56,7 +56,8 @@
     "delayedFlights": "Gecikmiş uçuşlar",
     "cancelledFlights": "Ləğv edilmiş uçuşlar",
     "missedConnections": "Buraxılmış əlaqələr",
-    "copyright": "©2026 Fly Friendly"
+    "copyright": "© {{year}} Fly Friendly. Bütün hüquqlar qorunur.",
+    "siteCreatedBy": "Saytın hazırlanması - Farid Huseynov."
   },
   "claimModal": {
     "signupTitle": "Tərəfdaş hesabı yaradın",
@@ -189,7 +190,7 @@
   },
   "home": {
     "claimBoxTitle": "Təzminatınızı yoxlayın və tələb edin.",
-    "claimBoxDestinationPlaceholder": "Təyinat hava limanı, şəhər və ya ölkə",
+    "claimBoxDestinationPlaceholder": "Təyinat hava limanı",
     "claimBoxNoAirportsFound": "Heç bir hava limanı tapılmadı",
     "claimBoxFree": "Pulsuzdur",
     "claimBoxMinutes": "dəqiqə çəkir",
@@ -198,6 +199,7 @@
     "heroTitle": "Uçuş gecikdi və ya ləğv edildi?",
     "heroTitleStrong": "İndi €600-a qədər iddia edin.",
     "heroText": "Biz sizin təzminat hüququnuz üçün mübarizə aparırıq. İddianızı bir neçə dəqiqə ərzində təqdim edin və bizə hava yolu ilə baxmağa icazə verin.",
+    "scrollBannerTitle": "Ləğv edilmiş və ya gecikmiş uçuş üçün €600-dək kompensasiya tələb edin.",
     "trustLabel": "Qlobal Reach",
     "trustTitle": "Dünyada etibarlı tərəfdaş",
     "benefits": [
@@ -231,7 +233,7 @@
       "deniedText": "Çox bron edilmiş uçuş? İndi tam kompensasiyanızı tələb edin. Hüquqlarınız üçün mübarizə aparırıq.",
       "allAirlines": "Bütün aviaşirkətlər",
       "allCountries": "Bütün ölkələr",
-      "noWinNoFee": "Qələbə yoxdur, ödəniş yoxdur"
+      "noWinNoFee": "Qələbə olmasa, ödəniş yoxdur"
     },
     "membershipLabel": "Abunə haqqımız",
     "membershipTitle": "Fly Friendly Üzvlük",
@@ -362,7 +364,8 @@
         "question": "Şəxsi məlumatlarım təhlükəsizdirmi?",
         "answer": "Biz məlumatınızdan yalnız iddianızı emal etmək və müvafiq tərəflərlə əlaqə saxlamaq üçün istifadə edirik. Məlumat yalnız təzminat almaq üçün lazım olduqda paylaşılır."
       }
-    ]
+    ],
+    "scrollBannerHide": "Gizlət"
   },
   "referral": {
     "heroTag": "# Creators & Influencers For",
@@ -491,8 +494,8 @@
     "emailError": "Düzəliş e-poçt ünvanına daxil olun",
     "eligibility": {
       "whereDidYouFly": "Haraya uçmusunuz?",
-      "departurePlaceholder": "Gediş hava limanı, şəhər və ya ölkə",
-      "arrivalPlaceholder": "Gəliş hava limanı, şəhər və ya ölkə",
+      "departurePlaceholder": "Gediş hava limanı",
+      "arrivalPlaceholder": "Təyinat hava limanı",
       "noAirportsFound": "Heç bir hava limanı tapılmadı",
       "whichAirline": "Hansı aviaşirkətlə uçmusunuz?",
       "searchAirline": "Aviaşirkət axtarın",
@@ -507,7 +510,11 @@
       "scheduledDepartureDate": "Planlaşdırılmış gediş tarixiniz nə idi?",
       "directFlight": "Bu birbaşa uçuş idi?",
       "directYes": "Bəli, bu birbaşa idi",
-      "directNo": "Xeyr, bu birbaşa deyildi"
+      "directNo": "Xeyr, bu birbaşa deyildi",
+      "connectionCity": "Hansı şəhərdə transfer etmisiniz?",
+      "connectionCityPlaceholder": "Transfer şəhəri",
+      "connectionCityHelp": "Təyyarəni dəyişdiyiniz şəhəri daxil edin.",
+      "connectionCityRequired": "Zəhmət olmasa transfer etdiyiniz şəhəri daxil edin."
     },
     "contact": {
       "title": "Zəhmət olmasa əlaqə məlumatlarınızı daxil edin.",
@@ -519,9 +526,11 @@
       "addressPlaceholder": "Şəhərinizə daxil olun",
       "optional": "Könüllü",
       "phone": "Əlaqə nömrəsi (WhatsApp-a üstünlük verilir)",
-      "phonePlaceholder": "Məsələn: +90 5xx xxx xx xx",
+      "phonePlaceholder": "Məsələn: 050 XXX XX XX",
       "hasWhatsapp": "Bəli, bu nömrədə Whatsapp var.",
-      "requiredToProceed": "Davam etmək tələb olunur."
+      "requiredToProceed": "Davam etmək tələb olunur.",
+      "phoneSearchPlaceholder": "Ölkə axtarın",
+      "phoneSearchEmpty": "Uyğun ölkə tapılmadı."
     },
     "documents": {
       "title": "Təhlükəsiz Sənəd Yükləmə",
@@ -600,6 +609,13 @@
       "emailFailed": "İddia təqdim edildi, lakin təsdiq e-poçtu avtomatik göndərilə bilmədi.",
       "customerFallback": "müştəri",
       "removeFile": "{{file}} silin"
+    },
+    "datePicker": {
+      "placeholder": "Tarixi seçin",
+      "previousMonth": "Əvvəlki ay",
+      "nextMonth": "Növbəti ay",
+      "clear": "Təmizlə",
+      "today": "Bu gün"
     }
   },
   "legal": {
@@ -1013,6 +1029,61 @@
     "placeholders": {
       "email": "you@example.com",
       "password": "Şifrənizi daxil edin"
+    },
+    "register": {
+      "legalText": "Mən <termsLink>İstifadə şərtləri</termsLink> və <privacyLink>Məxfilik siyasəti</privacyLink> ilə razıyam.",
+      "legalRequired": "Zəhmət olmasa istifadə şərtlərini və məxfilik siyasətini qəbul edin."
+    }
+  },
+  "partnerApply": {
+    "loadError": "Tərəfdaş müraciəti məlumatını yükləmək mümkün olmadı.",
+    "loading": "Tərəfdaş müraciəti yüklənir...",
+    "receivedTitle": "Müraciət qəbul olundu",
+    "receivedText": "Təşəkkür edirik. Tərəfdaş müraciətinizi aldıq və tərəfdaş hesabı, referal kodu və ya portal girişi yaratmazdan əvvəl nəzərdən keçirəcəyik.",
+    "fullName": "Ad və soyad",
+    "email": "E-poçt",
+    "publicName": "İctimai ad",
+    "status": "Status",
+    "receivedNote": "Təsdiq Fly Friendly komandası tərəfindən ayrıca aparılır. Bu formanın göndərilməsi tərəfdaş portalına giriş vermir.",
+    "backToProgram": "Tərəfdaş proqramına qayıt",
+    "backToDashboard": "Kabinetə qayıt",
+    "backToLogin": "Girişə qayıt",
+    "title": "Fly Friendly tərəfdaşı olmaq üçün müraciət edin",
+    "text": "Auditoriyanız, kanallarınız və əməkdaşlıq uyğunluğu haqqında məlumat verin. Tərəfdaş hesabı və ya referal giriş yaradılmadan əvvəl müraciətiniz nəzərdən keçiriləcək.",
+    "resubmitHint": "Əvvəlki müraciətiniz artıq aktiv deyil. Aşağıda yeni sorğu göndərə bilərsiniz.",
+    "phone": "Telefon",
+    "country": "Ölkə",
+    "preferredLanguage": "Üstünlük verilən dil",
+    "selectLanguage": "Dil seçin",
+    "primaryPlatform": "Əsas platforma",
+    "selectPlatform": "Platforma seçin",
+    "audienceSize": "Auditoriya ölçüsü",
+    "audienceSizePlaceholder": "məsələn, aylıq 50k çatım",
+    "audienceCountries": "Auditoriya ölkələri",
+    "audienceCountriesPlaceholder": "Ölkələri vergül və ya yeni sətirlə qeyd edin",
+    "website": "Vebsayt URL",
+    "instagram": "Instagram URL",
+    "tiktok": "TikTok URL",
+    "youtube": "YouTube URL",
+    "niche": "Niş və ya mövzu",
+    "contentLinks": "Məzmun linkləri",
+    "contentLinksPlaceholder": "Əsas məzmun linklərini vergül və ya yeni sətirlə əlavə edin",
+    "reason": "Niyə qoşulmaq istəyirsiniz?",
+    "consent": "Təqdim etdiyim məlumatın düzgün olduğunu təsdiqləyir və Fly Friendly Partner Proqramı ilə bağlı mənimlə əlaqə saxlanmasına razıyam.",
+    "legalText": "Mən <termsLink>İstifadə şərtləri</termsLink> və <privacyLink>Məxfilik siyasəti</privacyLink> ilə razıyam.",
+    "legalRequired": "Zəhmət olmasa istifadə şərtlərini və məxfilik siyasətini qəbul edin.",
+    "submitting": "Göndərilir...",
+    "submit": "Müraciəti göndər",
+    "error": "Müraciətinizi göndərmək mümkün olmadı.",
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "blog": "Bloq",
+      "newsletter": "E-poçt bülleteni",
+      "travelAgency": "Tur agentliyi",
+      "community": "İcma",
+      "other": "Digər"
     }
   }
 }

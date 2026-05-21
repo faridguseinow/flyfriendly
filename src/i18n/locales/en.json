@@ -58,7 +58,8 @@
     "delayedFlights": "Delayed flights",
     "cancelledFlights": "Cancelled flights",
     "missedConnections": "Missed connections",
-    "copyright": "©2026 Fly Friendly"
+    "copyright": "© {{year}} Fly Friendly. All rights reserved.",
+    "siteCreatedBy": "Website by Farid Huseynov."
   },
   "claimModal": {
     "signupTitle": "Create partner account",
@@ -191,7 +192,7 @@
   },
   "home": {
     "claimBoxTitle": "Check and claim your compensation.",
-    "claimBoxDestinationPlaceholder": "Destination airport, city or country",
+    "claimBoxDestinationPlaceholder": "Arrival airport",
     "claimBoxNoAirportsFound": "No airports found",
     "claimBoxFree": "It's free",
     "claimBoxMinutes": "Takes minutes",
@@ -200,6 +201,7 @@
     "heroTitle": "Delayed or canceled flight?",
     "heroTitleStrong": "Claim up to €600 now.",
     "heroText": "We fight for your right to compensation. Submit your claim in minutes and let us handle the airline.",
+    "scrollBannerTitle": "Claim compensation up to €600 for a delayed or canceled flight.",
     "trustLabel": "Global Reach",
     "trustTitle": "A trusted partner worldwide",
     "benefits": [
@@ -364,7 +366,8 @@
         "question": "Is my personal data safe?",
         "answer": "We only use your information to process your claim and communicate with relevant parties. Data is shared only when necessary to pursue compensation."
       }
-    ]
+    ],
+    "scrollBannerHide": "Hide"
   },
   "referral": {
     "heroTag": "# ForCreators&Influencers",
@@ -493,8 +496,8 @@
     "emailError": "Введите корректный email адрес",
     "eligibility": {
       "whereDidYouFly": "Where did you fly?",
-      "departurePlaceholder": "Departure airport, city or country",
-      "arrivalPlaceholder": "Arrival airport, city or country",
+      "departurePlaceholder": "Departure airport",
+      "arrivalPlaceholder": "Arrival airport",
       "noAirportsFound": "No airports found",
       "whichAirline": "Which airline did you fly with?",
       "searchAirline": "Search airline",
@@ -509,7 +512,11 @@
       "scheduledDepartureDate": "What was your scheduled departure date?",
       "directFlight": "Was it a direct flight?",
       "directYes": "Yes, that was direct",
-      "directNo": "No, that was not direct"
+      "directNo": "No, that was not direct",
+      "connectionCity": "Where did you make the connection?",
+      "connectionCityPlaceholder": "Connection city",
+      "connectionCityHelp": "Enter the city where you changed planes.",
+      "connectionCityRequired": "Please enter the city where you changed planes."
     },
     "contact": {
       "title": "Please, enter your contact information.",
@@ -521,9 +528,11 @@
       "addressPlaceholder": "Enter Your City",
       "optional": "Optional",
       "phone": "Contact Number (WhatsApp preferred)",
-      "phonePlaceholder": "E.g.: +90 5xx xxx xx xx",
+      "phonePlaceholder": "E.g.: 050 XXX XX XX",
       "hasWhatsapp": "Yes, this number has Whatsapp.",
-      "requiredToProceed": "Required to proceed."
+      "requiredToProceed": "Required to proceed.",
+      "phoneSearchPlaceholder": "Search for countries",
+      "phoneSearchEmpty": "No matching countries found."
     },
     "documents": {
       "title": "Secure Document Upload",
@@ -602,6 +611,13 @@
       "emailFailed": "Claim submitted, but the confirmation email could not be sent automatically.",
       "customerFallback": "the customer",
       "removeFile": "Remove {{file}}"
+    },
+    "datePicker": {
+      "placeholder": "Select date",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "clear": "Clear",
+      "today": "Today"
     }
   },
   "legal": {
@@ -1015,6 +1031,61 @@
     "placeholders": {
       "email": "you@example.com",
       "password": "Enter your password"
+    },
+    "register": {
+      "legalText": "I agree to the <termsLink>Terms of Use</termsLink> and <privacyLink>Privacy Policy</privacyLink>.",
+      "legalRequired": "Please accept the terms and privacy policy."
+    }
+  },
+  "partnerApply": {
+    "loadError": "Could not load partner application state.",
+    "loading": "Loading partner application...",
+    "receivedTitle": "Application received",
+    "receivedText": "Thank you. We have received your partner application and our team will review it before creating any partner account, referral code, or portal access.",
+    "fullName": "Full name",
+    "email": "Email",
+    "publicName": "Public name",
+    "status": "Status",
+    "receivedNote": "Approval is handled separately by the Fly Friendly team. Submitting this form does not grant partner portal access.",
+    "backToProgram": "Back to partner program",
+    "backToDashboard": "Back to dashboard",
+    "backToLogin": "Back to sign in",
+    "title": "Apply to become a Fly Friendly partner",
+    "text": "Tell us about your audience, channels, and market fit. We will review your application before creating any partner account or referral access.",
+    "resubmitHint": "Your previous application is no longer active. You can submit a new request below.",
+    "phone": "Phone",
+    "country": "Country",
+    "preferredLanguage": "Preferred language",
+    "selectLanguage": "Select language",
+    "primaryPlatform": "Primary platform",
+    "selectPlatform": "Select platform",
+    "audienceSize": "Audience size",
+    "audienceSizePlaceholder": "e.g. 50k monthly reach",
+    "audienceCountries": "Audience countries",
+    "audienceCountriesPlaceholder": "List countries separated by commas or new lines",
+    "website": "Website URL",
+    "instagram": "Instagram URL",
+    "tiktok": "TikTok URL",
+    "youtube": "YouTube URL",
+    "niche": "Niche or topic",
+    "contentLinks": "Content links",
+    "contentLinksPlaceholder": "Paste notable content links separated by commas or new lines",
+    "reason": "Why do you want to join?",
+    "consent": "I confirm that the information provided is accurate and I agree to be contacted about the Fly Friendly Partner Program.",
+    "legalText": "I agree to the <termsLink>Terms of Use</termsLink> and <privacyLink>Privacy Policy</privacyLink>.",
+    "legalRequired": "Please accept the terms and privacy policy.",
+    "submitting": "Submitting...",
+    "submit": "Submit application",
+    "error": "Could not submit your application.",
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "blog": "Blog",
+      "newsletter": "Newsletter",
+      "travelAgency": "Travel agency",
+      "community": "Community",
+      "other": "Other"
     }
   }
 }

@@ -7,6 +7,23 @@ import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { describeAirportOption, searchAirports } from "../../services/catalogService.js";
 import "./style.scss";
 
+function normalizeAirportValue(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isSameAirportSelection(first, second) {
+  const firstId = String(first?.id || "").trim();
+  const secondId = String(second?.id || "").trim();
+
+  if (firstId && secondId) {
+    return firstId === secondId;
+  }
+
+  const firstValue = normalizeAirportValue(first?.label || first);
+  const secondValue = normalizeAirportValue(second?.label || second);
+  return Boolean(firstValue && secondValue && firstValue === secondValue);
+}
+
 function HomeAirportCombobox({ icon: Icon, placeholder, value, options, onInputChange, onSelect, emptyLabel }) {
   const rootRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -114,8 +131,11 @@ function ClaimBox() {
   const { t } = useTranslation();
   const [departure, setDeparture] = useState("");
   const [destination, setDestination] = useState("");
+  const [departureSelection, setDepartureSelection] = useState(null);
+  const [destinationSelection, setDestinationSelection] = useState(null);
   const [departureMatches, setDepartureMatches] = useState([]);
   const [destinationMatches, setDestinationMatches] = useState([]);
+  const [airportError, setAirportError] = useState("");
 
   useEffect(() => {
     if (departure.trim().length < 2) {
@@ -126,14 +146,18 @@ function ClaimBox() {
     const timeout = window.setTimeout(async () => {
       try {
         const rows = await searchAirports(departure, 6);
-        setDepartureMatches(rows.map((item) => describeAirportOption(item)));
+        setDepartureMatches(
+          rows
+            .map((item) => describeAirportOption(item))
+            .filter((item) => !isSameAirportSelection(item, destinationSelection || destination)),
+        );
       } catch {
         setDepartureMatches([]);
       }
     }, 160);
 
     return () => window.clearTimeout(timeout);
-  }, [departure]);
+  }, [departure, destination, destinationSelection]);
 
   useEffect(() => {
     if (destination.trim().length < 2) {
@@ -144,17 +168,32 @@ function ClaimBox() {
     const timeout = window.setTimeout(async () => {
       try {
         const rows = await searchAirports(destination, 6);
-        setDestinationMatches(rows.map((item) => describeAirportOption(item)));
+        setDestinationMatches(
+          rows
+            .map((item) => describeAirportOption(item))
+            .filter((item) => !isSameAirportSelection(item, departureSelection || departure)),
+        );
       } catch {
         setDestinationMatches([]);
       }
     }, 160);
 
     return () => window.clearTimeout(timeout);
-  }, [destination]);
+  }, [departure, departureSelection, destination]);
 
   const startLead = (event) => {
     event.preventDefault();
+
+    if (isSameAirportSelection(departureSelection || departure, destinationSelection || destination)) {
+      setAirportError(
+        t("claim.eligibility.sameAirportError", {
+          defaultValue: "Departure and arrival airports must be different.",
+        }),
+      );
+      return;
+    }
+
+    setAirportError("");
     const query = new URLSearchParams();
 
     if (departure.trim()) query.set("departure", departure.trim());
@@ -178,8 +217,16 @@ function ClaimBox() {
           value={departure}
           placeholder={t("claim.eligibility.departurePlaceholder")}
           options={departureMatches}
-          onInputChange={setDeparture}
-          onSelect={(item) => setDeparture(item.label)}
+          onInputChange={(value) => {
+            setDeparture(value);
+            setDepartureSelection(null);
+            setAirportError("");
+          }}
+          onSelect={(item) => {
+            setDeparture(item.label);
+            setDepartureSelection(item);
+            setAirportError("");
+          }}
           emptyLabel={t("home.claimBoxNoAirportsFound")}
         />
         <HomeAirportCombobox
@@ -187,12 +234,21 @@ function ClaimBox() {
           value={destination}
           placeholder={t("home.claimBoxDestinationPlaceholder")}
           options={destinationMatches}
-          onInputChange={setDestination}
-          onSelect={(item) => setDestination(item.label)}
+          onInputChange={(value) => {
+            setDestination(value);
+            setDestinationSelection(null);
+            setAirportError("");
+          }}
+          onSelect={(item) => {
+            setDestination(item.label);
+            setDestinationSelection(item);
+            setAirportError("");
+          }}
           emptyLabel={t("home.claimBoxNoAirportsFound")}
         />
         <button className="btn btn-primary" type="submit">{t("common.checkCompensation")} <span>›</span></button>
       </div>
+      {airportError ? <p className="claim-box__error">{airportError}</p> : null}
       <div className="claim-box__meta">
         <span>{t("home.claimBoxFree")}</span>
         <span>{t("home.claimBoxMinutes")}</span>

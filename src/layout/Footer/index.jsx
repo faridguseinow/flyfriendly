@@ -8,6 +8,7 @@ import "./style.scss";
 
 function Footer() {
   const { t } = useTranslation();
+  const year = new Date().getFullYear();
 
   return (
     <footer className="footer">
@@ -56,7 +57,14 @@ function Footer() {
       </div>
       <div className="footer__bottom">
         <strong>Fly Friendly</strong>
-        <span>{t("footer.copyright")}</span>
+        <div className="footer__meta">
+          <span>{t("footer.copyright", { year })}</span>
+          <span>
+            <a href="https://faridguseinow.framer.website/" target="_blank" rel="noreferrer">
+              {t("footer.siteCreatedBy")}
+            </a>
+          </span>
+        </div>
       </div>
     </footer>
   );

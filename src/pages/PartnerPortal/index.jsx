@@ -425,7 +425,7 @@ export function PartnerProfilePage() {
           <select value={form.preferred_language} onChange={(event) => setForm((current) => ({ ...current, preferred_language: event.target.value }))}>
             {languages.map((language) => (
               <option key={language.code} value={language.code}>
-                {language.flag} {language.nativeLabel}
+                {language.nativeLabel}
               </option>
             ))}
           </select>

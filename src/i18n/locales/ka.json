@@ -57,7 +57,8 @@
     "delayedFlights": "დაგვიანებული ფრენები",
     "cancelledFlights": "გაუქმებული ფრენები",
     "missedConnections": "გამოტოვებული გადაჯდომები",
-    "copyright": "©2026 Fly Friendly"
+    "copyright": "© {{year}} Fly Friendly. ყველა უფლება დაცულია.",
+    "siteCreatedBy": "ვებსაიტის შექმნა — Farid Huseynov."
   },
   "claimModal": {
     "signupTitle": "პარტნიორის ანგარიშის შექმნა",
@@ -190,7 +191,7 @@
   },
   "home": {
     "claimBoxTitle": "შეამოწმეთ და მოითხოვეთ თქვენი კომპენსაცია.",
-    "claimBoxDestinationPlaceholder": "დანიშნულების აეროპორტი, ქალაქი ან ქვეყანა",
+    "claimBoxDestinationPlaceholder": "ჩამოსვლის აეროპორტი",
     "claimBoxNoAirportsFound": "აეროპორტები ვერ მოიძებნა",
     "claimBoxFree": "უფასოა",
     "claimBoxMinutes": "რამდენიმე წუთია საჭირო",
@@ -199,6 +200,7 @@
     "heroTitle": "ფრენა დაგვიანდა ან გაუქმდა?",
     "heroTitleStrong": "მოითხოვეთ €600-მდე ახლავე.",
     "heroText": "ჩვენ ვიცავთ თქვენს უფლებას კომპენსაციაზე. გაგზავნეთ მოთხოვნა რამდენიმე წუთში და ავიაკომპანიასთან საქმეს ჩვენ მოვაგვარებთ.",
+    "scrollBannerTitle": "მოითხოვეთ €600-მდე კომპენსაცია დაგვიანებული ან გაუქმებული ფრენისთვის.",
     "trustLabel": "გლობალური დაფარვა",
     "trustTitle": "სანდო პარტნიორი მთელ მსოფლიოში",
     "benefits": [
@@ -363,7 +365,8 @@
         "question": "უსაფრთხოა ჩემი პირადი მონაცემები?",
         "answer": "თქვენს ინფორმაციას მხოლოდ მოთხოვნის დასამუშავებლად და საჭირო მხარეებთან კომუნიკაციისთვის ვიყენებთ. მონაცემები მხოლოდ აუცილებლობის შემთხვევაში ზიარდება."
       }
-    ]
+    ],
+    "scrollBannerHide": "დამალვა"
   },
   "referral": {
     "heroTag": "# შემქმნელებისთვის და ინფლუენსერებისთვის",
@@ -492,8 +495,8 @@
     "emailError": "შეიყვანეთ სწორი ელფოსტის მისამართი",
     "eligibility": {
       "whereDidYouFly": "სად გაფრინდით?",
-      "departurePlaceholder": "გამგზავრების აეროპორტი, ქალაქი ან ქვეყანა",
-      "arrivalPlaceholder": "ჩამოსვლის აეროპორტი, ქალაქი ან ქვეყანა",
+      "departurePlaceholder": "გამგზავრების აეროპორტი",
+      "arrivalPlaceholder": "ჩამოსვლის აეროპორტი",
       "noAirportsFound": "აეროპორტები ვერ მოიძებნა",
       "whichAirline": "რომელი ავიაკომპანიით იფრინეთ?",
       "searchAirline": "ავიაკომპანიის ძიება",
@@ -508,7 +511,11 @@
       "scheduledDepartureDate": "როდის იყო დაგეგმილი გაფრენა?",
       "directFlight": "იყო პირდაპირი ფრენა?",
       "directYes": "დიახ, პირდაპირი იყო",
-      "directNo": "არა, პირდაპირი არ იყო"
+      "directNo": "არა, პირდაპირი არ იყო",
+      "connectionCity": "რომელ ქალაქში გააკეთეთ გადაჯდომა?",
+      "connectionCityPlaceholder": "გადაჯდომის ქალაქი",
+      "connectionCityHelp": "შეიყვანეთ ქალაქი, სადაც თვითმფრინავი შეცვალეთ.",
+      "connectionCityRequired": "გთხოვთ მიუთითოთ გადაჯდომის ქალაქი."
     },
     "contact": {
       "title": "გთხოვთ შეიყვანოთ საკონტაქტო ინფორმაცია.",
@@ -520,9 +527,11 @@
       "addressPlaceholder": "შეიყვანეთ ქალაქი",
       "optional": "არასავალდებულო",
       "phone": "საკონტაქტო ნომერი (სასურველია WhatsApp)",
-      "phonePlaceholder": "მაგ.: +995 5xx xxx xxx",
+      "phonePlaceholder": "მაგალითად: 050 XXX XX XX",
       "hasWhatsapp": "დიახ, ამ ნომერს აქვს WhatsApp.",
-      "requiredToProceed": "გაგრძელებისთვის აუცილებელია."
+      "requiredToProceed": "გაგრძელებისთვის აუცილებელია.",
+      "phoneSearchPlaceholder": "მოძებნეთ ქვეყანა",
+      "phoneSearchEmpty": "შესაბამისი ქვეყანა ვერ მოიძებნა."
     },
     "documents": {
       "title": "უსაფრთხო დოკუმენტების ატვირთვა",
@@ -601,6 +610,13 @@
       "emailFailed": "მოთხოვნა გაგზავნილია, მაგრამ დადასტურების ელფოსტა ავტომატურად ვერ გაიგზავნა.",
       "customerFallback": "მომხმარებელი",
       "removeFile": "{{file}} წაშლა"
+    },
+    "datePicker": {
+      "placeholder": "აირჩიეთ თარიღი",
+      "previousMonth": "წინა თვე",
+      "nextMonth": "შემდეგი თვე",
+      "clear": "გასუფთავება",
+      "today": "დღეს"
     }
   },
   "legal": {
@@ -1015,6 +1031,61 @@
     "placeholders": {
       "email": "you@example.com",
       "password": "შეიყვანეთ პაროლი"
+    },
+    "register": {
+      "legalText": "ვეთანხმები <termsLink>გამოყენების პირობებს</termsLink> და <privacyLink>კონფიდენციალურობის პოლიტიკას</privacyLink>.",
+      "legalRequired": "გთხოვთ, დაეთანხმოთ გამოყენების პირობებს და კონფიდენციალურობის პოლიტიკას."
+    }
+  },
+  "partnerApply": {
+    "loadError": "პარტნიორის განაცხადის მდგომარეობის ჩატვირთვა ვერ მოხერხდა.",
+    "loading": "იტვირთება პარტნიორის განაცხადი...",
+    "receivedTitle": "განაცხადი მიღებულია",
+    "receivedText": "გმადლობთ. თქვენი პარტნიორის განაცხადი მიღებულია და ჩვენი გუნდი მას განიხილავს პარტნიორის ანგარიშის, რეფერალური კოდის ან პორტალზე წვდომის შექმნამდე.",
+    "fullName": "სრული სახელი",
+    "email": "ელფოსტა",
+    "publicName": "საჯარო სახელი",
+    "status": "სტატუსი",
+    "receivedNote": "დამტკიცებას Fly Friendly-ის გუნდი ცალკე ამუშავებს. ამ ფორმის გაგზავნა პარტნიორის პორტალზე წვდომას არ ანიჭებს.",
+    "backToProgram": "პარტნიორული პროგრამისკენ დაბრუნება",
+    "backToDashboard": "დაბრუნება კაბინეტში",
+    "backToLogin": "დაბრუნება შესვლაზე",
+    "title": "გახდით Fly Friendly-ის პარტნიორი",
+    "text": "გვიამბეთ თქვენი აუდიტორიის, არხებისა და შესაბამისობის შესახებ. ჩვენ განვიხილავთ თქვენს განაცხადს პარტნიორის ანგარიშის ან რეფერალური წვდომის შექმნამდე.",
+    "resubmitHint": "თქვენი წინა განაცხადი აღარ არის აქტიური. ქვემოთ შეგიძლიათ ახალი მოთხოვნის გაგზავნა.",
+    "phone": "ტელეფონი",
+    "country": "ქვეყანა",
+    "preferredLanguage": "სასურველი ენა",
+    "selectLanguage": "აირჩიეთ ენა",
+    "primaryPlatform": "ძირითადი პლატფორმა",
+    "selectPlatform": "აირჩიეთ პლატფორმა",
+    "audienceSize": "აუდიტორიის ზომა",
+    "audienceSizePlaceholder": "მაგალითად, თვეში 50k დაფარვა",
+    "audienceCountries": "აუდიტორიის ქვეყნები",
+    "audienceCountriesPlaceholder": "ჩამოთვალეთ ქვეყნები მძიმით ან ახალ ხაზზე",
+    "website": "ვებსაიტის URL",
+    "instagram": "Instagram URL",
+    "tiktok": "TikTok URL",
+    "youtube": "YouTube URL",
+    "niche": "ნიშა ან თემა",
+    "contentLinks": "კონტენტის ბმულები",
+    "contentLinksPlaceholder": "ჩასვით მნიშვნელოვანი კონტენტის ბმულები მძიმით ან ახალ ხაზზე",
+    "reason": "რატომ გსურთ შემოერთება?",
+    "consent": "ვადასტურებ, რომ მოწოდებული ინფორმაცია სწორია და ვეთანხმები, რომ Fly Friendly Partner პროგრამასთან დაკავშირებით დამიკავშირდნენ.",
+    "legalText": "ვეთანხმები <termsLink>გამოყენების პირობებს</termsLink> და <privacyLink>კონფიდენციალურობის პოლიტიკას</privacyLink>.",
+    "legalRequired": "გთხოვთ დაეთანხმოთ გამოყენების პირობებს და კონფიდენციალურობის პოლიტიკას.",
+    "submitting": "იგზავნება...",
+    "submit": "განაცხადის გაგზავნა",
+    "error": "თქვენი განაცხადის გაგზავნა ვერ მოხერხდა.",
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "blog": "ბლოგი",
+      "newsletter": "საინფორმაციო წერილი",
+      "travelAgency": "ტურისტული სააგენტო",
+      "community": "საზოგადოება",
+      "other": "სხვა"
     }
   }
 }

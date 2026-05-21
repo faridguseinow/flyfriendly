@@ -25,7 +25,7 @@
     position: relative;
     color: #fff;
     border: 2px solid #c9d8fb;
-    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+    background: var(--primary);
 
     &::before,
     &::after {

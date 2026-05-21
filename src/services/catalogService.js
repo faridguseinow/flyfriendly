@@ -35,6 +35,16 @@ const CURATED_AIRLINES = [
     aliases: ["ajet", "a jet", "anadolujet", "anadolu jet", "anadolujet airlines"],
     source: "curated",
   },
+  {
+    id: "curated-pc-pgt",
+    name: "Pegasus Airlines",
+    iata_code: "PC",
+    icao_code: "PGT",
+    country: "Turkey",
+    active: true,
+    aliases: ["pegasus", "pegasus airlines", "pegasus airlines-", "h9"],
+    source: "curated",
+  },
 ];
 const regionNames = typeof Intl !== "undefined"
   ? new Intl.DisplayNames(["en"], { type: "region" })
@@ -130,6 +140,16 @@ function getCanonicalAirlineOverride(airline) {
     normalizedName.includes("anadolujet")
   ) {
     return CURATED_AIRLINES[1];
+  }
+
+  if (
+    normalizedIata === "pc" ||
+    normalizedIata === "h9" ||
+    normalizedIcao === "pgt" ||
+    normalizedName === "pegasusairlines" ||
+    normalizedName.includes("pegasusairlines")
+  ) {
+    return CURATED_AIRLINES[2];
   }
 
   return null;
