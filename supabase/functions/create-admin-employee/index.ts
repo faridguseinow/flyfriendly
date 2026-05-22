@@ -14,6 +14,19 @@ const PRIVILEGED_ROLE_CODES = new Set([
   "admin",
 ]);
 
+const LEGACY_ADMIN_ROLE_CODES = new Set([
+  "owner",
+  "super_admin",
+  "admin",
+  "operations_manager",
+  "case_manager",
+  "customer_support_agent",
+  "content_manager",
+  "finance_manager",
+  "partner_manager",
+  "read_only",
+]);
+
 type RequestBody = {
   email?: string;
   password?: string;
@@ -95,6 +108,10 @@ function normalizeProfileRole(currentRole: string | null | undefined) {
     return role;
   }
   return null;
+}
+
+function shouldPersistLegacyAdminRole(roleCode: string | null | undefined) {
+  return LEGACY_ADMIN_ROLE_CODES.has(String(roleCode || "").trim());
 }
 
 async function requireAuthorizedAdmin(
@@ -372,7 +389,7 @@ Deno.serve(async (req) => {
       throw removeRolesResponse.error;
     }
 
-    if (status === "active") {
+    if (status === "active" && shouldPersistLegacyAdminRole(roleResponse.data.code)) {
       const insertRolesResponse = await serviceRoleClient
         .from("user_admin_roles")
         .insert({
