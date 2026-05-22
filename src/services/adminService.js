@@ -75,7 +75,7 @@ const countryAliases = {
 };
 const adminMenuCache = new Map();
 const ADMIN_MENU_CACHE_PREFIX = "admin-menu:";
-const ADMIN_MENU_CACHE_VERSION = "v4-role-visibility-fix";
+const ADMIN_MENU_CACHE_VERSION = "v5-owner-full-menu";
 const ADMIN_WORK_SESSION_STORAGE_KEY = "fly-friendly-admin-work-session";
 const ADMIN_ACTIVITY_SENSITIVE_KEYS = [
   "password",
@@ -3696,7 +3696,7 @@ async function replaceRoleMenuVisibility(client, role, menuVisibility = {}) {
 
   menuItems.forEach((item) => {
     const explicit = visibilityByPath.has(item.route) ? visibilityByPath.get(item.route) : null;
-    const forcedVisible = role.isOwnerRole && (item.is_critical || criticalOwnerRoutes.has(item.route));
+    const forcedVisible = role.isOwnerRole || role.code === "owner" || role.code === "super_admin";
     const isVisible = forcedVisible ? true : (explicit ?? true);
     const current = existingByMenuId.get(item.id);
     if (!current || current.is_visible !== isVisible) {
@@ -5565,6 +5565,18 @@ export async function fetchAdminSidebarMenu(profileId, roleCodes = []) {
     };
     writeAdminMenuCache(cacheKey, fallback);
     return fallback;
+  }
+
+  if (resolvedRole.isOwnerRole || resolvedRole.code === "owner" || resolvedRole.code === "super_admin") {
+    const ownerPayload = {
+      source: "static",
+      roleId: resolvedRole.id,
+      roleCode: resolvedRole.code,
+      items: adminNavigation,
+      groups: buildAdminNavigationGroups(adminNavigation),
+    };
+    writeAdminMenuCache(cacheKey, ownerPayload);
+    return ownerPayload;
   }
 
   const [menuItemsResponse, visibilityResponse] = await Promise.all([
