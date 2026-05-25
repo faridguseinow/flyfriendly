@@ -137,7 +137,24 @@ export async function captureReferralFromQueryString(search = "", pathname = "")
   }).catch(() => null);
 }
 
-export async function attachReferralToLead(leadId) {
+function buildReferralAttributionMeta(referralCode, leadData = {}) {
+  const disruptionType = leadData.disruptionType
+    || (leadData.delayDuration === "cancelled" ? "cancellation" : leadData.delayDuration ? "delay" : null);
+
+  return {
+    stored_at: new Date().toISOString(),
+    partner_referral_code: referralCode || null,
+    client_name: leadData.fullName || leadData.full_name || null,
+    client_email: leadData.email || null,
+    client_phone: leadData.phone || null,
+    route_from: leadData.departure || null,
+    route_to: leadData.destination || null,
+    airline: leadData.airline || null,
+    issue_type: disruptionType || null,
+  };
+}
+
+export async function attachReferralToLead(leadId, leadData = null) {
   const referral = getStoredReferralData();
   if (!referral?.referralCode || !leadId) {
     return null;
@@ -164,15 +181,36 @@ export async function attachReferralToLead(leadId) {
     source_path: validatedReferral.sourcePath || null,
     status: "lead_created",
     attribution_meta: {
-      stored_at: validatedReferral.storedAt,
+      ...buildReferralAttributionMeta(validatedReferral.referralCode, leadData || {}),
+      stored_at: validatedReferral.storedAt || new Date().toISOString(),
     },
   };
 
-  const referralWrite = await client
+  const existingReferral = await client
     .from("referrals")
-    .upsert(payload, { onConflict: "lead_id" })
     .select("id")
+    .eq("lead_id", leadId)
     .maybeSingle();
+
+  if (existingReferral.error) {
+    throw existingReferral.error;
+  }
+
+  const referralWrite = existingReferral.data?.id
+    ? await client
+      .from("referrals")
+      .update({
+        ...payload,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingReferral.data.id)
+      .select("id")
+      .maybeSingle()
+    : await client
+      .from("referrals")
+      .insert(payload)
+      .select("id")
+      .maybeSingle();
 
   if (referralWrite.error) {
     throw referralWrite.error;

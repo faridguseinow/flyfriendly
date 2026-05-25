@@ -133,7 +133,6 @@ async function sendResendEmail({
 
 export async function sendPartnerApplicationReceivedEmail(application: ApplicationEmailPayload) {
   const language = normalizeLanguage(application.preferred_language);
-  const loginUrl = buildPublicAuthUrl("/auth/login");
   const displayName = normalizeString(application.full_name) || "there";
   const publicName = normalizeString(application.public_name) || "your brand";
 
@@ -151,9 +150,6 @@ export async function sendPartnerApplicationReceivedEmail(application: Applicati
       <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4d5a73;">
         We will contact you by email once a decision has been made. Submitting this form does not grant partner portal access yet.
       </p>
-      <p style="margin:0;font-size:15px;line-height:1.7;color:#4d5a73;">
-        Client portal login: <a href="${loginUrl}" style="color:#1a7fd6;">${loginUrl}</a>
-      </p>
     `,
   });
 
@@ -164,7 +160,6 @@ export async function sendPartnerApplicationReceivedEmail(application: Applicati
     `We received your application for ${publicName} and our team will review it.`,
     application.primary_platform ? `Primary platform: ${application.primary_platform}` : "",
     "We will contact you by email once a decision has been made.",
-    `Client portal login: ${loginUrl}`,
     "",
     "Best regards,",
     "The Fly Friendly Team",
@@ -256,7 +251,6 @@ export async function sendPartnerRejectionEmail({
   notes?: string | null;
 }) {
   const language = normalizeLanguage(application.preferred_language);
-  const loginUrl = buildPublicAuthUrl("/auth/login");
   const displayName = normalizeString(application.full_name) || "there";
   const safeReason = normalizeString(rejectionReason);
   const safeNotes = normalizeString(notes);
@@ -273,7 +267,6 @@ export async function sendPartnerRejectionEmail({
       </p>
       ${safeReason ? `<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4d5a73;"><strong>Reason:</strong><br />${nl2br(safeReason)}</p>` : ""}
       ${safeNotes ? `<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4d5a73;"><strong>Additional notes:</strong><br />${nl2br(safeNotes)}</p>` : ""}
-      <p style="margin:0;font-size:15px;line-height:1.7;color:#4d5a73;">Portal login: <a href="${loginUrl}" style="color:#1a7fd6;">${loginUrl}</a></p>
     `,
   });
 
@@ -284,7 +277,6 @@ export async function sendPartnerRejectionEmail({
     "After reviewing your application, we are not able to approve it at this time.",
     safeReason ? `Reason: ${safeReason}` : "",
     safeNotes ? `Additional notes: ${safeNotes}` : "",
-    `Portal login: ${loginUrl}`,
     "",
     "Best regards,",
     "The Fly Friendly Team",

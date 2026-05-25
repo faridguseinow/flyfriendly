@@ -114,6 +114,46 @@ function shouldPersistLegacyAdminRole(roleCode: string | null | undefined) {
   return LEGACY_ADMIN_ROLE_CODES.has(String(roleCode || "").trim());
 }
 
+async function ensureReusableOrphanProfile(
+  serviceRoleClient: ReturnType<typeof createClient>,
+  profileId: string,
+  email: string,
+) {
+  const tablesToCheck = [
+    { table: "admin_team_members", column: "profile_id" },
+    { table: "customers", column: "profile_id" },
+    { table: "leads", column: "profile_id" },
+    { table: "cases", column: "profile_id" },
+    { table: "referral_partners", column: "profile_id" },
+  ];
+
+  for (const target of tablesToCheck) {
+    const response = await serviceRoleClient
+      .from(target.table)
+      .select("id", { head: true, count: "exact" })
+      .eq(target.column, profileId);
+
+    if (response.error) {
+      throw response.error;
+    }
+
+    if ((response.count || 0) > 0) {
+      throw new Error(
+        `A profile with email ${email} already exists and is linked to application data. Recover or reconnect that account instead of creating a new employee.`,
+      );
+    }
+  }
+
+  const deleteResponse = await serviceRoleClient
+    .from("profiles")
+    .delete()
+    .eq("id", profileId);
+
+  if (deleteResponse.error) {
+    throw deleteResponse.error;
+  }
+}
+
 async function requireAuthorizedAdmin(
   req: Request,
   supabaseUrl: string,
@@ -203,6 +243,7 @@ async function createOrUpdateAuthUser(
   email: string,
   password: string,
   metadata: Record<string, unknown>,
+  existingProfileId?: string | null,
 ) {
   const redirectTo = buildPublicAuthUrl("/auth/reset-password");
   const recoveryAttempt = await serviceRoleClient.auth.admin.generateLink({
@@ -233,6 +274,15 @@ async function createOrUpdateAuthUser(
 
   if (!isUserMissingError(recoveryAttempt.error)) {
     throw recoveryAttempt.error;
+  }
+
+  // Orphan profiles can exist if a previous auth create partially failed or
+  // someone inserted a profile row manually. The auth.users -> profiles trigger
+  // would then fail on the unique profiles.email constraint. If the orphan
+  // profile is not linked to any business data, remove it before creating the
+  // auth user so employee creation stays recoverable.
+  if (existingProfileId) {
+    await ensureReusableOrphanProfile(serviceRoleClient, existingProfileId, email);
   }
 
   const createdUser = await serviceRoleClient.auth.admin.createUser({
@@ -336,6 +386,7 @@ Deno.serve(async (req) => {
         full_name: fullName,
         phone,
       }),
+      existingProfileResponse.data?.id || null,
     );
 
     const existingProfile = existingProfileResponse.data || null;

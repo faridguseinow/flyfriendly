@@ -377,8 +377,10 @@ async function upsertClientProfile(
 async function attachReferralIfPresent(
   supabase: ReturnType<typeof createClient>,
   leadId: string,
+  leadCode: string | null,
   profileId: string,
   referral: ReferralPayload,
+  data: ClaimPayload,
 ) {
   const code = String(referral?.referralCode || "").trim();
   if (!code) {
@@ -397,23 +399,60 @@ async function attachReferralIfPresent(
     return null;
   }
 
-  const { error: referralError } = await supabase
-    .from("referrals")
-    .upsert({
-      partner_id: partner.id,
-      client_profile_id: profileId,
-      lead_id: leadId,
-      referral_code: partner.referral_code || code,
-      source_url: referral?.sourceUrl || null,
-      source_path: referral?.sourcePath || null,
-      status: "lead_created",
-      attribution_meta: {
-        stored_at: referral?.storedAt || new Date().toISOString(),
-      },
-    }, { onConflict: "lead_id" });
+  const disruptionType = data.delayDuration === "cancelled" ? "cancellation" : data.delayDuration ? "delay" : null;
+  const attributionMeta = {
+    stored_at: referral?.storedAt || new Date().toISOString(),
+    partner_referral_code: partner.referral_code || code,
+    lead_code: leadCode || null,
+    client_name: String(data.fullName || "").trim() || null,
+    client_email: String(data.email || "").trim() || null,
+    client_phone: String(data.phone || "").trim() || null,
+    route_from: String(data.departure || "").trim() || null,
+    route_to: String(data.destination || "").trim() || null,
+    airline: String(data.airline || "").trim() || null,
+    issue_type: disruptionType,
+  };
 
-  if (referralError) {
-    throw referralError;
+  const existingReferral = await supabase
+    .from("referrals")
+    .select("id")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+
+  if (existingReferral.error) {
+    throw existingReferral.error;
+  }
+
+  const referralWrite = existingReferral.data?.id
+    ? await supabase
+      .from("referrals")
+      .update({
+        partner_id: partner.id,
+        client_profile_id: profileId,
+        lead_id: leadId,
+        referral_code: partner.referral_code || code,
+        source_url: referral?.sourceUrl || null,
+        source_path: referral?.sourcePath || null,
+        status: "lead_created",
+        attribution_meta: attributionMeta,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingReferral.data.id)
+    : await supabase
+    .from("referrals")
+    .insert({
+        partner_id: partner.id,
+        client_profile_id: profileId,
+        lead_id: leadId,
+        referral_code: partner.referral_code || code,
+        source_url: referral?.sourceUrl || null,
+        source_path: referral?.sourcePath || null,
+        status: "lead_created",
+        attribution_meta: attributionMeta,
+      });
+
+  if (referralWrite.error) {
+    throw referralWrite.error;
   }
 
   const { error: leadError } = await supabase
@@ -640,7 +679,14 @@ Deno.serve(async (request) => {
     await upsertLeadSignature(supabase, leadId, data);
     await linkCustomerRecords(supabase, account.userId, data);
 
-    const partnerId = await attachReferralIfPresent(supabase, leadId, account.userId, referral);
+    const partnerId = await attachReferralIfPresent(
+      supabase,
+      leadId,
+      leadLookup.data.lead_code || null,
+      account.userId,
+      referral,
+      data,
+    );
     const emailResult = await sendConfirmationEmail(
       supabaseUrl,
       serviceRoleKey,

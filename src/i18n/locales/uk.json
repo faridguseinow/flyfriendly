@@ -23,7 +23,10 @@
     "flyFriendlyHomeAria": "Fly Friendly додому",
     "globalReachCopy": "Обслуговує мільйони пасажирів у всіх країнах, розмовляючи всіма мовами.",
     "scrollToTop": "Прокрутіть догори",
-    "loadingAccount": "Завантаження акаунта..."
+    "loadingAccount": "Завантаження акаунта...",
+    "compensationSliderAmount": "Сума компенсації",
+    "compensationSliderAria": "Відстань польоту {{distance}}, компенсація €{{amount}}",
+    "compensationSliderInput": "Відстань польоту в кілометрах"
   },
   "nav": {
     "mainNavigation": "Основна навігація",

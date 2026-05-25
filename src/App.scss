@@ -210,7 +210,7 @@ input[type="checkbox"]:disabled {
   }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 767px) {
   h1 {
     font-size: 36px;
     line-height: 50px;
@@ -232,10 +232,6 @@ input[type="checkbox"]:disabled {
   }
 
   .scroll-top-btn {
-    width: 52px;
-    height: 52px;
-    right: 14px;
-    bottom: 14px;
-    border-radius: 14px;
+    display: none;
   }
 }

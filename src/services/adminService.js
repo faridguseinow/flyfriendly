@@ -75,7 +75,7 @@ const countryAliases = {
 };
 const adminMenuCache = new Map();
 const ADMIN_MENU_CACHE_PREFIX = "admin-menu:";
-const ADMIN_MENU_CACHE_VERSION = "v5-owner-full-menu";
+const ADMIN_MENU_CACHE_VERSION = "v6-role-visibility-fix";
 const ADMIN_WORK_SESSION_STORAGE_KEY = "fly-friendly-admin-work-session";
 const ADMIN_ACTIVITY_SENSITIVE_KEYS = [
   "password",
@@ -98,6 +98,17 @@ const ADMIN_ACTIVITY_SENSITIVE_KEYS = [
   "customer_phone",
   "customer_name",
 ];
+
+function generateClientUuid() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = Math.random() * 16 | 0;
+    const value = char === "x" ? random : ((random & 0x3) | 0x8);
+    return value.toString(16);
+  });
+}
 
 function isSensitiveActivityKey(key) {
   const normalized = String(key || "").trim().toLowerCase();
@@ -1270,10 +1281,29 @@ async function syncCaseReferralAttribution(client, { lead, caseRow, financeRow }
   };
 
   if (lead?.id || caseRow?.id) {
-    const conflictTarget = lead?.id ? "lead_id" : "case_id";
-    const { error } = await client
+    const referralPayload = {
+      id: existingReferral.data?.id || undefined,
+      partner_id: partner.id,
+      client_profile_id: lead?.profile_id || null,
+      customer_id: caseRow?.customer_id || lead?.customer_id || null,
+      lead_id: lead?.id || null,
+      case_id: caseRow?.id || null,
+      referral_code: lead?.source_details?.referral_code || partner.referral_code || null,
+      source_url: lead?.source_details?.referral_source_url || null,
+      source_path: lead?.source_details?.referral_source_path || null,
+      status: referralStatus,
+      attribution_meta: attributionMeta,
+      updated_at: new Date().toISOString(),
+    };
+
+    const result = existingReferral.data?.id
+      ? await client
       .from("referrals")
-      .upsert({
+      .update(referralPayload)
+      .eq("id", existingReferral.data.id)
+      : await client
+      .from("referrals")
+      .insert({
         id: existingReferral.data?.id || undefined,
         partner_id: partner.id,
         client_profile_id: lead?.profile_id || null,
@@ -1286,10 +1316,10 @@ async function syncCaseReferralAttribution(client, { lead, caseRow, financeRow }
         status: referralStatus,
         attribution_meta: attributionMeta,
         updated_at: new Date().toISOString(),
-      }, { onConflict: conflictTarget });
+      });
 
-    if (error && !isMissingOptionalTable(error) && !isMissingColumnError(error)) {
-      throw error;
+    if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
+      throw result.error;
     }
   }
 
@@ -2392,7 +2422,7 @@ function matchPartnerForRow(row, partners = []) {
 export async function fetchReferralPartnersModuleData() {
   const client = requireSupabase();
 
-  const [partners, payouts, leads, cases, finance, commissions] = await Promise.all([
+  const [partners, payouts, leads, cases, finance, commissions, referrals] = await Promise.all([
     client
       .from("referral_partners")
       .select("id, profile_id, name, public_name, contact_name, contact_email, contact_phone, referral_code, referral_link, commission_type, commission_rate, status, portal_status, application_reason, website_url, instagram_url, tiktok_url, youtube_url, total_earned, total_paid, notes, created_at, updated_at, approved_at, rejected_at, suspended_at")
@@ -2423,6 +2453,11 @@ export async function fetchReferralPartnersModuleData() {
       .select("id, partner_id, lead_id, case_id, amount, currency, commission_rate, source_amount, status, created_at, approved_at, paid_at")
       .order("created_at", { ascending: false })
       .limit(600),
+    client
+      .from("referrals")
+      .select("id, partner_id, client_profile_id, customer_id, lead_id, case_id, referral_code, source_url, source_path, status, attribution_meta, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .limit(600),
   ]);
 
   const baseErrors = [leads, cases].map((result) => result.error).filter(Boolean);
@@ -2430,7 +2465,7 @@ export async function fetchReferralPartnersModuleData() {
     throw baseErrors[0];
   }
 
-  const optionalErrors = [partners, payouts, finance, commissions].map((result) => result.error).filter(Boolean);
+  const optionalErrors = [partners, payouts, finance, commissions, referrals].map((result) => result.error).filter(Boolean);
   if (optionalErrors.some((error) => !isMissingOptionalTable(error) && !isMissingColumnError(error))) {
     throw optionalErrors.find((error) => !isMissingOptionalTable(error) && !isMissingColumnError(error));
   }
@@ -2442,7 +2477,9 @@ export async function fetchReferralPartnersModuleData() {
     cases: cases.data || [],
     finance: finance.data || [],
     commissions: commissions.data || [],
+    referrals: referrals.data || [],
     supportsPartnersModuleV1: !partners.error,
+    supportsReferralsModuleV1: !referrals.error,
   };
 }
 
@@ -3700,14 +3737,15 @@ async function replaceRoleMenuVisibility(client, role, menuVisibility = {}) {
     const isVisible = forcedVisible ? true : (explicit ?? true);
     const current = existingByMenuId.get(item.id);
     if (!current || current.is_visible !== isVisible) {
-      upsertPayload.push({
-        id: current?.id,
+      const nextVisibility = {
+        id: current?.id || generateClientUuid(),
         role_id: role.id,
         menu_item_id: item.id,
         is_visible: isVisible,
         sort_order: item.sort_order ?? current?.sort_order ?? null,
         updated_at: new Date().toISOString(),
-      });
+      };
+      upsertPayload.push(nextVisibility);
     }
   });
 
@@ -5529,7 +5567,7 @@ export async function fetchAdminSidebarMenu(profileId, roleCodes = []) {
   if (teamMemberResponse.data?.role_id) {
     const roleResponse = await client
       .from("admin_roles")
-      .select("id, code, name, label, is_active, rank")
+      .select("id, code, name, label, is_active, rank, is_owner_role, is_system_role")
       .eq("id", teamMemberResponse.data.role_id)
       .maybeSingle();
 
@@ -5545,7 +5583,7 @@ export async function fetchAdminSidebarMenu(profileId, roleCodes = []) {
   if (!resolvedRole && normalizedRoleCodes.length) {
     const rolesResponse = await client
       .from("admin_roles")
-      .select("id, code, name, label, is_active, rank")
+      .select("id, code, name, label, is_active, rank, is_owner_role, is_system_role")
       .in("code", normalizedRoleCodes);
 
     if (rolesResponse.error && !isMissingOptionalTable(rolesResponse.error) && !isMissingColumnError(rolesResponse.error)) {

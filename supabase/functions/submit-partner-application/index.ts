@@ -43,6 +43,11 @@ function normalizeString(value: unknown) {
   return normalized || null;
 }
 
+function normalizeEmail(value: unknown) {
+  const normalized = normalizeString(value);
+  return normalized ? normalized.toLowerCase() : null;
+}
+
 function parseListInput(value: unknown) {
   if (Array.isArray(value)) {
     return value.map((item) => String(item || "").trim()).filter(Boolean);
@@ -57,7 +62,7 @@ function parseListInput(value: unknown) {
 function buildApplicationPayload(input: RequestBody, profile?: { id: string; email?: string | null; full_name?: string | null; phone?: string | null } | null) {
   return {
     profile_id: profile?.id || null,
-    email: normalizeString(input.email) || normalizeString(profile?.email),
+    email: normalizeEmail(input.email) || normalizeEmail(profile?.email),
     full_name: normalizeString(input.full_name) || normalizeString(profile?.full_name),
     phone: normalizeString(input.phone) || normalizeString(profile?.phone),
     country: normalizeString(input.country),
@@ -166,7 +171,7 @@ Deno.serve(async (req) => {
     if (profile?.id) {
       existingQuery = existingQuery.eq("profile_id", profile.id);
     } else {
-      existingQuery = existingQuery.eq("email", payload.email);
+      existingQuery = existingQuery.ilike("email", payload.email);
     }
 
     const existingResponse = await existingQuery.maybeSingle();

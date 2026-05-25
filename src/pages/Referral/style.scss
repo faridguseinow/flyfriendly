@@ -367,21 +367,22 @@ body:has(.ref-hero) {
 .ref-step-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 18px;
   align-items: stretch;
   text-align: left;
 }
 
 .ref-step-card {
   height: 100%;
-  padding: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 22px 48px rgba(43, 77, 122, 0.08);
   transition: transform 180ms ease;
 
   &:hover {
-    transform: translateY(-8px);
+    transform: translateY(-6px);
   }
 }
 
@@ -413,34 +414,37 @@ body:has(.ref-hero) {
 
 .ref-step-card__body {
   flex: 1 1 auto;
-  min-height: 244px;
-  padding: 24px;
+  min-height: 236px;
+  padding: 24px 24px 28px;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  gap: 14px;
   border: 1px solid #f3f5fa;
   border-top: 0;
   border-radius: 0 0 32px 32px;
   background: #fff;
 
   strong {
-    color: var(--primary);
-    font-size: 20px;
-    line-height: 28px;
-    font-weight: 400;
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 8px 14px;
+    border-radius: 999px;
+    color: #2f63f5;
+    background: rgba(47, 99, 245, 0.1);
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
   }
 
   h3 {
-    margin: 8px 0 0;
-    color: #191c26;
-    font-size: 32px;
-    line-height: 40px;
-  }
-
-  p {
     margin: 0;
     color: #191c26;
-    font-size: 32px;
-    line-height: 40px;
+    font-size: 29px;
+    line-height: 38px;
+    font-weight: 400;
+    text-wrap: balance;
   }
 }
 
@@ -881,11 +885,18 @@ body:has(.ref-hero) {
 
   .ref-step-card__body {
     min-height: auto;
+    padding: 22px 20px 24px;
+    gap: 12px;
 
-    h3,
-    p {
-      font-size: 25px;
-      line-height: 34px;
+    strong {
+      padding: 7px 12px;
+      font-size: 14px;
+      line-height: 19px;
+    }
+
+    h3 {
+      font-size: 24px;
+      line-height: 32px;
     }
   }
 

@@ -23,7 +23,10 @@
     "flyFriendlyHomeAria": "Fly Friendly მთავარი",
     "globalReachCopy": "ვემსახურებით მილიონობით მგზავრს ყველა ქვეყანაში, ყველა ენაზე.",
     "scrollToTop": "ზემოთ დაბრუნება",
-    "loadingAccount": "ანგარიში იტვირთება..."
+    "loadingAccount": "ანგარიში იტვირთება...",
+    "compensationSliderAmount": "კომპენსაციის ოდენობა",
+    "compensationSliderAria": "ფრენის მანძილი {{distance}}, კომპენსაცია €{{amount}}",
+    "compensationSliderInput": "ფრენის მანძილი კილომეტრებში"
   },
   "nav": {
     "mainNavigation": "მთავარი ნავიგაცია",

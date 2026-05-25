@@ -59,11 +59,11 @@ function Footer() {
         <strong>Fly Friendly</strong>
         <div className="footer__meta">
           <span>{t("footer.copyright", { year })}</span>
-          <span>
+          {/* <span>
             <a href="https://faridguseinow.framer.website/" target="_blank" rel="noreferrer">
               {t("footer.siteCreatedBy")}
             </a>
-          </span>
+          </span> */}
         </div>
       </div>
     </footer>

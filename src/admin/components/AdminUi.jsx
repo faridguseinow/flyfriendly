@@ -12,16 +12,6 @@ export function AdminPageHeader({
   return (
     <header className="admin-page-header">
       <div className="admin-page-header__content">
-        {breadcrumbs.length ? (
-          <nav className="admin-page-header__breadcrumbs" aria-label="Breadcrumbs">
-            {breadcrumbs.map((item, index) => (
-              <span key={`${item.label}-${index}`} className="admin-page-header__breadcrumb">
-                {item.path ? <Link to={item.path}>{item.label}</Link> : <strong>{item.label}</strong>}
-                {index < breadcrumbs.length - 1 ? <ChevronRight size={14} strokeWidth={1.8} /> : null}
-              </span>
-            ))}
-          </nav>
-        ) : null}
 
         <h1>{title}</h1>
         {subtitle ? <p>{subtitle}</p> : null}

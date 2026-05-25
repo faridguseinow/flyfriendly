@@ -40,7 +40,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
-import { getArticles } from "../Blog/articles.js";
+import { getArticles, localizeArticles } from "../Blog/articles.js";
 import { openMailClient } from "../../utils/mailto.js";
 import deniedBoardingImage from "../../assets/media/Image-4.png";
 import missedConnectionPlane from "../../assets/media/hand-drawn-airplane-outline-illustration.png";
@@ -119,7 +119,17 @@ function Home() {
     t("home.articles", { returnObjects: true }),
     t("blog.articleDetails", { returnObjects: true }),
   );
-  const articles = (cmsArticles.length ? cmsArticles : fallbackArticles).slice(0, 3);
+  const articles = (
+    cmsArticles.length
+      ? localizeArticles(
+          cmsArticles,
+          t("home.articles", { returnObjects: true }),
+          t("blog.articleDetails", { returnObjects: true }),
+          locale,
+          DEFAULT_LANGUAGE,
+        )
+      : fallbackArticles
+  ).slice(0, 3);
   const faqs = t("home.faqs", { returnObjects: true });
   const membershipItems = t("home.membershipItems", { returnObjects: true });
   const disruptionCards = t("home.disruptionCards", { returnObjects: true });
@@ -282,7 +292,7 @@ function Home() {
         </div>
       </section>
 
-      <section className="section membership">
+      {/* <section className="section membership">
         <SectionLabel icon={CircleDollarSign}>{t("home.membershipLabel")}</SectionLabel>
         <h2>{t("home.membershipTitle")}</h2>
         <p className="section-copy">{t("home.membershipText")}</p>
@@ -310,7 +320,7 @@ function Home() {
             </div>
           </article>
         </div>
-      </section>
+      </section> */}
 
       <section className="section steps">
         <SectionLabel icon={RefreshCw}>{t("home.stepsLabel")}</SectionLabel>

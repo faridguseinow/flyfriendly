@@ -5,7 +5,7 @@ import { Navigate, useParams } from "react-router-dom";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
-import { getArticles } from "./articles.js";
+import { getArticles, localizeArticles } from "./articles.js";
 import "./style.scss";
 
 function BlogArticle() {
@@ -18,7 +18,15 @@ function BlogArticle() {
     t("home.articles", { returnObjects: true }),
     t("blog.articleDetails", { returnObjects: true }),
   );
-  const articles = cmsArticles.length ? cmsArticles : fallbackArticles;
+  const articles = cmsArticles.length
+    ? localizeArticles(
+        cmsArticles,
+        t("home.articles", { returnObjects: true }),
+        t("blog.articleDetails", { returnObjects: true }),
+        locale,
+        DEFAULT_LANGUAGE,
+      )
+    : fallbackArticles;
   const article = articles.find((item) => item.slug === slug);
   const relatedArticles = articles.filter((item) => item.slug !== slug).slice(0, 2);
   const contentParagraphs = useMemo(

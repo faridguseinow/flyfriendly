@@ -95,7 +95,7 @@ export async function createLead(data = {}, source = "claim_flow") {
   }
 
   if (referral?.partnerId) {
-    attachReferralToLead(id).catch((attachError) => {
+    attachReferralToLead(id, data).catch((attachError) => {
       console.warn("Referral attribution could not be attached to lead.", attachError);
     });
   }

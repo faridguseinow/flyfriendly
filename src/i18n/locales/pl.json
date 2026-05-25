@@ -23,7 +23,10 @@
     "flyFriendlyHomeAria": "Fly Friendly dom",
     "globalReachCopy": "Obsługujemy miliony pasażerów we wszystkich krajach, mówiąc we wszystkich językach.",
     "scrollToTop": "Przewiń do góry",
-    "loadingAccount": "Ładowanie konta..."
+    "loadingAccount": "Ładowanie konta...",
+    "compensationSliderAmount": "Kwota odszkodowania",
+    "compensationSliderAria": "Dystans lotu {{distance}}, odszkodowanie €{{amount}}",
+    "compensationSliderInput": "Dystans lotu w kilometrach"
   },
   "nav": {
     "mainNavigation": "Główna nawigacja",

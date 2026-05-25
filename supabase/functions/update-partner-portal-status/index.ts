@@ -20,6 +20,8 @@ const MANAGER_ROLE_CODES = new Set([
   "manager",
 ]);
 
+const REQUIRED_PERMISSION = "partners.edit";
+
 type RequestBody = {
   partner_id?: string;
   portal_status?: string;
@@ -117,11 +119,25 @@ async function requireAuthorizedReviewer(
   const assignedRoles = (rolesResponse.data || [])
     .map((item) => String(item.role_code || "").trim().toLowerCase())
     .filter(Boolean);
+  const profileRoleCode = String(profileResponse.data?.role || "").trim().toLowerCase();
   const effectiveRoles = Array.from(new Set([
+    profileRoleCode,
     ...assignedRoles,
     teamRoleCode,
   ].filter(Boolean)));
-  const isAuthorized = effectiveRoles.some((role) => MANAGER_ROLE_CODES.has(role));
+  let isAuthorized = effectiveRoles.some((role) => MANAGER_ROLE_CODES.has(role));
+
+  if (!isAuthorized && effectiveRoles.length) {
+    const permissionsResponse = await serviceRoleClient
+      .from("admin_role_permissions")
+      .select("role_code, permission_code, is_allowed")
+      .in("role_code", effectiveRoles)
+      .eq("permission_code", REQUIRED_PERMISSION);
+
+    if (permissionsResponse.error) throw permissionsResponse.error;
+
+    isAuthorized = (permissionsResponse.data || []).some((item) => item.is_allowed !== false);
+  }
 
   if (!isAuthorized) {
     throw new Response(JSON.stringify({ error: { message: "You are not allowed to update partner access." } }), {

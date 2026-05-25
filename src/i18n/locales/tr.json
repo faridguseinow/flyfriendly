@@ -23,7 +23,10 @@
     "flyFriendlyHomeAria": "Fly Friendly ana sayfa",
     "globalReachCopy": "Tüm ülkelerde, tüm dilleri konuşan milyonlarca yolcuya hizmet veriyoruz.",
     "scrollToTop": "Yukarıya kaydır",
-    "loadingAccount": "Hesap yükleniyor..."
+    "loadingAccount": "Hesap yükleniyor...",
+    "compensationSliderAmount": "Tazminat tutarı",
+    "compensationSliderAria": "Uçuş mesafesi {{distance}}, tazminat €{{amount}}",
+    "compensationSliderInput": "Kilometre cinsinden uçuş mesafesi"
   },
   "nav": {
     "mainNavigation": "Ana gezinme",

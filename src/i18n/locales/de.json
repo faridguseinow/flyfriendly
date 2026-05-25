@@ -23,7 +23,10 @@
     "flyFriendlyHomeAria": "Fly Friendly Zuhause",
     "globalReachCopy": "Wir bedienen Millionen von Passagieren in allen Ländern und sprechen alle Sprachen.",
     "scrollToTop": "Scrollen Sie nach oben",
-    "loadingAccount": "Konto wird geladen..."
+    "loadingAccount": "Konto wird geladen...",
+    "compensationSliderAmount": "Höhe der Entschädigung",
+    "compensationSliderAria": "Flugdistanz {{distance}}, Entschädigung €{{amount}}",
+    "compensationSliderInput": "Flugdistanz in Kilometern"
   },
   "nav": {
     "mainNavigation": "Hauptnavigation",

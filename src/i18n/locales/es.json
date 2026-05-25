@@ -23,7 +23,10 @@
     "flyFriendlyHomeAria": "Fly Friendly hogar",
     "globalReachCopy": "Atendiendo a millones de pasajeros en todos los países, hablando todos los idiomas.",
     "scrollToTop": "Desplazarse hacia arriba",
-    "loadingAccount": "Cargando la cuenta..."
+    "loadingAccount": "Cargando la cuenta...",
+    "compensationSliderAmount": "Importe de la compensación",
+    "compensationSliderAria": "Distancia del vuelo {{distance}}, compensación €{{amount}}",
+    "compensationSliderInput": "Distancia del vuelo en kilómetros"
   },
   "nav": {
     "mainNavigation": "Principal navegación",

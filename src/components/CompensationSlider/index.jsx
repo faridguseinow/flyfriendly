@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import planeSvg from "../../assets/icons/plane.svg";
 import "./style.scss";
 
@@ -60,6 +61,7 @@ function getQuadraticBezierAngle(t, p0, p1, p2) {
 }
 
 function CompensationSlider() {
+  const { t } = useTranslation();
   const [distance, setDistance] = useState(INITIAL_DISTANCE);
 
   const slider = useMemo(() => {
@@ -89,7 +91,7 @@ function CompensationSlider() {
   return (
     <div className="compensation-slider">
       <div className="compensation-slider__amount" aria-live="polite">
-        <span>Amount of compensation</span>
+        <span>{t("common.compensationSliderAmount", { defaultValue: "Amount of compensation" })}</span>
         <strong>€{slider.compensation}</strong>
       </div>
 
@@ -98,7 +100,11 @@ function CompensationSlider() {
           className="compensation-slider__route"
           viewBox="0 0 1100 400"
           role="img"
-          aria-label={`Flight distance ${formatDistance(distance)}, compensation €${slider.compensation}`}
+          aria-label={t("common.compensationSliderAria", {
+            defaultValue: "Flight distance {{distance}}, compensation €{{amount}}",
+            distance: formatDistance(distance),
+            amount: slider.compensation,
+          })}
         >
           <path
             d="M 50 360 Q 545 70 1050 170"
@@ -137,7 +143,9 @@ function CompensationSlider() {
           </div>
 
           <input
-            aria-label="Flight distance in kilometers"
+            aria-label={t("common.compensationSliderInput", {
+              defaultValue: "Flight distance in kilometers",
+            })}
             min={MIN_DISTANCE}
             max={MAX_DISTANCE}
             onChange={(event) => setDistance(Number(event.target.value))}

@@ -23,7 +23,10 @@
     "flyFriendlyHomeAria": "Fly Friendly ev",
     "globalReachCopy": "Bütün dillərdə danışan bütün ölkələrdə milyonlarla sərnişinə xidmət göstərir.",
     "scrollToTop": "Yuxarıya sürüşdürün",
-    "loadingAccount": "Hesab yüklənir..."
+    "loadingAccount": "Hesab yüklənir...",
+    "compensationSliderAmount": "Kompensasiya məbləği",
+    "compensationSliderAria": "Uçuş məsafəsi {{distance}}, kompensasiya €{{amount}}",
+    "compensationSliderInput": "Uçuş məsafəsi kilometrlərlə"
   },
   "nav": {
     "mainNavigation": "Əsas naviqasiya",

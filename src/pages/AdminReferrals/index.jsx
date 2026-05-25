@@ -61,6 +61,26 @@ export default function AdminReferrals() {
     [moduleData?.partners],
   );
 
+  const leadsById = useMemo(
+    () => new Map((moduleData?.leads || []).map((lead) => [lead.id, lead])),
+    [moduleData?.leads],
+  );
+
+  const casesById = useMemo(
+    () => new Map((moduleData?.cases || []).map((caseRow) => [caseRow.id, caseRow])),
+    [moduleData?.cases],
+  );
+
+  const caseByLeadId = useMemo(() => {
+    const map = new Map();
+    (moduleData?.cases || []).forEach((caseRow) => {
+      if (caseRow?.lead_id) {
+        map.set(caseRow.lead_id, caseRow);
+      }
+    });
+    return map;
+  }, [moduleData?.cases]);
+
   const casesByPartnerId = useMemo(() => {
     const map = new Map();
     (moduleData?.cases || []).forEach((caseRow) => {
@@ -74,9 +94,41 @@ export default function AdminReferrals() {
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const baseRows = (moduleData?.leads || [])
-      .filter((lead) => lead.referral_partner_id)
-      .map((lead) => {
+    const baseRows = (moduleData?.referrals || []).length
+      ? (moduleData.referrals || []).map((referral) => {
+        const lead = referral.lead_id ? leadsById.get(referral.lead_id) || null : null;
+        const matchingCase = referral.case_id
+          ? casesById.get(referral.case_id) || null
+          : (lead?.id ? caseByLeadId.get(lead.id) || null : null);
+        const partner = partnersById.get(referral.partner_id)
+          || (lead?.referral_partner_id ? partnersById.get(lead.referral_partner_id) || null : null)
+          || (matchingCase?.referral_partner_id ? partnersById.get(matchingCase.referral_partner_id) || null : null);
+        const attributionMeta = referral.attribution_meta || {};
+
+        return {
+          id: referral.id,
+          leadId: lead?.id || referral.lead_id || null,
+          leadCode: lead?.lead_code || attributionMeta.lead_code || "—",
+          partnerId: referral.partner_id || lead?.referral_partner_id || matchingCase?.referral_partner_id || null,
+          partnerLabel: toPartnerLabel(partner),
+          partnerCode: referral.referral_code || attributionMeta.partner_referral_code || partner?.referral_code || "—",
+          partnerPortalStatus: partner?.portal_status || "approved",
+          claimStatus: matchingCase?.status || attributionMeta.case_status || lead?.status || referral.status || "submitted",
+          attributionDate: referral.created_at || toAttributionDate(lead),
+          routeLabel: [
+            matchingCase?.route_from || attributionMeta.route_from || lead?.departure_airport,
+            matchingCase?.route_to || attributionMeta.route_to || lead?.arrival_airport,
+          ].filter(Boolean).join(" -> ") || "—",
+          sourceLabel: referral.referral_code || lead?.source_details?.referral_code || lead?.source || "—",
+          linkedCaseCode: matchingCase?.case_code || attributionMeta.case_code || "—",
+          rawLead: lead || { created_at: referral.created_at || null },
+          rawPartner: partner || null,
+          rawCase: matchingCase,
+        };
+      })
+      : (moduleData?.leads || [])
+        .filter((lead) => lead.referral_partner_id)
+        .map((lead) => {
         const partner = partnersById.get(lead.referral_partner_id);
         const relatedCases = casesByPartnerId.get(lead.referral_partner_id) || [];
         const matchingCase = relatedCases.find((item) => item.case_code && lead.payload?.caseCode && item.case_code === lead.payload.caseCode)
@@ -96,7 +148,7 @@ export default function AdminReferrals() {
           routeLabel: lead.payload?.routeLabel
             || [lead.payload?.departure, lead.payload?.destination].filter(Boolean).join(" -> ")
             || "—",
-          sourceLabel: lead.source_details?.referralCode || lead.source || "—",
+          sourceLabel: lead.source_details?.referral_code || lead.source || "—",
           linkedCaseCode: matchingCase?.case_code || "—",
           rawLead: lead,
           rawPartner: partner || null,
@@ -115,7 +167,7 @@ export default function AdminReferrals() {
       const matchesStatus = statusFilter === "all" || row.claimStatus === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [casesByPartnerId, moduleData?.leads, partnersById, search, statusFilter]);
+  }, [caseByLeadId, casesById, casesByPartnerId, leadsById, moduleData?.leads, moduleData?.referrals, partnersById, search, statusFilter]);
 
   const selectedReferral = useMemo(
     () => rows.find((item) => item.id === selectedReferralId) || rows[0] || null,

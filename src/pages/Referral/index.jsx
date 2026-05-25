@@ -169,19 +169,22 @@ function Referral() {
           <h2>{t("referral.processTitle")}</h2>
           <p>{t("referral.processText")}</p>
           <div className="ref-step-grid">
-            {steps.map((item) => (
-              <article className="ref-step-card" key={item.step}>
-                <div className="ref-step-card__image">
-                  <img src={item.image} alt="" />
-                  <span>{item.step}</span>
-                </div>
-                <div className="ref-step-card__body">
-                  <strong>{item.title}</strong>
-                  <h3>{item.heading}</h3>
-                  <p>{item.text}</p>
-                </div>
-              </article>
-            ))}
+            {steps.map((item) => {
+              const description = [item.heading, item.text].filter(Boolean).join(" ");
+
+              return (
+                <article className="ref-step-card" key={item.step}>
+                  <div className="ref-step-card__image">
+                    <img src={item.image} alt="" />
+                    <span>{item.step}</span>
+                  </div>
+                  <div className="ref-step-card__body">
+                    <strong>{item.title}</strong>
+                    <h3>{description}</h3>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
