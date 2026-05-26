@@ -1103,5 +1103,151 @@
       "community": "Сообщество",
       "other": "Другое"
     }
+  },
+  "partnerPortal": {
+    "navLabel": "Разделы партнёрского кабинета",
+    "signOut": "Выйти",
+    "loading": "Загрузка...",
+    "loadingReferrals": "Загрузка...",
+    "loadingFinance": "Загрузка...",
+    "nav": {
+      "home": "Главная",
+      "referrals": "Рефералы",
+      "finance": "Финансы",
+      "profile": "Профиль"
+    },
+    "metrics": {
+      "referrals": "Приведено клиентов",
+      "activeClaims": "Активные заявки",
+      "successfulClaims": "Успешные заявки",
+      "pendingPayout": "Ожидает выплаты",
+      "paidOut": "Выплачено",
+      "totalEarned": "Общий доход"
+    },
+    "home": {
+      "code": "Код",
+      "link": "Реферальная ссылка",
+      "linkMissing": "Ссылка появится после одобрения партнёрского аккаунта.",
+      "copy": "Скопировать ссылку",
+      "copied": "Ссылка скопирована."
+    },
+    "activity": {
+      "title": "Последняя активность",
+      "empty": "Пока нет заявок по вашей ссылке."
+    },
+    "filters": {
+      "label": "Фильтры рефералов",
+      "all": "Все",
+      "active": "Активные",
+      "approved": "Одобренные",
+      "paid": "Выплаченные",
+      "cancelled": "Отменённые"
+    },
+    "referrals": {
+      "flightDate": "Дата рейса",
+      "createdAt": "Создано",
+      "updatedAt": "Обновлено",
+      "commission": "Комиссия",
+      "estimated": "Оценка",
+      "approved": "Одобрено",
+      "paid": "Выплачено",
+      "emptyTitle": "Пока нет рефералов.",
+      "emptyText": "Когда клиенты отправят заявки по вашей ссылке, они появятся здесь."
+    },
+    "finance": {
+      "potentialIncome": "Потенциальный доход",
+      "awaitingApproval": "Ожидает подтверждения",
+      "approvedAmount": "Одобрено",
+      "paidAmount": "Выплачено",
+      "cancelledAmount": "Отменено",
+      "currentTier": "Текущий уровень",
+      "growthHint": "После 10+ оплаченных клиентов ваша комиссия увеличится до 20%.",
+      "growthUnlocked": "20% разблокировано",
+      "growthUnlockedText": "Вы получаете 20% от выручки Fly Friendly по новым подходящим заявкам.",
+      "formulaTitle": "Формула комиссии",
+      "formulaText": "Комиссия считается от выручки Fly Friendly. Выручка Fly Friendly равна 30% от компенсации клиента.",
+      "formulaStarter": "Starter: компенсация × 30% × 15%",
+      "formulaGrowth": "Growth: компенсация × 30% × 20%",
+      "exampleTitle": "Пример",
+      "exampleRevenue": "600 EUR компенсации → 180 EUR выручки Fly Friendly",
+      "exampleStarter": "Starter 15% → 27 EUR комиссии",
+      "exampleGrowth": "Growth 20% → 36 EUR комиссии",
+      "breakdownTitle": "Разбивка комиссий",
+      "payoutsTitle": "История выплат",
+      "compensation": "Компенсация",
+      "revenue": "Выручка Fly Friendly",
+      "rate": "Ставка",
+      "estimated": "Оценка",
+      "approved": "Одобрено",
+      "paid": "Выплачено",
+      "createdAt": "Создано",
+      "approvedAt": "Одобрено",
+      "paidAt": "Выплачено",
+      "empty": "Комиссий пока нет.",
+      "emptyPayouts": "Выплат пока нет."
+    },
+    "tiers": {
+      "starter": {
+        "name": "Starter"
+      },
+      "growth": {
+        "name": "Growth"
+      }
+    },
+    "profile": {
+      "defaultName": "Партнёр",
+      "publicSection": "Публичная информация",
+      "accountSection": "Аккаунт",
+      "supportSection": "Поддержка",
+      "publicName": "Публичное имя",
+      "website": "Сайт",
+      "instagram": "Instagram URL",
+      "tiktok": "TikTok URL",
+      "youtube": "YouTube URL",
+      "language": "Язык",
+      "avatar": "Avatar URL",
+      "bio": "Bio",
+      "submit": "Сохранить изменения",
+      "saving": "Сохранение...",
+      "saved": "Профиль обновлён.",
+      "error": "Не удалось обновить профиль.",
+      "fullName": "Полное имя",
+      "email": "Email",
+      "phone": "Телефон",
+      "contactSupport": "Связаться с поддержкой"
+    },
+    "assets": {
+      "empty": "Пока нет загруженных материалов."
+    },
+    "pending": {
+      "title": "Заявка на рассмотрении",
+      "text": "Обычный клиентский кабинет доступен, пока партнёрский доступ проходит проверку."
+    },
+    "rejected": {
+      "title": "Партнёрский доступ не одобрен",
+      "text": "Ваш клиентский кабинет остаётся активным. Если нужна повторная проверка, свяжитесь с командой."
+    },
+    "suspended": {
+      "title": "Партнёрский доступ приостановлен",
+      "text": "Ваш клиентский кабинет остаётся доступным, пока партнёрские инструменты приостановлены."
+    },
+    "status": {
+      "submitted": "Отправлено",
+      "under_review": "На рассмотрении",
+      "documents_needed": "Нужны документы",
+      "approved": "Одобрено",
+      "rejected": "Отклонено",
+      "paid": "Выплачено",
+      "cancelled": "Отменено",
+      "pending": "Ожидает",
+      "converted": "Завершено",
+      "suspended": "Приостановлено"
+    },
+    "commissionStatus": {
+      "pending": "Ожидает",
+      "approved": "Одобрено",
+      "paid": "Выплачено",
+      "cancelled": "Отменено"
+    }
   }
 }

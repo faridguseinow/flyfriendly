@@ -56,6 +56,7 @@ import {
   PartnerAssetsPage,
   PartnerDashboardPage,
   PartnerEarningsPage,
+  PartnerFinancePage,
   PartnerLinkPage,
   PartnerPendingPage,
   PartnerPortalLayout,
@@ -279,6 +280,7 @@ function AnimatedRoutes({ location }) {
           <Route element={<PartnerRoute />}>
             <Route path="partner" element={<PartnerPortalLayout />}>
               <Route path="dashboard" element={<PartnerDashboardPage />} />
+              <Route path="finance" element={<PartnerFinancePage />} />
               <Route path="link" element={<PartnerLinkPage />} />
               <Route path="referrals" element={<PartnerReferralsPage />} />
               <Route path="earnings" element={<PartnerEarningsPage />} />

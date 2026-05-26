@@ -1103,5 +1103,151 @@
       "community": "Community",
       "other": "Other"
     }
+  },
+  "partnerPortal": {
+    "navLabel": "Partner account sections",
+    "signOut": "Sign out",
+    "loading": "Loading...",
+    "loadingReferrals": "Loading...",
+    "loadingFinance": "Loading...",
+    "nav": {
+      "home": "Home",
+      "referrals": "Referrals",
+      "finance": "Finance",
+      "profile": "Profile"
+    },
+    "metrics": {
+      "referrals": "Referred clients",
+      "activeClaims": "Active claims",
+      "successfulClaims": "Successful claims",
+      "pendingPayout": "Awaiting payout",
+      "paidOut": "Paid out",
+      "totalEarned": "Total earned"
+    },
+    "home": {
+      "code": "Code",
+      "link": "Referral link",
+      "linkMissing": "Link will appear after partner approval.",
+      "copy": "Copy link",
+      "copied": "Link copied."
+    },
+    "activity": {
+      "title": "Latest activity",
+      "empty": "No claims from your link yet."
+    },
+    "filters": {
+      "label": "Referral filters",
+      "all": "All",
+      "active": "Active",
+      "approved": "Approved",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "referrals": {
+      "flightDate": "Flight date",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "commission": "Commission",
+      "estimated": "Estimated",
+      "approved": "Approved",
+      "paid": "Paid",
+      "emptyTitle": "No referrals yet.",
+      "emptyText": "Claims sent through your link will appear here."
+    },
+    "finance": {
+      "potentialIncome": "Potential income",
+      "awaitingApproval": "Awaiting confirmation",
+      "approvedAmount": "Approved",
+      "paidAmount": "Paid out",
+      "cancelledAmount": "Cancelled",
+      "currentTier": "Current tier",
+      "growthHint": "After 10+ paid clients your commission increases to 20%.",
+      "growthUnlocked": "20% unlocked",
+      "growthUnlockedText": "You now receive 20% of Fly Friendly revenue on new eligible claims.",
+      "formulaTitle": "Commission formula",
+      "formulaText": "Commission is calculated from Fly Friendly revenue. Fly Friendly revenue equals 30% of client compensation.",
+      "formulaStarter": "Starter: compensation × 30% × 15%",
+      "formulaGrowth": "Growth: compensation × 30% × 20%",
+      "exampleTitle": "Example",
+      "exampleRevenue": "600 EUR compensation → 180 EUR Fly Friendly revenue",
+      "exampleStarter": "Starter 15% → 27 EUR commission",
+      "exampleGrowth": "Growth 20% → 36 EUR commission",
+      "breakdownTitle": "Commission breakdown",
+      "payoutsTitle": "Payout history",
+      "compensation": "Compensation",
+      "revenue": "Fly Friendly revenue",
+      "rate": "Rate",
+      "estimated": "Estimated",
+      "approved": "Approved",
+      "paid": "Paid",
+      "createdAt": "Created",
+      "approvedAt": "Approved",
+      "paidAt": "Paid",
+      "empty": "No commissions yet.",
+      "emptyPayouts": "No payouts yet."
+    },
+    "tiers": {
+      "starter": {
+        "name": "Starter"
+      },
+      "growth": {
+        "name": "Growth"
+      }
+    },
+    "profile": {
+      "defaultName": "Partner",
+      "publicSection": "Public information",
+      "accountSection": "Account",
+      "supportSection": "Support",
+      "publicName": "Public name",
+      "website": "Website URL",
+      "instagram": "Instagram URL",
+      "tiktok": "TikTok URL",
+      "youtube": "YouTube URL",
+      "language": "Language",
+      "avatar": "Avatar URL",
+      "bio": "Bio",
+      "submit": "Save changes",
+      "saving": "Saving...",
+      "saved": "Profile updated.",
+      "error": "Could not update the profile.",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "contactSupport": "Contact support"
+    },
+    "assets": {
+      "empty": "No managed assets yet."
+    },
+    "pending": {
+      "title": "Application under review",
+      "text": "Your regular client account is available while partner access is being reviewed."
+    },
+    "rejected": {
+      "title": "Partner access was not approved",
+      "text": "Your client account remains active. Contact the team if you need a review."
+    },
+    "suspended": {
+      "title": "Partner access is suspended",
+      "text": "Your client account remains available while partner tools are paused."
+    },
+    "status": {
+      "submitted": "Submitted",
+      "under_review": "Under review",
+      "documents_needed": "Documents needed",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "paid": "Paid",
+      "cancelled": "Cancelled",
+      "pending": "Pending",
+      "converted": "Completed",
+      "suspended": "Suspended"
+    },
+    "commissionStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    }
   }
 }

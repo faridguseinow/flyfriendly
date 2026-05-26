@@ -2,6 +2,7 @@ import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser, resetPassword } from "./authService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
+import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
 
 function isMissingOptionalTable(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -1124,19 +1125,14 @@ function isCommissionTriggerState(caseRow, financeRow) {
     || Number(financeRow?.referral_commission || 0) > 0;
 }
 
-function calculateCommissionAmount(partner, caseRow, financeRow) {
+function calculateCommissionAmount(partner, caseRow, financeRow, commissionRate = null) {
   const explicitAmount = Number(financeRow?.referral_commission || 0);
   if (explicitAmount > 0) {
     return roundMoney(explicitAmount);
   }
 
-  const rate = Number(partner?.commission_rate || 0);
-  if (!rate) {
-    return 0;
-  }
-
   if (partner?.commission_type === "fixed") {
-    return roundMoney(rate);
+    return roundMoney(Number(partner?.commission_rate || 0));
   }
 
   const sourceAmount = Number(financeRow?.company_fee || caseRow?.company_fee || 0);
@@ -1144,7 +1140,12 @@ function calculateCommissionAmount(partner, caseRow, financeRow) {
     return 0;
   }
 
-  return roundMoney(sourceAmount * (rate / 100));
+  const rate = Number(commissionRate ?? partner?.commission_rate ?? 0);
+  if (!rate) {
+    return 0;
+  }
+
+  return calculatePartnerCommissionFromRevenue(sourceAmount, rate).partnerCommission;
 }
 
 async function findReferralPartnerByField(client, field, value) {
@@ -1200,6 +1201,24 @@ async function findReferralPartnerForContext(client, lead, caseRow) {
   return null;
 }
 
+async function getPartnerTierRateForCurrentState(client, partnerId) {
+  if (!partnerId) {
+    return getPartnerCommissionRate(0);
+  }
+
+  const paidCommissions = await client
+    .from("partner_commissions")
+    .select("id", { count: "exact", head: true })
+    .eq("partner_id", partnerId)
+    .eq("status", "paid");
+
+  if (paidCommissions.error && !isMissingOptionalTable(paidCommissions.error) && !isMissingColumnError(paidCommissions.error)) {
+    throw paidCommissions.error;
+  }
+
+  return getPartnerCommissionRate(Number(paidCommissions.count || 0));
+}
+
 async function syncPartnerTotals(client, partnerId) {
   if (!partnerId) return;
 
@@ -1247,7 +1266,10 @@ async function syncCaseReferralAttribution(client, { lead, caseRow, financeRow }
 
   const referralStatus = deriveReferralLifecycleStatus(caseRow, financeRow);
   const commissionStatus = deriveCommissionStatus(caseRow, financeRow);
-  const commissionAmount = calculateCommissionAmount(partner, caseRow, financeRow);
+  const tierRate = partner?.commission_type === "fixed"
+    ? Number(partner?.commission_rate || 0)
+    : await getPartnerTierRateForCurrentState(client, partner.id);
+  const commissionAmount = calculateCommissionAmount(partner, caseRow, financeRow, tierRate);
   const existingReferral = lead?.id
     ? await client.from("referrals").select("id, attribution_meta").eq("lead_id", lead.id).maybeSingle()
     : caseRow?.id
@@ -1272,10 +1294,14 @@ async function syncCaseReferralAttribution(client, { lead, caseRow, financeRow }
     route_from: caseRow?.route_from || lead?.departure_airport || null,
     route_to: caseRow?.route_to || lead?.arrival_airport || null,
     issue_type: caseRow?.issue_type || lead?.issue_type || lead?.disruption_type || null,
+    flight_date: caseRow?.flight_date || lead?.scheduled_departure_date || null,
     case_status: caseRow?.status || null,
     payout_status: caseRow?.payout_status || null,
     finance_payment_status: financeRow?.payment_status || null,
+    compensation_amount: Number(financeRow?.compensation_amount || caseRow?.estimated_compensation || lead?.estimated_compensation_eur || 0) || 0,
+    compensation_currency: financeRow?.currency || lead?.compensation_currency || "EUR",
     company_fee: Number(financeRow?.company_fee || caseRow?.company_fee || 0) || 0,
+    referral_commission_rate: tierRate,
     referral_commission_amount: commissionAmount,
     referral_commission_status: commissionStatus,
   };
@@ -1356,7 +1382,6 @@ async function syncPartnerCommissionForCase(client, { lead, caseRow, financeRow 
   }
 
   const nextStatus = deriveCommissionStatus(caseRow, financeRow);
-  const amount = calculateCommissionAmount(partner, caseRow, financeRow);
   const existing = await client
     .from("partner_commissions")
     .select("*")
@@ -1368,11 +1393,16 @@ async function syncPartnerCommissionForCase(client, { lead, caseRow, financeRow 
     throw existing.error;
   }
 
-  if (!existing.data && !isCommissionTriggerState(caseRow, financeRow) && amount <= 0) {
+  const previous = existing.data || null;
+  const nextRate = partner?.commission_type === "fixed"
+    ? Number(partner?.commission_rate || 0)
+    : Number(previous?.commission_rate || await getPartnerTierRateForCurrentState(client, partner.id));
+  const nextAmount = calculateCommissionAmount(partner, caseRow, financeRow, nextRate);
+
+  if (!existing.data && !isCommissionTriggerState(caseRow, financeRow) && nextAmount <= 0) {
     return null;
   }
 
-  const previous = existing.data || null;
   const approvedAt = nextStatus === "approved" || nextStatus === "paid"
     ? previous?.approved_at || new Date().toISOString()
     : null;
@@ -1384,9 +1414,9 @@ async function syncPartnerCommissionForCase(client, { lead, caseRow, financeRow 
     partner_id: partner.id,
     lead_id: lead?.id || null,
     case_id: caseRow.id,
-    amount,
+    amount: nextAmount,
     currency: financeRow?.currency || "EUR",
-    commission_rate: Number(partner.commission_rate || 0),
+    commission_rate: nextRate,
     source_amount: Number(financeRow?.company_fee || caseRow?.company_fee || 0) || null,
     status: nextStatus,
     approved_at: approvedAt,

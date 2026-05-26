@@ -1374,7 +1374,7 @@ export function ClientPortalLayout() {
                   label={item.label}
                   end={item.end}
                   mobile
-                  avatarUrl={item.path.endsWith("/client/account") ? avatarUrl : ""}
+                  avatarUrl={item.path.endsWith("/client/dashboard") ? avatarUrl : ""}
                 />
               ))}
             </nav>,
