@@ -1027,7 +1027,10 @@
     },
     "fields": {
       "email": "E-poçt",
-      "password": "Şifrə"
+      "password": "Şifrə",
+      "fullName": "Ad və soyad",
+      "phone": "Telefon",
+      "confirmPassword": "Şifrəni təsdiqləyin"
     },
     "placeholders": {
       "email": "you@example.com",
@@ -1035,7 +1038,17 @@
     },
     "register": {
       "legalText": "Mən <termsLink>İstifadə şərtləri</termsLink> və <privacyLink>Məxfilik siyasəti</privacyLink> ilə razıyam.",
-      "legalRequired": "Zəhmət olmasa istifadə şərtlərini və məxfilik siyasətini qəbul edin."
+      "legalRequired": "Zəhmət olmasa istifadə şərtlərini və məxfilik siyasətini qəbul edin.",
+      "title": "Fly Friendly hesabınızı yaradın",
+      "text": "Müraciətlərinizi izləmək, sənədləri yükləmək və istənilən vaxt işinizə qayıtmaq üçün hesab yaradın.",
+      "passwordLength": "Şifrə ən azı 6 simvoldan ibarət olmalıdır.",
+      "passwordMismatch": "Şifrələr uyğun gəlmir.",
+      "confirmNotice": "Hesabınızı təsdiqləmək üçün e-poçtunuzu yoxlayın, sonra panelinizə daxil olmaq üçün hesabınıza giriş edin.",
+      "error": "Hesab yaratmaq mümkün olmadı.",
+      "loading": "Hesab yaradılır...",
+      "submit": "Hesab yaradın",
+      "loginPrompt": "Artıq hesabınız var?",
+      "loginLink": "Daxil olun"
     }
   },
   "partnerApply": {

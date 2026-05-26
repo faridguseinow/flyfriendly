@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, CircleUserRound, LogOut, UserRound, X } from "lucide-react";
+import { ChevronDown, CircleUserRound, LogOut, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
@@ -357,7 +357,12 @@ function Navbar() {
               <div className="account-dropdown" role="menu" aria-label={accountTitle}>
                 {isAuthenticated ? (
                   <>
-                    <div className="account-dropdown__identity">
+                    <LocalizedLink
+                      className="account-dropdown__identity account-dropdown__identity--link"
+                      to={profilePath}
+                      role="menuitem"
+                      onClick={closeMenu}
+                    >
                       <div className="account-dropdown__avatar" aria-hidden="true">
                         {avatarImageUrl ? (
                           <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
@@ -370,10 +375,6 @@ function Navbar() {
                         <strong>{displayName}</strong>
                         {accountEmail ? <span className="account-dropdown__identity-email">{accountEmail}</span> : null}
                       </div>
-                    </div>
-                    <LocalizedLink className="account-dropdown__link" to={profilePath} role="menuitem" onClick={closeMenu}>
-                      <UserRound size={18} strokeWidth={2} />
-                      <span>{t("nav.myProfile", { defaultValue: "My profile" })}</span>
                     </LocalizedLink>
                     <div className="account-dropdown__row">
                       <button className="account-dropdown__ghost" type="button" role="menuitem" onClick={handleSignOut}>

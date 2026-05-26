@@ -1027,7 +1027,10 @@
     },
     "fields": {
       "email": "E-posta",
-      "password": "Şifre"
+      "password": "Şifre",
+      "fullName": "Ad Soyad",
+      "phone": "Telefon",
+      "confirmPassword": "Şifreyi doğrulayın"
     },
     "placeholders": {
       "email": "you@example.com",
@@ -1035,7 +1038,17 @@
     },
     "register": {
       "legalText": "<termsLink>Kullanım Koşulları</termsLink> ve <privacyLink>Gizlilik Politikası</privacyLink>nı kabul ediyorum.",
-      "legalRequired": "Lütfen kullanım koşullarını ve gizlilik politikasını kabul edin."
+      "legalRequired": "Lütfen kullanım koşullarını ve gizlilik politikasını kabul edin.",
+      "title": "Fly Friendly hesabınızı oluşturun",
+      "text": "Taleplerinizi takip etmek, belge yüklemek ve dilediğiniz zaman dosyanıza geri dönmek için bir hesap oluşturun.",
+      "passwordLength": "Şifre en az 6 karakter olmalıdır.",
+      "passwordMismatch": "Şifreler eşleşmiyor.",
+      "confirmNotice": "Hesabınızı doğrulamak için e-postanızı kontrol edin, ardından panelinize erişmek için giriş yapın.",
+      "error": "Hesabınız oluşturulamadı.",
+      "loading": "Hesap oluşturuluyor...",
+      "submit": "Hesap oluştur",
+      "loginPrompt": "Zaten bir hesabınız var mı?",
+      "loginLink": "Giriş yapın"
     }
   },
   "partnerApply": {

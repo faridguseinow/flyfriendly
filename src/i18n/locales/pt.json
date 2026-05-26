@@ -1027,7 +1027,10 @@
     },
     "fields": {
       "email": "E-mail",
-      "password": "Palavra-passe"
+      "password": "Palavra-passe",
+      "fullName": "Nome completo",
+      "phone": "Telefone",
+      "confirmPassword": "Confirmar palavra-passe"
     },
     "placeholders": {
       "email": "you@example.com",
@@ -1035,7 +1038,17 @@
     },
     "register": {
       "legalText": "Concordo com os <termsLink>Termos de Uso</termsLink> e a <privacyLink>Política de Privacidade</privacyLink>.",
-      "legalRequired": "Aceite os termos e a política de privacidade."
+      "legalRequired": "Aceite os termos e a política de privacidade.",
+      "title": "Crie a sua conta Fly Friendly",
+      "text": "Crie uma conta para acompanhar reclamações, carregar documentos e voltar ao seu caso a qualquer momento.",
+      "passwordLength": "A palavra-passe deve ter pelo menos 6 caracteres.",
+      "passwordMismatch": "As palavras-passe não coincidem.",
+      "confirmNotice": "Verifique o seu e-mail para confirmar a conta e depois inicie sessão para aceder ao painel.",
+      "error": "Não foi possível criar a sua conta.",
+      "loading": "A criar conta...",
+      "submit": "Criar conta",
+      "loginPrompt": "Já tem uma conta?",
+      "loginLink": "Iniciar sessão"
     }
   },
   "partnerApply": {

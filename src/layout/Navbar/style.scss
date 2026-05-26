@@ -162,6 +162,21 @@
   text-align: left;
 }
 
+.account-dropdown__identity--link {
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+
+  &:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(35, 66, 114, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(17, 152, 255, 0.24);
+    outline-offset: 3px;
+  }
+}
+
 .account-dropdown__avatar {
   width: 64px;
   height: 64px;
