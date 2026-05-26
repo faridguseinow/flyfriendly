@@ -10,6 +10,12 @@ function LoadingState() {
   return <div className="placeholder-page"><p>{t("common.loadingAccount", { defaultValue: "Loading account..." })}</p></div>;
 }
 
+function getSafeReturnTo(search = "") {
+  const params = new URLSearchParams(search);
+  const raw = params.get("returnTo");
+  return raw && raw.startsWith("/") ? raw : null;
+}
+
 export function ProtectedRoute() {
   const location = useLocation();
   const toLocalizedPath = useLocalizedPath();
@@ -28,6 +34,8 @@ export function ProtectedRoute() {
 }
 
 export function GuestRoute() {
+  const location = useLocation();
+  const toLocalizedPath = useLocalizedPath();
   const { loading, isAuthenticated, dashboardPath } = useAuth();
 
   if (loading) {
@@ -35,13 +43,15 @@ export function GuestRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={dashboardPath} replace />;
+    const returnTo = getSafeReturnTo(location.search);
+    return <Navigate to={toLocalizedPath(returnTo || dashboardPath || "/client/dashboard")} replace />;
   }
 
   return <Outlet />;
 }
 
 export function RoleRoute({ allowedRoles = [], ignorePartnerStatus = false }) {
+  const toLocalizedPath = useLocalizedPath();
   const { loading, isAuthenticated, profile, partnerProfile, adminAccess, dashboardPath } = useAuth();
 
   if (loading) {
@@ -49,17 +59,17 @@ export function RoleRoute({ allowedRoles = [], ignorePartnerStatus = false }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />;
+    return <Navigate to={toLocalizedPath("/auth/login")} replace />;
   }
 
   if (!hasAllowedRole(allowedRoles, profile, partnerProfile, adminAccess)) {
-    return <Navigate to={dashboardPath} replace />;
+    return <Navigate to={toLocalizedPath(dashboardPath || "/client/dashboard")} replace />;
   }
 
   if (!ignorePartnerStatus && allowedRoles.includes("partner") && partnerProfile) {
     const partnerState = getPartnerAccessState(partnerProfile);
     if (partnerState !== "approved") {
-      return <Navigate to={`/partner/${partnerState}`} replace />;
+      return <Navigate to={toLocalizedPath(`/partner/${partnerState}`)} replace />;
     }
   }
 
@@ -82,7 +92,7 @@ export function PartnerRoute() {
 
   const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
   if (normalizedRole !== "partner") {
-    return <Navigate to={dashboardPath || toLocalizedPath("/client/dashboard")} replace />;
+    return <Navigate to={toLocalizedPath(dashboardPath || "/client/dashboard")} replace />;
   }
 
   if (!partnerProfile) {

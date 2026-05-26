@@ -40,6 +40,14 @@ function getReturnPath(searchParams) {
   return raw && raw.startsWith("/") ? raw : null;
 }
 
+function resolveLocalizedDashboardPath(toLocalizedPath, nextAuth) {
+  const rawPath = nextAuth?.dashboardPath
+    || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess)
+    || "/client/dashboard";
+
+  return toLocalizedPath(rawPath);
+}
+
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -59,7 +67,7 @@ export function LoginPage() {
       await signInWithEmail(form.email, form.password);
       const nextAuth = await refreshProfile();
       navigate(
-        getReturnPath(searchParams) || nextAuth?.dashboardPath || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess),
+        toLocalizedPath(getReturnPath(searchParams) || resolveLocalizedDashboardPath(toLocalizedPath, nextAuth)),
         { replace: true },
       );
     } catch (authError) {
@@ -173,7 +181,7 @@ export function RegisterPage() {
 
       if (result.session) {
         const nextAuth = await refreshProfile();
-        navigate(nextAuth?.dashboardPath || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess) || toLocalizedPath("/client/dashboard"), { replace: true });
+        navigate(resolveLocalizedDashboardPath(toLocalizedPath, nextAuth), { replace: true });
         return;
       }
 
@@ -486,7 +494,7 @@ export function ResetPasswordPage() {
       setNotice(t("auth.reset.notice", { defaultValue: "Password updated. Redirecting to your account..." }));
       const nextAuth = await refreshProfile();
       window.setTimeout(() => {
-        navigate(nextAuth?.dashboardPath || resolveDashboardPath(nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess) || toLocalizedPath("/client/dashboard"), { replace: true });
+        navigate(resolveLocalizedDashboardPath(toLocalizedPath, nextAuth), { replace: true });
       }, 700);
     } catch (authError) {
       setError(authError.message || t("auth.reset.error", { defaultValue: "Could not update your password." }));

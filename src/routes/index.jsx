@@ -19,6 +19,7 @@ import { useAuth } from "../auth/AuthContext.jsx";
 import i18n from "../i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "../i18n/languages.js";
 import { getPreferredLanguage, localizePath } from "../i18n/path.js";
+import { useLocalizedPath } from "../i18n/useLocalizedPath.js";
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from "../pages/Auth/index.jsx";
 import {
   ClientAccountPage,
@@ -87,6 +88,7 @@ function clearPendingGoogleOAuthRedirect() {
 
 function RedirectToPreferredLanguage() {
   const location = useLocation();
+  const toLocalizedPath = useLocalizedPath();
   const { t } = useTranslation();
   const { loading, isAuthenticated, dashboardPath } = useAuth();
 
@@ -98,7 +100,7 @@ function RedirectToPreferredLanguage() {
     clearPendingGoogleOAuthRedirect();
 
     if (isAuthenticated) {
-      return <Navigate to={dashboardPath} replace />;
+      return <Navigate to={toLocalizedPath(dashboardPath || "/client/dashboard")} replace />;
     }
   }
 
