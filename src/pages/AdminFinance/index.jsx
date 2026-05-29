@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Coins, Download, HandCoins, ReceiptText, RefreshCw, Wallet } from "lucide-react";
+import { Download, FilterX, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AdminFilterBar, AdminKpiCard, AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import {
+  AdminColumnTable,
+  AdminFilterBar,
+  AdminMetricsStrip,
+  AdminPageHeader,
+  AdminSidePanel,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
 import {
   formatFinanceCurrency,
   formatFinanceDateParts,
@@ -284,6 +291,14 @@ export default function AdminFinance() {
 
   const localSummary = useMemo(() => buildSummaryFromRows(filteredRows), [filteredRows]);
   const summary = hasLocalFilters ? localSummary : (remoteSummary || localSummary);
+  const metrics = useMemo(() => ([
+    { label: "Compensation", value: isLoading ? "—" : formatCurrency(summary.totalCompensation) },
+    { label: "Revenue", value: isLoading ? "—" : formatCurrency(summary.totalRevenue) },
+    { label: "Client payouts", value: isLoading ? "—" : formatCurrency(summary.totalClientPayouts) },
+    { label: "Partner payouts", value: isLoading ? "—" : formatCurrency(summary.totalPartnerPayouts) },
+    { label: "Net profit", value: isLoading ? "—" : formatCurrency(summary.netProfit) },
+    { label: "Unpaid", value: isLoading ? "—" : formatCurrency(summary.unpaidAmount) },
+  ]), [isLoading, summary]);
 
   const monthlyOverview = useMemo(() => buildMonthlyOverview(filteredRows), [filteredRows]);
 
@@ -345,6 +360,135 @@ export default function AdminFinance() {
     [rows, selectedCaseId],
   );
 
+  const financeColumns = useMemo(() => ([
+    {
+      key: "case",
+      label: "Case",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-page__code admin-crm-table__cell-main" title={row.caseCode || "—"}>{row.caseCode || "—"}</strong>
+          <span className="admin-crm-table__cell-sub">{formatRouteLabel(row.route)}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.caseCode || "—",
+    },
+    {
+      key: "customer",
+      label: "Customer",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={row.clientLabel || "—"}>{row.clientLabel || "—"}</strong>
+          <span className="admin-crm-table__cell-sub">{row.partnerName || row.referralCode || "Direct case"}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.clientLabel || "—",
+    },
+    {
+      key: "compensation",
+      label: "Compensation",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      align: "right",
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatCurrency(row.compensationAmount)}</span>,
+      getCellTitle: (row) => formatCurrency(row.compensationAmount),
+    },
+    {
+      key: "revenue",
+      label: "Revenue",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      align: "right",
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatCurrency(row.companyRevenueAmount)}</span>,
+      getCellTitle: (row) => formatCurrency(row.companyRevenueAmount),
+    },
+    {
+      key: "clientPayout",
+      label: "Client payout",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      align: "right",
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatCurrency(row.clientPayoutAmount)}</span>,
+      getCellTitle: (row) => formatCurrency(row.clientPayoutAmount),
+    },
+    {
+      key: "financeStatus",
+      label: "Finance status",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (row) => <AdminStatusBadge tone={getFinanceStatusTone(row.internalCompensationConfirmed)}>{formatFinanceStatusLabel(row.internalCompensationConfirmed)}</AdminStatusBadge>,
+    },
+    {
+      key: "clientPayment",
+      label: "Client payment",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (row) => <AdminStatusBadge tone={getStatusTone(row.clientPaymentStatus)}>{formatStatusLabel(row.clientPaymentStatus)}</AdminStatusBadge>,
+    },
+    {
+      key: "partnerPayment",
+      label: "Partner payment",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (row) => <AdminStatusBadge tone={getStatusTone(row.partnerPaymentStatus)}>{formatStatusLabel(row.partnerPaymentStatus)}</AdminStatusBadge>,
+    },
+    {
+      key: "updated",
+      label: "Updated",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => {
+        const updated = formatDateTime(row.updatedAt);
+        return (
+          <div className="admin-crm-page__date">
+            <strong className="admin-crm-table__cell-main">{updated.date}</strong>
+            {updated.time ? <span className="admin-crm-table__cell-sub">{updated.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (row) => formatDateTimeLabel(row.updatedAt),
+    },
+  ]), []);
+
   const openFinanceDetail = async (caseId) => {
     setSelectedCaseId(caseId);
     setDetailError("");
@@ -384,34 +528,35 @@ export default function AdminFinance() {
     return null;
   };
 
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setDateRange({ from: "", to: "" });
+    setPartyFilter("");
+    setCaseReferenceFilter("");
+  };
+
   return (
-    <div className="admin-page admin-finance-page">
-      <section className="admin-panel admin-finance__workspace">
-        <div className="admin-finance__header">
-          <div className="admin-finance__header-copy">
-            <h1>Finance</h1>
-          </div>
-          <div className="admin-finance__header-actions">
-            <button
-              type="button"
-              className="admin-btn admin-btn-secondary"
-              onClick={() => void loadFinance()}
-              disabled={isLoading || isExporting}
-            >
-              <RefreshCw size={14} />
-              <span>Refresh</span>
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn-secondary"
-              onClick={handleExport}
-              disabled={isLoading || isExporting}
-            >
-              <Download size={14} />
-              <span>{isExporting ? "Exporting..." : "Export finance CSV"}</span>
-            </button>
-          </div>
-        </div>
+    <div className="admin-page admin-finance-page admin-crm-page">
+      <AdminPageHeader
+        title="Finance"
+        secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: () => void loadFinance(),
+            disabled: isLoading || isExporting,
+          },
+          {
+            label: isExporting ? "Exporting..." : "Export finance CSV",
+            icon: Download,
+            onClick: handleExport,
+            disabled: isLoading || isExporting,
+          },
+        ]}
+      />
+
+      <section className="admin-finance__workspace">
+        <AdminMetricsStrip items={metrics} />
 
         <AdminFilterBar
           statusFilter={statusFilter}
@@ -430,19 +575,29 @@ export default function AdminFinance() {
             onChange={(event) => setCaseReferenceFilter(event.target.value)}
             placeholder="Case reference"
           />
+          <button type="button" className="admin-btn admin-btn-secondary admin-crm-page__clear" onClick={clearFilters}>
+            <FilterX size={15} />
+            <span>Clear filters</span>
+          </button>
         </AdminFilterBar>
-
-        <div className="admin-finance__kpis">
-          <AdminKpiCard label="Compensation" value={isLoading ? "—" : formatCurrency(summary.totalCompensation)} icon={Coins} />
-          <AdminKpiCard label="Revenue" value={isLoading ? "—" : formatCurrency(summary.totalRevenue)} icon={ReceiptText} />
-          <AdminKpiCard label="Client payouts" value={isLoading ? "—" : formatCurrency(summary.totalClientPayouts)} icon={Wallet} />
-          <AdminKpiCard label="Partner payouts" value={isLoading ? "—" : formatCurrency(summary.totalPartnerPayouts)} icon={HandCoins} />
-          <AdminKpiCard label="Net profit" value={isLoading ? "—" : formatCurrency(summary.netProfit)} icon={Coins} />
-          <AdminKpiCard label="Unpaid" value={isLoading ? "—" : formatCurrency(summary.unpaidAmount)} icon={Wallet} />
-        </div>
 
         {renderMainState() || (
           <>
+            <AdminColumnTable
+              storageKey="ff-admin-table-layout-finance"
+              title="Case finance"
+              countLabel={`${filteredRows.length} record${filteredRows.length === 1 ? "" : "s"}`}
+              columns={financeColumns}
+              rows={filteredRows}
+              loading={isLoading}
+              error={errorState ? `${errorState.title}${errorState.detail ? ` ${errorState.detail}` : ""}` : ""}
+              emptyTitle="No finance records found"
+              emptyDetail="Adjust filters or wait for new finance records."
+              selectedRowId={selectedCaseId || ""}
+              getRowKey={(row) => row.caseId || `${row.caseCode || "finance-row"}-${row.updatedAt || "row"}`}
+              onRowClick={(row) => void openFinanceDetail(row.caseId)}
+            />
+
             <div className="admin-finance__insights">
               <section className="admin-finance__card">
                 <div className="admin-finance__card-head">
@@ -524,77 +679,6 @@ export default function AdminFinance() {
               </div>
             </div>
 
-            <section className="admin-finance__table-card">
-              <div className="admin-finance__card-head">
-                <div>
-                  <h2>Case finance</h2>
-                  <p>{filteredRows.length} record{filteredRows.length === 1 ? "" : "s"}</p>
-                </div>
-              </div>
-
-              {filteredRows.length ? (
-                <div className="admin-finance__table-wrap admin-table-wrap">
-                  <table className="admin-finance__table">
-                    <thead>
-                      <tr>
-                        <th>Case</th>
-                        <th>Customer</th>
-                        <th className="is-right">Compensation</th>
-                        <th className="is-right">Revenue</th>
-                        <th className="is-right">Client payout</th>
-                        <th>Finance status</th>
-                        <th>Client payment</th>
-                        <th>Partner payment</th>
-                        <th>Updated</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRows.map((row) => {
-                        const updated = formatDateTime(row.updatedAt);
-                        return (
-                          <tr key={`${row.caseId || row.caseCode || "finance-row"}-${row.updatedAt || "row"}`} className="admin-finance__row" onClick={() => void openFinanceDetail(row.caseId)}>
-                            <td>
-                              <div className="admin-finance__case">
-                                <strong>{row.caseCode || "—"}</strong>
-                                <span>{formatRouteLabel(row.route)}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <div className="admin-finance__partner-cell">
-                                <strong>{row.clientLabel || "—"}</strong>
-                              </div>
-                            </td>
-                            <td className="is-right">{formatCurrency(row.compensationAmount)}</td>
-                            <td className="is-right">{formatCurrency(row.companyRevenueAmount)}</td>
-                            <td className="is-right">{formatCurrency(row.clientPayoutAmount)}</td>
-                            <td><AdminStatusBadge tone={getFinanceStatusTone(row.internalCompensationConfirmed)}>{formatFinanceStatusLabel(row.internalCompensationConfirmed)}</AdminStatusBadge></td>
-                            <td><AdminStatusBadge tone={getStatusTone(row.clientPaymentStatus)}>{formatStatusLabel(row.clientPaymentStatus)}</AdminStatusBadge></td>
-                            <td><AdminStatusBadge tone={getStatusTone(row.partnerPaymentStatus)}>{formatStatusLabel(row.partnerPaymentStatus)}</AdminStatusBadge></td>
-                            <td>
-                              <div className="admin-finance__date-cell">
-                                <strong>{updated.date}</strong>
-                                {updated.time ? <span>{updated.time}</span> : null}
-                              </div>
-                            </td>
-                            <td>
-                              <button type="button" className="admin-link-button" onClick={(event) => {
-                                event.stopPropagation();
-                                void openFinanceDetail(row.caseId);
-                              }}>
-                                Open
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="admin-finance__mini-state">No finance records found.</div>
-              )}
-            </section>
           </>
         )}
       </section>
@@ -610,6 +694,7 @@ export default function AdminFinance() {
           setDetailState({ clientPayment: null, partnerPayment: null });
           setDetailError("");
         }}
+        className="admin-finance__panel"
       >
         {detailError ? <p className="admin-message is-error">{detailError}</p> : null}
 

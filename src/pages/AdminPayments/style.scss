@@ -1,4 +1,8 @@
 .admin-payments-page {
+  .admin-page-header {
+    margin-bottom: 0;
+  }
+
   .admin-side-panel__body {
     padding-top: 16px;
   }
@@ -420,6 +424,10 @@
   display: grid;
   place-content: center;
   text-align: center;
+}
+
+.admin-payments__panel {
+  width: min(560px, calc(100vw - 24px));
 }
 
 @media (max-width: 1180px) {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FilterX, Search, UserRoundPlus } from "lucide-react";
+import { Download, FilterX, UserRoundPlus } from "lucide-react";
 import {
   assignLeadOwner,
   convertLeadToCase,
@@ -11,19 +11,29 @@ import {
 } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import {
+  AdminFilterBar,
+  AdminColumnTable,
+  AdminMetricsStrip,
+  AdminPageHeader,
+  AdminSidePanel,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
+import {
+  formatFinanceDateParts,
+  formatFinanceDateTimeLabel,
+  formatFinanceRoute,
+} from "../../lib/adminFinanceFormatters.js";
 import "./style.scss";
 
 const leadStatuses = ["new", "submitted", "not_eligible", "converted", "archived"];
 
 function formatDateTime(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString();
+  return formatFinanceDateTimeLabel(value);
 }
 
 function formatDate(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString();
+  return formatFinanceDateParts(value).date;
 }
 
 function formatLeadReference(lead) {
@@ -68,6 +78,7 @@ function normalizeLabel(value) {
 
 function getEstimateTone(status) {
   if (status === "calculated") return "success";
+  if (status === "pending_review") return "warning";
   if (status === "manual_override") return "warning";
   return "neutral";
 }
@@ -75,7 +86,7 @@ function getEstimateTone(status) {
 function getLeadStatusTone(status) {
   if (status === "converted") return "success";
   if (status === "not_eligible" || status === "archived") return "danger";
-  if (status === "submitted") return "warning";
+  if (status === "submitted") return "info";
   return "neutral";
 }
 
@@ -83,11 +94,12 @@ function getStageTone(stage) {
   if (stage === "approved") return "success";
   if (stage === "denied") return "danger";
   if (stage === "documents" || stage === "finish") return "warning";
+  if (stage === "submitted") return "info";
   return "neutral";
 }
 
 function formatRouteLabel(lead) {
-  return `${lead?.departure_airport || "—"} → ${lead?.arrival_airport || "—"}`;
+  return formatFinanceRoute(`${lead?.departure_airport || "—"} → ${lead?.arrival_airport || "—"}`);
 }
 
 function formatOwnerLabel(lead, users = []) {
@@ -224,6 +236,145 @@ export default function AdminLeads() {
       return rightTs - leftTs;
     });
   }, [dateRange.from, dateRange.to, disruptionFilter, estimateStatusFilter, moduleData?.leads, search, statusFilter]);
+
+  const metrics = useMemo(() => {
+    const total = filteredLeads.length;
+    const nextLeads = filteredLeads.filter((lead) => lead.status === "new").length;
+    const submittedLeads = filteredLeads.filter((lead) => lead.status === "submitted").length;
+    const convertedLeads = filteredLeads.filter((lead) => lead.status === "converted").length;
+    const pendingEstimate = filteredLeads.filter((lead) => (lead.estimate_status || "pending_review") === "pending_review").length;
+
+    return [
+      { label: "Total", value: total },
+      { label: "New", value: nextLeads },
+      { label: "Submitted", value: submittedLeads },
+      { label: "Converted", value: convertedLeads },
+      { label: "Estimate pending", value: pendingEstimate },
+    ];
+  }, [filteredLeads]);
+
+  const leadColumns = useMemo(() => ([
+    {
+      key: "lead",
+      label: "Lead",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 240,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (lead) => (
+        <div className="admin-crm-page__primary" title={formatLeadReference(lead)}>
+          <strong className="admin-crm-page__code admin-crm-table__cell-main">{formatLeadReference(lead)}</strong>
+          <span className="admin-crm-table__cell-sub">{normalizeLabel(lead.source || "direct")}</span>
+        </div>
+      ),
+      getCellTitle: (lead) => formatLeadReference(lead),
+    },
+    {
+      key: "customer",
+      label: "Customer",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (lead) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={lead.full_name || "Unknown customer"}>{lead.full_name || "Unknown customer"}</strong>
+          <span className="admin-crm-table__cell-sub" title={lead.email || lead.phone || "No contact"}>{lead.email || lead.phone || "No contact"}</span>
+        </div>
+      ),
+      getCellTitle: (lead) => `${lead.full_name || "Unknown customer"}${lead.email ? ` · ${lead.email}` : ""}`,
+    },
+    {
+      key: "route",
+      label: "Route",
+      width: 280,
+      minWidth: 180,
+      maxWidth: 480,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (lead) => (
+        <div className="admin-crm-page__route">
+          <strong className="admin-crm-table__cell-main" title={formatRouteLabel(lead)}>{formatRouteLabel(lead)}</strong>
+          <span className="admin-crm-table__cell-sub">{normalizeLabel(formatDisruption(lead))}</span>
+        </div>
+      ),
+      getCellTitle: (lead) => formatRouteLabel(lead),
+    },
+    {
+      key: "flight",
+      label: "Flight",
+      width: 180,
+      minWidth: 130,
+      maxWidth: 300,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (lead) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={lead.airline || "—"}>{lead.airline || "—"}</strong>
+          <span className="admin-crm-table__cell-sub">{formatDate(lead.scheduled_departure_date)}</span>
+        </div>
+      ),
+      getCellTitle: (lead) => `${lead.airline || "—"}${lead.scheduled_departure_date ? ` · ${formatDate(lead.scheduled_departure_date)}` : ""}`,
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (lead) => (
+        <div className="admin-leads-page__table-badges">
+          <AdminStatusBadge tone={getLeadStatusTone(lead.status)}>{normalizeLabel(lead.status || "new")}</AdminStatusBadge>
+          {lead.stage ? <AdminStatusBadge tone={getStageTone(lead.stage)}>{normalizeLabel(lead.stage)}</AdminStatusBadge> : null}
+        </div>
+      ),
+    },
+    {
+      key: "estimate",
+      label: "Estimate",
+      width: 190,
+      minWidth: 150,
+      maxWidth: 300,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (lead) => (
+        <div className="admin-leads-page__estimate-cell">
+          <strong className="admin-crm-table__cell-main">{formatCurrency(lead.estimated_compensation_eur, lead.compensation_currency)}</strong>
+          <AdminStatusBadge tone={getEstimateTone(lead.estimate_status)}>{formatEstimateStatus(lead.estimate_status)}</AdminStatusBadge>
+        </div>
+      ),
+    },
+    {
+      key: "created",
+      label: "Created",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 180,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (lead) => {
+        const created = formatFinanceDateParts(lead.created_at);
+        return (
+          <div className="admin-crm-page__date">
+            <strong className="admin-crm-table__cell-main">{created.date}</strong>
+            {created.time ? <span className="admin-crm-table__cell-sub">{created.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (lead) => formatDateTime(lead.created_at),
+    },
+  ]), []);
 
   const selectedLead = useMemo(
     () => filteredLeads.find((lead) => lead.id === selectedLeadId)
@@ -367,7 +518,7 @@ export default function AdminLeads() {
   const countLabel = `${filteredLeads.length} lead${filteredLeads.length === 1 ? "" : "s"}`;
 
   return (
-    <div className="admin-page admin-leads-page">
+    <div className="admin-page admin-leads-page admin-crm-page">
       {error ? <p className="admin-message is-error">{error}</p> : null}
       {moduleData && !moduleData.supportsCoreSchemaV1 ? (
         <p className="admin-message">
@@ -376,121 +527,68 @@ export default function AdminLeads() {
         </p>
       ) : null}
 
-      <section className="admin-leads-page__toolbar">
-        <label className="admin-leads-page__search">
-          <Search size={16} />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search customer, email, lead ref, route, airline"
-          />
-        </label>
+      <AdminPageHeader
+        title="Leads"
+        secondaryActions={[
+          {
+            label: "Export CSV",
+            icon: Download,
+            onClick: () => downloadCsv(filteredLeads),
+            disabled: !filteredLeads.length,
+          },
+        ]}
+      />
 
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-          <option value="all">All statuses</option>
-          {leadStatuses.map((status) => (
-            <option key={status} value={status}>{normalizeLabel(status)}</option>
-          ))}
-        </select>
+      <section className="admin-crm-page__workspace">
+        <AdminMetricsStrip items={metrics} />
 
-        <select value={disruptionFilter} onChange={(event) => setDisruptionFilter(event.target.value)}>
-          <option value="all">All disruption types</option>
-          {disruptionOptions.map((value) => (
-            <option key={value} value={value}>{normalizeLabel(value)}</option>
-          ))}
-        </select>
-
-        <select value={estimateStatusFilter} onChange={(event) => setEstimateStatusFilter(event.target.value)}>
-          <option value="all">All estimate states</option>
-          <option value="calculated">Calculated</option>
-          <option value="pending_review">Pending review</option>
-          <option value="manual_override">Manual override</option>
-        </select>
-
-        <label className="admin-leads-page__date-field">
-          <span>From</span>
-          <input type="date" value={dateRange.from} onChange={(event) => setDateRange((current) => ({ ...current, from: event.target.value }))} />
-        </label>
-
-        <label className="admin-leads-page__date-field">
-          <span>To</span>
-          <input type="date" value={dateRange.to} onChange={(event) => setDateRange((current) => ({ ...current, to: event.target.value }))} />
-        </label>
-
-        <button type="button" className="admin-leads-page__clear" onClick={clearFilters}>
-          <FilterX size={15} />
-          <span>Clear filters</span>
-        </button>
-
-        <button
-          type="button"
-          className="admin-leads-page__export"
-          onClick={() => downloadCsv(filteredLeads)}
-          disabled={!filteredLeads.length}
+        <AdminFilterBar
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search name, email, route, airline"
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          statusOptions={[
+            { value: "all", label: "All statuses" },
+            ...leadStatuses.map((status) => ({ value: status, label: normalizeLabel(status) })),
+          ]}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
         >
-          <Download size={15} />
-          <span>Export CSV</span>
-        </button>
-      </section>
+          <select className="admin-filter-control admin-select" value={disruptionFilter} onChange={(event) => setDisruptionFilter(event.target.value)}>
+            <option value="all">All disruption types</option>
+            {disruptionOptions.map((value) => (
+              <option key={value} value={value}>{normalizeLabel(value)}</option>
+            ))}
+          </select>
 
-      <section className={`admin-leads-page__workspace${selectedLead ? " has-selection" : ""}${previewOpen ? " is-preview-open" : ""}`}>
-        <div className="admin-leads-page__list-pane">
-          <header className="admin-leads-page__list-header">
-            <div>
-              <span className="admin-leads-page__eyebrow">Lead inbox</span>
-              <h2>{countLabel}</h2>
-            </div>
-            <p>Newest leads first.</p>
-          </header>
+          <select className="admin-filter-control admin-select" value={estimateStatusFilter} onChange={(event) => setEstimateStatusFilter(event.target.value)}>
+            <option value="all">All estimate states</option>
+            <option value="calculated">Calculated</option>
+            <option value="pending_review">Pending review</option>
+            <option value="manual_override">Manual override</option>
+          </select>
 
-          <div className="admin-leads-page__list-scroll">
-            {isLoading ? (
-              <div className="admin-leads-page__state">Loading leads...</div>
-            ) : !filteredLeads.length ? (
-              <div className="admin-leads-page__state">No leads yet</div>
-            ) : (
-              filteredLeads.map((lead) => (
-                <button
-                  key={lead.id}
-                  type="button"
-                  className={`admin-leads-page__lead-row${selectedLead?.id === lead.id ? " is-active" : ""}`}
-                  onClick={() => handleOpenLead(lead.id)}
-                >
-                  <div className="admin-leads-page__lead-main">
-                    <div className="admin-leads-page__lead-topline">
-                      <strong>{formatLeadReference(lead)}</strong>
-                      <span>{formatDateTime(lead.created_at)}</span>
-                    </div>
+          <button type="button" className="admin-btn admin-btn-secondary admin-crm-page__clear" onClick={clearFilters}>
+            <FilterX size={15} />
+            <span>Clear filters</span>
+          </button>
+        </AdminFilterBar>
 
-                    <div className="admin-leads-page__lead-customer">
-                      <span>{lead.full_name || "Unknown customer"}</span>
-                      <small>{lead.email || "No email"}</small>
-                    </div>
-
-                    <div className="admin-leads-page__lead-route">
-                      <span>{formatRouteLabel(lead)}</span>
-                      <small>{lead.airline || "No airline"}{lead.scheduled_departure_date ? ` • ${formatDate(lead.scheduled_departure_date)}` : ""}</small>
-                    </div>
-                  </div>
-
-                  <div className="admin-leads-page__lead-side">
-                    <div className="admin-leads-page__lead-badges">
-                      <AdminStatusBadge tone={getLeadStatusTone(lead.status)}>{normalizeLabel(lead.status || "new")}</AdminStatusBadge>
-                      {lead.stage ? <AdminStatusBadge tone={getStageTone(lead.stage)}>{normalizeLabel(lead.stage)}</AdminStatusBadge> : null}
-                    </div>
-
-                    <div className="admin-leads-page__lead-meta">
-                      <span>{normalizeLabel(formatDisruption(lead))}</span>
-                      <span>{formatCurrency(lead.estimated_compensation_eur, lead.compensation_currency)}</span>
-                      <AdminStatusBadge tone={getEstimateTone(lead.estimate_status)}>{formatEstimateStatus(lead.estimate_status)}</AdminStatusBadge>
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
+        <AdminColumnTable
+          storageKey="ff-admin-table-layout-leads"
+          title="Leads"
+          countLabel={countLabel}
+          columns={leadColumns}
+          rows={filteredLeads}
+          loading={isLoading}
+          error={error}
+          emptyTitle="No leads found"
+          emptyDetail="Adjust filters or wait for new partner and client submissions."
+          selectedRowId={selectedLead?.id || ""}
+          getRowKey={(lead) => lead.id}
+          onRowClick={(lead) => handleOpenLead(lead.id)}
+        />
 
         <AdminSidePanel
           open={Boolean(selectedLead && previewOpen)}
@@ -673,14 +771,6 @@ export default function AdminLeads() {
                   </div>
 
                   <div className="admin-leads-page__workflow-actions">
-                    <button
-                      className="btn btn--primary"
-                      type="button"
-                      onClick={handleConvertToCase}
-                      disabled={!hasPermission("cases.update") || isSaving}
-                    >
-                      {selectedLead.status === "converted" ? "Open case" : "Convert to case"}
-                    </button>
                     <button
                       type="button"
                       className="admin-link-button"

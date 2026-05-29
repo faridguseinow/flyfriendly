@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Plus, RefreshCw, Wallet } from "lucide-react";
-import { AdminFilterBar, AdminKpiCard, AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import { Download, FilterX, Plus, RefreshCw } from "lucide-react";
+import {
+  AdminColumnTable,
+  AdminFilterBar,
+  AdminMetricsStrip,
+  AdminPageHeader,
+  AdminSidePanel,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import {
   formatFinanceCurrency,
@@ -196,6 +203,136 @@ export default function AdminPartnerPayouts() {
     ];
   }, [rows]);
 
+  const metrics = useMemo(() => ([
+    { label: "Records", value: isLoading ? "—" : summary.totalRecords },
+    { label: "Pending", value: isLoading ? "—" : formatCurrency(summary.pendingAmount) },
+    { label: "Paid", value: isLoading ? "—" : formatCurrency(summary.paidAmount) },
+    { label: "Unpaid", value: isLoading ? "—" : summary.unpaidRecords },
+    { label: "Total amount", value: isLoading ? "—" : formatCurrency(summary.pendingAmount + summary.paidAmount) },
+  ]), [isLoading, summary]);
+
+  const columns = useMemo(() => ([
+    {
+      key: "partner",
+      label: "Partner",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{row.partnerName || "—"}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.partnerName || "—",
+    },
+    {
+      key: "case",
+      label: "Case",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 260,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{row.caseCode || "—"}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.caseCode || "—",
+    },
+    {
+      key: "referralCode",
+      label: "Referral code",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{row.referralCode || "—"}</span>,
+      getCellTitle: (row) => row.referralCode || "—",
+    },
+    {
+      key: "amount",
+      label: "Amount",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: false,
+      align: "right",
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatCurrency(row.partnerCommissionAmount, row.currency)}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <AdminStatusBadge tone={getStatusTone(row.rawStatus)}>{formatStatusLabel(row.rawStatus)}</AdminStatusBadge>,
+    },
+    {
+      key: "reference",
+      label: "Reference",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{row.paymentReference || "—"}</span>,
+      getCellTitle: (row) => row.paymentReference || "—",
+    },
+    {
+      key: "paidAt",
+      label: "Paid at",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => {
+        const paidAt = formatDateTime(row.paidAt);
+        return (
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{paidAt.date}</span>
+            {paidAt.time ? <span className="admin-crm-table__cell-sub">{paidAt.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (row) => formatDateTimeLabel(row.paidAt),
+    },
+    {
+      key: "updated",
+      label: "Updated",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => {
+        const updatedAt = formatDateTime(row.updatedAt);
+        return (
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{updatedAt.date}</span>
+            {updatedAt.time ? <span className="admin-crm-table__cell-sub">{updatedAt.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (row) => formatDateTimeLabel(row.updatedAt),
+    },
+  ]), []);
+
   const openDetail = async (payoutId) => {
     setDrawerMode("detail");
     setSelectedPayoutId(payoutId);
@@ -301,45 +438,36 @@ export default function AdminPartnerPayouts() {
   return (
     <div className="admin-page admin-partner-payouts-page">
       <section className="admin-panel admin-partner-payouts__workspace">
-        <div className="admin-partner-payouts__header">
-          <div className="admin-partner-payouts__header-copy">
-            <h1>Partner payouts</h1>
-            <p>Referral payout operations.</p>
-          </div>
-          <div className="admin-partner-payouts__header-actions">
-            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => void loadData()} disabled={isLoading || isExporting}>
-              <RefreshCw size={14} />
-              <span>Refresh</span>
-            </button>
-            <button type="button" className="admin-btn admin-btn-secondary" onClick={handleExport} disabled={isLoading || isExporting}>
-              <Download size={14} />
-              <span>{isExporting ? "Exporting..." : "Export CSV"}</span>
-            </button>
-            {canEditPartners ? (
-              <button
-                type="button"
-                className="admin-btn admin-btn-primary btn btn--primary"
-                onClick={() => {
-                  setDrawerMode("create");
-                  setSelectedPayoutId(null);
-                  setSelectedPayout(null);
-                  setPanelError("");
-                  setPanelNotice("");
-                }}
-              >
-                <Plus size={14} />
-                <span>Create payout</span>
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <AdminPageHeader
+          title="Partner payouts"
+          secondaryActions={[
+            {
+              label: "Refresh",
+              icon: RefreshCw,
+              onClick: () => void loadData(),
+              disabled: isLoading || isExporting,
+            },
+            {
+              label: isExporting ? "Exporting..." : "Export CSV",
+              icon: Download,
+              onClick: handleExport,
+              disabled: isLoading || isExporting,
+            },
+          ]}
+          primaryAction={canEditPartners ? {
+            label: "Create payout",
+            icon: Plus,
+            onClick: () => {
+              setDrawerMode("create");
+              setSelectedPayoutId(null);
+              setSelectedPayout(null);
+              setPanelError("");
+              setPanelNotice("");
+            },
+          } : null}
+        />
 
-        <div className="admin-partner-payouts__kpis">
-          <AdminKpiCard label="Payout records" value={isLoading ? "—" : summary.totalRecords} icon={Wallet} />
-          <AdminKpiCard label="Pending amount" value={isLoading ? "—" : formatCurrency(summary.pendingAmount)} icon={Wallet} />
-          <AdminKpiCard label="Paid amount" value={isLoading ? "—" : formatCurrency(summary.paidAmount)} icon={Wallet} />
-          <AdminKpiCard label="Unpaid records" value={isLoading ? "—" : summary.unpaidRecords} icon={Wallet} />
-        </div>
+        <AdminMetricsStrip items={metrics} />
 
         <AdminFilterBar
           searchValue={search}
@@ -350,83 +478,35 @@ export default function AdminPartnerPayouts() {
           statusOptions={statusOptions}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
+        >
+          <button
+            type="button"
+            className="admin-btn admin-btn-secondary admin-btn-sm"
+            onClick={() => {
+              setSearch("");
+              setStatusFilter("all");
+              setDateRange({ from: "", to: "" });
+            }}
+          >
+            <FilterX size={14} />
+            <span>Clear filters</span>
+          </button>
+        </AdminFilterBar>
+
+        <AdminColumnTable
+          storageKey="ff-admin-table-layout-partner-payouts"
+          title="Partner payouts"
+          countLabel={`${filteredRows.length} record${filteredRows.length === 1 ? "" : "s"}`}
+          columns={columns}
+          rows={filteredRows}
+          loading={isLoading}
+          error={displayError ? [displayError.title, displayError.detail].filter(Boolean).join(" ") : ""}
+          emptyTitle="No partner payouts found"
+          emptyDetail="Partner payouts appear after referral compensation is confirmed."
+          selectedRowId={selectedPayoutId || ""}
+          getRowKey={(row) => row.id}
+          onRowClick={(row) => void openDetail(row.id)}
         />
-
-        <section className="admin-partner-payouts__table-card">
-          <div className="admin-partner-payouts__table-head">
-            <div>
-              <h2>Partner payouts</h2>
-              <p>{filteredRows.length} record{filteredRows.length === 1 ? "" : "s"}</p>
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="admin-partner-payouts__state">Loading payouts...</div>
-          ) : displayError ? (
-            <div className="admin-partner-payouts__state is-error">
-              <strong>{displayError.title}</strong>
-              {displayError.detail ? <span>{displayError.detail}</span> : null}
-            </div>
-          ) : !filteredRows.length ? (
-            <div className="admin-partner-payouts__state">
-              <strong>No partner payouts found</strong>
-              <span>Partner payouts appear after referral compensation is confirmed.</span>
-            </div>
-          ) : (
-            <div className="admin-partner-payouts__table-wrap admin-table-wrap">
-              <table className="admin-partner-payouts__table">
-                <thead>
-                  <tr>
-                    <th>Partner</th>
-                    <th>Case</th>
-                    <th>Referral code</th>
-                    <th className="is-right">Amount</th>
-                    <th>Status</th>
-                    <th>Reference</th>
-                    <th>Paid at</th>
-                    <th>Updated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRows.map((row) => {
-                    const paidAt = formatDateTime(row.paidAt);
-                    const updatedAt = formatDateTime(row.updatedAt);
-                    return (
-                      <tr key={row.id} className="admin-partner-payouts__row" onClick={() => void openDetail(row.id)}>
-                        <td>
-                          <div className="admin-partner-payouts__primary">
-                            <strong>{row.partnerName || "—"}</strong>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="admin-partner-payouts__case">
-                            <strong>{row.caseCode || "—"}</strong>
-                          </div>
-                        </td>
-                        <td>{row.referralCode || "—"}</td>
-                        <td className="is-right">{formatCurrency(row.partnerCommissionAmount, row.currency)}</td>
-                        <td><AdminStatusBadge tone={getStatusTone(row.rawStatus)}>{formatStatusLabel(row.rawStatus)}</AdminStatusBadge></td>
-                        <td>{row.paymentReference || "—"}</td>
-                        <td>
-                          <div className="admin-partner-payouts__date">
-                            <strong>{paidAt.date}</strong>
-                            {paidAt.time ? <span>{paidAt.time}</span> : null}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="admin-partner-payouts__date">
-                            <strong>{updatedAt.date}</strong>
-                            {updatedAt.time ? <span>{updatedAt.time}</span> : null}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
       </section>
 
       <AdminSidePanel

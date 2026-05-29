@@ -3,6 +3,7 @@ import {
   Activity,
   ArrowUpRight,
   Clock3,
+  FilterX,
   PauseCircle,
   Plus,
   ShieldCheck,
@@ -26,8 +27,9 @@ import {
   updateAdminTeamMemberStatus,
 } from "../../services/adminService.js";
 import {
+  AdminColumnTable,
   AdminFilterBar,
-  AdminKpiCard,
+  AdminMetricsStrip,
   AdminPageHeader,
   AdminSidePanel,
   AdminStatusBadge,
@@ -728,6 +730,107 @@ export default function AdminTeam() {
     };
   }, [activityRows, employees, activityFilters.employeeId]);
 
+  const employeeTableColumns = useMemo(() => ([
+    {
+      key: "employee",
+      label: "Employee",
+      width: 220,
+      minWidth: 160,
+      maxWidth: 360,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-crm-table__identity">
+          <span className="admin-employees-page__avatar">{getInitials(employee.fullName || employee.email)}</span>
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{employee.fullName || "Unnamed employee"}</span>
+            <span className="admin-crm-table__cell-sub">{employee.email || "—"}</span>
+          </div>
+        </div>
+      ),
+      getCellTitle: (employee) => employee.fullName || employee.email || "Employee",
+    },
+    {
+      key: "role",
+      label: "Role",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.roleLabel || "No role"}</span>,
+      getCellTitle: (employee) => employee.roleLabel || "No role",
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <AdminStatusBadge tone={getEmployeeStatusTone(employee.status)}>{formatActionLabel(employee.status)}</AdminStatusBadge>,
+      getCellTitle: (employee) => formatActionLabel(employee.status),
+    },
+    {
+      key: "lastLogin",
+      label: "Last login",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatDateTime(employee.lastLoginAt)}</span>
+        </div>
+      ),
+      getCellTitle: (employee) => formatDateTime(employee.lastLoginAt),
+    },
+    {
+      key: "lastActivity",
+      label: "Last activity",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatDateTime(employee.lastActivityAt)}</span>
+        </div>
+      ),
+      getCellTitle: (employee) => formatDateTime(employee.lastActivityAt),
+    },
+    {
+      key: "actionsWeek",
+      label: "Actions this week",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.actionsThisWeek || 0}</span>,
+    },
+    {
+      key: "sessions",
+      label: "Sessions",
+      width: 120,
+      minWidth: 100,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.totalSessionCount || 0}</span>,
+    },
+  ]), []);
+
   const renderEmployeesTab = () => (
     <>
       <section className="admin-card admin-card-compact admin-employees-page__toolbar-card">
@@ -756,6 +859,7 @@ export default function AdminTeam() {
               dateRange: { from: "", to: "" },
             })}
           >
+            <FilterX size={14} />
             Clear filters
           </button>
         </AdminFilterBar>
@@ -767,64 +871,20 @@ export default function AdminTeam() {
         </p>
       ) : null}
 
-      <section className="admin-employees-page__employee-grid">
-        {filteredEmployees.length ? filteredEmployees.map((employee) => {
-          const canChangeProtectedEmployee = !(employee.isOwner && (ownerMemberCount <= 1 || employee.profileId === user?.id));
-          return (
-            <button
-              key={employee.profileId}
-              type="button"
-              className={`admin-card admin-employees-page__employee-card${selectedEmployee?.profileId === employee.profileId ? " is-active" : ""}`}
-              onClick={() => openEmployeeView(employee)}
-            >
-              <div className="admin-employees-page__employee-head">
-                <span className="admin-employees-page__avatar">{getInitials(employee.fullName || employee.email)}</span>
-                <div className="admin-employees-page__employee-meta">
-                  <strong>{employee.fullName || "Unnamed employee"}</strong>
-                  <span>{employee.email || "—"}</span>
-                </div>
-                <AdminStatusBadge tone={getEmployeeStatusTone(employee.status)}>{formatActionLabel(employee.status)}</AdminStatusBadge>
-              </div>
-
-              <div className="admin-employees-page__employee-summary">
-                <div>
-                  <span>Role</span>
-                  <strong>{employee.roleLabel || "No role"}</strong>
-                </div>
-                <div>
-                  <span>Last login</span>
-                  <strong>{formatDateTime(employee.lastLoginAt)}</strong>
-                </div>
-                <div>
-                  <span>Last activity</span>
-                  <strong>{formatDateTime(employee.lastActivityAt)}</strong>
-                </div>
-                <div>
-                  <span>Active time this week</span>
-                  <strong>{formatDuration(employee.activeTimeThisWeekSeconds)}</strong>
-                </div>
-                <div>
-                  <span>Actions this week</span>
-                  <strong>{employee.actionsThisWeek || 0}</strong>
-                </div>
-                <div>
-                  <span>Sessions</span>
-                  <strong>{employee.totalSessionCount || 0}</strong>
-                </div>
-              </div>
-
-              <div className="admin-employees-page__employee-footer">
-                <span>{employee.phone || "No phone on file"}</span>
-                <small>{canChangeProtectedEmployee ? "Open drawer to manage access" : "Protected owner access"}</small>
-              </div>
-            </button>
-          );
-        }) : (
-          <section className="admin-card admin-card-compact">
-            <p className="admin-message">No employees found for the current filters.</p>
-          </section>
-        )}
-      </section>
+      <AdminColumnTable
+        storageKey="ff-admin-table-layout-employees"
+        title="Employees"
+        countLabel={`${filteredEmployees.length} employee${filteredEmployees.length === 1 ? "" : "s"}`}
+        columns={employeeTableColumns}
+        rows={filteredEmployees}
+        loading={false}
+        error=""
+        emptyTitle="No employees found"
+        emptyDetail="Try adjusting the current filters."
+        selectedRowId={selectedEmployee?.profileId || ""}
+        getRowKey={(employee) => employee.profileId}
+        onRowClick={(employee) => openEmployeeView(employee)}
+      />
     </>
   );
 
@@ -1033,14 +1093,16 @@ export default function AdminTeam() {
         </AdminFilterBar>
       </section>
 
-      <section className="admin-employees-page__activity-metrics">
-        <AdminKpiCard label="Actions today" value={selectedActivityMetrics.todayActions} icon={Activity} />
-        <AdminKpiCard label="Actions this week" value={selectedActivityMetrics.weekActions} icon={Activity} />
-        <AdminKpiCard label="Active time today" value={selectedActivityMetrics.activeTimeToday !== null ? formatDuration(selectedActivityMetrics.activeTimeToday) : "—"} icon={Clock3} />
-        <AdminKpiCard label="Active time this week" value={selectedActivityMetrics.activeTimeThisWeek !== null ? formatDuration(selectedActivityMetrics.activeTimeThisWeek) : "—"} icon={Clock3} />
-        <AdminKpiCard label="Last login" value={selectedActivityMetrics.lastLoginAt ? formatDateTime(selectedActivityMetrics.lastLoginAt) : "—"} icon={UserCog} />
-        <AdminKpiCard label="Last logout" value={selectedActivityMetrics.lastLogoutAt ? formatDateTime(selectedActivityMetrics.lastLogoutAt) : "—"} icon={ArrowUpRight} />
-      </section>
+      <AdminMetricsStrip
+        items={[
+          { label: "Actions today", value: selectedActivityMetrics.todayActions },
+          { label: "Actions this week", value: selectedActivityMetrics.weekActions },
+          { label: "Active today", value: selectedActivityMetrics.activeTimeToday !== null ? formatDuration(selectedActivityMetrics.activeTimeToday) : "—" },
+          { label: "Active this week", value: selectedActivityMetrics.activeTimeThisWeek !== null ? formatDuration(selectedActivityMetrics.activeTimeThisWeek) : "—" },
+          { label: "Last login", value: selectedActivityMetrics.lastLoginAt ? formatDateTime(selectedActivityMetrics.lastLoginAt) : "—" },
+          { label: "Last logout", value: selectedActivityMetrics.lastLogoutAt ? formatDateTime(selectedActivityMetrics.lastLogoutAt) : "—" },
+        ]}
+      />
 
       <section className="admin-card admin-card-compact admin-employees-page__activity-table">
         <div className="admin-employees-page__section-head">
@@ -1516,14 +1578,7 @@ export default function AdminTeam() {
   return (
     <div className="admin-page admin-employees-page">
       <AdminPageHeader
-        eyebrow={<><Users size={16} /> People</>}
         title="Employees"
-        subtitle="Manage internal workers, roles, access, and activity."
-        breadcrumbs={[
-          { label: "Admin", path: "/admin" },
-          { label: "People" },
-          { label: "Employees" },
-        ]}
         primaryAction={canManageEmployees ? {
           label: "Add employee",
           icon: UserPlus,
@@ -1553,9 +1608,7 @@ export default function AdminTeam() {
         </section>
       ) : (
         <>
-          <section className="admin-employees-page__kpis">
-            {kpis.map((item) => <AdminKpiCard key={item.label} label={item.label} value={item.value} icon={item.icon} />)}
-          </section>
+          <AdminMetricsStrip items={kpis.map((item) => ({ label: item.label, value: item.value }))} />
 
           <section className="admin-card admin-card-compact admin-employees-page__tabs">
             {TAB_OPTIONS.map((tab) => (

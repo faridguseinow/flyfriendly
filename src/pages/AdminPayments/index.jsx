@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, FilterX, RefreshCw } from "lucide-react";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import {
+  AdminColumnTable,
   AdminFilterBar,
+  AdminMetricsStrip,
+  AdminPageHeader,
   AdminSidePanel,
   AdminStatusBadge,
 } from "../../admin/components/AdminUi.jsx";
@@ -250,66 +253,275 @@ export default function AdminPayments() {
   const partnerCountLabel = `${partnerRows.length} payment${partnerRows.length === 1 ? "" : "s"}`;
   const displayError = error ? getDisplayError(error) : null;
   const activeRows = activeTab === "partner" ? partnerRows : clientRows;
+  const metrics = useMemo(() => {
+    const clientUnpaid = clientRows.filter((row) => row.status !== "paid").length;
+    const partnerUnpaid = partnerRows.filter((row) => row.status !== "paid").length;
+    const paidTotal = [...clientRows, ...partnerRows].reduce((sum, row) => {
+      if (row.status !== "paid") return sum;
+      return sum + Number(row.finalClientPayoutAmount ?? row.partnerCommissionAmount ?? 0);
+    }, 0);
 
-  const renderState = () => {
-    if (isLoading) {
-      return <div className="admin-payments__table-state">Loading payments...</div>;
-    }
+    return [
+      { label: "Client payments", value: clientRows.length },
+      { label: "Partner payments", value: partnerRows.length },
+      { label: "Client unpaid", value: clientUnpaid },
+      { label: "Partner unpaid", value: partnerUnpaid },
+      { label: "Paid total", value: formatCurrency(paidTotal) },
+    ];
+  }, [clientRows, partnerRows]);
 
-    if (displayError) {
-      return (
-        <div className="admin-payments__table-state is-error">
-          <strong>{displayError.title}</strong>
-          {displayError.detail ? <span>{displayError.detail}</span> : null}
+  const clientColumns = useMemo(() => ([
+    {
+      key: "case",
+      label: "Case",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-page__code admin-crm-table__cell-main" title={row.caseCode || "—"}>{row.caseCode || "—"}</strong>
         </div>
-      );
-    }
-
-    if (!activeRows.length) {
-      return (
-        <div className="admin-payments__table-state">
-          <strong>{activeTab === "partner" ? "No partner payments found" : "No payments found"}</strong>
-          <span>
-            {activeTab === "partner"
-              ? "Partner payouts appear after referral compensation is confirmed."
-              : "Payments will appear after compensation is confirmed."}
-          </span>
+      ),
+      getCellTitle: (row) => row.caseCode || "—",
+    },
+    {
+      key: "client",
+      label: "Client",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={row.clientLabel || "—"}>{row.clientLabel || "—"}</strong>
         </div>
-      );
-    }
+      ),
+      getCellTitle: (row) => row.clientLabel || "—",
+    },
+    {
+      key: "route",
+      label: "Route",
+      width: 260,
+      minWidth: 180,
+      maxWidth: 480,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__route">
+          <strong className="admin-crm-table__cell-main" title={formatRouteLabel(row.route)}>{formatRouteLabel(row.route)}</strong>
+        </div>
+      ),
+      getCellTitle: (row) => formatRouteLabel(row.route),
+    },
+    {
+      key: "compensation",
+      label: "Compensation",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      align: "right",
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatCurrency(row.compensationAmount, row.currency)}</span>,
+    },
+    {
+      key: "payout",
+      label: "Payout",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      align: "right",
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatCurrency(row.finalClientPayoutAmount, row.currency)}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (row) => <AdminStatusBadge tone={getStatusTone(row.status)}>{formatStatusLabel(row.status)}</AdminStatusBadge>,
+    },
+    {
+      key: "flow",
+      label: "Flow",
+      width: 140,
+      minWidth: 120,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (row) => <AdminStatusBadge tone={row.paymentFlowType === "direct_to_client" ? "neutral" : "info"}>{formatFlowLabel(row.paymentFlowType)}</AdminStatusBadge>,
+    },
+    {
+      key: "updated",
+      label: "Updated",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => {
+        const updated = formatDateTime(row.updatedAt);
+        return (
+          <div className="admin-crm-page__date">
+            <strong className="admin-crm-table__cell-main">{updated.date}</strong>
+            {updated.time ? <span className="admin-crm-table__cell-sub">{updated.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (row) => formatDateTimeLabel(row.updatedAt),
+    },
+  ]), []);
 
-    return null;
+  const partnerColumns = useMemo(() => ([
+    {
+      key: "case",
+      label: "Case",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-page__code admin-crm-table__cell-main" title={row.caseCode || "—"}>{row.caseCode || "—"}</strong>
+        </div>
+      ),
+      getCellTitle: (row) => row.caseCode || "—",
+    },
+    {
+      key: "partner",
+      label: "Partner",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={row.partnerName || "—"}>{row.partnerName || "—"}</strong>
+        </div>
+      ),
+      getCellTitle: (row) => row.partnerName || "—",
+    },
+    {
+      key: "referral",
+      label: "Referral",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={row.referralCode || "—"}>{row.referralCode || "—"}</strong>
+        </div>
+      ),
+      getCellTitle: (row) => row.referralCode || "—",
+    },
+    {
+      key: "rate",
+      label: "Rate",
+      width: 100,
+      minWidth: 90,
+      maxWidth: 150,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      align: "right",
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatRate(row.partnerRate)}</span>,
+    },
+    {
+      key: "commission",
+      label: "Commission",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      align: "right",
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatCurrency(row.partnerCommissionAmount, row.currency)}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (row) => <AdminStatusBadge tone={getStatusTone(row.status)}>{formatStatusLabel(row.status)}</AdminStatusBadge>,
+    },
+    {
+      key: "updated",
+      label: "Updated",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (row) => {
+        const updated = formatDateTime(row.updatedAt);
+        return (
+          <div className="admin-crm-page__date">
+            <strong className="admin-crm-table__cell-main">{updated.date}</strong>
+            {updated.time ? <span className="admin-crm-table__cell-sub">{updated.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (row) => formatDateTimeLabel(row.updatedAt),
+    },
+  ]), []);
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setFlowFilter("all");
+    setDateRange({ from: "", to: "" });
   };
 
   return (
-    <div className="admin-page admin-payments-page">
-      <section className="admin-panel admin-payments__workspace">
-        <div className="admin-payments__header">
-          <div className="admin-payments__header-copy">
-            <h1>Payments</h1>
-            <p>Client and partner payout operations</p>
-          </div>
-          <div className="admin-payments__header-actions">
-            <button
-              type="button"
-              className="admin-btn admin-btn-secondary"
-              onClick={handleRefresh}
-              disabled={isLoading || isExporting}
-            >
-              <RefreshCw size={14} />
-              <span>Refresh</span>
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn-secondary"
-              onClick={handleExport}
-              disabled={isLoading || isExporting}
-            >
-              <Download size={14} />
-              <span>{isExporting ? "Exporting..." : "Export CSV"}</span>
-            </button>
-          </div>
-        </div>
+    <div className="admin-page admin-payments-page admin-crm-page">
+      <AdminPageHeader
+        title="Payments"
+        secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: handleRefresh,
+            disabled: isLoading || isExporting,
+          },
+          {
+            label: isExporting ? "Exporting..." : "Export CSV",
+            icon: Download,
+            onClick: handleExport,
+            disabled: isLoading || isExporting,
+          },
+        ]}
+      />
+
+      <section className="admin-payments__workspace">
+        <AdminMetricsStrip items={metrics} />
 
         <div className="admin-payments__tabs">
           <button
@@ -353,130 +565,31 @@ export default function AdminPayments() {
               ))}
             </select>
           ) : null}
+          <button type="button" className="admin-btn admin-btn-secondary admin-crm-page__clear" onClick={clearFilters}>
+            <FilterX size={15} />
+            <span>Clear filters</span>
+          </button>
         </AdminFilterBar>
 
-        <section className="admin-payments__table-card">
-          <div className="admin-payments__table-head">
-            <div>
-              <h2>{activeTab === "partner" ? "Partner payments" : "Client payments"}</h2>
-              <p>{activeTab === "partner" ? partnerCountLabel : clientCountLabel}</p>
-            </div>
-          </div>
-
-          {renderState() || (
-            <div className="admin-payments__table-wrap admin-table-wrap">
-              {activeTab === "partner" ? (
-                <table className="admin-payments__table">
-                  <thead>
-                    <tr>
-                      <th>Case</th>
-                      <th>Partner</th>
-                      <th>Referral</th>
-                      <th className="is-right">Rate</th>
-                      <th className="is-right">Commission</th>
-                      <th>Status</th>
-                      <th>Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partnerRows.map((row) => {
-                      const updated = formatDateTime(row.updatedAt);
-                      return (
-                        <tr
-                          key={row.id}
-                          className="admin-payments__row"
-                          onClick={() => {
-                            setSelectedPanel({ type: "partner", id: row.id });
-                            setDrawerError("");
-                            setDrawerNotice("");
-                          }}
-                        >
-                          <td>
-                            <div className="admin-payments__case">
-                              <strong>{row.caseCode || "—"}</strong>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="admin-payments__primary-cell">
-                              <strong>{row.partnerName || "—"}</strong>
-                            </div>
-                          </td>
-                          <td>{row.referralCode || "—"}</td>
-                          <td className="is-right">{formatRate(row.partnerRate)}</td>
-                          <td className="is-right">{formatCurrency(row.partnerCommissionAmount, row.currency)}</td>
-                          <td><AdminStatusBadge tone={getStatusTone(row.status)}>{formatStatusLabel(row.status)}</AdminStatusBadge></td>
-                          <td>
-                            <div className="admin-payments__date-cell">
-                              <strong>{updated.date}</strong>
-                              {updated.time ? <span>{updated.time}</span> : null}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <table className="admin-payments__table">
-                  <thead>
-                    <tr>
-                      <th>Case</th>
-                      <th>Client</th>
-                      <th>Route</th>
-                      <th className="is-right">Compensation</th>
-                      <th className="is-right">Payout</th>
-                      <th>Status</th>
-                      <th>Flow</th>
-                      <th>Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clientRows.map((row) => {
-                      const updated = formatDateTime(row.updatedAt);
-                      return (
-                        <tr
-                          key={row.id}
-                          className="admin-payments__row"
-                          onClick={() => {
-                            setSelectedPanel({ type: "client", id: row.id });
-                            setDrawerError("");
-                            setDrawerNotice("");
-                          }}
-                        >
-                          <td>
-                            <div className="admin-payments__case">
-                              <strong>{row.caseCode || "—"}</strong>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="admin-payments__primary-cell">
-                              <strong>{row.clientLabel || "—"}</strong>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="admin-payments__route">
-                              <strong>{formatRouteLabel(row.route)}</strong>
-                            </div>
-                          </td>
-                          <td className="is-right">{formatCurrency(row.compensationAmount, row.currency)}</td>
-                          <td className="is-right">{formatCurrency(row.finalClientPayoutAmount, row.currency)}</td>
-                          <td><AdminStatusBadge tone={getStatusTone(row.status)}>{formatStatusLabel(row.status)}</AdminStatusBadge></td>
-                          <td><AdminStatusBadge tone={row.paymentFlowType === "direct_to_client" ? "neutral" : "info"}>{formatFlowLabel(row.paymentFlowType)}</AdminStatusBadge></td>
-                          <td>
-                            <div className="admin-payments__date-cell">
-                              <strong>{updated.date}</strong>
-                              {updated.time ? <span>{updated.time}</span> : null}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </section>
+        <AdminColumnTable
+          key={activeTab}
+          storageKey={activeTab === "partner" ? "ff-admin-table-layout-payments-partner" : "ff-admin-table-layout-payments-client"}
+          title={activeTab === "partner" ? "Partner payments" : "Client payments"}
+          countLabel={activeTab === "partner" ? partnerCountLabel : clientCountLabel}
+          columns={activeTab === "partner" ? partnerColumns : clientColumns}
+          rows={activeRows}
+          loading={isLoading}
+          error={displayError ? `${displayError.title}${displayError.detail ? ` ${displayError.detail}` : ""}` : ""}
+          emptyTitle={activeTab === "partner" ? "No partner payments found" : "No payments found"}
+          emptyDetail={activeTab === "partner" ? "Partner payouts appear after referral compensation is confirmed." : "Payments will appear after compensation is confirmed."}
+          selectedRowId={selectedPanel?.type === activeTab ? selectedPanel.id : ""}
+          getRowKey={(row) => row.id}
+          onRowClick={(row) => {
+            setSelectedPanel({ type: activeTab, id: row.id });
+            setDrawerError("");
+            setDrawerNotice("");
+          }}
+        />
       </section>
 
       <AdminSidePanel
@@ -494,6 +607,7 @@ export default function AdminPayments() {
           setDrawerError("");
           setDrawerNotice("");
         }}
+        className="admin-payments__panel"
       >
         {drawerError ? <p className="admin-message is-error">{drawerError}</p> : null}
         {drawerNotice ? <p className="admin-message is-success">{drawerNotice}</p> : null}

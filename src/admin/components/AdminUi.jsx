@@ -1,5 +1,6 @@
 import { ChevronRight, Search, X } from "lucide-react";
 import { Link } from "react-router-dom";
+export { AdminColumnTable } from "./AdminColumnTable.jsx";
 
 export function AdminPageHeader({
   eyebrow,
@@ -54,6 +55,25 @@ export function AdminPageHeader({
 
 export function AdminStatusBadge({ children, tone = "neutral" }) {
   return <span className={`admin-badge admin-badge-${tone} admin-status-badge is-${tone}`}>{children}</span>;
+}
+
+export function AdminMetricsStrip({ items = [] }) {
+  const visibleItems = items.filter((item) => item && item.label);
+
+  if (!visibleItems.length) {
+    return null;
+  }
+
+  return (
+    <section className="admin-metrics-strip admin-card-compact">
+      {visibleItems.map((item) => (
+        <article key={item.label} className="admin-metrics-strip__item">
+          <span>{item.label}</span>
+          <strong>{item.value ?? 0}</strong>
+        </article>
+      ))}
+    </section>
+  );
 }
 
 export function AdminKpiCard({ icon: Icon, label, value, trend, status = "neutral", link, meta }) {
@@ -173,6 +193,8 @@ export function AdminFilterBar({
         </select>
       ) : null}
 
+      {children}
+
       {dateRange && typeof onDateRangeChange === "function" ? (
         <div className="admin-filter-bar__date-range">
           <input
@@ -190,8 +212,6 @@ export function AdminFilterBar({
           />
         </div>
       ) : null}
-
-      {children}
     </div>
   );
 }

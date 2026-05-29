@@ -4,6 +4,10 @@
   min-height: 100%;
 }
 
+.admin-referral-page__toolbar-card {
+  padding: 12px;
+}
+
 .admin-referral-page__kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -246,7 +250,7 @@
 }
 
 .admin-referral-page__drawer {
-  width: min(620px, calc(100vw - 24px));
+  width: min(560px, calc(100vw - 24px));
 }
 
 .admin-referral-page__drawer-body {
