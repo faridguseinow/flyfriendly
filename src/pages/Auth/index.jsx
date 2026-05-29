@@ -14,7 +14,7 @@ import {
   updatePassword,
 } from "../../services/authService.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
-import { resolveDashboardPath } from "../../auth/routeUtils.js";
+import { resolveDashboardPath, resolvePostAuthPath } from "../../auth/routeUtils.js";
 import { ensureCurrentUserProfile } from "../../services/authService.js";
 import { isSupabaseConfigured, requireSupabase } from "../../lib/supabase.js";
 import "./style.scss";
@@ -66,8 +66,10 @@ export function LoginPage() {
     try {
       await signInWithEmail(form.email, form.password);
       const nextAuth = await refreshProfile();
+      const returnTo = getReturnPath(searchParams);
+      const nextPath = resolvePostAuthPath(returnTo, nextAuth?.profile, nextAuth?.partnerProfile, nextAuth?.adminAccess);
       navigate(
-        toLocalizedPath(getReturnPath(searchParams) || resolveLocalizedDashboardPath(toLocalizedPath, nextAuth)),
+        toLocalizedPath(nextPath || resolveLocalizedDashboardPath(toLocalizedPath, nextAuth)),
         { replace: true },
       );
     } catch (authError) {

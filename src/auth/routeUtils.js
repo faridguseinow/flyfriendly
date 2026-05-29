@@ -1,3 +1,5 @@
+import { getPathWithoutLanguage } from "../i18n/path.js";
+
 const INTERNAL_ROLE_CODES = new Set([
   "admin",
   "manager",
@@ -107,6 +109,34 @@ export function resolveProfilePath(profile, partnerProfile, adminAccess = null) 
   }
 
   return "/client/account";
+}
+
+function isClientPath(path) {
+  return getPathWithoutLanguage(String(path || ""))?.startsWith("/client");
+}
+
+function isPartnerPath(path) {
+  return getPathWithoutLanguage(String(path || ""))?.startsWith("/partner");
+}
+
+export function resolvePostAuthPath(returnTo, profile, partnerProfile, adminAccess = null) {
+  const dashboardPath = resolveDashboardPath(profile, partnerProfile, adminAccess);
+  const normalizedRole = getNormalizedRole(profile, partnerProfile, adminAccess);
+  const safeReturnTo = typeof returnTo === "string" && returnTo.startsWith("/") ? returnTo : "";
+
+  if (!safeReturnTo) {
+    return dashboardPath;
+  }
+
+  if (normalizedRole === "partner" && isClientPath(safeReturnTo)) {
+    return dashboardPath;
+  }
+
+  if (normalizedRole === "client" && isPartnerPath(safeReturnTo)) {
+    return dashboardPath;
+  }
+
+  return safeReturnTo;
 }
 
 export function hasAllowedRole(allowedRoles = [], profile, partnerProfile, adminAccess = null) {

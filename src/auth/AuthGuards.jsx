@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../i18n/useLocalizedPath.js";
 import { useAuth } from "./AuthContext.jsx";
-import { getPartnerAccessState, getNormalizedRole, hasAllowedRole } from "./routeUtils.js";
+import { getPartnerAccessState, getNormalizedRole, hasAllowedRole, resolvePostAuthPath } from "./routeUtils.js";
 
 function LoadingState() {
   const { t } = useTranslation();
@@ -36,7 +36,7 @@ export function ProtectedRoute() {
 export function GuestRoute() {
   const location = useLocation();
   const toLocalizedPath = useLocalizedPath();
-  const { loading, isAuthenticated, dashboardPath } = useAuth();
+  const { loading, isAuthenticated, dashboardPath, profile, partnerProfile, adminAccess } = useAuth();
 
   if (loading) {
     return <LoadingState />;
@@ -44,7 +44,8 @@ export function GuestRoute() {
 
   if (isAuthenticated) {
     const returnTo = getSafeReturnTo(location.search);
-    return <Navigate to={toLocalizedPath(returnTo || dashboardPath || "/client/dashboard")} replace />;
+    const nextPath = resolvePostAuthPath(returnTo, profile, partnerProfile, adminAccess) || dashboardPath || "/client/dashboard";
+    return <Navigate to={toLocalizedPath(nextPath)} replace />;
   }
 
   return <Outlet />;

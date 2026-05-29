@@ -272,7 +272,7 @@ function AnimatedRoutes({ location }) {
         <Route path="auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="partner/apply" element={<PartnerApplyPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route element={<RoleRoute allowedRoles={["client", "partner"]} ignorePartnerStatus />}>
+          <Route element={<RoleRoute allowedRoles={["client"]} ignorePartnerStatus />}>
             <Route path="client" element={<ClientPortalLayout />}>
               <Route path="dashboard" element={<ClientDashboardPage />} />
               <Route path="claims" element={<ClientClaimsPage />} />
