@@ -1,0 +1,540 @@
+.partner-portal-shell {
+  padding-top: 104px;
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+}
+
+.partner-portal-layout {
+  gap: 18px;
+}
+
+.partner-portal-sidebar {
+  display: none;
+}
+
+.partner-portal-sidebar-card,
+.partner-portal-hero-card,
+.partner-portal-metric-card,
+.partner-portal-record-card,
+.partner-portal-tier-card,
+.partner-portal-formula-card,
+.partner-portal-example-card,
+.partner-portal-payout-row {
+  border: 1px solid rgba(223, 233, 246, 0.92);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.partner-portal-sidebar-card {
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  border-radius: 20px;
+}
+
+.partner-portal-sidebar-card__copy {
+  display: grid;
+  gap: 4px;
+
+  strong {
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.partner-portal-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.partner-portal-nav__link {
+  &.is-active {
+    color: var(--primary);
+  }
+}
+
+.partner-portal-signout {
+  min-height: 44px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(223, 233, 246, 0.92);
+  border-radius: 16px;
+  color: var(--primary-dark);
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.partner-portal-main {
+  padding: 18px 0 0;
+}
+
+.partner-portal-main__viewport {
+  min-height: calc(100svh - 180px);
+}
+
+.partner-portal-page {
+  padding: 24px 0;
+  display: grid;
+  gap: 12px;
+}
+
+.partner-portal-hero-card {
+  padding: 14px;
+  border-radius: 24px;
+}
+
+.partner-portal-hero-card__main {
+  display: grid;
+  gap: 14px;
+}
+
+.partner-portal-hero-card__copy {
+  display: grid;
+  gap: 8px;
+
+  strong {
+    color: var(--ink);
+    font-size: 21px;
+    line-height: 26px;
+    font-weight: 800;
+  }
+}
+
+.partner-portal-hero-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.partner-portal-inline-pill,
+.partner-portal-status-badge,
+.partner-portal-filter-chip {
+  min-height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.partner-portal-inline-pill {
+  color: #5c6b82;
+  background: #f4f8fd;
+}
+
+.partner-portal-status-badge {
+  width: fit-content;
+  border: 1px solid transparent;
+
+  &.is-success {
+    color: #117a47;
+    background: #ecfbf3;
+    border-color: #caf0dc;
+  }
+
+  &.is-warning {
+    color: #946200;
+    background: #fff6df;
+    border-color: #f4dd9b;
+  }
+
+  &.is-danger {
+    color: #b13d35;
+    background: #fff0ee;
+    border-color: #f1c7c1;
+  }
+
+  &.is-neutral {
+    color: #647084;
+    background: #f5f8fc;
+    border-color: #e0e8f3;
+  }
+}
+
+.partner-portal-link-box {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(223, 233, 246, 0.92);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+
+  small {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 20px;
+    word-break: break-word;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+.partner-portal-inline-message {
+  color: var(--primary-dark);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.partner-portal-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.partner-portal-metric-card {
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+  border-radius: 20px;
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  strong {
+    color: var(--ink);
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 800;
+  }
+
+  small {
+    color: var(--primary-dark);
+    font-size: 11px;
+    line-height: 15px;
+  }
+}
+
+.partner-portal-record-list,
+.partner-portal-payout-list {
+  display: grid;
+  gap: 10px;
+}
+
+.partner-portal-record-card,
+.partner-portal-payout-row {
+  padding: 14px;
+  border-radius: 20px;
+}
+
+.partner-portal-record-card {
+  display: grid;
+  gap: 12px;
+}
+
+.partner-portal-record-card__head,
+.partner-portal-payout-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.partner-portal-record-card__head {
+  strong {
+    display: block;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+
+  span {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 17px;
+  }
+}
+
+.partner-portal-record-card__meta,
+.partner-portal-finance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  small {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  span {
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 17px;
+    font-weight: 600;
+  }
+}
+
+.partner-portal-record-card__footer,
+.partner-portal-record-card__status-row {
+  display: grid;
+  gap: 8px;
+}
+
+.partner-portal-record-card__status-row {
+  small {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 14px;
+  }
+}
+
+.partner-portal-record-card__amounts {
+  display: grid;
+  gap: 4px;
+
+  span {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.partner-portal-empty {
+  padding: 18px 14px;
+  display: grid;
+  gap: 6px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+
+  strong {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  span {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 18px;
+  }
+}
+
+.partner-portal-filter-row {
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.partner-portal-filter-chip {
+  border: 1px solid rgba(223, 233, 246, 0.92);
+  color: #647084;
+  background: #fff;
+  cursor: pointer;
+
+  &.is-active {
+    color: var(--primary-dark);
+    background: #eef6ff;
+    border-color: #dbe9fb;
+  }
+}
+
+.partner-portal-two-up {
+  display: grid;
+  gap: 12px;
+}
+
+.partner-portal-tier-card,
+.partner-portal-formula-card {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  border-radius: 22px;
+
+  p,
+  small {
+    margin: 0;
+  }
+}
+
+.partner-portal-tier-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+
+  strong {
+    color: var(--ink);
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 800;
+  }
+
+  span {
+    color: var(--primary);
+    font-size: 18px;
+    line-height: 22px;
+    font-weight: 800;
+  }
+}
+
+.partner-portal-formula-card__list {
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 18px;
+  }
+}
+
+.partner-portal-example-card {
+  padding: 12px;
+  display: grid;
+  gap: 5px;
+  border-radius: 16px;
+
+  strong {
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 17px;
+  }
+
+  span,
+  small {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.partner-portal-payout-row {
+  strong {
+    display: block;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+  }
+
+  span,
+  small {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.partner-portal-mobile-nav {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.client-portal-support-link.is-static {
+  cursor: default;
+}
+
+@media (min-width: 780px) {
+  .partner-portal-two-up,
+  .partner-portal-metrics-grid--finance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .partner-portal-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .partner-portal-finance-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .partner-portal-link-box {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+
+    .btn {
+      width: auto;
+    }
+  }
+}
+
+@media (min-width: 1040px) {
+  .partner-portal-shell {
+    padding-top: 116px;
+    padding-bottom: 28px;
+  }
+
+  .partner-portal-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .partner-portal-sidebar {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    position: sticky;
+    top: 108px;
+  }
+
+  .partner-portal-main {
+    padding-top: 0;
+  }
+
+  .partner-portal-main__viewport {
+    min-height: calc(100svh - 156px);
+  }
+
+  .partner-portal-page {
+    padding: 0;
+    gap: 16px;
+  }
+
+  .partner-portal-hero-card {
+    padding: 18px;
+  }
+
+  .partner-portal-hero-card__copy strong {
+    font-size: 26px;
+    line-height: 30px;
+  }
+
+  .partner-portal-metrics-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .partner-portal-metrics-grid--finance {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .partner-portal-two-up {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  }
+
+  .partner-portal-mobile-nav {
+    display: none;
+  }
+}

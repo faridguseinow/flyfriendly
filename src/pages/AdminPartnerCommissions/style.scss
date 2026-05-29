@@ -1,0 +1,369 @@
+.admin-partner-commissions__workspace {
+  padding: 18px 18px 16px;
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.05);
+}
+
+.admin-partner-commissions__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-partner-commissions__header-copy h1 {
+  margin: 0;
+  color: #17212d;
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.admin-partner-commissions__header-copy {
+  min-width: 0;
+
+  p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 19px;
+  }
+}
+
+.admin-partner-commissions__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-partner-commissions-page {
+  .admin-filter-bar {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.8fr) repeat(4, minmax(120px, 0.75fr));
+    align-items: end;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  .admin-search,
+  .admin-filter-bar select,
+  .admin-filter-bar input,
+  .admin-filter-control,
+  .admin-select,
+  .admin-input {
+    min-height: 38px;
+    font-size: 13px;
+  }
+
+  .admin-filter-bar__date-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    span {
+      display: none;
+    }
+  }
+}
+
+.admin-partner-commissions__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-partner-commissions__kpis .admin-kpi-card {
+  min-height: 92px;
+  padding: 15px 16px;
+  gap: 10px;
+  border-radius: 18px;
+
+  small {
+    font-size: 11px;
+    line-height: 16px;
+  }
+
+  strong {
+    margin-top: 6px;
+    font-size: 22px;
+    line-height: 28px;
+  }
+}
+
+.admin-partner-commissions__kpis .admin-kpi-card__icon {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+  border-radius: 12px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.admin-partner-commissions__table-card {
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.admin-partner-commissions__table-head {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+
+  h2 {
+    margin: 0;
+    color: #17212d;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 650;
+  }
+
+  p {
+    margin: 2px 0 0;
+    color: #7b8390;
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+.admin-partner-commissions__state,
+.admin-partner-commissions__drawer-state {
+  min-height: 180px;
+  padding: 18px 16px;
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  text-align: center;
+  color: #7b8390;
+  font-size: 13px;
+  line-height: 20px;
+
+  strong {
+    color: #17212d;
+    font-size: 15px;
+    line-height: 21px;
+    font-weight: 600;
+  }
+
+  span {
+    color: #b45353;
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+.admin-partner-commissions__table-wrap {
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+}
+
+.admin-partner-commissions__table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: separate;
+  border-spacing: 0;
+
+  thead th {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+    color: #7b8390;
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    background: #fbfcfe;
+  }
+
+  tbody td {
+    padding: 13px 16px;
+    border-bottom: 1px solid rgba(241, 245, 249, 1);
+    color: #334155;
+    font-size: 13px;
+    line-height: 18px;
+    vertical-align: middle;
+    background: #fff;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  th.is-right,
+  td.is-right {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.admin-partner-commissions__row {
+  cursor: pointer;
+}
+
+.admin-partner-commissions__row:hover td {
+  background: #f8fbff;
+}
+
+.admin-partner-commissions__primary strong,
+.admin-partner-commissions__case strong,
+.admin-partner-commissions__date strong {
+  display: block;
+}
+
+.admin-partner-commissions__primary strong {
+  color: #17212d;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-partner-commissions__case strong {
+  color: #17212d;
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-partner-commissions__date {
+  display: grid;
+  gap: 2px;
+  white-space: nowrap;
+
+  strong {
+    color: #17212d;
+    font-size: 12px;
+    line-height: 17px;
+    font-weight: 600;
+  }
+
+  span {
+    color: #7b8390;
+    font-size: 11px;
+    line-height: 15px;
+  }
+}
+
+.admin-partner-commissions__drawer {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-partner-commissions__section {
+  display: grid;
+  gap: 10px;
+
+  h3 {
+    margin: 0;
+    color: #20242e;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 650;
+  }
+}
+
+.admin-partner-commissions__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  article {
+    min-height: 74px;
+    padding: 12px 14px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+    background: #fcfdff;
+  }
+
+  span,
+  strong {
+    display: block;
+  }
+
+  span {
+    margin-bottom: 6px;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: #17212d;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+  }
+}
+
+.admin-partner-commissions__formula {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.admin-partner-commissions__drawer-state {
+  min-height: 120px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+@media (max-width: 1220px) {
+  .admin-partner-commissions-page {
+    .admin-filter-bar {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .admin-partner-commissions__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-partner-commissions__workspace {
+    padding: 16px 14px 14px;
+  }
+
+  .admin-partner-commissions__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-partner-commissions__detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-partner-commissions-page {
+    .admin-filter-bar {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .admin-partner-commissions__kpis {
+    grid-template-columns: 1fr;
+  }
+}
