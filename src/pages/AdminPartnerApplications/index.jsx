@@ -23,18 +23,6 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
-function toDisplayList(value) {
-  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
-  return String(value || "").trim() || "—";
-}
-
-function toReviewerLabel(item) {
-  if (item.reviewer?.full_name) {
-    return item.reviewer.email ? `${item.reviewer.full_name} (${item.reviewer.email})` : item.reviewer.full_name;
-  }
-  return item.reviewer?.email || item.reviewed_by || "—";
-}
-
 function toneForStatus(status) {
   if (status === "approved") return "success";
   if (status === "rejected") return "danger";
@@ -210,7 +198,6 @@ export default function AdminPartnerApplications() {
           { key: "country", label: "Country" },
           { key: "platform", label: "Primary platform" },
           { key: "audience", label: "Audience size" },
-          { key: "niche", label: "Niche" },
           { key: "created", label: "Created" },
           { key: "status", label: "Status" },
           { key: "action", label: "Action" },
@@ -226,7 +213,6 @@ export default function AdminPartnerApplications() {
             <td>{item.country || "—"}</td>
             <td>{item.primary_platform || "—"}</td>
             <td>{item.audience_size || "—"}</td>
-            <td>{item.niche || "—"}</td>
             <td>{formatDate(item.created_at)}</td>
             <td><AdminStatusBadge tone={toneForStatus(item.status)}>{item.status}</AdminStatusBadge></td>
             <td>
@@ -255,42 +241,18 @@ export default function AdminPartnerApplications() {
           <div className="admin-partner-program__drawer">
             <section className="admin-partner-program__summary-grid">
               <article className="admin-partner-program__info-card"><span>Applicant</span><strong>{selectedApplication.full_name}</strong></article>
-              <article className="admin-partner-program__info-card"><span>Email</span><strong>{selectedApplication.email}</strong></article>
-              <article className="admin-partner-program__info-card"><span>Country</span><strong>{selectedApplication.country || "—"}</strong></article>
-              <article className="admin-partner-program__info-card"><span>Preferred language</span><strong>{selectedApplication.preferred_language || "—"}</strong></article>
               <article className="admin-partner-program__info-card"><span>Public name</span><strong>{selectedApplication.public_name || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Email</span><strong>{selectedApplication.email}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Phone</span><strong>{selectedApplication.phone || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Country</span><strong>{selectedApplication.country || "—"}</strong></article>
               <article className="admin-partner-program__info-card"><span>Primary platform</span><strong>{selectedApplication.primary_platform || "—"}</strong></article>
               <article className="admin-partner-program__info-card"><span>Audience size</span><strong>{selectedApplication.audience_size || "—"}</strong></article>
               <article className="admin-partner-program__info-card"><span>Status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={toneForStatus(selectedApplication.status)}>{selectedApplication.status}</AdminStatusBadge></div></article>
-              <article className="admin-partner-program__info-card"><span>Consent</span><strong>{selectedApplication.consent_accepted ? "Accepted" : "Not accepted"}</strong></article>
-              <article className="admin-partner-program__info-card"><span>Reviewed by</span><strong>{toReviewerLabel(selectedApplication)}</strong></article>
-              <article className="admin-partner-program__info-card"><span>Reviewed at</span><strong>{formatDate(selectedApplication.reviewed_at)}</strong></article>
-              <article className="admin-partner-program__info-card"><span>Niche</span><strong>{selectedApplication.niche || "—"}</strong></article>
             </section>
 
             <section className="admin-partner-program__section">
               <h3>Motivation</h3>
               <p>{selectedApplication.motivation || "No motivation provided."}</p>
-            </section>
-
-            <section className="admin-partner-program__section">
-              <h3>Social links</h3>
-              <div className="admin-partner-program__meta-grid">
-                <article><strong>Website</strong><span>{selectedApplication.website_url || "—"}</span></article>
-                <article><strong>Instagram</strong><span>{selectedApplication.instagram_url || "—"}</span></article>
-                <article><strong>TikTok</strong><span>{selectedApplication.tiktok_url || "—"}</span></article>
-                <article><strong>YouTube</strong><span>{selectedApplication.youtube_url || "—"}</span></article>
-              </div>
-            </section>
-
-            <section className="admin-partner-program__section">
-              <h3>Content links</h3>
-              <p>{toDisplayList(selectedApplication.content_links)}</p>
-            </section>
-
-            <section className="admin-partner-program__section">
-              <h3>Audience countries</h3>
-              <p>{toDisplayList(selectedApplication.audience_countries)}</p>
             </section>
 
             <section className="admin-partner-program__section">

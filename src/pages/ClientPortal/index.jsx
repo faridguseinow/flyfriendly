@@ -824,6 +824,8 @@ function ClaimRouteStop({ stop, compact = false }) {
 
 function ClaimHeroCard({ claim, t, compact = false, footer = null, onOpenStatus = null, showChips = compact }) {
   const routeStops = getClaimRouteStops(claim);
+  const showPaymentChip = claim?.finance?.payoutAmount !== null
+    || (claim?.finance?.clientVisibleApproval === null && claim?.paymentStatus?.key !== "not_started");
 
   return (
     <div className={`client-portal-claim-hero${compact ? " is-compact" : ""}`}>
@@ -863,7 +865,7 @@ function ClaimHeroCard({ claim, t, compact = false, footer = null, onOpenStatus 
       {showChips ? (
         <div className="client-portal-claim-hero__chips">
           <span className="client-portal-hero-chip">{claim.disruptionType || t("clientPortal.claim.flightDisruption", { defaultValue: "Flight disruption" })}</span>
-          <span className="client-portal-hero-chip">{claim.paymentStatus.label}</span>
+          {showPaymentChip ? <span className="client-portal-hero-chip">{claim.paymentStatus.label}</span> : null}
           <span className="client-portal-hero-chip">{claim.documentsSummary.detail || claim.documentsSummary.label}</span>
         </div>
       ) : null}
@@ -1431,13 +1433,9 @@ export function ClientDashboardPage() {
     && (activeClaim.publicStatus.key === "documents_needed" || activeClaim.documentsSummary?.needsAttention),
   );
   const compensationCurrency = activeClaim?.finance?.currency || activeClaim?.estimate?.currency || "EUR";
-  const approvedAmount = Number.isFinite(Number(activeClaim?.finance?.compensation_amount))
-    ? Number(activeClaim.finance.compensation_amount)
+  const payoutAmount = Number.isFinite(Number(activeClaim?.finance?.payoutAmount))
+    ? Number(activeClaim.finance.payoutAmount)
     : null;
-  const paidAmount = Number.isFinite(Number(activeClaim?.finance?.customer_payout))
-    ? Number(activeClaim.finance.customer_payout)
-    : null;
-
   const openDashboardDocument = async (document) => {
     try {
       const url = document.signature_data_url || dashboardPreviewUrls[document.id] || await getClientDocumentDownloadUrl(document);
@@ -1545,16 +1543,12 @@ export function ClientDashboardPage() {
                   <strong>{formatEstimateAmount(activeClaim.estimate?.amount, activeClaim.estimate?.currency, t)}</strong>
                 </article>
                 <article>
-                  <span>{t("clientPortal.payments.approvedAmount", { defaultValue: "Approved amount" })}</span>
-                  <strong>{approvedAmount !== null ? formatCurrencyValue(approvedAmount, compensationCurrency) : "—"}</strong>
-                </article>
-                <article>
-                  <span>{t("clientPortal.payments.paidAmount", { defaultValue: "Paid amount" })}</span>
-                  <strong>{paidAmount !== null ? formatCurrencyValue(paidAmount, compensationCurrency) : "—"}</strong>
+                  <span>{t("clientPortal.payments.amountPayable", { defaultValue: "Amount payable" })}</span>
+                  <strong>{payoutAmount !== null ? formatCurrencyValue(payoutAmount, compensationCurrency) : "—"}</strong>
                 </article>
                 <article>
                   <span>{t("clientPortal.claim.payment", { defaultValue: "Payment status" })}</span>
-                  <strong>{activeClaim.paymentStatus.label}</strong>
+                  <strong>{payoutAmount !== null ? activeClaim.paymentStatus.label : "—"}</strong>
                 </article>
               </div>
             </section>
@@ -2389,19 +2383,16 @@ export function ClientPaymentsPage() {
   }
 
   const financeRows = state.data?.finance || [];
+  const visibleFinanceRows = financeRows.filter((item) => item?.client_visible_approval !== false);
   const claimRows = state.data?.claimRows || [];
   const activeClaim = claimRows.find((item) => !["paid", "rejected"].includes(item.publicStatus.key)) || claimRows[0] || null;
   const estimatedAmount = Number.isFinite(Number(activeClaim?.estimate?.amount)) ? activeClaim.estimate.amount : null;
   const estimatedCurrency = activeClaim?.estimate?.currency || "EUR";
-  const approvedTotal = financeRows.reduce((sum, item) => {
-    const value = Number(item.compensation_amount);
+  const payoutTotal = visibleFinanceRows.reduce((sum, item) => {
+    const value = Number(item.payoutAmount);
     return Number.isFinite(value) ? sum + value : sum;
   }, 0);
-  const paidTotal = financeRows.reduce((sum, item) => {
-    const value = Number(item.customer_payout);
-    return Number.isFinite(value) ? sum + value : sum;
-  }, 0);
-  const latestPayment = financeRows[0] || null;
+  const latestPayment = visibleFinanceRows[0] || null;
   const latestPaymentStatus = latestPayment
     ? getClientPaymentStatus(latestPayment.payment_status, latestPayment.customer_paid_at)
     : getClientPaymentStatus(null);
@@ -2421,16 +2412,12 @@ export function ClientPaymentsPage() {
             <strong>{estimatedAmount !== null ? formatEstimateAmount(estimatedAmount, estimatedCurrency, t) : "—"}</strong>
           </article>
           <article className="client-portal-overview-card">
-            <span>{t("clientPortal.payments.approvedAmount", { defaultValue: "Approved amount" })}</span>
-            <strong>{approvedTotal ? formatCurrencyValue(approvedTotal, latestPayment?.currency || "EUR") : "—"}</strong>
-          </article>
-          <article className="client-portal-overview-card">
-            <span>{t("clientPortal.payments.paidAmount", { defaultValue: "Paid amount" })}</span>
-            <strong>{paidTotal ? formatCurrencyValue(paidTotal, latestPayment?.currency || "EUR") : "—"}</strong>
+            <span>{t("clientPortal.payments.amountPayable", { defaultValue: "Amount payable" })}</span>
+            <strong>{payoutTotal ? formatCurrencyValue(payoutTotal, latestPayment?.currency || "EUR") : "—"}</strong>
           </article>
           <article className="client-portal-overview-card">
             <span>{t("clientPortal.payments.payoutStatus", { defaultValue: "Payout status" })}</span>
-            <strong>{latestPaymentStatus.label}</strong>
+            <strong>{latestPayment ? latestPaymentStatus.label : "—"}</strong>
           </article>
         </div>
 
@@ -2446,7 +2433,7 @@ export function ClientPaymentsPage() {
                   : t("clientPortal.payments.awaiting", { defaultValue: "Payment information will appear here when your claim is approved." })}
             </p>
           </div>
-          <PaymentProgress status={latestPaymentStatus} t={t} />
+          {latestPayment ? <PaymentProgress status={latestPaymentStatus} t={t} /> : null}
         </div>
       </section>
 
@@ -2456,9 +2443,9 @@ export function ClientPaymentsPage() {
           text={t("clientPortal.payments.historyText", { defaultValue: "Approved payouts and completed transfers will be listed here." })}
         />
 
-        {financeRows.length ? (
+        {visibleFinanceRows.length ? (
           <div className="client-portal-uploaded-list">
-            {financeRows.map((item) => {
+            {visibleFinanceRows.map((item) => {
               const paymentStatus = getClientPaymentStatus(item.payment_status, item.customer_paid_at);
               return (
                 <div key={item.id} className="client-portal-uploaded-row">
@@ -2468,11 +2455,8 @@ export function ClientPaymentsPage() {
                   <div className="client-portal-uploaded-row__copy">
                     <strong>{caseReferenceById.get(item.case_id) || item.case_id}</strong>
                     <span>
-                      {t("clientPortal.payments.approvedAmount", { defaultValue: "Approved" })}: {Number.isFinite(Number(item.compensation_amount)) ? formatCurrencyValue(item.compensation_amount, item.currency || "EUR") : "—"}
+                      {t("clientPortal.payments.amountPayable", { defaultValue: "Amount payable" })}: {Number.isFinite(Number(item.payoutAmount)) ? formatCurrencyValue(item.payoutAmount, item.currency || "EUR") : "—"}
                     </span>
-                    <small>
-                      {t("clientPortal.payments.paidAmount", { defaultValue: "Paid" })}: {Number.isFinite(Number(item.customer_payout)) ? formatCurrencyValue(item.customer_payout, item.currency || "EUR") : "—"}
-                    </small>
                   </div>
                   <div className="client-portal-uploaded-row__meta">
                     <ClientStatusBadge status={paymentStatus} />

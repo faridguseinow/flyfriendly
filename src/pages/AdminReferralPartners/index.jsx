@@ -15,6 +15,7 @@ import {
 } from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { useSearchParams } from "react-router-dom";
+import { buildPublicReferralLink } from "../../lib/referralLink.js";
 import "./style.scss";
 
 const portalStatuses = ["approved", "suspended", "rejected"];
@@ -74,6 +75,10 @@ function toneForLegacyStatus(status) {
   if (status === "paused") return "warning";
   if (status === "archived") return "danger";
   return "neutral";
+}
+
+function getPartnerReferralUrl(partner) {
+  return buildPublicReferralLink(partner?.referral_link || partner?.referral_code || "");
 }
 
 export default function AdminReferralPartners() {
@@ -277,7 +282,7 @@ export default function AdminReferralPartners() {
             <td>{item.public_name || item.name}</td>
             <td>{item.referral_code}</td>
             <td><AdminStatusBadge tone={toneForPortalStatus(item.portal_status || "approved")}>{item.portal_status || "approved"}</AdminStatusBadge></td>
-            <td className="admin-cell-wrap">{item.referral_link || "—"}</td>
+            <td className="admin-cell-wrap">{getPartnerReferralUrl(item) || "—"}</td>
             <td>{item.commission_rate} {item.commission_type === "percentage" ? "%" : "fixed"}</td>
             <td>{item.leadsGenerated} leads • {item.casesConverted} cases</td>
             <td>
@@ -306,7 +311,7 @@ export default function AdminReferralPartners() {
           <div className="admin-partner-program__drawer">
             <section className="admin-partner-program__summary-grid">
               <article className="admin-partner-program__info-card"><span>Referral code</span><strong>{selectedPartner.referral_code}</strong></article>
-              <article className="admin-partner-program__info-card"><span>Referral link</span><strong>{selectedPartner.referral_link || "—"}</strong></article>
+              <article className="admin-partner-program__info-card"><span>Referral link</span><strong>{getPartnerReferralUrl(selectedPartner) || "—"}</strong></article>
               <article className="admin-partner-program__info-card"><span>Portal status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={toneForPortalStatus(selectedPartner.portal_status || "approved")}>{selectedPartner.portal_status || "approved"}</AdminStatusBadge></div></article>
               <article className="admin-partner-program__info-card"><span>Registry status</span><div className="admin-partner-program__badge-slot"><AdminStatusBadge tone={toneForLegacyStatus(selectedPartner.status || "active")}>{selectedPartner.status || "active"}</AdminStatusBadge></div></article>
               <article className="admin-partner-program__info-card"><span>Commission rate</span><strong>{selectedPartner.commission_rate} {selectedPartner.commission_type === "percentage" ? "%" : "fixed"}</strong></article>

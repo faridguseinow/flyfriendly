@@ -1,19 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Briefcase, CircleCheckBig, Download, FileCheck2, Users, Wallet } from "lucide-react";
+import { BarChart3, Briefcase, CircleCheckBig, Download, FileCheck2, TrendingUp, Users, Wallet } from "lucide-react";
 import { fetchReportsModuleData } from "../../services/adminService.js";
+import { AdminKpiCard, AdminPageHeader } from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
-
-function MetricCard({ icon: Icon, label, value }) {
-  return (
-    <article className="admin-metric">
-      <span><Icon size={22} strokeWidth={1.8} /></span>
-      <div>
-        <strong>{value}</strong>
-        <small>{label}</small>
-      </div>
-    </article>
-  );
-}
 
 function formatCurrency(value, currency = "EUR") {
   return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
@@ -21,18 +10,24 @@ function formatCurrency(value, currency = "EUR") {
 
 function simpleTop(items, key, limit = 5) {
   const counts = new Map();
+
   for (const item of items) {
     const value = key(item);
     if (!value) continue;
     counts.set(value, (counts.get(value) || 0) + 1);
   }
+
   return Array.from(counts.entries())
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, limit);
 }
 
-function StatusChart({ rows }) {
+function StatusChart({ rows = [] }) {
+  if (!rows.length) {
+    return <div className="admin-reports__empty">No distribution data yet.</div>;
+  }
+
   const max = Math.max(1, ...rows.map((item) => item.value));
 
   return (
@@ -48,7 +43,31 @@ function StatusChart({ rows }) {
   );
 }
 
-function AdminReports() {
+function ListCard({ title, subtitle, rows = [], formatter = null }) {
+  return (
+    <section className="admin-panel">
+      <div className="admin-panel__head">
+        <div>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="admin-reports__list">
+        {rows.length ? rows.map((item) => (
+          <article key={item.label}>
+            <strong>{item.label}</strong>
+            <span>{formatter ? formatter(item) : item.value}</span>
+          </article>
+        )) : (
+          <div className="admin-reports__empty">No data yet.</div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export default function AdminReports() {
   const [moduleData, setModuleData] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -75,7 +94,6 @@ function AdminReports() {
     const cases = moduleData?.cases || [];
     const finance = moduleData?.finance || [];
     const tasks = moduleData?.tasks || [];
-    const communications = moduleData?.communications || [];
     const documents = moduleData?.documents || [];
 
     return {
@@ -85,7 +103,6 @@ function AdminReports() {
       revenue: finance.reduce((sum, item) => sum + Number(item.company_fee || 0), 0),
       compensation: finance.reduce((sum, item) => sum + Number(item.compensation_amount || 0), 0),
       completedTasks: tasks.filter((item) => item.status === "done").length,
-      communications: communications.length,
       documentCompletion: cases.length ? (documents.length / cases.length) * 100 : 0,
     };
   }, [moduleData]);
@@ -103,13 +120,13 @@ function AdminReports() {
       topAirlines: simpleTop(cases, (item) => item.airline, 6),
       topRoutes: simpleTop(cases, (item) => item.route_from && item.route_to ? `${item.route_from} → ${item.route_to}` : null, 6),
       leadsBySource: simpleTop(leads, (item) => item.source, 6),
-      agentPerformance: simpleTop(cases, (item) => item.assigned_manager_id, 6),
       taskStatus: simpleTop(tasks, (item) => item.status, 6),
       partnerPerformance: partners.map((partner) => {
         const linkedCases = cases.filter((item) => item.referral_partner_id === partner.id || String(item.referral_partner_label || "").toLowerCase() === String(partner.referral_code || "").toLowerCase());
         const linkedFinance = finance.filter((item) => linkedCases.some((caseItem) => caseItem.id === item.case_id));
+
         return {
-          label: partner.name,
+          label: partner.public_name || partner.name,
           value: linkedCases.length,
           earned: linkedFinance.reduce((sum, item) => sum + Number(item.referral_commission || 0), 0),
         };
@@ -136,116 +153,125 @@ function AdminReports() {
 
   return (
     <div className="admin-page admin-reports-page">
+      <AdminPageHeader
+        title="Revenue"
+        subtitle="Operational revenue, pipeline mix, and top-performing dimensions."
+        breadcrumbs={[
+          { label: "Admin", path: "/admin" },
+          { label: "Dashboard" },
+          { label: "Revenue" },
+        ]}
+        secondaryActions={[
+          {
+            label: "Export JSON",
+            icon: Download,
+            onClick: exportReportSnapshot,
+            disabled: isLoading,
+          },
+        ]}
+      />
 
-      {error && <p className="admin-message is-error">{error}</p>}
+      {error ? <p className="admin-message is-error">{error}</p> : null}
 
       {isLoading ? (
-        <p className="admin-message">Loading reports...</p>
+        <p className="admin-message">Loading revenue dashboard...</p>
       ) : (
         <>
-          <section className="admin-metrics">
-            <MetricCard icon={Users} label="Total leads" value={metrics.totalLeads} />
-            <MetricCard icon={Briefcase} label="Total cases" value={metrics.totalCases} />
-            <MetricCard icon={CircleCheckBig} label="Conversion rate" value={`${metrics.conversionRate.toFixed(1)}%`} />
-            <MetricCard icon={Wallet} label="Revenue" value={formatCurrency(metrics.revenue)} />
-            <MetricCard icon={Wallet} label="Compensation" value={formatCurrency(metrics.compensation)} />
-            <MetricCard icon={FileCheck2} label="Doc completion" value={`${metrics.documentCompletion.toFixed(1)}%`} />
+          <section className="admin-reports__kpis">
+            <AdminKpiCard icon={Users} label="Total leads" value={metrics.totalLeads} />
+            <AdminKpiCard icon={Briefcase} label="Total cases" value={metrics.totalCases} />
+            <AdminKpiCard icon={TrendingUp} label="Conversion rate" value={`${metrics.conversionRate.toFixed(1)}%`} />
+            <AdminKpiCard icon={Wallet} label="Company revenue" value={formatCurrency(metrics.revenue)} />
+            <AdminKpiCard icon={BarChart3} label="Compensation" value={formatCurrency(metrics.compensation)} />
+            <AdminKpiCard icon={CircleCheckBig} label="Completed tasks" value={metrics.completedTasks} />
+            <AdminKpiCard icon={FileCheck2} label="Doc completion" value={`${metrics.documentCompletion.toFixed(1)}%`} />
           </section>
 
-          <section className="admin-panel">
+          <section className="admin-panel admin-reports__hero">
             <div className="admin-panel__head">
               <div>
-                <h2>Analytics workspace</h2>
-                <p>Aggregated metrics and top-performing operational dimensions.</p>
+                <h2>Overview</h2>
+                <p>Revenue health and pipeline efficiency across leads, cases, and referrals.</p>
               </div>
-              <button className="admin-link-button" type="button" onClick={exportReportSnapshot}>
-                <Download size={14} />
-                <span>Export JSON</span>
-              </button>
             </div>
 
-            <div className="admin-reports__grid">
-              <section className="admin-panel">
-                <div className="admin-panel__head">
-                  <div><h2>Leads by status</h2><p>Inbound pipeline distribution.</p></div>
-                </div>
-                <div className="admin-reports__panel-body">
-                  <StatusChart rows={reports.leadsByStatus} />
-                </div>
-              </section>
-
-              <section className="admin-panel">
-                <div className="admin-panel__head">
-                  <div><h2>Cases by status</h2><p>Case workflow distribution.</p></div>
-                </div>
-                <div className="admin-reports__panel-body">
-                  <StatusChart rows={reports.casesByStatus} />
-                </div>
-              </section>
-
-              <section className="admin-panel">
-                <div className="admin-panel__head">
-                  <div><h2>Top airlines</h2><p>Highest-volume airline distribution.</p></div>
-                </div>
-                <div className="admin-reports__list">
-                  {reports.topAirlines.map((item) => (
-                    <article key={item.label}><strong>{item.label}</strong><span>{item.value}</span></article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="admin-panel">
-                <div className="admin-panel__head">
-                  <div><h2>Top routes</h2><p>Most common route patterns.</p></div>
-                </div>
-                <div className="admin-reports__list">
-                  {reports.topRoutes.map((item) => (
-                    <article key={item.label}><strong>{item.label}</strong><span>{item.value}</span></article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="admin-panel">
-                <div className="admin-panel__head">
-                  <div><h2>Leads by source</h2><p>Acquisition mix by source.</p></div>
-                </div>
-                <div className="admin-reports__list">
-                  {reports.leadsBySource.map((item) => (
-                    <article key={item.label}><strong>{item.label}</strong><span>{item.value}</span></article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="admin-panel">
-                <div className="admin-panel__head">
-                  <div><h2>Task status</h2><p>Current workflow pressure and completion.</p></div>
-                </div>
-                <div className="admin-reports__list">
-                  {reports.taskStatus.map((item) => (
-                    <article key={item.label}><strong>{item.label}</strong><span>{item.value}</span></article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="admin-panel admin-reports__wide">
-                <div className="admin-panel__head">
-                  <div><h2>Partner performance</h2><p>Cases and earned commission by referral partner.</p></div>
-                </div>
-                <div className="admin-reports__list">
-                  {reports.partnerPerformance.map((item) => (
-                    <article key={item.label}>
-                      <strong>{item.label}</strong>
-                      <span>{item.value} cases · {formatCurrency(item.earned)}</span>
-                    </article>
-                  ))}
-                </div>
-              </section>
+            <div className="admin-reports__hero-grid">
+              <article className="admin-reports__hero-card">
+                <small>Revenue per case</small>
+                <strong>{metrics.totalCases ? formatCurrency(metrics.revenue / metrics.totalCases) : "—"}</strong>
+                <span>Average company fee across all tracked cases.</span>
+              </article>
+              <article className="admin-reports__hero-card">
+                <small>Compensation per case</small>
+                <strong>{metrics.totalCases ? formatCurrency(metrics.compensation / metrics.totalCases) : "—"}</strong>
+                <span>Average client compensation amount in finance records.</span>
+              </article>
+              <article className="admin-reports__hero-card">
+                <small>Leads to case ratio</small>
+                <strong>{metrics.totalLeads ? `${Math.round((metrics.totalCases / metrics.totalLeads) * 100)}%` : "—"}</strong>
+                <span>Share of leads that have already turned into cases.</span>
+              </article>
             </div>
+          </section>
+
+          <section className="admin-reports__grid">
+            <section className="admin-panel">
+              <div className="admin-panel__head">
+                <div>
+                  <h2>Leads by status</h2>
+                  <p>Inbound pipeline distribution.</p>
+                </div>
+              </div>
+              <div className="admin-reports__panel-body">
+                <StatusChart rows={reports.leadsByStatus} />
+              </div>
+            </section>
+
+            <section className="admin-panel">
+              <div className="admin-panel__head">
+                <div>
+                  <h2>Cases by status</h2>
+                  <p>Case workflow distribution.</p>
+                </div>
+              </div>
+              <div className="admin-reports__panel-body">
+                <StatusChart rows={reports.casesByStatus} />
+              </div>
+            </section>
+
+            <ListCard
+              title="Top airlines"
+              subtitle="Highest-volume airline distribution."
+              rows={reports.topAirlines}
+            />
+
+            <ListCard
+              title="Top routes"
+              subtitle="Most common route patterns."
+              rows={reports.topRoutes}
+            />
+
+            <ListCard
+              title="Leads by source"
+              subtitle="Acquisition mix by source."
+              rows={reports.leadsBySource}
+            />
+
+            <ListCard
+              title="Task status"
+              subtitle="Current workflow pressure and completion."
+              rows={reports.taskStatus}
+            />
+
+            <ListCard
+              title="Partner performance"
+              subtitle="Cases and earned commission by referral partner."
+              rows={reports.partnerPerformance}
+              formatter={(item) => `${item.value} cases · ${formatCurrency(item.earned)}`}
+            />
           </section>
         </>
       )}
     </div>
   );
 }
-
-export default AdminReports;

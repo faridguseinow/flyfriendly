@@ -1,681 +1,673 @@
 import { useEffect, useMemo, useState } from "react";
-import { Coins, Download, HandCoins, ReceiptText, Wallet } from "lucide-react";
-import { fetchFinanceModuleData, fetchReferralPartnersModuleData, updateCaseFinance } from "../../services/adminService.js";
-import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
+import { Coins, Download, HandCoins, ReceiptText, RefreshCw, Wallet } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AdminFilterBar, AdminKpiCard, AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
 import {
-  AdminActionQueue,
-  AdminDataTable,
-  AdminDetailDrawer,
-  AdminFilterBar,
-  AdminKpiCard,
-  AdminPageHeader,
-  AdminStatusBadge,
-} from "../../admin/components/AdminUi.jsx";
+  formatFinanceCurrency,
+  formatFinanceDateParts,
+  formatFinanceDateTimeLabel,
+  formatFinanceRoute,
+  getFinanceDisplayError,
+} from "../../lib/adminFinanceFormatters.js";
+import { normalizeMoneyAmount } from "../../lib/financeCalculations.js";
+import {
+  exportFinanceCsv,
+  getClientPaymentByCaseId,
+  getFinanceRows,
+  getFinanceSummary,
+  getPartnerPayments,
+} from "../../services/adminFinanceService.js";
 import "./style.scss";
 
-const paymentStatuses = [
-  "not_started",
-  "awaiting_payment",
-  "payment_received",
-  "customer_paid",
-  "company_fee_collected",
-  "referral_paid",
-  "completed",
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "unpaid", label: "Unpaid" },
+  { value: "paid", label: "Paid" },
 ];
 
-const dateRangeDefault = { from: "", to: "" };
-
-function formatDate(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString();
+function roundMoney(value) {
+  return Number(normalizeMoneyAmount(value).toFixed(2));
 }
 
 function formatCurrency(value, currency = "EUR") {
-  return `${Number(value || 0).toFixed(0)} ${currency || "EUR"}`;
+  return formatFinanceCurrency(value, currency);
 }
 
-function statusTone(status) {
-  if (["completed", "customer_paid", "referral_paid", "paid", "closed"].includes(String(status || "").toLowerCase())) return "success";
-  if (["awaiting_payment", "payment_received", "approved", "company_fee_collected"].includes(String(status || "").toLowerCase())) return "warning";
-  if (["cancelled", "rejected"].includes(String(status || "").toLowerCase())) return "danger";
+function formatDateTime(value) {
+  return formatFinanceDateParts(value);
+}
+
+function formatDateTimeLabel(value) {
+  return formatFinanceDateTimeLabel(value);
+}
+
+function formatRouteLabel(route) {
+  return formatFinanceRoute(route);
+}
+
+function getStatusTone(status) {
+  if (status === "paid") return "success";
+  if (status === "unpaid") return "warning";
   return "neutral";
 }
 
-function isWithinDateRange(value, range) {
-  if (!value) return false;
-  const current = new Date(value).getTime();
-  if (Number.isNaN(current)) return false;
-  const from = range?.from ? new Date(`${range.from}T00:00:00`).getTime() : null;
-  const to = range?.to ? new Date(`${range.to}T23:59:59`).getTime() : null;
-  if (from && current < from) return false;
-  if (to && current > to) return false;
-  return true;
+function formatStatusLabel(status) {
+  if (status === "paid") return "Paid";
+  if (status === "unpaid") return "Unpaid";
+  return "—";
 }
 
-function isWonCase(caseRow) {
-  return ["approved", "paid", "closed"].includes(String(caseRow?.status || "").toLowerCase());
+function formatFinanceStatusLabel(confirmed) {
+  return confirmed ? "Confirmed" : "Pending";
 }
 
-function isUnpaidFinance(financeRow, caseRow) {
-  const paymentStatus = String(financeRow?.payment_status || "").toLowerCase();
-  const payoutStatus = String(caseRow?.payout_status || "").toLowerCase();
-  return !["customer_paid", "referral_paid", "completed"].includes(paymentStatus)
-    && !["customer_paid", "referral_paid", "completed"].includes(payoutStatus);
+function getFinanceStatusTone(confirmed) {
+  return confirmed ? "success" : "neutral";
 }
 
-function isPaidButNotClosed(financeRow, caseRow) {
-  const paymentStatus = String(financeRow?.payment_status || "").toLowerCase();
-  const payoutStatus = String(caseRow?.payout_status || "").toLowerCase();
-  const caseStatus = String(caseRow?.status || "").toLowerCase();
-  const paid = ["customer_paid", "referral_paid", "completed"].includes(paymentStatus)
-    || ["customer_paid", "referral_paid", "completed"].includes(payoutStatus)
-    || Boolean(financeRow?.customer_paid_at);
-  return paid && caseStatus !== "closed";
-}
+function downloadCsvFile(file) {
+  if (!file?.csv) {
+    return;
+  }
 
-function exportFinanceCsv(rows) {
-  const headers = ["Case", "Customer", "Payment Status", "Compensation", "Company Fee", "Customer Payout", "Referral Commission", "Updated At"];
-  const lines = rows.map((item) => [
-    item.caseCode,
-    item.customerLabel,
-    item.payment_status,
-    item.compensation_amount,
-    item.company_fee,
-    item.customer_payout,
-    item.referral_commission,
-    item.updated_at,
-  ]);
-
-  const csv = [headers, ...lines]
-    .map((row) => row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
-    .join("\n");
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([file.csv], { type: file.mimeType || "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `fly-friendly-finance-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = file.filename || `finance-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
 
+function buildDateFilters(dateRange) {
+  return {
+    dateFrom: dateRange.from ? `${dateRange.from}T00:00:00` : undefined,
+    dateTo: dateRange.to ? `${dateRange.to}T23:59:59` : undefined,
+  };
+}
+
+function buildSummaryFromRows(rows = []) {
+  return rows.reduce((summary, row) => {
+    const compensation = normalizeMoneyAmount(row.compensationAmount);
+    const revenue = normalizeMoneyAmount(row.companyRevenueAmount);
+    const clientPayout = normalizeMoneyAmount(row.clientPayoutAmount);
+    const partnerPayout = normalizeMoneyAmount(row.partnerCommissionAmount);
+    const clientPaid = row.clientPaymentStatus === "paid";
+    const partnerApplicable = Boolean(row.partnerName || row.referralCode || partnerPayout > 0 || row.partnerPaymentStatus);
+    const partnerPaid = partnerApplicable && row.partnerPaymentStatus === "paid";
+
+    return {
+      totalCompensation: roundMoney(summary.totalCompensation + compensation),
+      totalRevenue: roundMoney(summary.totalRevenue + revenue),
+      totalClientPayouts: roundMoney(summary.totalClientPayouts + clientPayout),
+      totalPartnerPayouts: roundMoney(summary.totalPartnerPayouts + partnerPayout),
+      netProfit: roundMoney(summary.netProfit + normalizeMoneyAmount(row.netProfit)),
+      unpaidAmount: roundMoney(
+        summary.unpaidAmount
+        + (clientPaid ? 0 : clientPayout)
+        + (partnerApplicable && !partnerPaid ? partnerPayout : 0),
+      ),
+      paidClientAmount: roundMoney(summary.paidClientAmount + (clientPaid ? clientPayout : 0)),
+      paidPartnerAmount: roundMoney(summary.paidPartnerAmount + (partnerPaid ? partnerPayout : 0)),
+    };
+  }, {
+    totalCompensation: 0,
+    totalRevenue: 0,
+    totalClientPayouts: 0,
+    totalPartnerPayouts: 0,
+    netProfit: 0,
+    unpaidAmount: 0,
+    paidClientAmount: 0,
+    paidPartnerAmount: 0,
+  });
+}
+
+function buildMonthlyOverview(rows = []) {
+  const buckets = new Map();
+
+  rows.forEach((row) => {
+    const sourceDate = row.updatedAt || null;
+    const parsed = sourceDate ? new Date(sourceDate) : null;
+    if (!parsed || Number.isNaN(parsed.getTime())) {
+      return;
+    }
+
+    const monthKey = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}`;
+    const current = buckets.get(monthKey) || {
+      monthKey,
+      label: parsed.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+      compensation: 0,
+      revenue: 0,
+      netProfit: 0,
+    };
+
+    current.compensation += normalizeMoneyAmount(row.compensationAmount);
+    current.revenue += normalizeMoneyAmount(row.companyRevenueAmount);
+    current.netProfit += normalizeMoneyAmount(row.netProfit);
+    buckets.set(monthKey, current);
+  });
+
+  return [...buckets.values()]
+    .sort((left, right) => left.monthKey.localeCompare(right.monthKey))
+    .map((item) => ({
+      ...item,
+      compensation: roundMoney(item.compensation),
+      revenue: roundMoney(item.revenue),
+      netProfit: roundMoney(item.netProfit),
+    }));
+}
+
+function buildLocalFinanceCsv(rows = []) {
+  const headers = [
+    "Case Code",
+    "Route",
+    "Compensation EUR",
+    "Revenue EUR",
+    "Client Payout EUR",
+    "Partner",
+    "Referral Code",
+    "Partner Commission EUR",
+    "Net Profit EUR",
+    "Client Payment Status",
+    "Partner Payment Status",
+    "Updated At",
+  ];
+
+  const csvRows = rows.map((row) => [
+    row.caseCode || "",
+    row.route || "",
+    row.compensationAmount ?? "",
+    row.companyRevenueAmount ?? "",
+    row.clientPayoutAmount ?? "",
+    row.partnerName || "",
+    row.referralCode || "",
+    row.partnerCommissionAmount ?? "",
+    row.netProfit ?? "",
+    row.clientPaymentStatus || "",
+    row.partnerPaymentStatus || "",
+    row.updatedAt || "",
+  ]);
+
+  return [headers, ...csvRows]
+    .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+}
+
 export default function AdminFinance() {
-  const { hasPermission } = useAdminAuth();
-  const [financeData, setFinanceData] = useState(null);
-  const [partnerData, setPartnerData] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [remoteSummary, setRemoteSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [dateRange, setDateRange] = useState(dateRangeDefault);
+  const [isExporting, setIsExporting] = useState(false);
+  const [errorState, setErrorState] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [currencyFilter, setCurrencyFilter] = useState("all");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [partyFilter, setPartyFilter] = useState("");
   const [caseReferenceFilter, setCaseReferenceFilter] = useState("");
+  const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [detailState, setDetailState] = useState({ clientPayment: null, partnerPayment: null });
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+
+  const baseFilters = useMemo(() => buildDateFilters(dateRange), [dateRange]);
 
   const loadFinance = async () => {
-    setError("");
+    setErrorState(null);
     setIsLoading(true);
+
     try {
-      const [nextFinance, nextPartner] = await Promise.all([
-        fetchFinanceModuleData(),
-        fetchReferralPartnersModuleData().catch(() => ({
-          partners: [],
-          payouts: [],
-          commissions: [],
-          supportsPartnersModuleV1: false,
-        })),
+      const [nextSummary, nextRows] = await Promise.all([
+        getFinanceSummary(baseFilters),
+        getFinanceRows(baseFilters),
       ]);
-      setFinanceData(nextFinance);
-      setPartnerData(nextPartner);
+
+      setRemoteSummary(nextSummary);
+      setRows(nextRows);
     } catch (nextError) {
-      setError(nextError.message || "Could not load finance module.");
+      setErrorState(getFinanceDisplayError(nextError));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadFinance();
-  }, []);
+    void loadFinance();
+  }, [baseFilters]);
 
-  const financeRows = useMemo(() => {
-    const cases = new Map((financeData?.cases || []).map((item) => [item.id, item]));
-    const customers = new Map((financeData?.customers || []).map((item) => [item.id, item]));
-    const profiles = new Map((financeData?.profiles || []).map((item) => [item.id, item]));
+  useEffect(() => {
+    if (!selectedCaseId) {
+      setDetailState({ clientPayment: null, partnerPayment: null });
+      setDetailError("");
+      setIsDetailLoading(false);
+      return;
+    }
 
-    return (financeData?.finance || []).map((item) => {
-      const linkedCase = cases.get(item.case_id);
-      const linkedCustomer = linkedCase?.customer_id ? customers.get(linkedCase.customer_id) : null;
-      const linkedManager = linkedCase?.assigned_manager_id ? profiles.get(linkedCase.assigned_manager_id) : null;
+    const selectedStillExists = rows.some((row) => row.caseId === selectedCaseId);
+    if (!selectedStillExists) {
+      setSelectedCaseId(null);
+      setDetailState({ clientPayment: null, partnerPayment: null });
+      setDetailError("");
+    }
+  }, [rows, selectedCaseId]);
 
-      return {
-        ...item,
-        linkedCase,
-        linkedCustomer,
-        linkedManager,
-        caseCode: linkedCase?.case_code || item.case_id,
-        customerLabel: linkedCustomer?.full_name || linkedCustomer?.email || "—",
-        routeLabel: linkedCase?.route_from && linkedCase?.route_to ? `${linkedCase.route_from} → ${linkedCase.route_to}` : "—",
-        currencyLabel: item.currency || "EUR",
-        partnerLabel: linkedCase?.referral_partner_label || "—",
-      };
-    });
-  }, [financeData]);
-
-  const commissionRows = useMemo(() => {
-    const partners = new Map((partnerData?.partners || []).map((item) => [item.id, item]));
-    const cases = new Map((financeData?.cases || []).map((item) => [item.id, item]));
-    return (partnerData?.commissions || []).map((item) => {
-      const linkedCase = cases.get(item.case_id);
-      const partner = partners.get(item.partner_id);
-      return {
-        ...item,
-        caseCode: linkedCase?.case_code || "—",
-        partnerLabel: partner?.public_name || partner?.name || "—",
-        currencyLabel: item.currency || "EUR",
-      };
-    });
-  }, [financeData?.cases, partnerData?.commissions, partnerData?.partners]);
-
-  const partnerPayoutRows = useMemo(() => {
-    const partners = new Map((partnerData?.partners || []).map((item) => [item.id, item]));
-    const cases = new Map((financeData?.cases || []).map((item) => [item.id, item]));
-    return (partnerData?.payouts || []).map((item) => {
-      const linkedCase = cases.get(item.case_id);
-      const partner = partners.get(item.partner_id);
-      return {
-        ...item,
-        caseCode: linkedCase?.case_code || "—",
-        partnerLabel: partner?.public_name || partner?.name || "—",
-        currencyLabel: item.currency || "EUR",
-      };
-    });
-  }, [financeData?.cases, partnerData?.partners, partnerData?.payouts]);
-
-  const clientPayoutRows = useMemo(
-    () => financeRows.filter((item) => Number(item.customer_payout || 0) > 0),
-    [financeRows],
-  );
-
-  const matchesCommonFilters = (row, statusValue, currencyValue, partyValue, caseValue, dateValue) => {
+  const filteredRows = useMemo(() => {
     const normalizedParty = partyFilter.trim().toLowerCase();
     const normalizedCase = caseReferenceFilter.trim().toLowerCase();
-    const matchesStatus = statusFilter === "all" || String(statusValue || "").toLowerCase() === statusFilter;
-    const matchesCurrency = currencyFilter === "all" || String(currencyValue || "").toUpperCase() === currencyFilter;
-    const matchesParty = !normalizedParty || [partyValue].flat().some((value) => String(value || "").toLowerCase().includes(normalizedParty));
-    const matchesCase = !normalizedCase || String(caseValue || "").toLowerCase().includes(normalizedCase);
-    const matchesDate = (!dateRange.from && !dateRange.to) || isWithinDateRange(dateValue, dateRange);
-    return matchesStatus && matchesCurrency && matchesParty && matchesCase && matchesDate;
-  };
 
-  const filteredFinanceRows = useMemo(
-    () => financeRows.filter((row) => matchesCommonFilters(
-      row,
-      row.payment_status,
-      row.currencyLabel,
-      [row.customerLabel, row.partnerLabel],
-      row.caseCode,
-      row.updated_at || row.created_at,
-    )),
-    [financeRows, statusFilter, currencyFilter, partyFilter, caseReferenceFilter, dateRange],
+    return rows.filter((row) => {
+      const matchesParty = !normalizedParty || [
+        row.clientLabel,
+        row.partnerName,
+        row.referralCode,
+      ].some((value) => String(value || "").toLowerCase().includes(normalizedParty));
+
+      const matchesCase = !normalizedCase || String(row.caseCode || "").toLowerCase().includes(normalizedCase);
+
+      if (!matchesParty || !matchesCase) {
+        return false;
+      }
+
+      if (statusFilter === "all") {
+        return true;
+      }
+
+      return row.clientPaymentStatus === statusFilter || row.partnerPaymentStatus === statusFilter;
+    });
+  }, [caseReferenceFilter, partyFilter, rows, statusFilter]);
+
+  const hasLocalFilters = Boolean(
+    partyFilter.trim()
+    || caseReferenceFilter.trim()
+    || statusFilter !== "all",
   );
 
-  const filteredClientPayouts = useMemo(
-    () => clientPayoutRows.filter((row) => matchesCommonFilters(
-      row,
-      row.payment_status,
-      row.currencyLabel,
-      [row.customerLabel],
-      row.caseCode,
-      row.updated_at || row.created_at,
-    )),
-    [clientPayoutRows, statusFilter, currencyFilter, partyFilter, caseReferenceFilter, dateRange],
-  );
+  const localSummary = useMemo(() => buildSummaryFromRows(filteredRows), [filteredRows]);
+  const summary = hasLocalFilters ? localSummary : (remoteSummary || localSummary);
 
-  const filteredCommissions = useMemo(
-    () => commissionRows.filter((row) => matchesCommonFilters(
-      row,
-      row.status,
-      row.currencyLabel,
-      [row.partnerLabel],
-      row.caseCode,
-      row.paid_at || row.approved_at || row.created_at,
-    )),
-    [commissionRows, statusFilter, currencyFilter, partyFilter, caseReferenceFilter, dateRange],
-  );
+  const monthlyOverview = useMemo(() => buildMonthlyOverview(filteredRows), [filteredRows]);
 
-  const filteredPartnerPayouts = useMemo(
-    () => partnerPayoutRows.filter((row) => matchesCommonFilters(
-      row,
-      row.status,
-      row.currencyLabel,
-      [row.partnerLabel],
-      row.caseCode,
-      row.paid_at || row.created_at,
-    )),
-    [partnerPayoutRows, statusFilter, currencyFilter, partyFilter, caseReferenceFilter, dateRange],
-  );
-
-  const allCurrencies = useMemo(() => {
-    const currencies = new Set();
-    financeRows.forEach((row) => currencies.add(row.currencyLabel));
-    commissionRows.forEach((row) => currencies.add(row.currencyLabel));
-    partnerPayoutRows.forEach((row) => currencies.add(row.currencyLabel));
-    return Array.from(currencies).filter(Boolean).sort();
-  }, [commissionRows, financeRows, partnerPayoutRows]);
-
-  const statusOptions = useMemo(() => {
-    const statuses = new Set();
-    financeRows.forEach((row) => statuses.add(row.payment_status));
-    commissionRows.forEach((row) => statuses.add(row.status));
-    partnerPayoutRows.forEach((row) => statuses.add(row.status));
-    return [{ value: "all", label: "All statuses" }, ...Array.from(statuses).filter(Boolean).sort().map((item) => ({ value: item, label: item }))];
-  }, [commissionRows, financeRows, partnerPayoutRows]);
-
-  const metrics = useMemo(() => {
-    const totalEstimated = financeData?.cases
-      ? financeData.cases.reduce((sum, item) => sum + Number(item.estimated_compensation || 0), 0)
-      : null;
-    const pendingClientPayouts = financeRows
-      .filter((row) => Number(row.customer_payout || 0) > 0 && !["customer_paid", "completed"].includes(String(row.payment_status || "").toLowerCase()))
-      .reduce((sum, row) => sum + Number(row.customer_payout || 0), 0);
-    const partnerCommissionsPending = commissionRows
-      .filter((row) => row.status === "pending")
-      .reduce((sum, row) => sum + Number(row.amount || 0), 0);
-    const partnerPayoutsPending = partnerPayoutRows
-      .filter((row) => row.status === "pending")
-      .reduce((sum, row) => sum + Number(row.amount || 0), 0);
-    const recoveredAmount = financeRows
-      .filter((row) => row.payment_received_at || ["payment_received", "customer_paid", "company_fee_collected", "referral_paid", "completed"].includes(String(row.payment_status || "").toLowerCase()))
-      .reduce((sum, row) => sum + Number(row.compensation_amount || 0), 0);
-    const companyRevenue = financeRows.length
-      ? financeRows.reduce((sum, row) => sum + Number(row.company_fee || 0), 0)
-      : null;
+  const paymentStatusSummary = useMemo(() => {
+    const clientPaidRows = filteredRows.filter((row) => row.clientPaymentStatus === "paid");
+    const clientUnpaidRows = filteredRows.filter((row) => row.clientPaymentStatus !== "paid");
+    const partnerRows = filteredRows.filter((row) => row.partnerName || row.referralCode || normalizeMoneyAmount(row.partnerCommissionAmount) > 0);
+    const partnerPaidRows = partnerRows.filter((row) => row.partnerPaymentStatus === "paid");
+    const partnerUnpaidRows = partnerRows.filter((row) => row.partnerPaymentStatus !== "paid");
 
     return {
-      totalEstimated,
-      pendingClientPayouts,
-      partnerCommissionsPending,
-      partnerPayoutsPending,
-      recoveredAmount,
-      companyRevenue,
+      clientPaid: {
+        count: clientPaidRows.length,
+        amount: summary.paidClientAmount,
+      },
+      clientUnpaid: {
+        count: clientUnpaidRows.length,
+        amount: roundMoney(summary.totalClientPayouts - summary.paidClientAmount),
+      },
+      partnerPaid: {
+        count: partnerPaidRows.length,
+        amount: summary.paidPartnerAmount,
+      },
+      partnerUnpaid: {
+        count: partnerUnpaidRows.length,
+        amount: roundMoney(summary.totalPartnerPayouts - summary.paidPartnerAmount),
+      },
     };
-  }, [commissionRows, financeData?.cases, financeRows, partnerPayoutRows]);
+  }, [filteredRows, summary]);
 
-  const actionQueues = useMemo(() => ({
-    payoutsNeedingApproval: filteredPartnerPayouts.filter((row) => row.status === "pending").slice(0, 6),
-    commissionsPendingApproval: filteredCommissions.filter((row) => row.status === "pending").slice(0, 6),
-    casesWonButUnpaid: filteredFinanceRows.filter((row) => isWonCase(row.linkedCase) && isUnpaidFinance(row, row.linkedCase)).slice(0, 6),
-    casesPaidButNotClosed: filteredFinanceRows.filter((row) => isPaidButNotClosed(row, row.linkedCase)).slice(0, 6),
-  }), [filteredCommissions, filteredFinanceRows, filteredPartnerPayouts]);
+  const referralImpact = useMemo(() => {
+    const referralRows = filteredRows.filter((row) => row.partnerName || row.referralCode);
 
-  const openRecord = (kind, row) => {
-    setSelectedRecord({ kind, row });
-    setDrawerOpen(true);
+    return {
+      referralCases: referralRows.length,
+      partnerCommissions: roundMoney(referralRows.reduce((sum, row) => sum + normalizeMoneyAmount(row.partnerCommissionAmount), 0)),
+      netAfterPartner: roundMoney(referralRows.reduce((sum, row) => sum + normalizeMoneyAmount(row.netProfit), 0)),
+    };
+  }, [filteredRows]);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const serviceFile = await exportFinanceCsv(baseFilters);
+      const file = hasLocalFilters
+        ? { ...serviceFile, csv: buildLocalFinanceCsv(filteredRows) }
+        : serviceFile;
+      downloadCsvFile(file);
+    } catch (nextError) {
+      setErrorState(getFinanceDisplayError(nextError));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const saveFinance = async (updates) => {
-    if (!selectedRecord || selectedRecord.kind !== "case-finance") return;
-    setError("");
-    setIsSaving(true);
+  const selectedFinanceRow = useMemo(
+    () => rows.find((row) => row.caseId === selectedCaseId) || null,
+    [rows, selectedCaseId],
+  );
+
+  const openFinanceDetail = async (caseId) => {
+    setSelectedCaseId(caseId);
+    setDetailError("");
+    setIsDetailLoading(true);
+
     try {
-      await updateCaseFinance(selectedRecord.row.id, updates);
-      await loadFinance();
+      const [clientPayment, partnerPayments] = await Promise.all([
+        getClientPaymentByCaseId(caseId),
+        getPartnerPayments({ caseId, limit: 20 }),
+      ]);
+      setDetailState({
+        clientPayment: clientPayment || null,
+        partnerPayment: partnerPayments[0] || null,
+      });
     } catch (nextError) {
-      setError(nextError.message || "Could not update finance record.");
+      setDetailError(nextError.message || "Could not load finance detail.");
+      setDetailState({ clientPayment: null, partnerPayment: null });
     } finally {
-      setIsSaving(false);
+      setIsDetailLoading(false);
     }
+  };
+
+  const renderMainState = () => {
+    if (isLoading) {
+      return <div className="admin-finance__state-card">Loading finance data...</div>;
+    }
+
+    if (errorState) {
+      return (
+        <div className="admin-finance__state-card is-error">
+          <strong>{errorState.title}</strong>
+          {errorState.detail ? <span>{errorState.detail}</span> : null}
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
     <div className="admin-page admin-finance-page">
-      <AdminPageHeader
-        title="Finance"
-        subtitle="Money movement across client payouts, partner payouts, commissions, and case finance"
-        breadcrumbs={[
-          { label: "Admin", path: "/admin" },
-          { label: "Finance" },
-        ]}
-        secondaryActions={[
-          {
-            label: "Export finance CSV",
-            icon: Download,
-            onClick: () => exportFinanceCsv(filteredFinanceRows),
-            disabled: !filteredFinanceRows.length,
-          },
-        ]}
-      />
+      <section className="admin-panel admin-finance__workspace">
+        <div className="admin-finance__header">
+          <div className="admin-finance__header-copy">
+            <h1>Finance</h1>
+          </div>
+          <div className="admin-finance__header-actions">
+            <button
+              type="button"
+              className="admin-btn admin-btn-secondary"
+              onClick={() => void loadFinance()}
+              disabled={isLoading || isExporting}
+            >
+              <RefreshCw size={14} />
+              <span>Refresh</span>
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn-secondary"
+              onClick={handleExport}
+              disabled={isLoading || isExporting}
+            >
+              <Download size={14} />
+              <span>{isExporting ? "Exporting..." : "Export finance CSV"}</span>
+            </button>
+          </div>
+        </div>
 
-      {error ? <p className="admin-message is-error">{error}</p> : null}
-      {financeData && !financeData.supportsFinanceModuleV1 ? (
-        <p className="admin-message">
-          Finance schema is not available yet. Run `007_cases_module_v1.sql` in Supabase to unlock the finance module.
-        </p>
-      ) : null}
+        <AdminFilterBar
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          statusOptions={STATUS_OPTIONS}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          searchValue={partyFilter}
+          onSearchChange={setPartyFilter}
+          searchPlaceholder="Partner or client"
+        >
+          <input
+            className="admin-filter-control admin-input"
+            type="search"
+            value={caseReferenceFilter}
+            onChange={(event) => setCaseReferenceFilter(event.target.value)}
+            placeholder="Case reference"
+          />
+        </AdminFilterBar>
 
-      <div className="admin-finance__kpis">
-        <AdminKpiCard label="Total estimated compensation" value={isLoading ? "—" : metrics.totalEstimated !== null ? formatCurrency(metrics.totalEstimated) : "Not configured"} icon={Coins} />
-        <AdminKpiCard label="Pending client payouts" value={isLoading ? "—" : formatCurrency(metrics.pendingClientPayouts)} icon={Wallet} />
-        <AdminKpiCard label="Partner commissions pending" value={isLoading ? "—" : formatCurrency(metrics.partnerCommissionsPending)} icon={HandCoins} />
-        <AdminKpiCard label="Partner payouts pending" value={isLoading ? "—" : formatCurrency(metrics.partnerPayoutsPending)} icon={Wallet} />
-        <AdminKpiCard label="Recovered amount" value={isLoading ? "—" : formatCurrency(metrics.recoveredAmount)} icon={ReceiptText} />
-        <AdminKpiCard label="Company revenue" value={isLoading ? "—" : metrics.companyRevenue !== null ? formatCurrency(metrics.companyRevenue) : "Not configured"} icon={Coins} />
-      </div>
+        <div className="admin-finance__kpis">
+          <AdminKpiCard label="Compensation" value={isLoading ? "—" : formatCurrency(summary.totalCompensation)} icon={Coins} />
+          <AdminKpiCard label="Revenue" value={isLoading ? "—" : formatCurrency(summary.totalRevenue)} icon={ReceiptText} />
+          <AdminKpiCard label="Client payouts" value={isLoading ? "—" : formatCurrency(summary.totalClientPayouts)} icon={Wallet} />
+          <AdminKpiCard label="Partner payouts" value={isLoading ? "—" : formatCurrency(summary.totalPartnerPayouts)} icon={HandCoins} />
+          <AdminKpiCard label="Net profit" value={isLoading ? "—" : formatCurrency(summary.netProfit)} icon={Coins} />
+          <AdminKpiCard label="Unpaid" value={isLoading ? "—" : formatCurrency(summary.unpaidAmount)} icon={Wallet} />
+        </div>
 
-      <AdminFilterBar
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        statusOptions={statusOptions}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        {renderMainState() || (
+          <>
+            <div className="admin-finance__insights">
+              <section className="admin-finance__card">
+                <div className="admin-finance__card-head">
+                  <div>
+                    <h2>Monthly overview</h2>
+                    <p>{monthlyOverview.length} month{monthlyOverview.length === 1 ? "" : "s"}</p>
+                  </div>
+                </div>
+                {monthlyOverview.length ? (
+                  <div className="admin-finance__monthly-list">
+                    {monthlyOverview.map((month) => (
+                      <article key={month.monthKey} className="admin-finance__monthly-row">
+                        <strong>{month.label}</strong>
+                        <div>
+                          <span>Compensation {formatCurrency(month.compensation)}</span>
+                          <span>Revenue {formatCurrency(month.revenue)}</span>
+                          <span>Net {formatCurrency(month.netProfit)}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="admin-finance__mini-state">No monthly totals yet.</div>
+                )}
+              </section>
+
+              <div className="admin-finance__stack">
+                <section className="admin-finance__card">
+                <div className="admin-finance__card-head">
+                  <div>
+                    <h2>Payment status summary</h2>
+                  </div>
+                </div>
+                  <div className="admin-finance__mini-grid">
+                    <article>
+                      <span>Client paid</span>
+                      <strong>{paymentStatusSummary.clientPaid.count}</strong>
+                      <em>{formatCurrency(paymentStatusSummary.clientPaid.amount)}</em>
+                    </article>
+                    <article>
+                      <span>Client unpaid</span>
+                      <strong>{paymentStatusSummary.clientUnpaid.count}</strong>
+                      <em>{formatCurrency(paymentStatusSummary.clientUnpaid.amount)}</em>
+                    </article>
+                    <article>
+                      <span>Partner paid</span>
+                      <strong>{paymentStatusSummary.partnerPaid.count}</strong>
+                      <em>{formatCurrency(paymentStatusSummary.partnerPaid.amount)}</em>
+                    </article>
+                    <article>
+                      <span>Partner unpaid</span>
+                      <strong>{paymentStatusSummary.partnerUnpaid.count}</strong>
+                      <em>{formatCurrency(paymentStatusSummary.partnerUnpaid.amount)}</em>
+                    </article>
+                  </div>
+                </section>
+
+                <section className="admin-finance__card">
+                <div className="admin-finance__card-head">
+                  <div>
+                    <h2>Referral impact</h2>
+                  </div>
+                </div>
+                  <div className="admin-finance__mini-grid is-compact">
+                    <article>
+                      <span>Referral cases</span>
+                      <strong>{referralImpact.referralCases}</strong>
+                    </article>
+                    <article>
+                      <span>Partner commissions</span>
+                      <strong>{formatCurrency(referralImpact.partnerCommissions)}</strong>
+                    </article>
+                    <article>
+                      <span>Net after partner</span>
+                      <strong>{formatCurrency(referralImpact.netAfterPartner)}</strong>
+                    </article>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <section className="admin-finance__table-card">
+              <div className="admin-finance__card-head">
+                <div>
+                  <h2>Case finance</h2>
+                  <p>{filteredRows.length} record{filteredRows.length === 1 ? "" : "s"}</p>
+                </div>
+              </div>
+
+              {filteredRows.length ? (
+                <div className="admin-finance__table-wrap admin-table-wrap">
+                  <table className="admin-finance__table">
+                    <thead>
+                      <tr>
+                        <th>Case</th>
+                        <th>Customer</th>
+                        <th className="is-right">Compensation</th>
+                        <th className="is-right">Revenue</th>
+                        <th className="is-right">Client payout</th>
+                        <th>Finance status</th>
+                        <th>Client payment</th>
+                        <th>Partner payment</th>
+                        <th>Updated</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRows.map((row) => {
+                        const updated = formatDateTime(row.updatedAt);
+                        return (
+                          <tr key={`${row.caseId || row.caseCode || "finance-row"}-${row.updatedAt || "row"}`} className="admin-finance__row" onClick={() => void openFinanceDetail(row.caseId)}>
+                            <td>
+                              <div className="admin-finance__case">
+                                <strong>{row.caseCode || "—"}</strong>
+                                <span>{formatRouteLabel(row.route)}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="admin-finance__partner-cell">
+                                <strong>{row.clientLabel || "—"}</strong>
+                              </div>
+                            </td>
+                            <td className="is-right">{formatCurrency(row.compensationAmount)}</td>
+                            <td className="is-right">{formatCurrency(row.companyRevenueAmount)}</td>
+                            <td className="is-right">{formatCurrency(row.clientPayoutAmount)}</td>
+                            <td><AdminStatusBadge tone={getFinanceStatusTone(row.internalCompensationConfirmed)}>{formatFinanceStatusLabel(row.internalCompensationConfirmed)}</AdminStatusBadge></td>
+                            <td><AdminStatusBadge tone={getStatusTone(row.clientPaymentStatus)}>{formatStatusLabel(row.clientPaymentStatus)}</AdminStatusBadge></td>
+                            <td><AdminStatusBadge tone={getStatusTone(row.partnerPaymentStatus)}>{formatStatusLabel(row.partnerPaymentStatus)}</AdminStatusBadge></td>
+                            <td>
+                              <div className="admin-finance__date-cell">
+                                <strong>{updated.date}</strong>
+                                {updated.time ? <span>{updated.time}</span> : null}
+                              </div>
+                            </td>
+                            <td>
+                              <button type="button" className="admin-link-button" onClick={(event) => {
+                                event.stopPropagation();
+                                void openFinanceDetail(row.caseId);
+                              }}>
+                                Open
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="admin-finance__mini-state">No finance records found.</div>
+              )}
+            </section>
+          </>
+        )}
+      </section>
+
+      <AdminSidePanel
+        open={Boolean(selectedCaseId)}
+        withOverlay
+        eyebrow="Finance detail"
+        title={selectedFinanceRow?.caseCode || "Case finance"}
+        subtitle={selectedFinanceRow?.clientLabel || ""}
+        onClose={() => {
+          setSelectedCaseId(null);
+          setDetailState({ clientPayment: null, partnerPayment: null });
+          setDetailError("");
+        }}
       >
-        <select value={currencyFilter} onChange={(event) => setCurrencyFilter(event.target.value)}>
-          <option value="all">All currencies</option>
-          {allCurrencies.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
-        <input
-          type="search"
-          value={partyFilter}
-          onChange={(event) => setPartyFilter(event.target.value)}
-          placeholder="Partner or client"
-        />
-        <input
-          type="search"
-          value={caseReferenceFilter}
-          onChange={(event) => setCaseReferenceFilter(event.target.value)}
-          placeholder="Case reference"
-        />
-      </AdminFilterBar>
+        {detailError ? <p className="admin-message is-error">{detailError}</p> : null}
 
-      <div className="admin-finance__queues">
-        <AdminActionQueue
-          title="Payouts needing approval"
-          count={actionQueues.payoutsNeedingApproval.length}
-          rows={actionQueues.payoutsNeedingApproval}
-          emptyLabel="No partner payouts need approval."
-          actionPath="/admin/partner-payouts"
-          actionLabel="Open payouts"
-          renderRow={(row) => (
-            <button key={row.id} type="button" className="admin-finance__queue-row" onClick={() => openRecord("partner-payout", row)}>
-              <strong>{row.partnerLabel}</strong>
-              <span>{row.caseCode} • {formatCurrency(row.amount, row.currencyLabel)}</span>
-            </button>
-          )}
-        />
-        <AdminActionQueue
-          title="Commissions pending approval"
-          count={actionQueues.commissionsPendingApproval.length}
-          rows={actionQueues.commissionsPendingApproval}
-          emptyLabel="No commissions are pending approval."
-          actionPath="/admin/partner-commissions"
-          actionLabel="Open commissions"
-          renderRow={(row) => (
-            <button key={row.id} type="button" className="admin-finance__queue-row" onClick={() => openRecord("commission", row)}>
-              <strong>{row.partnerLabel}</strong>
-              <span>{row.caseCode} • {formatCurrency(row.amount, row.currencyLabel)}</span>
-            </button>
-          )}
-        />
-        <AdminActionQueue
-          title="Cases won but unpaid"
-          count={actionQueues.casesWonButUnpaid.length}
-          rows={actionQueues.casesWonButUnpaid}
-          emptyLabel="No won cases are waiting for payout."
-          actionPath="/admin/cases"
-          actionLabel="Open cases"
-          renderRow={(row) => (
-            <button key={row.id} type="button" className="admin-finance__queue-row" onClick={() => openRecord("case-finance", row)}>
-              <strong>{row.caseCode}</strong>
-              <span>{row.customerLabel} • {formatCurrency(row.customer_payout, row.currencyLabel)}</span>
-            </button>
-          )}
-        />
-        <AdminActionQueue
-          title="Cases paid but not closed"
-          count={actionQueues.casesPaidButNotClosed.length}
-          rows={actionQueues.casesPaidButNotClosed}
-          emptyLabel="No cases are stuck after payment."
-          actionPath="/admin/cases"
-          actionLabel="Open cases"
-          renderRow={(row) => (
-            <button key={row.id} type="button" className="admin-finance__queue-row" onClick={() => openRecord("case-finance", row)}>
-              <strong>{row.caseCode}</strong>
-              <span>{row.customerLabel} • {row.payment_status}</span>
-            </button>
-          )}
-        />
-      </div>
-
-      <div className="admin-finance__tables">
-        <AdminDataTable
-          title="Client payouts"
-          description={`${filteredClientPayouts.length} payout records`}
-          columns={[
-            { key: "case", label: "Case" },
-            { key: "customer", label: "Customer" },
-            { key: "amount", label: "Payout amount" },
-            { key: "status", label: "Status" },
-            { key: "updated", label: "Updated" },
-            { key: "action", label: "Action" },
-          ]}
-          rows={filteredClientPayouts}
-          loading={isLoading}
-          error={!isLoading ? error : ""}
-          compact
-          emptyLabel="No client payouts match the current filters."
-          renderRow={(row) => (
-            <tr key={row.id}>
-              <td>{row.caseCode}</td>
-              <td>{row.customerLabel}</td>
-              <td>{formatCurrency(row.customer_payout, row.currencyLabel)}</td>
-              <td><AdminStatusBadge tone={statusTone(row.payment_status)}>{row.payment_status}</AdminStatusBadge></td>
-              <td>{formatDate(row.updated_at)}</td>
-              <td><button type="button" className="admin-link-button" onClick={() => openRecord("case-finance", row)}>Open</button></td>
-            </tr>
-          )}
-        />
-
-        <AdminDataTable
-          title="Partner payouts"
-          description={`${filteredPartnerPayouts.length} payout records`}
-          columns={[
-            { key: "partner", label: "Partner" },
-            { key: "case", label: "Case" },
-            { key: "amount", label: "Payout amount" },
-            { key: "status", label: "Status" },
-            { key: "reference", label: "Payment reference" },
-            { key: "action", label: "Action" },
-          ]}
-          rows={filteredPartnerPayouts}
-          loading={isLoading}
-          error={!isLoading ? error : ""}
-          compact
-          emptyLabel="No partner payouts match the current filters."
-          renderRow={(row) => (
-            <tr key={row.id}>
-              <td>{row.partnerLabel}</td>
-              <td>{row.caseCode}</td>
-              <td>{formatCurrency(row.amount, row.currencyLabel)}</td>
-              <td><AdminStatusBadge tone={statusTone(row.status)}>{row.status}</AdminStatusBadge></td>
-              <td>{row.payment_reference || "—"}</td>
-              <td><button type="button" className="admin-link-button" onClick={() => openRecord("partner-payout", row)}>Open</button></td>
-            </tr>
-          )}
-        />
-
-        <AdminDataTable
-          title="Commissions"
-          description={`${filteredCommissions.length} commission records`}
-          columns={[
-            { key: "partner", label: "Partner" },
-            { key: "case", label: "Case" },
-            { key: "amount", label: "Commission amount" },
-            { key: "status", label: "Status" },
-            { key: "rate", label: "Rate" },
-            { key: "action", label: "Action" },
-          ]}
-          rows={filteredCommissions}
-          loading={isLoading}
-          error={!isLoading ? error : ""}
-          compact
-          emptyLabel="No commission records match the current filters."
-          renderRow={(row) => (
-            <tr key={row.id}>
-              <td>{row.partnerLabel}</td>
-              <td>{row.caseCode}</td>
-              <td>{formatCurrency(row.amount, row.currencyLabel)}</td>
-              <td><AdminStatusBadge tone={statusTone(row.status)}>{row.status}</AdminStatusBadge></td>
-              <td>{row.commission_rate || "—"}</td>
-              <td><button type="button" className="admin-link-button" onClick={() => openRecord("commission", row)}>Open</button></td>
-            </tr>
-          )}
-        />
-
-        <AdminDataTable
-          title="Case finance"
-          description={`${filteredFinanceRows.length} finance records`}
-          columns={[
-            { key: "case", label: "Case" },
-            { key: "customer", label: "Customer" },
-            { key: "estimated", label: "Estimated compensation" },
-            { key: "status", label: "Finance status" },
-            { key: "revenue", label: "Company fee" },
-            { key: "action", label: "Action" },
-          ]}
-          rows={filteredFinanceRows}
-          loading={isLoading}
-          error={!isLoading ? error : ""}
-          compact
-          emptyLabel="No finance records match the current filters."
-          renderRow={(row) => (
-            <tr key={row.id}>
-              <td>{row.caseCode}</td>
-              <td>{row.customerLabel}</td>
-              <td>{formatCurrency(row.compensation_amount, row.currencyLabel)}</td>
-              <td><AdminStatusBadge tone={statusTone(row.payment_status)}>{row.payment_status}</AdminStatusBadge></td>
-              <td>{formatCurrency(row.company_fee, row.currencyLabel)}</td>
-              <td><button type="button" className="admin-link-button" onClick={() => openRecord("case-finance", row)}>Open</button></td>
-            </tr>
-          )}
-        />
-      </div>
-
-      <AdminDetailDrawer
-        open={drawerOpen}
-        title={selectedRecord?.kind === "case-finance"
-          ? selectedRecord.row.caseCode
-          : selectedRecord?.kind === "partner-payout"
-            ? selectedRecord.row.partnerLabel
-            : selectedRecord?.kind === "commission"
-              ? selectedRecord.row.partnerLabel
-              : "Finance detail"}
-        subtitle={selectedRecord?.kind === "case-finance"
-          ? selectedRecord.row.customerLabel
-          : selectedRecord?.kind === "partner-payout"
-            ? `${selectedRecord.row.caseCode} • ${formatCurrency(selectedRecord.row.amount, selectedRecord.row.currencyLabel)}`
-            : selectedRecord?.kind === "commission"
-              ? `${selectedRecord.row.caseCode} • ${formatCurrency(selectedRecord.row.amount, selectedRecord.row.currencyLabel)}`
-              : ""}
-        onClose={() => setDrawerOpen(false)}
-      >
-        {selectedRecord?.kind === "case-finance" ? (
+        {isDetailLoading ? (
+          <div className="admin-finance__drawer-state">Loading finance detail...</div>
+        ) : selectedFinanceRow ? (
           <div className="admin-finance__drawer">
-            <section className="admin-finance__summary">
-              <article><strong>Case</strong><span>{selectedRecord.row.caseCode}</span></article>
-              <article><strong>Customer</strong><span>{selectedRecord.row.customerLabel}</span></article>
-              <article><strong>Manager</strong><span>{selectedRecord.row.linkedManager?.full_name || selectedRecord.row.linkedManager?.email || "—"}</span></article>
-              <article><strong>Partner</strong><span>{selectedRecord.row.partnerLabel}</span></article>
-            </section>
-
             <section className="admin-finance__section">
-              <h3>Status</h3>
-              <div className="admin-finance__actions">
-                <label>
-                  <span>Payment status</span>
-                  <select
-                    value={selectedRecord.row.payment_status}
-                    onChange={(event) => saveFinance({ payment_status: event.target.value })}
-                    disabled={!hasPermission("finance.edit") || isSaving}
-                  >
-                    {paymentStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span>Payment method</span>
-                  <input
-                    value={selectedRecord.row.payment_method || ""}
-                    onChange={(event) => saveFinance({ payment_method: event.target.value || null })}
-                    disabled={!hasPermission("finance.edit") || isSaving}
-                  />
-                </label>
+              <h3>Case</h3>
+              <div className="admin-finance__detail-grid">
+                <article><span>Case code</span><strong>{selectedFinanceRow.caseCode || "—"}</strong></article>
+                <article><span>Customer</span><strong>{selectedFinanceRow.clientLabel || "—"}</strong></article>
+                <article><span>Route</span><strong>{formatRouteLabel(selectedFinanceRow.route)}</strong></article>
               </div>
             </section>
 
             <section className="admin-finance__section">
-              <h3>Amounts</h3>
-              <div className="admin-finance__amounts">
-                <label>
-                  <span>Compensation</span>
-                  <input type="number" value={selectedRecord.row.compensation_amount || 0} onChange={(event) => saveFinance({ compensation_amount: Number(event.target.value || 0) })} disabled={!hasPermission("finance.edit") || isSaving} />
-                </label>
-                <label>
-                  <span>Company fee</span>
-                  <input type="number" value={selectedRecord.row.company_fee || 0} onChange={(event) => saveFinance({ company_fee: Number(event.target.value || 0) })} disabled={!hasPermission("finance.edit") || isSaving} />
-                </label>
-                <label>
-                  <span>Customer payout</span>
-                  <input type="number" value={selectedRecord.row.customer_payout || 0} onChange={(event) => saveFinance({ customer_payout: Number(event.target.value || 0) })} disabled={!hasPermission("finance.edit") || isSaving} />
-                </label>
-                <label>
-                  <span>Referral commission</span>
-                  <input type="number" value={selectedRecord.row.referral_commission || 0} onChange={(event) => saveFinance({ referral_commission: Number(event.target.value || 0) })} disabled={!hasPermission("finance.edit") || isSaving} />
-                </label>
-                <label>
-                  <span>Agent bonus</span>
-                  <input type="number" value={selectedRecord.row.agent_bonus || 0} onChange={(event) => saveFinance({ agent_bonus: Number(event.target.value || 0) })} disabled={!hasPermission("finance.edit") || isSaving} />
-                </label>
+              <h3>Finance</h3>
+              <div className="admin-finance__detail-grid">
+                <article><span>Compensation</span><strong>{formatCurrency(selectedFinanceRow.compensationAmount)}</strong></article>
+                <article><span>Revenue</span><strong>{formatCurrency(selectedFinanceRow.companyRevenueAmount)}</strong></article>
+                <article><span>Client payout</span><strong>{formatCurrency(selectedFinanceRow.clientPayoutAmount)}</strong></article>
+                <article><span>Net profit</span><strong>{formatCurrency(selectedFinanceRow.netProfit)}</strong></article>
               </div>
             </section>
 
             <section className="admin-finance__section">
-              <h3>Timeline</h3>
-              <div className="admin-finance__timeline">
-                <article><strong>Updated</strong><span>{formatDate(selectedRecord.row.updated_at)}</span></article>
-                <article><strong>Payment received</strong><span>{formatDate(selectedRecord.row.payment_received_at)}</span></article>
-                <article><strong>Customer paid</strong><span>{formatDate(selectedRecord.row.customer_paid_at)}</span></article>
-                <article><strong>Referral paid</strong><span>{formatDate(selectedRecord.row.referral_paid_at)}</span></article>
+              <h3>Client payment</h3>
+              <div className="admin-finance__detail-grid">
+                <article><span>Status</span><div><AdminStatusBadge tone={getStatusTone(selectedFinanceRow.clientPaymentStatus)}>{formatStatusLabel(selectedFinanceRow.clientPaymentStatus)}</AdminStatusBadge></div></article>
+                <article><span>Visible to client</span><strong>{selectedFinanceRow.clientVisibleApproval ? "Yes" : "No"}</strong></article>
+                <article><span>Paid at</span><strong>{formatDateTimeLabel(detailState.clientPayment?.clientPaidAt)}</strong></article>
+              </div>
+            </section>
+
+            <section className="admin-finance__section">
+              <h3>Partner</h3>
+              <div className="admin-finance__detail-grid">
+                <article><span>Partner</span><strong>{selectedFinanceRow.partnerName || "—"}</strong></article>
+                <article><span>Referral code</span><strong>{selectedFinanceRow.referralCode || "—"}</strong></article>
+                <article><span>Commission</span><strong>{selectedFinanceRow.partnerName ? formatCurrency(selectedFinanceRow.partnerCommissionAmount) : "—"}</strong></article>
+                <article><span>Payout status</span><div><AdminStatusBadge tone={getStatusTone(selectedFinanceRow.partnerPaymentStatus)}>{formatStatusLabel(selectedFinanceRow.partnerPaymentStatus)}</AdminStatusBadge></div></article>
+              </div>
+            </section>
+
+            <section className="admin-finance__section">
+              <h3>Actions</h3>
+              <div className="admin-finance__action-row">
+                <Link className="admin-btn admin-btn-secondary admin-link-button" to={`/admin/operations/cases?case=${selectedFinanceRow.caseId}`}>
+                  <span>Open case</span>
+                </Link>
               </div>
             </section>
           </div>
-        ) : selectedRecord?.kind === "partner-payout" ? (
-          <div className="admin-finance__drawer">
-            <section className="admin-finance__summary">
-              <article><strong>Partner</strong><span>{selectedRecord.row.partnerLabel}</span></article>
-              <article><strong>Case</strong><span>{selectedRecord.row.caseCode}</span></article>
-              <article><strong>Status</strong><span>{selectedRecord.row.status}</span></article>
-              <article><strong>Reference</strong><span>{selectedRecord.row.payment_reference || "—"}</span></article>
-              <article><strong>Amount</strong><span>{formatCurrency(selectedRecord.row.amount, selectedRecord.row.currencyLabel)}</span></article>
-              <article><strong>Method</strong><span>{selectedRecord.row.payout_method || "—"}</span></article>
-            </section>
-          </div>
-        ) : selectedRecord?.kind === "commission" ? (
-          <div className="admin-finance__drawer">
-            <section className="admin-finance__summary">
-              <article><strong>Partner</strong><span>{selectedRecord.row.partnerLabel}</span></article>
-              <article><strong>Case</strong><span>{selectedRecord.row.caseCode}</span></article>
-              <article><strong>Status</strong><span>{selectedRecord.row.status}</span></article>
-              <article><strong>Commission amount</strong><span>{formatCurrency(selectedRecord.row.amount, selectedRecord.row.currencyLabel)}</span></article>
-              <article><strong>Rate</strong><span>{selectedRecord.row.commission_rate || "—"}</span></article>
-              <article><strong>Source amount</strong><span>{selectedRecord.row.source_amount ? formatCurrency(selectedRecord.row.source_amount, selectedRecord.row.currencyLabel) : "—"}</span></article>
-            </section>
-          </div>
-        ) : null}
-      </AdminDetailDrawer>
+        ) : (
+          <div className="admin-finance__drawer-state">Finance detail not found.</div>
+        )}
+      </AdminSidePanel>
     </div>
   );
 }

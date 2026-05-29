@@ -8,6 +8,24 @@ import {
   logAdminActivity,
   updateCaseWorkflow,
 } from "../../services/adminService.js";
+import {
+  getClientPaymentByCaseId,
+  getFinanceRows,
+  getPartnerPayments,
+  markClientPaymentPaid,
+  markClientPaymentUnpaid,
+  markInternalCompensationConfirmed,
+  markPartnerPaymentPaid,
+  markPartnerPaymentUnpaid,
+  setClientVisibleApproval,
+  updateClientPayment,
+  updatePartnerPayment,
+} from "../../services/adminFinanceService.js";
+import {
+  calculateClientPayout,
+  calculateCompanyRevenue,
+  normalizeMoneyAmount,
+} from "../../lib/financeCalculations.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
@@ -115,6 +133,40 @@ function getEstimateTone(status) {
   return "neutral";
 }
 
+function getBooleanTone(value) {
+  return value ? "success" : "neutral";
+}
+
+function normalizeBooleanLabel(value) {
+  return value ? "Yes" : "No";
+}
+
+function normalizeCompactPaymentStatus(value, paidAt = null) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (paidAt || ["paid", "customer_paid", "completed", "referral_paid"].includes(normalized)) {
+    return "paid";
+  }
+  return "unpaid";
+}
+
+function normalizePartnerPaymentValue(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "paid") return "paid";
+  if (normalized) return "unpaid";
+  return "";
+}
+
+function getPaymentTone(status) {
+  if (status === "paid") return "success";
+  if (status === "unpaid") return "warning";
+  return "neutral";
+}
+
+function formatPaymentFlow(value) {
+  if (value === "direct_to_client") return "Direct to client";
+  return "Through company";
+}
+
 function deriveNextAction(caseRow, lead, finance, documents = []) {
   if (!caseRow) return "Review case";
   if (caseRow.status === "documents_pending" || documents.some((item) => item.status === "missing" || item.status === "requested")) {
@@ -217,6 +269,24 @@ export default function AdminCases() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [activeDownloadId, setActiveDownloadId] = useState("");
+  const [selectedCaseFinanceState, setSelectedCaseFinanceState] = useState({
+    summaryRow: null,
+    clientPayment: null,
+    partnerPayment: null,
+  });
+  const [clientPaymentForm, setClientPaymentForm] = useState({
+    paymentReference: "",
+    paymentFlowType: "through_company",
+    internalNote: "",
+  });
+  const [partnerPaymentForm, setPartnerPaymentForm] = useState({
+    paymentReference: "",
+    internalNote: "",
+  });
+  const [financeError, setFinanceError] = useState("");
+  const [financeNotice, setFinanceNotice] = useState("");
+  const [isFinanceLoading, setIsFinanceLoading] = useState(false);
+  const [activeFinanceAction, setActiveFinanceAction] = useState("");
   const lastViewedCaseIdRef = useRef("");
 
   const loadCases = async () => {
@@ -395,6 +465,22 @@ export default function AdminCases() {
   );
 
   useEffect(() => {
+    if (!selectedCase?.id || !previewOpen) {
+      setSelectedCaseFinanceState({
+        summaryRow: null,
+        clientPayment: null,
+        partnerPayment: null,
+      });
+      setFinanceError("");
+      setFinanceNotice("");
+      setActiveFinanceAction("");
+      return;
+    }
+
+    void loadSelectedCaseFinance(selectedCase.id);
+  }, [previewOpen, selectedCase?.id]);
+
+  useEffect(() => {
     if (!selectedCase?.id || isLoading || lastViewedCaseIdRef.current === selectedCase.id) return;
     lastViewedCaseIdRef.current = selectedCase.id;
     void logAdminActivity("view_case", "case", selectedCase.id, {
@@ -416,6 +502,89 @@ export default function AdminCases() {
       setError(nextError.message || "Could not update case.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const loadSelectedCaseFinance = async (caseId, options = {}) => {
+    if (!caseId) {
+      setSelectedCaseFinanceState({
+        summaryRow: null,
+        clientPayment: null,
+        partnerPayment: null,
+      });
+      setClientPaymentForm({
+        paymentReference: "",
+        paymentFlowType: "through_company",
+        internalNote: "",
+      });
+      setPartnerPaymentForm({
+        paymentReference: "",
+        internalNote: "",
+      });
+      return;
+    }
+
+    if (options.resetMessages !== false) {
+      setFinanceError("");
+    }
+
+    if (options.showLoader !== false) {
+      setIsFinanceLoading(true);
+    }
+
+    try {
+      const [summaryRows, clientPayment, partnerPayments] = await Promise.all([
+        getFinanceRows({ caseId, limit: 20 }),
+        getClientPaymentByCaseId(caseId),
+        getPartnerPayments({ caseId, limit: 20 }),
+      ]);
+
+      const nextSummaryRow = summaryRows[0] || null;
+      const nextPartnerPayment = partnerPayments[0] || null;
+
+      setSelectedCaseFinanceState({
+        summaryRow: nextSummaryRow,
+        clientPayment: clientPayment || null,
+        partnerPayment: nextPartnerPayment,
+      });
+      setClientPaymentForm({
+        paymentReference: clientPayment?.paymentReference || "",
+        paymentFlowType: clientPayment?.paymentFlowType || "through_company",
+        internalNote: clientPayment?.internalNote || "",
+      });
+      setPartnerPaymentForm({
+        paymentReference: nextPartnerPayment?.paymentReference || "",
+        internalNote: nextPartnerPayment?.internalNote || "",
+      });
+    } catch (nextError) {
+      setFinanceError(nextError.message || "Could not load finance details.");
+    } finally {
+      if (options.showLoader !== false) {
+        setIsFinanceLoading(false);
+      }
+    }
+  };
+
+  const refreshSelectedCaseFinance = async (caseId, successMessage = "") => {
+    await loadCases();
+    await loadSelectedCaseFinance(caseId, { showLoader: false, resetMessages: false });
+    if (successMessage) {
+      setFinanceNotice(successMessage);
+    }
+  };
+
+  const runFinanceAction = async (actionKey, action, successMessage) => {
+    if (!selectedCase?.id) return;
+    setFinanceError("");
+    setFinanceNotice("");
+    setActiveFinanceAction(actionKey);
+    try {
+      await action();
+      await refreshSelectedCaseFinance(selectedCase.id, successMessage);
+    } catch (nextError) {
+      setFinanceError(nextError.message || "Could not update finance state.");
+    } finally {
+      setActiveFinanceAction("");
     }
   };
 
@@ -519,6 +688,41 @@ export default function AdminCases() {
   const listCountLabel = `${filteredCases.length} case${filteredCases.length === 1 ? "" : "s"}`;
   const selectedFinanceStatus = selectedCase?.finance?.payment_status || selectedCase?.payout_status || "not_started";
   const internalNotes = [selectedCase?.finance?.notes, selectedCase?.legal_basis].filter(Boolean);
+  const canManageCaseStatus = hasPermission("cases.update") || hasPermission("cases.edit");
+  const canManageFinance = hasPermission("finance.edit");
+  const caseCompensationAmount = normalizeMoneyAmount(
+    selectedCaseFinanceState.clientPayment?.compensationAmount
+    ?? selectedCase?.finance?.compensation_amount
+    ?? selectedCase?.estimated_compensation
+    ?? selectedCase?.lead?.estimated_compensation_eur,
+  );
+  const financeRevenueAmount = normalizeMoneyAmount(
+    selectedCaseFinanceState.clientPayment?.companyRevenueAmount
+    ?? selectedCase?.finance?.company_fee
+    ?? calculateCompanyRevenue(caseCompensationAmount),
+  );
+  const financeClientPayoutAmount = normalizeMoneyAmount(
+    selectedCaseFinanceState.clientPayment?.finalClientPayoutAmount
+    ?? selectedCase?.finance?.customer_payout
+    ?? calculateClientPayout(caseCompensationAmount),
+  );
+  const isReferralCase = Boolean(
+    selectedCaseFinanceState.summaryRow?.partnerName
+    || selectedCaseFinanceState.partnerPayment?.partnerId
+    || selectedCase?.referral_partner_label,
+  );
+  const partnerCommissionAmount = isReferralCase
+    ? normalizeMoneyAmount(
+      selectedCaseFinanceState.summaryRow?.partnerCommissionAmount
+      ?? selectedCase?.finance?.referral_commission,
+    )
+    : 0;
+  const partnerRate = selectedCaseFinanceState.summaryRow?.partnerRate ?? null;
+  const internalCompensationConfirmed = Boolean(selectedCaseFinanceState.summaryRow?.internalCompensationConfirmed);
+  const clientVisibleApproval = Boolean(selectedCaseFinanceState.summaryRow?.clientVisibleApproval);
+  const clientPaymentStatus = selectedCaseFinanceState.clientPayment?.status
+    || normalizeCompactPaymentStatus(selectedCase?.finance?.payment_status, selectedCase?.finance?.customer_paid_at);
+  const partnerPaymentStatus = normalizePartnerPaymentValue(selectedCaseFinanceState.partnerPayment?.status);
 
   return (
     <div className="admin-page admin-cases-page">
@@ -753,7 +957,7 @@ export default function AdminCases() {
                       <select
                         value={selectedCase.status || "draft"}
                         onChange={(event) => updateCase({ status: event.target.value })}
-                        disabled={!hasPermission("cases.update") || isSaving}
+                        disabled={!canManageCaseStatus || isSaving}
                       >
                         {caseStatuses.map((status) => <option key={status} value={status}>{normalizeLabel(status)}</option>)}
                       </select>
@@ -763,7 +967,7 @@ export default function AdminCases() {
                       <select
                         value={selectedCase.payout_status || "not_started"}
                         onChange={(event) => updateCase({ payout_status: event.target.value })}
-                        disabled={!hasPermission("cases.update") || isSaving}
+                        disabled={!canManageCaseStatus || isSaving}
                       >
                         {payoutStatuses.map((status) => <option key={status} value={status}>{normalizeLabel(status)}</option>)}
                       </select>
@@ -773,7 +977,7 @@ export default function AdminCases() {
                       <select
                         value={selectedCase.assigned_manager_id || ""}
                         onChange={(event) => updateCase({ assigned_manager_id: event.target.value || null })}
-                        disabled={!hasPermission("cases.update") || isSaving}
+                        disabled={!canManageCaseStatus || isSaving}
                       >
                         <option value="">Unassigned</option>
                         {(moduleData?.managers || []).map((manager) => (
@@ -786,20 +990,193 @@ export default function AdminCases() {
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Compensation / Finance</h4>
+                    <h4>Finance</h4>
+                  </div>
+                  {financeError ? <p className="admin-message is-error">{financeError}</p> : null}
+                  {financeNotice ? <p className="admin-message">{financeNotice}</p> : null}
+                  {isFinanceLoading ? <p className="admin-cases-page__empty-copy">Loading finance details...</p> : null}
+                  <div className="admin-cases-page__finance-flags">
+                    <AdminStatusBadge tone={getBooleanTone(internalCompensationConfirmed)}>Confirmed: {normalizeBooleanLabel(internalCompensationConfirmed)}</AdminStatusBadge>
+                    <AdminStatusBadge tone={getBooleanTone(clientVisibleApproval)}>Client visible: {normalizeBooleanLabel(clientVisibleApproval)}</AdminStatusBadge>
+                    <AdminStatusBadge tone={getPaymentTone(clientPaymentStatus)}>Client payment: {normalizeLabel(clientPaymentStatus)}</AdminStatusBadge>
+                    {isReferralCase ? (
+                      <AdminStatusBadge tone={getPaymentTone(partnerPaymentStatus || "unpaid")}>
+                        Partner payment: {partnerPaymentStatus ? normalizeLabel(partnerPaymentStatus) : "No payout yet"}
+                      </AdminStatusBadge>
+                    ) : null}
                   </div>
                   <div className="admin-cases-page__meta-grid">
-                    <article><strong>Estimated compensation</strong><span>{selectedCase.lead ? formatEstimateCurrency(selectedCase.lead.estimated_compensation_eur, selectedCase.lead.compensation_currency) : formatCurrency(selectedCase.estimated_compensation)}</span></article>
-                    <article><strong>Distance</strong><span>{selectedCase.lead?.distance_km ? `${Math.round(Number(selectedCase.lead.distance_km))} km` : "Pending review"}</span></article>
-                    <article><strong>Distance band</strong><span>{selectedCase.lead ? formatDistanceBand(selectedCase.lead.distance_band) : "Pending review"}</span></article>
-                    <article><strong>Estimate status</strong><span>{selectedCase.lead ? formatEstimateStatus(selectedCase.lead.estimate_status) : "Estimate pending review"}</span></article>
-                    <article><strong>Recovered amount</strong><span>{selectedCase.finance ? formatCurrency(selectedCase.finance.compensation_amount, selectedCase.finance.currency) : "Finance details not configured yet"}</span></article>
-                    <article><strong>Payout status</strong><span>{normalizeLabel(selectedFinanceStatus)}</span></article>
-                    <article><strong>Company fee / revenue</strong><span>{selectedCase.finance ? formatCurrency(selectedCase.finance.company_fee, selectedCase.finance.currency) : "Not configured"}</span></article>
-                    <article><strong>Customer payout</strong><span>{selectedCase.finance ? formatCurrency(selectedCase.finance.customer_payout, selectedCase.finance.currency) : "Not configured"}</span></article>
+                    <article><strong>Compensation</strong><span>{formatCurrency(caseCompensationAmount)}</span></article>
+                    <article><strong>Revenue</strong><span>{formatCurrency(financeRevenueAmount)}</span></article>
+                    <article><strong>Client payout</strong><span>{formatCurrency(financeClientPayoutAmount)}</span></article>
+                    <article><strong>Flow</strong><span>{formatPaymentFlow(selectedCaseFinanceState.clientPayment?.paymentFlowType || "through_company")}</span></article>
+                    <article><strong>Confirmed</strong><span>{normalizeBooleanLabel(internalCompensationConfirmed)}</span></article>
+                    <article><strong>Client visible</strong><span>{normalizeBooleanLabel(clientVisibleApproval)}</span></article>
+                    <article><strong>Client payment</strong><span>{normalizeLabel(clientPaymentStatus)}</span></article>
+                    <article><strong>Payment reference</strong><span>{selectedCaseFinanceState.clientPayment?.paymentReference || "—"}</span></article>
+                    {isReferralCase ? (
+                      <article><strong>Partner commission</strong><span>{partnerCommissionAmount ? `${formatCurrency(partnerCommissionAmount)}${partnerRate ? ` • ${(partnerRate * 100).toFixed(0)}%` : ""}` : "Pending confirmation"}</span></article>
+                    ) : null}
+                    {isReferralCase ? (
+                      <article><strong>Partner payment</strong><span>{selectedCaseFinanceState.partnerPayment?.id ? normalizeLabel(partnerPaymentStatus || "unpaid") : "No partner payout yet"}</span></article>
+                    ) : null}
                   </div>
-                  {!selectedCase.finance && !selectedCase.lead ? (
-                    <p className="admin-cases-page__empty-copy">Finance details not configured yet</p>
+                  <div className="admin-cases-page__finance-actions">
+                    <button
+                      type="button"
+                      className="admin-link-button"
+                      onClick={() => runFinanceAction(
+                        internalCompensationConfirmed ? "unconfirm-compensation" : "confirm-compensation",
+                        () => markInternalCompensationConfirmed(selectedCase.id, !internalCompensationConfirmed),
+                        internalCompensationConfirmed ? "Internal compensation removed." : "Compensation confirmed.",
+                      )}
+                      disabled={!canManageFinance || activeFinanceAction !== ""}
+                    >
+                      {activeFinanceAction === "confirm-compensation" || activeFinanceAction === "unconfirm-compensation"
+                        ? "Saving..."
+                        : internalCompensationConfirmed ? "Unconfirm" : "Confirm compensation"}
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-link-button"
+                      onClick={() => runFinanceAction(
+                        clientVisibleApproval ? "hide-client-approval" : "show-client-approval",
+                        () => setClientVisibleApproval(selectedCase.id, !clientVisibleApproval),
+                        clientVisibleApproval ? "Client approval hidden." : "Client approval enabled.",
+                      )}
+                      disabled={!canManageFinance || activeFinanceAction !== ""}
+                    >
+                      {activeFinanceAction === "show-client-approval" || activeFinanceAction === "hide-client-approval"
+                        ? "Saving..."
+                        : clientVisibleApproval ? "Hide from client" : "Show approval to client"}
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-link-button"
+                      onClick={() => runFinanceAction(
+                        clientPaymentStatus === "paid" ? "mark-client-unpaid" : "mark-client-paid",
+                        () => (clientPaymentStatus === "paid"
+                          ? markClientPaymentUnpaid(selectedCase.id)
+                          : markClientPaymentPaid(selectedCase.id)),
+                        clientPaymentStatus === "paid" ? "Client payment marked unpaid." : "Client payment marked paid.",
+                      )}
+                      disabled={!canManageFinance || activeFinanceAction !== "" || !internalCompensationConfirmed || !(selectedCase.finance || selectedCaseFinanceState.clientPayment)}
+                    >
+                      {activeFinanceAction === "mark-client-paid" || activeFinanceAction === "mark-client-unpaid"
+                        ? "Saving..."
+                        : clientPaymentStatus === "paid" ? "Mark unpaid" : "Mark client paid"}
+                    </button>
+                    {isReferralCase && selectedCaseFinanceState.partnerPayment?.id ? (
+                      <button
+                        type="button"
+                        className="admin-link-button"
+                        onClick={() => runFinanceAction(
+                          partnerPaymentStatus === "paid" ? "mark-partner-unpaid" : "mark-partner-paid",
+                          () => (partnerPaymentStatus === "paid"
+                            ? markPartnerPaymentUnpaid(selectedCaseFinanceState.partnerPayment.id)
+                            : markPartnerPaymentPaid(selectedCaseFinanceState.partnerPayment.id)),
+                          partnerPaymentStatus === "paid" ? "Partner payment marked unpaid." : "Partner payment marked paid.",
+                        )}
+                        disabled={!canManageFinance || activeFinanceAction !== ""}
+                      >
+                        {activeFinanceAction === "mark-partner-paid" || activeFinanceAction === "mark-partner-unpaid"
+                          ? "Saving..."
+                          : partnerPaymentStatus === "paid" ? "Mark unpaid" : "Mark partner paid"}
+                      </button>
+                    ) : null}
+                  </div>
+                  {isReferralCase && !selectedCaseFinanceState.partnerPayment?.id ? (
+                    <p className="admin-cases-page__empty-copy">No partner payout yet</p>
+                  ) : null}
+                  <div className="admin-cases-page__finance-edit-grid">
+                    <label>
+                      <span>Client reference</span>
+                      <input
+                        type="text"
+                        value={clientPaymentForm.paymentReference}
+                        onChange={(event) => setClientPaymentForm((current) => ({ ...current, paymentReference: event.target.value }))}
+                        disabled={!canManageFinance || activeFinanceAction !== ""}
+                        placeholder="Transaction or bank ref"
+                      />
+                    </label>
+                    <label>
+                      <span>Payment flow</span>
+                      <select
+                        value={clientPaymentForm.paymentFlowType}
+                        onChange={(event) => setClientPaymentForm((current) => ({ ...current, paymentFlowType: event.target.value }))}
+                        disabled={!canManageFinance || activeFinanceAction !== ""}
+                      >
+                        <option value="through_company">Through company</option>
+                        <option value="direct_to_client">Direct to client</option>
+                      </select>
+                    </label>
+                    <label className="admin-cases-page__finance-edit-grid--full">
+                      <span>Internal note</span>
+                      <textarea
+                        value={clientPaymentForm.internalNote}
+                        onChange={(event) => setClientPaymentForm((current) => ({ ...current, internalNote: event.target.value }))}
+                        disabled={!canManageFinance || activeFinanceAction !== ""}
+                        placeholder="Internal finance note"
+                      />
+                    </label>
+                    <div className="admin-cases-page__finance-edit-actions">
+                      <button
+                        type="button"
+                        className="btn btn--secondary"
+                        onClick={() => runFinanceAction(
+                          "save-client-payment-details",
+                          () => updateClientPayment(selectedCase.id, {
+                            client_payment_reference: clientPaymentForm.paymentReference,
+                            client_payment_flow_type: clientPaymentForm.paymentFlowType,
+                            internal_note: clientPaymentForm.internalNote,
+                          }),
+                          "Client payment details updated.",
+                        )}
+                        disabled={!canManageFinance || activeFinanceAction !== ""}
+                      >
+                        {activeFinanceAction === "save-client-payment-details" ? "Saving..." : "Save client payment"}
+                      </button>
+                    </div>
+                  </div>
+                  {selectedCaseFinanceState.partnerPayment?.id ? (
+                    <div className="admin-cases-page__finance-edit-grid">
+                      <label>
+                        <span>Partner reference</span>
+                        <input
+                          type="text"
+                          value={partnerPaymentForm.paymentReference}
+                          onChange={(event) => setPartnerPaymentForm((current) => ({ ...current, paymentReference: event.target.value }))}
+                          disabled={!canManageFinance || activeFinanceAction !== ""}
+                          placeholder="Partner payout ref"
+                        />
+                      </label>
+                      <label className="admin-cases-page__finance-edit-grid--full">
+                        <span>Partner note</span>
+                        <textarea
+                          value={partnerPaymentForm.internalNote}
+                          onChange={(event) => setPartnerPaymentForm((current) => ({ ...current, internalNote: event.target.value }))}
+                          disabled={!canManageFinance || activeFinanceAction !== ""}
+                          placeholder="Internal partner payout note"
+                        />
+                      </label>
+                      <div className="admin-cases-page__finance-edit-actions">
+                        <button
+                          type="button"
+                          className="btn btn--secondary"
+                          onClick={() => runFinanceAction(
+                            "save-partner-payment-details",
+                            () => updatePartnerPayment(selectedCaseFinanceState.partnerPayment.id, {
+                              payment_reference: partnerPaymentForm.paymentReference,
+                              note: partnerPaymentForm.internalNote,
+                            }),
+                            "Partner payment details updated.",
+                          )}
+                          disabled={!canManageFinance || activeFinanceAction !== ""}
+                        >
+                          {activeFinanceAction === "save-partner-payment-details" ? "Saving..." : "Save partner payment"}
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
                   {selectedCase.lead ? (
                     <div className="admin-cases-page__finance-tags">

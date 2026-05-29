@@ -78,6 +78,99 @@ function sortByNewest(items = []) {
   return [...items].sort((left, right) => toTimestamp(right.created_at || right.signed_at) - toTimestamp(left.created_at || left.signed_at));
 }
 
+const CLIENT_FINANCE_SELECT_VARIANTS = [
+  "id, case_id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at, client_visible_approval, client_payment_status, client_paid_at, created_at, updated_at",
+  "id, case_id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at, created_at, updated_at",
+];
+
+function normalizeMoneyAmount(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function hasExplicitClientVisibility(financeRow) {
+  return financeRow && Object.prototype.hasOwnProperty.call(financeRow, "client_visible_approval")
+    && financeRow.client_visible_approval !== null;
+}
+
+function normalizeClientFinanceVisibility(financeRow) {
+  return hasExplicitClientVisibility(financeRow)
+    ? financeRow.client_visible_approval === true
+    : null;
+}
+
+function buildClientVisiblePaymentStatus(financeRow) {
+  const visibleApproval = normalizeClientFinanceVisibility(financeRow);
+  if (visibleApproval === false) {
+    return null;
+  }
+
+  const explicitStatus = String(financeRow?.client_payment_status || "").trim().toLowerCase();
+  const paidAt = financeRow?.client_paid_at || financeRow?.customer_paid_at || null;
+
+  if (visibleApproval === true) {
+    if (paidAt || explicitStatus === "paid") {
+      return "paid";
+    }
+    return "unpaid";
+  }
+
+  return financeRow?.payment_status || null;
+}
+
+function sanitizeClientFinance(financeRow) {
+  if (!financeRow) {
+    return null;
+  }
+
+  const clientVisibleApproval = normalizeClientFinanceVisibility(financeRow);
+  const payoutVisible = clientVisibleApproval !== false;
+  const compensationAmount = normalizeMoneyAmount(financeRow.compensation_amount);
+  const payoutAmount = payoutVisible ? normalizeMoneyAmount(financeRow.customer_payout) : null;
+  const paymentStatus = buildClientVisiblePaymentStatus(financeRow);
+  const paidAt = payoutVisible
+    ? (financeRow.client_paid_at || financeRow.customer_paid_at || null)
+    : null;
+
+  return {
+    id: financeRow.id,
+    caseId: financeRow.case_id,
+    case_id: financeRow.case_id,
+    compensationAmount,
+    compensation_amount: compensationAmount,
+    payoutAmount,
+    customer_payout: payoutAmount,
+    paymentStatus,
+    payment_status: paymentStatus,
+    currency: financeRow.currency || "EUR",
+    clientVisibleApproval,
+    client_visible_approval: clientVisibleApproval,
+    customer_paid_at: paidAt,
+    client_paid_at: paidAt,
+    created_at: financeRow.created_at || null,
+    updated_at: financeRow.updated_at || null,
+  };
+}
+
+async function selectCaseFinanceWithFallback(buildQuery) {
+  let lastError = null;
+
+  for (const fields of CLIENT_FINANCE_SELECT_VARIANTS) {
+    const result = await buildQuery(fields);
+    if (!result.error) {
+      return result;
+    }
+
+    if (!isMissingColumnError(result.error)) {
+      return result;
+    }
+
+    lastError = result.error;
+  }
+
+  return { data: null, error: lastError };
+}
+
 async function withEstimateFallback(record) {
   if (!record) {
     return record;
@@ -174,6 +267,10 @@ export function getClientPaymentStatus(paymentStatus, paidAt = null) {
 
   if (paidAt || ["paid", "completed", "payout_completed", "customer_paid"].includes(value)) {
     return { key: "paid", label: t("clientPortal.payments.status.paid", "Paid"), tone: "success" };
+  }
+
+  if (["unpaid", "awaiting_payout"].includes(value)) {
+    return { key: "pending", label: t("clientPortal.payments.status.awaiting_payout", "Awaiting payout"), tone: "info" };
   }
 
   if (["approved", "ready", "ready_for_payout"].includes(value)) {
@@ -411,7 +508,7 @@ function buildDocumentsSummary(requiredDocuments = []) {
 }
 
 function createFinanceMap(financeRows = []) {
-  return new Map(financeRows.map((item) => [item.case_id, item]));
+  return new Map(financeRows.map((item) => [item.case_id || item.caseId, item]));
 }
 
 function buildClaimRowFromLead(lead, context) {
@@ -460,8 +557,8 @@ function buildClaimRowFromCase(caseRow, context) {
   const requiredDocuments = buildClientManagedRequiredDocuments(relatedDocuments);
   const documentsSummary = buildDocumentsSummary(requiredDocuments);
   const paymentStatus = getClientPaymentStatus(
-    finance?.payment_status || caseRow.payout_status || null,
-    finance?.customer_paid_at || caseRow.paid_at || null,
+    finance?.payment_status || null,
+    finance?.customer_paid_at || null,
   );
   const publicStatus = getClientClaimStatus(caseRow.status, relatedLead?.stage || "", requiredDocuments, paymentStatus.key);
 
@@ -628,11 +725,11 @@ async function fetchPortalBaseData() {
       .select("id, case_code, lead_id, status, payout_status, airline, route_from, route_to, issue_type, estimated_compensation, created_at, approved_at, paid_at")
       .order("created_at", { ascending: false })
       .limit(30),
-    client
+    selectCaseFinanceWithFallback((fields) => client
       .from("case_finance")
-      .select("id, case_id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at, created_at, updated_at")
+      .select(fields)
       .order("updated_at", { ascending: false })
-      .limit(30),
+      .limit(30)),
     client
       .from("lead_documents")
       .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
@@ -683,7 +780,7 @@ async function fetchPortalBaseData() {
     profile,
     leads: enrichedLeads,
     cases: cases.data || [],
-    finance: finance.error ? [] : (finance.data || []),
+    finance: finance.error ? [] : (finance.data || []).map(sanitizeClientFinance).filter(Boolean),
     leadDocuments: leadDocuments.data || [],
     caseDocuments: caseDocuments.data || [],
     leadSignatures: leadSignatures.error ? [] : (leadSignatures.data || []),
@@ -724,7 +821,7 @@ export async function fetchClientClaimDetails(claimId) {
   if (caseResponse.data) {
     const [caseDocuments, finance, relatedLead, leadDocuments, leadSignatures] = await Promise.all([
       client.from("case_documents").select("id, case_id, document_type, file_path, file_name, mime_type, file_size, status, created_at").eq("case_id", claimId).is("deleted_at", null).order("created_at", { ascending: false }),
-      client.from("case_finance").select("id, case_id, compensation_amount, customer_payout, payment_status, currency, customer_paid_at, created_at, updated_at").eq("case_id", claimId).maybeSingle(),
+      selectCaseFinanceWithFallback((fields) => client.from("case_finance").select(fields).eq("case_id", claimId).maybeSingle()),
       caseResponse.data.lead_id
         ? client
           .from("leads")
@@ -756,10 +853,11 @@ export async function fetchClientClaimDetails(claimId) {
     if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error) && !isMissingColumnError(leadSignatures.error)) throw leadSignatures.error;
 
     const lead = await withEstimateFallback(relatedLead.data || null);
+    const sanitizedFinance = finance.error ? null : sanitizeClientFinance(finance.data || null);
     const data = {
       leads: lead ? [lead] : [],
       cases: [caseResponse.data],
-      finance: finance.error ? [] : [finance.data].filter(Boolean),
+      finance: sanitizedFinance ? [sanitizedFinance] : [],
       leadDocuments: leadDocuments.data || [],
       caseDocuments: caseDocuments.data || [],
       leadSignatures: leadSignatures.error ? [] : (leadSignatures.data || []),
@@ -775,7 +873,7 @@ export async function fetchClientClaimDetails(claimId) {
       type: "case",
       claim,
       documents: attachDocumentManagement(visibleDocuments, claim ? [claim] : []),
-      finance: finance.error ? null : (finance.data || null),
+      finance: sanitizedFinance,
     };
   }
 

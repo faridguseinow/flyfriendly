@@ -19,13 +19,6 @@ import { useAuth } from "../../auth/AuthContext.jsx";
 import { languages } from "../../i18n/languages.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { contactEmail } from "../../constants/site.js";
-import { getPublicSiteUrl } from "../../lib/siteUrl.js";
-import {
-  PARTNER_GROWTH_RATE,
-  PARTNER_REVENUE_SHARE_RATE,
-  PARTNER_STARTER_RATE,
-  calculatePartnerCommission,
-} from "../../lib/partnerCommission.js";
 import { fetchPartnerPortalData, normalizePortalError, updateCurrentPartnerPublicProfile } from "../../services/partnerPortalService.js";
 import { updatePreferredLanguage } from "../../services/authService.js";
 import "../ClientPortal/style.scss";
@@ -56,6 +49,13 @@ function formatDate(value) {
 function formatDateTime(value) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
+}
+
+function formatCompactLabel(value) {
+  return String(value || "—")
+    .trim()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
 function normalizePortalStatus(value) {
@@ -124,6 +124,8 @@ function PartnerMetricCard({ label, value, hint }) {
 }
 
 function PartnerReferralCard({ item, t }) {
+  const commissionAmount = item.paidCommissionAmount || item.approvedCommissionAmount || item.estimatedCommissionAmount;
+
   return (
     <article className="partner-portal-record-card">
       <div className="partner-portal-record-card__head">
@@ -155,9 +157,8 @@ function PartnerReferralCard({ item, t }) {
           <PartnerStatusBadge value={item.commissionStatusKey} kind="commission" t={t} />
         </div>
         <div className="partner-portal-record-card__amounts">
-          <span>{t("partnerPortal.referrals.estimated", { defaultValue: "Estimated" })}: {formatCurrency(item.estimatedCommissionAmount, item.currency)}</span>
-          <span>{t("partnerPortal.referrals.approved", { defaultValue: "Approved" })}: {formatCurrency(item.approvedCommissionAmount, item.currency)}</span>
-          <span>{t("partnerPortal.referrals.paid", { defaultValue: "Paid" })}: {formatCurrency(item.paidCommissionAmount, item.currency)}</span>
+          <span>{formatCurrency(commissionAmount, item.currency)}</span>
+          <span>{t("partnerPortal.finance.payoutStatus", { defaultValue: "Payout status" })}: {formatCompactLabel(item.payoutStatus || "pending")}</span>
         </div>
       </div>
     </article>
@@ -165,6 +166,8 @@ function PartnerReferralCard({ item, t }) {
 }
 
 function PartnerFinanceBreakdownCard({ item, t }) {
+  const commissionAmount = item.paidCommissionAmount || item.approvedCommissionAmount || item.estimatedCommissionAmount;
+
   return (
     <article className="partner-portal-record-card partner-portal-record-card--finance">
       <div className="partner-portal-record-card__head">
@@ -181,30 +184,21 @@ function PartnerFinanceBreakdownCard({ item, t }) {
           <span>{formatCurrency(item.compensationAmount, item.currency)}</span>
         </div>
         <div>
-          <small>{t("partnerPortal.finance.revenue", { defaultValue: "Fly Friendly revenue" })}</small>
-          <span>{formatCurrency(item.companyRevenue, item.currency)}</span>
-        </div>
-        <div>
           <small>{t("partnerPortal.finance.rate", { defaultValue: "Rate" })}</small>
           <span>{item.commissionRate ? `${Number(item.commissionRate)}%` : "—"}</span>
         </div>
         <div>
-          <small>{t("partnerPortal.finance.estimated", { defaultValue: "Estimated" })}</small>
-          <span>{formatCurrency(item.estimatedCommissionAmount, item.currency)}</span>
+          <small>{t("partnerPortal.referrals.commission", { defaultValue: "Commission" })}</small>
+          <span>{formatCurrency(commissionAmount, item.currency)}</span>
         </div>
         <div>
-          <small>{t("partnerPortal.finance.approved", { defaultValue: "Approved" })}</small>
-          <span>{formatCurrency(item.approvedCommissionAmount, item.currency)}</span>
-        </div>
-        <div>
-          <small>{t("partnerPortal.finance.paid", { defaultValue: "Paid" })}</small>
-          <span>{formatCurrency(item.paidCommissionAmount, item.currency)}</span>
+          <small>{t("partnerPortal.finance.payoutStatus", { defaultValue: "Payout status" })}</small>
+          <span>{formatCompactLabel(item.payoutStatus || "pending")}</span>
         </div>
       </div>
 
       <div className="partner-portal-record-card__amounts">
-        <span>{t("partnerPortal.finance.createdAt", { defaultValue: "Created" })}: {formatDate(item.createdAt)}</span>
-        <span>{t("partnerPortal.finance.approvedAt", { defaultValue: "Approved" })}: {formatDate(item.approvedAt)}</span>
+        <span>{t("partnerPortal.finance.updatedAt", { defaultValue: "Updated" })}: {formatDate(item.updatedAt)}</span>
         <span>{t("partnerPortal.finance.paidAt", { defaultValue: "Paid" })}: {formatDate(item.paidAt)}</span>
       </div>
     </article>
@@ -462,8 +456,6 @@ export function PartnerFinancePage() {
   const tier = data.tier || {};
   const breakdown = data.financeRecords || [];
   const payouts = data.payoutRecords || [];
-  const starterExample = calculatePartnerCommission(600, PARTNER_STARTER_RATE);
-  const growthExample = calculatePartnerCommission(600, PARTNER_GROWTH_RATE);
 
   return (
     <div className="client-portal-page partner-portal-page">
@@ -492,27 +484,9 @@ export function PartnerFinancePage() {
           ) : (
             <>
               <p>{t("partnerPortal.finance.growthUnlocked", { defaultValue: "20% unlocked" })}</p>
-              <small>{t("partnerPortal.finance.growthUnlockedText", { defaultValue: "You now receive 20% of Fly Friendly revenue on new eligible claims." })}</small>
+              <small>{t("partnerPortal.finance.growthUnlockedText", { defaultValue: "New eligible claims now use the 20% rate." })}</small>
             </>
           )}
-        </article>
-
-        <article className="portal-card partner-portal-formula-card">
-          <div className="client-portal-card-heading">
-            <strong>{t("partnerPortal.finance.formulaTitle", { defaultValue: "Commission formula" })}</strong>
-          </div>
-          <p>{t("partnerPortal.finance.formulaText", { defaultValue: "Commission is calculated from Fly Friendly revenue. Fly Friendly revenue equals 30% of client compensation." })}</p>
-          <div className="partner-portal-formula-card__list">
-            <span>{t("partnerPortal.finance.formulaStarter", { defaultValue: "Starter: compensation × 30% × 15%" })}</span>
-            <span>{t("partnerPortal.finance.formulaGrowth", { defaultValue: "Growth: compensation × 30% × 20%" })}</span>
-          </div>
-          <div className="partner-portal-example-card">
-            <strong>{t("partnerPortal.finance.exampleTitle", { defaultValue: "Example" })}</strong>
-            <span>{t("partnerPortal.finance.exampleRevenue", { defaultValue: "600 EUR compensation → 180 EUR Fly Friendly revenue" })}</span>
-            <span>{t("partnerPortal.finance.exampleStarter", { defaultValue: "Starter 15% → 27 EUR commission" })}</span>
-            <span>{t("partnerPortal.finance.exampleGrowth", { defaultValue: "Growth 20% → 36 EUR commission" })}</span>
-            <small>{`${formatCurrency(starterExample.companyRevenue)} · ${formatCurrency(starterExample.partnerCommission)} · ${formatCurrency(growthExample.partnerCommission)}`}</small>
-          </div>
         </article>
       </section>
 

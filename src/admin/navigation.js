@@ -29,6 +29,7 @@ const adminNavigationSectionsConfig = [
     pages: [
       { key: "dashboard-main", label: "Main", path: "/admin", icon: LayoutDashboard, permission: "dashboard.view" },
       { key: "dashboard-marketing", label: "Marketing", path: "/admin/dashboard/marketing", icon: Megaphone, permission: "dashboard.view" },
+      { key: "dashboard-revenue", label: "Revenue", path: "/admin/dashboard/revenue", icon: BarChart3, anyPermissions: ["reports.view", "finance.view"] },
       { key: "dashboard-activity", label: "Activity Log", path: "/admin/dashboard/activity", icon: Activity, permission: "activity.view" },
     ],
   },
@@ -63,7 +64,8 @@ const adminNavigationSectionsConfig = [
     pages: [
       { key: "finance-main", label: "Finance", path: "/admin/finances/finance", icon: Wallet, permission: "finance.view" },
       { key: "finance-payments", label: "Payments", path: "/admin/finances/payments", icon: ReceiptText, permission: "finance.view" },
-      { key: "finance-revenue", label: "Revenue", path: "/admin/finances/revenue", icon: BarChart3, anyPermissions: ["reports.view", "finance.view"] },
+      { key: "finance-partner-payouts", label: "Partner payouts", path: "/admin/finances/partner-payouts", icon: ReceiptText, anyPermissions: ["finance.view", "partners.view"] },
+      { key: "finance-partner-commissions", label: "Partner commissions", path: "/admin/finances/partner-commissions", icon: Wallet, anyPermissions: ["finance.view", "partners.view"] },
     ],
   },
   {

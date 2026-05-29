@@ -22,6 +22,7 @@ import {
 } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { AdminKpiCard, AdminPageHeader, AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import { buildPublicReferralLink } from "../../lib/referralLink.js";
 import "./style.scss";
 
 const tabs = [
@@ -125,6 +126,10 @@ function buildPartnerLabel(partner) {
   return partner?.public_name || partner?.name || partner?.referral_code || "Referral user";
 }
 
+function getPartnerReferralUrl(partner) {
+  return buildPublicReferralLink(partner?.referral_link || partner?.referral_code || "");
+}
+
 function copyText(value) {
   if (!value || typeof navigator === "undefined" || !navigator.clipboard?.writeText) return false;
   navigator.clipboard.writeText(value).catch(() => null);
@@ -165,7 +170,6 @@ export default function AdminReferral() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [applicationReview, setApplicationReview] = useState({
     commission_rate: "",
-    referral_code: "",
     notes: "",
     rejection_reason: "",
   });
@@ -667,7 +671,6 @@ export default function AdminReferral() {
     if (selectedRecord?.type === "application" && selectedItem) {
       setApplicationReview({
         commission_rate: selectedItem.commission_rate || "",
-        referral_code: selectedItem.referral_code || "",
         notes: "",
         rejection_reason: selectedItem.rejection_reason || "",
       });
@@ -700,7 +703,6 @@ export default function AdminReferral() {
     try {
       await approvePartnerApplication(selectedItem.id, {
         commission_rate: applicationReview.commission_rate ? Number(applicationReview.commission_rate) : undefined,
-        referral_code: applicationReview.referral_code || undefined,
         notes: applicationReview.notes || undefined,
       });
       await loadData();
@@ -873,7 +875,7 @@ export default function AdminReferral() {
           </span>
           <span className="admin-referral-page__cell" data-label="Link">
             <strong>{item.referral_code || "—"}</strong>
-            <small className="admin-referral-page__truncate">{item.referral_link || "Referral link not configured"}</small>
+            <small className="admin-referral-page__truncate">{getPartnerReferralUrl(item) || "Referral link not configured"}</small>
           </span>
           <span className="admin-referral-page__cell" data-label="Performance">
             <strong>{item.referredCustomersCount} customers</strong>
@@ -1276,8 +1278,8 @@ export default function AdminReferral() {
                   <input className="admin-input" type="number" min="0" step="0.01" value={applicationReview.commission_rate} onChange={(event) => setApplicationReview((current) => ({ ...current, commission_rate: event.target.value }))} />
                 </label>
                 <label>
-                  <span>Referral code</span>
-                  <input className="admin-input" type="text" value={applicationReview.referral_code} onChange={(event) => setApplicationReview((current) => ({ ...current, referral_code: event.target.value }))} />
+                  <span>Referral link</span>
+                  <input className="admin-input" type="text" value="Generated automatically" readOnly disabled />
                 </label>
                 <label className="admin-referral-page__form-span">
                   <span>Approval notes</span>
@@ -1341,7 +1343,7 @@ export default function AdminReferral() {
               <h3>Referral link</h3>
               <div className="admin-referral-page__drawer-actions">
                 <button className="admin-btn admin-btn-secondary" type="button" onClick={() => {
-                  if (copyText(selectedItem.referral_link || selectedItem.referral_code)) {
+                  if (copyText(getPartnerReferralUrl(selectedItem))) {
                     setToast({ type: "success", message: "Referral link copied." });
                   }
                 }}>
@@ -1351,7 +1353,7 @@ export default function AdminReferral() {
               </div>
               <div className="admin-referral-page__meta-grid">
                 <article><strong>Referral code</strong><span>{selectedItem.referral_code || "—"}</span></article>
-                <article><strong>Full referral URL</strong><span>{selectedItem.referral_link || "Referral link not configured"}</span></article>
+                <article><strong>Full referral URL</strong><span>{getPartnerReferralUrl(selectedItem) || "Referral link not configured"}</span></article>
                 <article><strong>Portal status</strong><span>{normalizeLabel(selectedItem.portal_status || "approved")}</span></article>
                 <article><strong>Conversion rate</strong><span>{selectedItem.conversionRate}</span></article>
               </div>

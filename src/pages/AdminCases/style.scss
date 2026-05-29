@@ -544,6 +544,63 @@
   gap: 8px;
 }
 
+.admin-cases-page__finance-flags,
+.admin-cases-page__finance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-cases-page__finance-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  label {
+    display: grid;
+    gap: 6px;
+  }
+
+  span {
+    color: #617083;
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  select,
+  input,
+  textarea {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 12px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 10px;
+    background: #fff;
+    color: #17212d;
+    font: inherit;
+  }
+
+  textarea {
+    min-height: 96px;
+    padding: 12px;
+    resize: vertical;
+  }
+}
+
+.admin-cases-page__finance-edit-grid--full {
+  grid-column: 1 / -1;
+}
+
+.admin-cases-page__finance-edit-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-start;
+}
+
 .admin-cases-page__task-modal-layer {
   position: fixed;
   inset: 0;

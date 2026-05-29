@@ -40,6 +40,7 @@ import AdminCustomers from "../pages/AdminCustomers/index.jsx";
 import AdminActivity from "../pages/AdminActivity/index.jsx";
 import AdminCommunication from "../pages/AdminCommunication/index.jsx";
 import AdminFinance from "../pages/AdminFinance/index.jsx";
+import AdminPayments from "../pages/AdminPayments/index.jsx";
 import AdminReports from "../pages/AdminReports/index.jsx";
 import AdminCms from "../pages/AdminCms/index.jsx";
 import AdminSettings from "../pages/AdminSettings/index.jsx";
@@ -155,6 +156,10 @@ function AnimatedRoutes({ location }) {
           <Route index element={withAdminPermission(adminPlaceholder("Main"), "dashboard.view")} />
 
           <Route path="dashboard/marketing" element={withAdminPermission(adminPlaceholder("Marketing"), "dashboard.view")} />
+          <Route
+            path="dashboard/revenue"
+            element={<AdminRouteGuard anyPermissions={["reports.view", "finance.view"]}><AdminReports /></AdminRouteGuard>}
+          />
           <Route path="dashboard/activity" element={withAdminPermission(<AdminActivity />, "activity.view")} />
 
           <Route path="operations/leads" element={withAdminPermission(<AdminLeads />, "leads.view")} />
@@ -174,8 +179,10 @@ function AnimatedRoutes({ location }) {
 
           <Route path="finances" element={<Navigate to="/admin/finances/finance" replace />} />
           <Route path="finances/finance" element={withAdminPermission(<AdminFinance />, "finance.view")} />
-          <Route path="finances/payments" element={withAdminPermission(adminPlaceholder("Payments"), "finance.view")} />
-          <Route path="finances/revenue" element={withAdminPermission(<AdminReports />, "reports.view")} />
+          <Route path="finances/payments" element={withAdminPermission(<AdminPayments />, "finance.view")} />
+          <Route path="finances/partner-payouts" element={<AdminRouteGuard anyPermissions={["partners.view", "finance.view"]}><AdminPartnerPayouts /></AdminRouteGuard>} />
+          <Route path="finances/partner-commissions" element={<AdminRouteGuard anyPermissions={["partners.view", "finance.view"]}><AdminPartnerCommissions /></AdminRouteGuard>} />
+          <Route path="finances/revenue" element={<Navigate to="/admin/dashboard/revenue" replace />} />
 
           <Route
             path="content/pages"
@@ -198,10 +205,10 @@ function AnimatedRoutes({ location }) {
           <Route path="referral" element={<Navigate to="/admin/people/referral" replace />} />
           <Route path="finance" element={<Navigate to="/admin/finances/finance" replace />} />
           <Route path="finance/payments" element={<Navigate to="/admin/finances/payments" replace />} />
-          <Route path="finance/revenue" element={<Navigate to="/admin/finances/revenue" replace />} />
+          <Route path="finance/revenue" element={<Navigate to="/admin/dashboard/revenue" replace />} />
           <Route path="payments" element={<Navigate to="/admin/finances/payments" replace />} />
-          <Route path="revenue" element={<Navigate to="/admin/finances/revenue" replace />} />
-          <Route path="reports" element={<Navigate to="/admin/finances/revenue" replace />} />
+          <Route path="revenue" element={<Navigate to="/admin/dashboard/revenue" replace />} />
+          <Route path="reports" element={<Navigate to="/admin/dashboard/revenue" replace />} />
           <Route path="blog" element={<Navigate to="/admin/content/pages" replace />} />
           <Route path="faq" element={<Navigate to="/admin/content/pages" replace />} />
           <Route path="pages" element={<Navigate to="/admin/content/pages" replace />} />
@@ -216,8 +223,8 @@ function AnimatedRoutes({ location }) {
           />
           <Route path="referral-partners" element={withAdminPermission(<AdminReferralPartners />, "partners.view")} />
           <Route path="referrals" element={withAdminPermission(<AdminReferrals />, "partners.view")} />
-          <Route path="partner-commissions" element={withAdminPermission(<AdminPartnerCommissions />, "partners.view")} />
-          <Route path="partner-payouts" element={withAdminPermission(<AdminPartnerPayouts />, "partners.view")} />
+          <Route path="partner-commissions" element={<Navigate to="/admin/finances/partner-commissions" replace />} />
+          <Route path="partner-payouts" element={<Navigate to="/admin/finances/partner-payouts" replace />} />
           <Route path="case-finance" element={withAdminPermission(adminPlaceholder("Case Finance"), "finance.view")} />
           <Route
             path="team/:id/activity"

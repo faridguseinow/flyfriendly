@@ -1,4 +1,5 @@
 import { PARTNER_REVENUE_SHARE_RATE, calculatePartnerCommission, getPartnerCommissionTier } from "../lib/partnerCommission.js";
+import { buildPublicReferralLink } from "../lib/referralLink.js";
 import { getPublicSiteUrl } from "../lib/siteUrl.js";
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentPartnerProfile } from "./authService.js";
@@ -333,7 +334,10 @@ export async function fetchPartnerPortalData() {
     partnerName: partnerProfile.public_name || partnerProfile.name || "Partner",
     partnerStatusKey: normalizePortalStatus(partnerProfile.portal_status || partnerProfile.status),
     referralCode: partnerProfile.referral_code || "",
-    referralLink: partnerProfile.referral_link || (partnerProfile.referral_code ? `${getPublicSiteUrl()}/r/${partnerProfile.referral_code}` : ""),
+    referralLink: buildPublicReferralLink(
+      partnerProfile.referral_link || partnerProfile.referral_code || "",
+      getPublicSiteUrl(),
+    ),
     tier,
     summary: {
       referralCount: referralRecords.length,

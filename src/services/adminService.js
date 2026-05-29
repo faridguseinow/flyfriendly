@@ -3,6 +3,7 @@ import { getCurrentUser, resetPassword } from "./authService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
+import { buildReferralPath, generateRandomReferralCode } from "../../shared/referral-code.js";
 
 function isMissingOptionalTable(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -2747,14 +2748,31 @@ export async function updatePartnerPortalStatus(partnerId, portalStatus, notes) 
   return result;
 }
 
+async function generateUniqueReferralPartnerCode(client) {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const referralCode = generateRandomReferralCode();
+    const existing = await client
+      .from("referral_partners")
+      .select("id")
+      .eq("referral_code", referralCode)
+      .maybeSingle();
+
+    if (existing.error && existing.error.code !== "PGRST116") {
+      throw existing.error;
+    }
+
+    if (!existing.data?.id) {
+      return referralCode;
+    }
+  }
+
+  throw new Error("Could not generate a unique referral code.");
+}
+
 export async function createReferralPartner(input) {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
-  const referralCode = (input.referral_code || input.name || "PARTNER")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 24);
+  const referralCode = await generateUniqueReferralPartnerCode(client);
 
   const payload = {
     id: crypto.randomUUID(),
@@ -2763,8 +2781,8 @@ export async function createReferralPartner(input) {
     contact_name: input.contact_name || null,
     contact_email: input.contact_email || null,
     contact_phone: input.contact_phone || null,
-    referral_code: referralCode || `PARTNER-${Date.now().toString(36).toUpperCase()}`,
-    referral_link: input.referral_link || null,
+    referral_code: referralCode,
+    referral_link: buildReferralPath(referralCode),
     commission_type: input.commission_type || "percentage",
     commission_rate: Number(input.commission_rate || 0),
     status: input.status || "active",
@@ -5496,10 +5514,11 @@ function reviveAdminMenuPayload(payload) {
   const routeAliases = new Map([
     ["/admin/finance", "/admin/finances/finance"],
     ["/admin/finance/payments", "/admin/finances/payments"],
-    ["/admin/finance/revenue", "/admin/finances/revenue"],
+    ["/admin/finance/revenue", "/admin/dashboard/revenue"],
     ["/admin/payments", "/admin/finances/payments"],
-    ["/admin/revenue", "/admin/finances/revenue"],
-    ["/admin/reports", "/admin/finances/revenue"],
+    ["/admin/revenue", "/admin/dashboard/revenue"],
+    ["/admin/reports", "/admin/dashboard/revenue"],
+    ["/admin/finances/revenue", "/admin/dashboard/revenue"],
   ]);
 
   const reviveItem = (item) => {

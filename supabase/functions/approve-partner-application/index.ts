@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildPublicAuthUrl } from "../_shared/site-url.ts";
 import { sendPartnerApprovalEmail } from "../_shared/partner-program-email.ts";
+import { buildReferralPath, generateRandomReferralCode } from "../../../shared/referral-code.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,7 @@ const MANAGER_ROLE_CODES = new Set([
 ]);
 
 const REQUIRED_PERMISSION = "partner_applications.manage";
+const MAX_REFERRAL_CODE_ATTEMPTS = 10;
 
 type RequestBody = {
   application_id?: string;
@@ -455,17 +457,13 @@ async function upsertPartnerProfile(
 async function generateUniquePartnerIdentity(
   supabase: ReturnType<typeof createClient>,
   application: PartnerApplicationRow,
-  referralCodeOverride?: string | null,
 ) {
   const publicName = normalizeString(application.public_name) || normalizeString(application.full_name) || "partner";
   const slugSeed = slugify(publicName) || "partner";
-  const codeBase = normalizeString(referralCodeOverride)
-    || String(publicName).toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24)
-    || "PARTNER";
 
-  for (let index = 0; index < 50; index += 1) {
+  for (let index = 0; index < MAX_REFERRAL_CODE_ATTEMPTS; index += 1) {
     const slug = buildCandidate(slugSeed, index, 40);
-    const referralCode = buildCandidate(codeBase.toUpperCase(), index, 24).toUpperCase();
+    const referralCode = generateRandomReferralCode();
 
     const existing = await supabase
       .from("referral_partners")
@@ -482,7 +480,7 @@ async function generateUniquePartnerIdentity(
     }
   }
 
-  throw new Error("Could not generate a unique referral code.");
+  throw new Error("Unable to generate a unique referral code. Please try again.");
 }
 
 async function createOrLinkPartnerRecord(
@@ -563,7 +561,7 @@ async function createOrLinkPartnerRecord(
     } as PartnerRow;
   }
 
-  const identity = await generateUniquePartnerIdentity(supabase, application, input.referral_code || null);
+  const identity = await generateUniquePartnerIdentity(supabase, application);
   const partnerPayload = {
     id: crypto.randomUUID(),
     profile_id: profile.id,
@@ -575,7 +573,7 @@ async function createOrLinkPartnerRecord(
     contact_phone: normalizeString(application.phone),
     slug: identity.slug,
     referral_code: identity.referralCode,
-    referral_link: `/r/${identity.referralCode}`,
+    referral_link: buildReferralPath(identity.referralCode),
     commission_type: "percentage",
     commission_rate: commissionRate,
     status: "active",
