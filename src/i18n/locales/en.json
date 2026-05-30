@@ -1249,5 +1249,11 @@
       "paid": "Paid",
       "cancelled": "Cancelled"
     }
+  },
+  "profileAvatar": {
+    "label": "Profile photo",
+    "change": "Change photo",
+    "uploading": "Uploading...",
+    "validation": "Please upload JPG, PNG, or WEBP up to 5MB."
   }
 }

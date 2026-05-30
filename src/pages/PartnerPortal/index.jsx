@@ -14,11 +14,14 @@ import {
 } from "lucide-react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import ProfileAvatarUploader, { ProfileAvatar } from "../../components/profile/ProfileAvatarUploader.jsx";
 import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { languages } from "../../i18n/languages.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { contactEmail } from "../../constants/site.js";
+import { getProfileAvatarUrl, uploadProfileAvatar, validateAvatarFile } from "../../lib/profileAvatar.js";
+import { requireSupabase } from "../../lib/supabase.js";
 import { fetchPartnerPortalData, normalizePortalError, updateCurrentPartnerPublicProfile } from "../../services/partnerPortalService.js";
 import { updatePreferredLanguage } from "../../services/authService.js";
 import "../ClientPortal/style.scss";
@@ -247,6 +250,77 @@ function PartnerFinanceMobileCard({ item, t }) {
   );
 }
 
+function getDashboardActivityPriority(item) {
+  const hasCommission = Number(
+    item.paidCommissionAmount
+    || item.approvedCommissionAmount
+    || item.estimatedCommissionAmount
+    || 0,
+  ) > 0;
+  const isPaidOut = String(item.payoutStatus || "").trim().toLowerCase() === "paid";
+
+  if (hasCommission && !isPaidOut && item.commissionStatusKey !== "cancelled") {
+    return 0;
+  }
+
+  if (item.filterBucket === "approved") {
+    return 1;
+  }
+
+  if (item.filterBucket === "active") {
+    return 2;
+  }
+
+  return 3;
+}
+
+function selectDashboardActivity(records = []) {
+  return [...records]
+    .sort((left, right) => {
+      const priorityDelta = getDashboardActivityPriority(left) - getDashboardActivityPriority(right);
+      if (priorityDelta !== 0) {
+        return priorityDelta;
+      }
+
+      return new Date(right.updatedAt || right.createdAt || 0).getTime()
+        - new Date(left.updatedAt || left.createdAt || 0).getTime();
+    })
+    .slice(0, 5);
+}
+
+async function copyTextToClipboard(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return false;
+  }
+
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "absolute";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  let didCopy = false;
+  try {
+    didCopy = document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+
+  return didCopy;
+}
+
 function usePartnerPortalState() {
   const [state, setState] = useState({ isLoading: true, error: "", data: null });
 
@@ -277,10 +351,11 @@ function usePartnerPortalState() {
 export function PartnerPortalLayout() {
   const { t } = useTranslation();
   const location = useLocation();
-  const { partnerProfile, signOut } = useAuth();
+  const { partnerProfile, profile, user, signOut } = useAuth();
   const toLocalizedPath = useLocalizedPath();
   const partnerName = partnerProfile?.public_name || partnerProfile?.name || t("partnerPortal.profile.defaultName", { defaultValue: "Partner" });
   const statusKey = normalizePortalStatus(partnerProfile?.portal_status || partnerProfile?.status);
+  const avatarUrl = getProfileAvatarUrl({ partnerProfile, profile, user });
 
   const navItems = useMemo(() => ([
     { label: t("partnerPortal.nav.home", { defaultValue: "Home" }), path: toLocalizedPath("/partner/dashboard"), icon: House, end: true },
@@ -294,9 +369,16 @@ export function PartnerPortalLayout() {
       <div className="client-portal-layout partner-portal-layout">
         <aside className="client-portal-sidebar partner-portal-sidebar">
           <div className="partner-portal-sidebar-card">
-            <div className="partner-portal-sidebar-card__copy">
-              <strong>{partnerName}</strong>
-              {partnerProfile?.referral_code ? <span>{partnerProfile.referral_code}</span> : null}
+            <div className="partner-portal-sidebar-card__identity">
+              <ProfileAvatar
+                avatarUrl={avatarUrl}
+                fallbackName={partnerName}
+                size="md"
+                className="partner-portal-sidebar-card__avatar"
+              />
+              <div className="partner-portal-sidebar-card__copy">
+                <strong>{partnerName}</strong>
+              </div>
             </div>
             <PartnerStatusBadge value={statusKey} t={t} />
           </div>
@@ -343,8 +425,28 @@ export function PartnerPortalLayout() {
 
 export function PartnerDashboardPage() {
   const { t } = useTranslation();
+  const { profile, user } = useAuth();
   const state = usePartnerPortalState();
   const [copied, setCopied] = useState(false);
+  const data = state.data || {};
+  const summary = data.summary || {};
+  const avatarUrl = getProfileAvatarUrl({
+    avatarUrl: data.partnerProfile?.avatar_url || "",
+    partnerProfile: data.partnerProfile,
+    profile,
+    user,
+  });
+  const recentReferrals = useMemo(
+    () => selectDashboardActivity(data.referralRecords || []),
+    [data.referralRecords],
+  );
+
+  const copyReferralLink = async () => {
+    const didCopy = await copyTextToClipboard(data.referralLink);
+    if (!didCopy) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
+  };
 
   if (state.isLoading) {
     return <p className="portal-message">{t("partnerPortal.loading", { defaultValue: "Loading..." })}</p>;
@@ -354,21 +456,16 @@ export function PartnerDashboardPage() {
     return <PortalErrorState message={state.error} />;
   }
 
-  const data = state.data || {};
-  const summary = data.summary || {};
-  const recentReferrals = (data.referralRecords || []).slice(0, 5);
-
-  const copyReferralLink = async () => {
-    if (!data.referralLink) return;
-    await navigator.clipboard.writeText(data.referralLink);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1400);
-  };
-
   return (
     <div className="client-portal-page partner-portal-page">
-      <section className="portal-card partner-portal-hero-card partner-portal-hero-card--compact">
+      <section className="portal-card partner-portal-hero-card partner-portal-hero-card--compact partner-portal-banner">
         <div className="partner-portal-page-header">
+          <ProfileAvatar
+            avatarUrl={avatarUrl}
+            fallbackName={data.partnerName || t("partnerPortal.profile.defaultName", { defaultValue: "Partner" })}
+            size="xl"
+            className="partner-portal-page-header__avatar"
+          />
           <div className="partner-portal-page-header__copy">
             <strong>{data.partnerName || t("partnerPortal.profile.defaultName", { defaultValue: "Partner" })}</strong>
             <div className="partner-portal-hero-card__badges">
@@ -377,19 +474,18 @@ export function PartnerDashboardPage() {
             </div>
           </div>
         </div>
-      </section>
-
-      <section className="partner-referral-link-card portal-card">
-        <div className="partner-referral-link-card__copy">
-          <small>{t("partnerPortal.home.link", { defaultValue: "Referral link" })}</small>
-          <strong>{data.referralLink || t("partnerPortal.home.linkMissing", { defaultValue: "Link will appear after partner approval." })}</strong>
-        </div>
-        <div className="partner-referral-link-card__actions">
-          <button className="btn btn-primary" type="button" onClick={copyReferralLink} disabled={!data.referralLink}>
-            <Copy size={16} />
-            <span>{t("partnerPortal.home.copy", { defaultValue: "Copy link" })}</span>
-          </button>
-          {copied ? <span className="partner-portal-inline-message">{t("partnerPortal.home.copied", { defaultValue: "Link copied." })}</span> : null}
+        <div className="partner-referral-link-card partner-referral-link-card--embedded">
+          <div className="partner-referral-link-card__copy">
+            <small>{t("partnerPortal.home.link", { defaultValue: "Referral link" })}</small>
+            <strong>{data.referralLink || t("partnerPortal.home.linkMissing", { defaultValue: "Link will appear after partner approval." })}</strong>
+          </div>
+          <div className="partner-referral-link-card__actions">
+            <button className="btn btn-secondary" type="button" onClick={copyReferralLink} disabled={!data.referralLink}>
+              <Copy size={16} />
+              <span>{t("partnerPortal.home.copy", { defaultValue: "Copy link" })}</span>
+            </button>
+            {copied ? <span className="partner-portal-inline-message">{t("partnerPortal.home.copied", { defaultValue: "Copied" })}</span> : null}
+          </div>
         </div>
       </section>
 
@@ -404,7 +500,7 @@ export function PartnerDashboardPage() {
         ]}
       />
 
-      <section className="portal-card partner-data-card">
+      <section className="portal-card partner-data-card partner-table-card">
         <div className="client-portal-card-heading partner-portal-section-heading">
           <strong>{t("partnerPortal.activity.title", { defaultValue: "Latest activity" })}</strong>
         </div>
@@ -430,6 +526,28 @@ export function PartnerReferralsPage() {
   const { t } = useTranslation();
   const state = usePartnerPortalState();
   const [filter, setFilter] = useState("all");
+  const allRows = state.data?.referralRecords || [];
+  const filters = useMemo(() => ([
+    { key: "all", label: t("partnerPortal.filters.all", { defaultValue: "All" }) },
+    { key: "active", label: t("partnerPortal.filters.active", { defaultValue: "Active" }) },
+    { key: "approved", label: t("partnerPortal.filters.approved", { defaultValue: "Approved" }) },
+    { key: "paid", label: t("partnerPortal.filters.paid", { defaultValue: "Paid" }) },
+    { key: "cancelled", label: t("partnerPortal.filters.cancelled", { defaultValue: "Cancelled" }) },
+  ]), [t]);
+  const referrals = useMemo(() => allRows.filter((item) => {
+    if (filter === "active") return item.filterBucket === "active";
+    if (filter === "approved") return item.filterBucket === "approved";
+    if (filter === "paid") return item.filterBucket === "paid";
+    if (filter === "cancelled") return item.filterBucket === "cancelled";
+    return true;
+  }), [allRows, filter]);
+  const referralMetrics = useMemo(() => ({
+    total: allRows.length,
+    active: allRows.filter((item) => item.filterBucket === "active").length,
+    approved: allRows.filter((item) => item.filterBucket === "approved").length,
+    paid: allRows.filter((item) => item.filterBucket === "paid").length,
+    cancelled: allRows.filter((item) => item.filterBucket === "cancelled").length,
+  }), [allRows]);
 
   if (state.isLoading) {
     return <p className="portal-message">{t("partnerPortal.loadingReferrals", { defaultValue: "Loading..." })}</p>;
@@ -439,36 +557,9 @@ export function PartnerReferralsPage() {
     return <PortalErrorState message={state.error} />;
   }
 
-  const filters = [
-    { key: "all", label: t("partnerPortal.filters.all", { defaultValue: "All" }) },
-    { key: "active", label: t("partnerPortal.filters.active", { defaultValue: "Active" }) },
-    { key: "approved", label: t("partnerPortal.filters.approved", { defaultValue: "Approved" }) },
-    { key: "paid", label: t("partnerPortal.filters.paid", { defaultValue: "Paid" }) },
-    { key: "cancelled", label: t("partnerPortal.filters.cancelled", { defaultValue: "Cancelled" }) },
-  ];
-
-  const referrals = (state.data?.referralRecords || []).filter((item) => {
-    if (filter === "active") return item.filterBucket === "active";
-    if (filter === "approved") return item.filterBucket === "approved";
-    if (filter === "paid") return item.filterBucket === "paid";
-    if (filter === "cancelled") return item.filterBucket === "cancelled";
-    return true;
-  });
-
-  const referralMetrics = useMemo(() => {
-    const allRows = state.data?.referralRecords || [];
-    return {
-      total: allRows.length,
-      active: allRows.filter((item) => item.filterBucket === "active").length,
-      approved: allRows.filter((item) => item.filterBucket === "approved").length,
-      paid: allRows.filter((item) => item.filterBucket === "paid").length,
-      cancelled: allRows.filter((item) => item.filterBucket === "cancelled").length,
-    };
-  }, [state.data?.referralRecords]);
-
   return (
     <div className="client-portal-page partner-portal-page">
-      <section className="portal-card">
+      <section className="portal-card partner-table-card">
         <div className="partner-portal-filter-row" role="tablist" aria-label={t("partnerPortal.filters.label", { defaultValue: "Referral filters" })}>
           {filters.map((item) => (
             <button
@@ -563,7 +654,7 @@ export function PartnerFinancePage() {
         </article>
       </section>
 
-      <section className="portal-card partner-data-card">
+      <section className="portal-card partner-data-card partner-table-card">
         <div className="client-portal-card-heading partner-portal-section-heading">
           <strong>{t("partnerPortal.finance.breakdownTitle", { defaultValue: "Commission breakdown" })}</strong>
         </div>
@@ -582,7 +673,7 @@ export function PartnerFinancePage() {
         />
       </section>
 
-      <section className="portal-card">
+      <section className="portal-card partner-portal-payout-card">
         <div className="client-portal-card-heading partner-portal-section-heading">
           <strong>{t("partnerPortal.finance.payoutsTitle", { defaultValue: "Payout history" })}</strong>
         </div>
@@ -592,7 +683,7 @@ export function PartnerFinancePage() {
               <div key={item.id} className="partner-portal-payout-row">
                 <div>
                   <strong>{formatCurrency(item.amount, item.currency)}</strong>
-                  <span>{[item.payment_reference || item.payout_method, item.clientLabel].filter(Boolean).join(" · ") || "—"}</span>
+                  <span>{item.clientLabel || "—"}</span>
                 </div>
                 <div>
                   <PartnerStatusBadge value={item.status} kind="commission" t={t} />
@@ -611,7 +702,7 @@ export function PartnerFinancePage() {
 
 export function PartnerProfilePage() {
   const { t } = useTranslation();
-  const { partnerProfile, profile, refreshProfile } = useAuth();
+  const { partnerProfile, profile, user, refreshProfile } = useAuth();
   const [form, setForm] = useState({
     public_name: partnerProfile?.public_name || partnerProfile?.name || "",
     bio: partnerProfile?.bio || "",
@@ -624,7 +715,12 @@ export function PartnerProfilePage() {
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const avatarFallbackUrl = getProfileAvatarUrl({ partnerProfile, profile, user });
+  const avatarName = form.public_name || partnerProfile?.name || profile?.full_name || "Partner";
 
   useEffect(() => {
     setForm({
@@ -637,20 +733,71 @@ export function PartnerProfilePage() {
       youtube_url: partnerProfile?.youtube_url || "",
       preferred_language: profile?.preferred_language || document.documentElement.lang || "en",
     });
+    setAvatarFile(null);
+    setAvatarPreviewUrl("");
   }, [partnerProfile, profile]);
+
+  useEffect(() => () => {
+    if (avatarPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+    }
+  }, [avatarPreviewUrl]);
+
+  const handleAvatarSelected = async (file) => {
+    setAvatarError("");
+    setError("");
+    setMessage("");
+
+    try {
+      validateAvatarFile(file);
+      setAvatarFile(file);
+      setAvatarPreviewUrl((current) => {
+        if (current.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return URL.createObjectURL(file);
+      });
+    } catch (validationError) {
+      setAvatarError(validationError.message || t("profileAvatar.validation", { defaultValue: "Please upload JPG, PNG, or WEBP up to 5MB." }));
+    }
+  };
 
   const submit = async (event) => {
     event.preventDefault();
     setMessage("");
     setError("");
+    setAvatarError("");
     setIsSaving(true);
 
     try {
+      let nextAvatarUrl = form.avatar_url || "";
+
+      if (avatarFile) {
+        const uploaded = await uploadProfileAvatar({
+          supabase: requireSupabase(),
+          file: avatarFile,
+          ownerType: "partner",
+          ownerId: profile?.id || partnerProfile?.profile_id || user?.id,
+        });
+        nextAvatarUrl = uploaded.publicUrl;
+      }
+
       await Promise.all([
-        updateCurrentPartnerPublicProfile(form),
+        updateCurrentPartnerPublicProfile({
+          ...form,
+          avatar_url: nextAvatarUrl,
+        }),
         updatePreferredLanguage(form.preferred_language),
       ]);
       await refreshProfile();
+      setForm((current) => ({ ...current, avatar_url: nextAvatarUrl }));
+      setAvatarFile(null);
+      setAvatarPreviewUrl((current) => {
+        if (current.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return "";
+      });
       setMessage(t("partnerPortal.profile.saved", { defaultValue: "Profile updated." }));
     } catch (saveError) {
       setError(normalizePortalError(saveError) || t("partnerPortal.profile.error", { defaultValue: "Could not update the profile." }));
@@ -667,6 +814,21 @@ export function PartnerProfilePage() {
         </div>
 
         <form className="portal-form client-portal-account-form partner-profile-form" onSubmit={submit}>
+          <div className="partner-profile-avatar">
+            <ProfileAvatarUploader
+              avatarUrl={avatarPreviewUrl || form.avatar_url}
+              fallbackImageUrl={avatarFallbackUrl}
+              fallbackName={avatarName}
+              size="xl"
+              editable
+              uploading={isSaving}
+              onFileSelected={handleAvatarSelected}
+              error={avatarError}
+              label={t("profileAvatar.label", { defaultValue: "Profile photo" })}
+              actionLabel={t("profileAvatar.change", { defaultValue: "Change photo" })}
+              uploadingLabel={t("profileAvatar.uploading", { defaultValue: "Uploading..." })}
+            />
+          </div>
           <label>
             <span>{t("partnerPortal.profile.publicName", { defaultValue: "Public name" })}</span>
             <input value={form.public_name} onChange={(event) => setForm((current) => ({ ...current, public_name: event.target.value }))} />
@@ -696,10 +858,6 @@ export function PartnerProfilePage() {
                 </option>
               ))}
             </select>
-          </label>
-          <label>
-            <span>{t("partnerPortal.profile.avatar", { defaultValue: "Avatar URL" })}</span>
-            <input value={form.avatar_url} onChange={(event) => setForm((current) => ({ ...current, avatar_url: event.target.value }))} />
           </label>
           <label className="is-full">
             <span>{t("partnerPortal.profile.bio", { defaultValue: "Bio" })}</span>

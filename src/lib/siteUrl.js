@@ -1,5 +1,4 @@
 const DEFAULT_PUBLIC_SITE_URL = "https://fly-friendly.com";
-const DEFAULT_LOCAL_SITE_URL = "http://localhost:3000";
 
 function normalizeSiteUrl(value) {
   const url = String(value || "").trim();
@@ -50,7 +49,7 @@ export function getPublicSiteUrl() {
 
   if (envUrl) {
     if (isLocalUrl(envUrl)) {
-      return getBrowserLocalOrigin() || DEFAULT_LOCAL_SITE_URL;
+      return DEFAULT_PUBLIC_SITE_URL;
     }
 
     // Never expose preview/vercel origins in production auth or email links.
@@ -61,7 +60,7 @@ export function getPublicSiteUrl() {
     return envUrl;
   }
 
-  return getBrowserLocalOrigin() || DEFAULT_PUBLIC_SITE_URL;
+  return DEFAULT_PUBLIC_SITE_URL;
 }
 
 export function buildPublicAuthUrl(languageOrPath, maybePath) {

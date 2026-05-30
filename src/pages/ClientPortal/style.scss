@@ -374,6 +374,16 @@
   border-radius: inherit;
 }
 
+.client-portal-nav__avatar--fallback {
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
 .client-portal-nav__label {
   min-width: 0;
   font-size: 14px;
@@ -1795,6 +1805,10 @@
   gap: 10px;
 }
 
+.client-portal-account-avatar {
+  margin-bottom: 6px;
+}
+
 .client-portal-account-submit {
   width: 100%;
 }
@@ -2268,6 +2282,7 @@
     align-items: start;
   }
 
+  .client-portal-account-avatar,
   .client-portal-account-submit,
   .client-portal-account-form .portal-message {
     grid-column: 1 / -1;

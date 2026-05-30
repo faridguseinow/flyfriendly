@@ -1,6 +1,6 @@
 import { buildReferralPath } from "../../shared/referral-code.js";
 
-const DEFAULT_PUBLIC_REFERRAL_SITE_URL = "https://www.fly-friendly.com";
+const DEFAULT_PUBLIC_REFERRAL_SITE_URL = "https://fly-friendly.com";
 const LEGACY_REFERRAL_CODE_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 function normalizeBaseUrl(value) {
