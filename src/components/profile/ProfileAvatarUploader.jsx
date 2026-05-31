@@ -35,7 +35,6 @@ export default function ProfileAvatarUploader({
   error = "",
   label = "",
   actionLabel = "",
-  uploadingLabel = "",
 }) {
   const inputRef = useRef(null);
 
@@ -79,17 +78,6 @@ export default function ProfileAvatarUploader({
             </span>
           ) : null}
         </button>
-
-        {editable ? (
-          <button
-            type="button"
-            className="btn btn-secondary profile-avatar-uploader__button"
-            onClick={openPicker}
-            disabled={uploading}
-          >
-            {uploading ? (uploadingLabel || "Uploading...") : (actionLabel || "Change photo")}
-          </button>
-        ) : null}
       </div>
 
       {error ? <p className="profile-avatar-uploader__error">{error}</p> : null}

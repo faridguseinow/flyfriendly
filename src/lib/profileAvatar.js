@@ -106,6 +106,19 @@ export async function uploadProfileAvatar({
   });
 
   if (uploadError) {
+    const message = String(uploadError.message || "").toLowerCase();
+
+    if (
+      message.includes("bucket")
+      || message.includes("not found")
+      || message.includes("policy")
+      || message.includes("row-level security")
+      || message.includes("permission")
+      || message.includes("unauthorized")
+    ) {
+      throw new Error("Profile photo upload is not configured yet. Apply the latest avatar storage migration and policies.");
+    }
+
     throw new Error("Could not upload the profile photo. Please try again.");
   }
 

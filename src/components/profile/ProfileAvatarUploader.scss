@@ -60,10 +60,9 @@
 }
 
 .profile-avatar-uploader__body {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .profile-avatar-uploader__trigger {
@@ -94,24 +93,9 @@
   box-shadow: 0 8px 18px rgba(35, 66, 114, 0.12);
 }
 
-.profile-avatar-uploader__button {
-  min-width: 150px;
-}
-
 .profile-avatar-uploader__error {
   color: #b42318;
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;
-}
-
-@media (max-width: 779px) {
-  .profile-avatar-uploader__body {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .profile-avatar-uploader__button {
-    width: 100%;
-  }
 }
