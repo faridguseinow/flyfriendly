@@ -2579,9 +2579,22 @@ export async function fetchPartnerApplicationsModuleData() {
     reviewersById = new Map((reviewers.data || []).map((item) => [item.id, item]));
   }
 
+  const normalizePartnerApplicationStatus = (value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) return "pending";
+    if (["pending", "pending_review", "under_review", "submitted", "received"].includes(normalized)) {
+      return "pending";
+    }
+    if (["approved", "rejected", "cancelled"].includes(normalized)) {
+      return normalized;
+    }
+    return normalized;
+  };
+
   return {
     applications: (data || []).map((item) => ({
       ...item,
+      status: normalizePartnerApplicationStatus(item.status),
       reviewer: item.reviewed_by ? reviewersById.get(item.reviewed_by) || null : null,
     })),
   };
