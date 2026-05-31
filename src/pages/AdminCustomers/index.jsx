@@ -1,25 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, FilterX, Mail, Search, ShieldCheck } from "lucide-react";
+import { Download, FilterX, Mail, ShieldCheck } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { fetchCustomersModuleData } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
-import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import {
+  AdminColumnTable,
+  AdminFilterBar,
+  AdminMetricsStrip,
+  AdminPageHeader,
+  AdminSidePanel,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
+import {
+  formatFinanceCurrency,
+  formatFinanceDateParts,
+  formatFinanceDateTimeLabel,
+} from "../../lib/adminFinanceFormatters.js";
 import "./style.scss";
 
 function formatDateTime(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString();
+  return formatFinanceDateTimeLabel(value);
 }
 
 function formatDate(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString();
+  return formatFinanceDateParts(value).date;
 }
 
 function formatCurrency(value, currency = "EUR") {
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount <= 0) return "—";
-  return `${amount.toFixed(0)} ${currency}`;
+  return formatFinanceCurrency(value, currency, { emptyLabel: "—" });
 }
 
 function normalizeLabel(value) {
@@ -42,14 +50,6 @@ function deriveAccountStatus(profile) {
   if (profile?.last_login_at) return "active";
   if (profile?.id) return "registered";
   return "unknown";
-}
-
-function activateOnEnterOrSpace(handler) {
-  return (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    handler();
-  };
 }
 
 function getAccountTone(status) {
@@ -105,15 +105,6 @@ function exportCustomersCsv(rows) {
   URL.revokeObjectURL(url);
 }
 
-function SortButton({ label, active = false, direction = "asc", onClick }) {
-  return (
-    <button type="button" className={`admin-customers-page__sort${active ? " is-active" : ""}`} onClick={onClick}>
-      <span>{label}</span>
-      <small>{active ? (direction === "asc" ? "↑" : "↓") : "↕"}</small>
-    </button>
-  );
-}
-
 export default function AdminCustomers() {
   const { hasPermission } = useAdminAuth();
   const [searchParams] = useSearchParams();
@@ -124,8 +115,6 @@ export default function AdminCustomers() {
   const [accountFilter, setAccountFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
-  const [sortKey, setSortKey] = useState("created");
-  const [sortDirection, setSortDirection] = useState("desc");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -318,22 +307,152 @@ export default function AdminCustomers() {
       return matchesSearch && matchesAccount && matchesType && matchesFrom && matchesTo;
     });
 
-    const sorted = [...rows].sort((left, right) => {
-      if (sortKey === "name") {
-        return left.displayName.localeCompare(right.displayName);
-      }
-      if (sortKey === "claims") {
-        return Number(left.totalClaims || 0) - Number(right.totalClaims || 0);
-      }
-      if (sortKey === "compensation") {
-        return Number(left.estimatedCompensationTotal || left.pendingPayoutTotal || left.paidAmountTotal || 0)
-          - Number(right.estimatedCompensationTotal || right.pendingPayoutTotal || right.paidAmountTotal || 0);
-      }
-      return new Date(left.createdSortDate || 0).getTime() - new Date(right.createdSortDate || 0).getTime();
-    });
+    return [...rows].sort((left, right) => new Date(right.createdSortDate || 0).getTime() - new Date(left.createdSortDate || 0).getTime());
+  }, [accountFilter, customerRows, dateRange.from, dateRange.to, search, typeFilter]);
 
-    return sortDirection === "asc" ? sorted : sorted.reverse();
-  }, [accountFilter, customerRows, dateRange.from, dateRange.to, search, sortDirection, sortKey, typeFilter]);
+  const metrics = useMemo(() => {
+    const total = filteredCustomers.length;
+    const registered = filteredCustomers.filter((item) => item.portalAccess).length;
+    const referred = filteredCustomers.filter((item) => item.referralInfo).length;
+    const activeCases = filteredCustomers.reduce((sum, item) => sum + Number(item.activeCasesCount || 0), 0);
+    const pending = filteredCustomers.reduce((sum, item) => sum + Number(item.pendingPayoutTotal || 0), 0);
+    const paid = filteredCustomers.reduce((sum, item) => sum + Number(item.paidAmountTotal || 0), 0);
+
+    return [
+      { label: "Total", value: total },
+      { label: "Registered", value: registered },
+      { label: "Referred", value: referred },
+      { label: "Active cases", value: activeCases },
+      { label: "Pending", value: formatCurrency(pending) },
+      { label: "Paid", value: formatCurrency(paid) },
+    ];
+  }, [filteredCustomers]);
+
+  const customerColumns = useMemo(() => ([
+    {
+      key: "customer",
+      label: "Customer",
+      width: 220,
+      minWidth: 160,
+      maxWidth: 360,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (customer) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={customer.displayName}>{customer.displayName}</strong>
+          <span className="admin-crm-table__cell-sub">{customer.country || (customer.referralInfo ? `Referral · ${customer.referralLabel}` : "Country not set")}</span>
+        </div>
+      ),
+      getCellTitle: (customer) => customer.displayName,
+    },
+    {
+      key: "contact",
+      label: "Contact",
+      width: 220,
+      minWidth: 160,
+      maxWidth: 360,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (customer) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={customer.email || "—"}>{customer.email || "—"}</strong>
+          <span className="admin-crm-table__cell-sub" title={customer.phone || "—"}>{customer.phone || "—"}</span>
+        </div>
+      ),
+      getCellTitle: (customer) => `${customer.email || "—"}${customer.phone ? ` · ${customer.phone}` : ""}`,
+    },
+    {
+      key: "account",
+      label: "Account",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 240,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (customer) => (
+        <div className="admin-customers-page__account-cell">
+          <AdminStatusBadge tone={getAccountTone(customer.accountStatus)}>{normalizeLabel(customer.accountStatus)}</AdminStatusBadge>
+          <span className="admin-crm-table__cell-sub">{customer.portalAccess ? "Portal linked" : "No portal access"}</span>
+        </div>
+      ),
+    },
+    {
+      key: "claims",
+      label: "Claims",
+      width: 130,
+      minWidth: 100,
+      maxWidth: 200,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (customer) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main">{customer.totalClaims}</strong>
+          <span className="admin-crm-table__cell-sub">{customer.activeCasesCount} active cases</span>
+        </div>
+      ),
+    },
+    {
+      key: "compensation",
+      label: "Compensation",
+      width: 170,
+      minWidth: 130,
+      maxWidth: 260,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (customer) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main">{formatCurrency(customer.estimatedCompensationTotal, customer.currency)}</strong>
+          <span className="admin-crm-table__cell-sub">Pending {formatCurrency(customer.pendingPayoutTotal, customer.currency)}</span>
+        </div>
+      ),
+      getCellTitle: (customer) => `Estimated ${formatCurrency(customer.estimatedCompensationTotal, customer.currency)} · Pending ${formatCurrency(customer.pendingPayoutTotal, customer.currency)} · Paid ${formatCurrency(customer.paidAmountTotal, customer.currency)}`,
+    },
+    {
+      key: "created",
+      label: "Created",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 180,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (customer) => {
+        const created = formatFinanceDateParts(customer.createdSortDate);
+        return (
+          <div className="admin-crm-page__date">
+            <strong className="admin-crm-table__cell-main">{created.date}</strong>
+            {created.time ? <span className="admin-crm-table__cell-sub">{created.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (customer) => formatDateTime(customer.createdSortDate),
+    },
+    {
+      key: "lastActivity",
+      label: "Last activity",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (customer) => {
+        const last = formatFinanceDateParts(customer.lastActivityAt);
+        return (
+          <div className="admin-crm-page__date">
+            <strong className="admin-crm-table__cell-main">{last.date}</strong>
+            {last.time ? <span className="admin-crm-table__cell-sub">{last.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (customer) => formatDateTime(customer.lastActivityAt),
+    },
+  ]), []);
 
   const selectedCustomer = useMemo(
     () => filteredCustomers.find((item) => item.id === selectedCustomerId)
@@ -356,17 +475,6 @@ export default function AdminCustomers() {
     setAccountFilter("all");
     setTypeFilter("all");
     setDateRange({ from: "", to: "" });
-    setSortKey("created");
-    setSortDirection("desc");
-  };
-
-  const toggleSort = (key) => {
-    if (sortKey === key) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(key);
-    setSortDirection(key === "name" ? "asc" : "desc");
   };
 
   const activityItems = useMemo(() => {
@@ -398,7 +506,7 @@ export default function AdminCustomers() {
   }, [selectedCustomer]);
 
   return (
-    <div className="admin-page admin-customers-page">
+    <div className="admin-page admin-customers-page admin-crm-page">
       {error ? <p className="admin-message is-error">{error}</p> : null}
       {moduleData && !moduleData.supportsCustomersModuleV1 ? (
         <p className="admin-message">
@@ -407,145 +515,64 @@ export default function AdminCustomers() {
         </p>
       ) : null}
 
-      <section className="admin-customers-page__header admin-card admin-card-compact">
-        <div>
-          <span className="admin-customers-page__eyebrow">CRM</span>
-          <h2>Customers</h2>
-          <p>People who submitted claims or created client accounts.</p>
-        </div>
-        <div className="admin-customers-page__header-actions">
-          <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => exportCustomersCsv(filteredCustomers)} disabled={!filteredCustomers.length}>
-            <Download size={14} />
-            <span>Export CSV</span>
+      <AdminPageHeader
+        title="Customers"
+        secondaryActions={[
+          {
+            label: "Export CSV",
+            icon: Download,
+            onClick: () => exportCustomersCsv(filteredCustomers),
+            disabled: !filteredCustomers.length,
+          },
+        ]}
+      />
+
+      <section className="admin-crm-page__workspace">
+        <AdminMetricsStrip items={metrics} />
+
+        <AdminFilterBar
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search name, email, phone"
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        >
+          <select className="admin-filter-control admin-select" value={accountFilter} onChange={(event) => setAccountFilter(event.target.value)}>
+            <option value="all">All account statuses</option>
+            <option value="registered">Registered</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+            <option value="unknown">Unknown</option>
+          </select>
+
+          <select className="admin-filter-control admin-select" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+            <option value="all">All customer types</option>
+            <option value="claim_submitted">Claim submitted</option>
+            <option value="registered_account">Registered account</option>
+            <option value="has_active_case">Has active case</option>
+            <option value="paid_customer">Paid customer</option>
+          </select>
+
+          <button className="admin-btn admin-btn-secondary admin-crm-page__clear" type="button" onClick={clearFilters}>
+            <FilterX size={15} />
+            <span>Clear filters</span>
           </button>
-        </div>
-      </section>
+        </AdminFilterBar>
 
-      <section className="admin-customers-page__toolbar admin-card admin-card-compact">
-        <label className="admin-customers-page__search">
-          <Search size={16} />
-          <input
-            className="admin-input"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            type="search"
-            placeholder="Search name, email, phone"
-          />
-        </label>
-
-        <select className="admin-select admin-filter-control" value={accountFilter} onChange={(event) => setAccountFilter(event.target.value)}>
-          <option value="all">All account statuses</option>
-          <option value="registered">Registered</option>
-          <option value="active">Active</option>
-          <option value="blocked">Blocked</option>
-          <option value="unknown">Unknown</option>
-        </select>
-
-        <select className="admin-select admin-filter-control" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-          <option value="all">All customer types</option>
-          <option value="claim_submitted">Claim submitted</option>
-          <option value="registered_account">Registered account</option>
-          <option value="has_active_case">Has active case</option>
-          <option value="paid_customer">Paid customer</option>
-        </select>
-
-        <label className="admin-customers-page__date-field">
-          <span>From</span>
-          <input className="admin-input" type="date" value={dateRange.from} onChange={(event) => setDateRange((current) => ({ ...current, from: event.target.value }))} />
-        </label>
-
-        <label className="admin-customers-page__date-field">
-          <span>To</span>
-          <input className="admin-input" type="date" value={dateRange.to} onChange={(event) => setDateRange((current) => ({ ...current, to: event.target.value }))} />
-        </label>
-
-        <button className="admin-btn admin-btn-ghost admin-btn-sm" type="button" onClick={clearFilters}>
-          <FilterX size={15} />
-          <span>Clear</span>
-        </button>
-      </section>
-
-      <section className="admin-customers-page__table-card admin-card">
-        <header className="admin-customers-page__table-head">
-          <div>
-            <span className="admin-customers-page__eyebrow">Customer registry</span>
-            <h3>{filteredCustomers.length} customers</h3>
-          </div>
-        </header>
-
-        {isLoading ? (
-          <div className="admin-customers-page__state">Loading customers...</div>
-        ) : !filteredCustomers.length ? (
-          <div className="admin-customers-page__state">{search || accountFilter !== "all" || typeFilter !== "all" ? "No customers match these filters" : "No customers found"}</div>
-        ) : (
-          <div className="admin-customers-page__table-wrap admin-table">
-            <div className="admin-customers-page__table-head-row">
-              <span><SortButton label="Customer" active={sortKey === "name"} direction={sortDirection} onClick={() => toggleSort("name")} /></span>
-              <span>Contact</span>
-              <span>Account</span>
-              <span><SortButton label="Claims" active={sortKey === "claims"} direction={sortDirection} onClick={() => toggleSort("claims")} /></span>
-              <span><SortButton label="Compensation" active={sortKey === "compensation"} direction={sortDirection} onClick={() => toggleSort("compensation")} /></span>
-              <span><SortButton label="Created" active={sortKey === "created"} direction={sortDirection} onClick={() => toggleSort("created")} /></span>
-              <span>Last activity</span>
-              <span>Actions</span>
-            </div>
-
-            {filteredCustomers.map((customer) => (
-              <div
-                key={customer.id}
-                role="button"
-                tabIndex={0}
-                className={`admin-customers-page__row admin-list-row${selectedCustomer?.id === customer.id && drawerOpen ? " is-active" : ""}`}
-                onClick={() => openCustomer(customer.id)}
-                onKeyDown={activateOnEnterOrSpace(() => openCustomer(customer.id))}
-              >
-                <span className="admin-customers-page__person" data-label="Customer">
-                  <span className="admin-customers-page__avatar">{customer.initials}</span>
-                  <span className="admin-customers-page__person-copy">
-                    <strong>{customer.displayName}</strong>
-                    <small>{customer.country || "Country not set"}</small>
-                    {customer.referralInfo ? (
-                      <span className="admin-customers-page__referral-chip">
-                        <AdminStatusBadge tone="info">Referred</AdminStatusBadge>
-                        <small>{customer.referralLabel}</small>
-                      </span>
-                    ) : null}
-                  </span>
-                </span>
-
-                <span className="admin-customers-page__contact" data-label="Contact">
-                  <strong>{customer.email || "—"}</strong>
-                  <small>{customer.phone || "—"}</small>
-                </span>
-
-                <span className="admin-customers-page__account" data-label="Account">
-                  <AdminStatusBadge tone={getAccountTone(customer.accountStatus)}>{normalizeLabel(customer.accountStatus)}</AdminStatusBadge>
-                  <small>{customer.portalAccess ? "Portal linked" : "No portal access"}</small>
-                </span>
-
-                <span className="admin-customers-page__claims" data-label="Claims">
-                  <strong>{customer.totalClaims}</strong>
-                  <small>{customer.activeCasesCount} active cases</small>
-                </span>
-
-                <span className="admin-customers-page__compensation" data-label="Compensation">
-                  <strong>{formatCurrency(customer.estimatedCompensationTotal, customer.currency)}</strong>
-                  <small>Pending {formatCurrency(customer.pendingPayoutTotal, customer.currency)}</small>
-                  <small>Paid {formatCurrency(customer.paidAmountTotal, customer.currency)}</small>
-                </span>
-
-                <span data-label="Created">{formatDate(customer.createdSortDate)}</span>
-                <span data-label="Last activity">{formatDateTime(customer.lastActivityAt)}</span>
-
-                <span className="admin-customers-page__row-actions" data-label="Actions" onClick={(event) => event.stopPropagation()}>
-                  <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={() => openCustomer(customer.id)}>
-                    View
-                  </button>
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <AdminColumnTable
+          storageKey="ff-admin-table-layout-customers"
+          title="Customers"
+          countLabel={`${filteredCustomers.length} customer${filteredCustomers.length === 1 ? "" : "s"}`}
+          columns={customerColumns}
+          rows={filteredCustomers}
+          loading={isLoading}
+          error={error}
+          emptyTitle={search || accountFilter !== "all" || typeFilter !== "all" ? "No customers match these filters" : "No customers found"}
+          emptyDetail="Adjust filters or wait for new claims and registrations."
+          selectedRowId={drawerOpen ? selectedCustomer?.id || "" : ""}
+          getRowKey={(customer) => customer.id}
+          onRowClick={(customer) => openCustomer(customer.id)}
+        />
       </section>
 
       {selectedCustomer ? (

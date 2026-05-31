@@ -88,9 +88,10 @@ async function sendResendEmail({
   text: string;
 }) {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  const mailFrom = Deno.env.get("MAIL_FROM");
+  const mailFrom = Deno.env.get("MAIL_FROM") || "Fly Friendly <info@fly-friendly.com>";
+  const replyTo = Deno.env.get("MAIL_REPLY_TO") || "info@fly-friendly.com";
 
-  if (!resendApiKey || !mailFrom) {
+  if (!resendApiKey) {
     console.warn("partner-program-email skipped_missing_env", {
       hasResendKey: Boolean(resendApiKey),
       hasMailFrom: Boolean(mailFrom),
@@ -109,7 +110,7 @@ async function sendResendEmail({
     body: JSON.stringify(cleanObject({
       from: mailFrom,
       to: [to],
-      reply_to: Deno.env.get("MAIL_REPLY_TO") || undefined,
+      reply_to: replyTo,
       subject,
       html,
       text,

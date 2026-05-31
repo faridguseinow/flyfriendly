@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FilterX, Plus, Search, X } from "lucide-react";
+import { Download, FilterX, Plus, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   createTask,
@@ -26,8 +26,21 @@ import {
   calculateCompanyRevenue,
   normalizeMoneyAmount,
 } from "../../lib/financeCalculations.js";
+import {
+  formatFinanceCurrency,
+  formatFinanceDateParts,
+  formatFinanceDateTimeLabel,
+  formatFinanceRoute,
+} from "../../lib/adminFinanceFormatters.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
-import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import {
+  AdminColumnTable,
+  AdminFilterBar,
+  AdminMetricsStrip,
+  AdminPageHeader,
+  AdminSidePanel,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
 
 const caseStatuses = [
@@ -57,13 +70,11 @@ const payoutStatuses = [
 const taskPriorities = ["low", "medium", "high", "urgent"];
 
 function formatDateTime(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString();
+  return formatFinanceDateTimeLabel(value);
 }
 
 function formatDate(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString();
+  return formatFinanceDateParts(value).date;
 }
 
 function formatCaseReference(caseRow) {
@@ -73,8 +84,7 @@ function formatCaseReference(caseRow) {
 }
 
 function formatCurrency(value, currency = "EUR") {
-  if (value === null || value === undefined || value === "") return "Pending review";
-  return `€${Number(value || 0).toFixed(0)}${currency && currency !== "EUR" ? ` ${currency}` : ""}`;
+  return formatFinanceCurrency(value, currency, { emptyLabel: "Pending review" });
 }
 
 function formatEstimateCurrency(value, currency = "EUR") {
@@ -107,7 +117,8 @@ function getStatusTone(status) {
     return "success";
   }
   if (["rejected"].includes(normalized)) return "danger";
-  if (["documents_pending", "awaiting_response", "awaiting_payment", "submitted_to_airline", "escalated", "ready_to_submit"].includes(normalized)) {
+  if (["submitted_to_airline", "airline_replied"].includes(normalized)) return "info";
+  if (["documents_pending", "awaiting_response", "awaiting_payment", "escalated", "ready_to_submit"].includes(normalized)) {
     return "warning";
   }
   return "neutral";
@@ -194,7 +205,7 @@ function deriveNextAction(caseRow, lead, finance, documents = []) {
 }
 
 function formatRouteLabel(caseRow) {
-  return `${caseRow?.route_from || "—"} → ${caseRow?.route_to || "—"}`;
+  return formatFinanceRoute(`${caseRow?.route_from || "—"} → ${caseRow?.route_to || "—"}`);
 }
 
 function getSortTimestamp(caseRow) {
@@ -429,6 +440,164 @@ export default function AdminCases() {
       return matchesSearch && matchesStatus && matchesOwner && matchesAirline && matchesFinance && matchesDateFrom && matchesDateTo;
     }).sort((left, right) => right.sortTimestamp - left.sortTimestamp);
   }, [airlineFilter, casesWithMeta, dateRange.from, dateRange.to, financeFilter, ownerFilter, search, statusFilter]);
+
+  const metrics = useMemo(() => {
+    const total = filteredCases.length;
+    const active = filteredCases.filter((item) => !["paid", "closed", "rejected"].includes(String(item.status || "").toLowerCase())).length;
+    const documentsPending = filteredCases.filter((item) => item.status === "documents_pending").length;
+    const readyToSubmit = filteredCases.filter((item) => item.status === "ready_to_submit").length;
+    const approved = filteredCases.filter((item) => item.status === "approved").length;
+    const paid = filteredCases.filter((item) => item.status === "paid").length;
+
+    return [
+      { label: "Total", value: total },
+      { label: "Active", value: active },
+      { label: "Documents pending", value: documentsPending },
+      { label: "Ready to submit", value: readyToSubmit },
+      { label: "Approved", value: approved },
+      { label: "Paid", value: paid },
+    ];
+  }, [filteredCases]);
+
+  const caseColumns = useMemo(() => ([
+    {
+      key: "case",
+      label: "Case",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 240,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (item) => (
+        <div className="admin-crm-page__primary" title={item.reference}>
+          <strong className="admin-crm-page__code admin-crm-table__cell-main">{item.reference}</strong>
+          <span className="admin-crm-table__cell-sub">{item.nextAction}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.reference,
+    },
+    {
+      key: "customer",
+      label: "Customer",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (item) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={item.customerName}>{item.customerName}</strong>
+          <span className="admin-crm-table__cell-sub" title={item.customerEmail}>{item.customerEmail}</span>
+        </div>
+      ),
+      getCellTitle: (item) => `${item.customerName}${item.customerEmail ? ` · ${item.customerEmail}` : ""}`,
+    },
+    {
+      key: "route",
+      label: "Route",
+      width: 260,
+      minWidth: 180,
+      maxWidth: 480,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (item) => (
+        <div className="admin-crm-page__route">
+          <strong className="admin-crm-table__cell-main" title={item.routeLabel}>{item.routeLabel}</strong>
+          <span className="admin-crm-table__cell-sub">{item.lead?.disruption_type ? normalizeLabel(item.lead.disruption_type) : "—"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.routeLabel,
+    },
+    {
+      key: "flight",
+      label: "Flight",
+      width: 180,
+      minWidth: 130,
+      maxWidth: 300,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (item) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={item.airline || "—"}>{item.airline || "—"}</strong>
+          <span className="admin-crm-table__cell-sub">{formatDate(item.flight_date)}</span>
+        </div>
+      ),
+      getCellTitle: (item) => `${item.airline || "—"}${item.flight_date ? ` · ${formatDate(item.flight_date)}` : ""}`,
+    },
+    {
+      key: "caseStatus",
+      label: "Case status",
+      width: 190,
+      minWidth: 150,
+      maxWidth: 320,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (item) => (
+        <div className="admin-cases-page__table-badges">
+          <AdminStatusBadge tone={getStatusTone(item.status)}>{normalizeLabel(item.status)}</AdminStatusBadge>
+          {item.priority ? <AdminStatusBadge tone={getPriorityTone(item.priority)}>{normalizeLabel(item.priority)}</AdminStatusBadge> : null}
+        </div>
+      ),
+    },
+    {
+      key: "finance",
+      label: "Finance",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 300,
+      resizable: true,
+      reorderable: true,
+      wrap: false,
+      renderCell: (item) => (
+        <div className="admin-cases-page__finance-cell">
+          <AdminStatusBadge tone={getStatusTone(item.financeStatus)}>{normalizeLabel(item.financeStatus)}</AdminStatusBadge>
+          <span className="admin-crm-table__cell-sub" title={item.estimatedLabel}>{item.estimatedLabel}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.estimatedLabel,
+    },
+    {
+      key: "owner",
+      label: "Owner",
+      width: 130,
+      minWidth: 100,
+      maxWidth: 220,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (item) => (
+        <div className="admin-crm-page__primary">
+          <strong className="admin-crm-table__cell-main" title={item.ownerLabel}>{item.ownerLabel}</strong>
+        </div>
+      ),
+      getCellTitle: (item) => item.ownerLabel,
+    },
+    {
+      key: "updated",
+      label: "Updated",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 180,
+      resizable: true,
+      reorderable: true,
+      wrap: true,
+      renderCell: (item) => {
+        const updated = formatFinanceDateParts(item.updated_at || item.created_at);
+        return (
+          <div className="admin-crm-page__date">
+            <strong className="admin-crm-table__cell-main">{updated.date}</strong>
+            {updated.time ? <span className="admin-crm-table__cell-sub">{updated.time}</span> : null}
+          </div>
+        );
+      },
+      getCellTitle: (item) => formatDateTime(item.updated_at || item.created_at),
+    },
+  ]), []);
 
   const selectedCase = useMemo(
     () => filteredCases.find((item) => item.id === selectedCaseId)
@@ -725,7 +894,7 @@ export default function AdminCases() {
   const partnerPaymentStatus = normalizePartnerPaymentValue(selectedCaseFinanceState.partnerPayment?.status);
 
   return (
-    <div className="admin-page admin-cases-page">
+    <div className="admin-page admin-cases-page admin-crm-page">
       {error ? <p className="admin-message is-error">{error}</p> : null}
       {moduleData && !moduleData.supportsCaseModuleV1 ? (
         <p className="admin-message">
@@ -734,137 +903,74 @@ export default function AdminCases() {
         </p>
       ) : null}
 
-      <section className="admin-cases-page__toolbar">
-        <label className="admin-cases-page__search">
-          <Search size={16} />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search case, customer, email, route, airline"
-          />
-        </label>
+      <AdminPageHeader
+        title="Cases"
+        secondaryActions={[
+          {
+            label: "Export CSV",
+            icon: Download,
+            onClick: () => exportCasesCsv(filteredCases),
+            disabled: !filteredCases.length,
+          },
+        ]}
+      />
 
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-          <option value="all">All case statuses</option>
-          {caseStatuses.map((status) => (
-            <option key={status} value={status}>{normalizeLabel(status)}</option>
-          ))}
-        </select>
+      <section className="admin-crm-page__workspace">
+        <AdminMetricsStrip items={metrics} />
 
-        <select value={ownerFilter} onChange={(event) => setOwnerFilter(event.target.value)}>
-          <option value="all">All owners</option>
-          {(moduleData?.managers || []).map((manager) => (
-            <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
-          ))}
-        </select>
-
-        <select value={airlineFilter} onChange={(event) => setAirlineFilter(event.target.value)}>
-          <option value="all">All airlines</option>
-          {airlineOptions.map((airline) => (
-            <option key={airline} value={airline}>{airline}</option>
-          ))}
-        </select>
-
-        <select value={financeFilter} onChange={(event) => setFinanceFilter(event.target.value)}>
-          <option value="all">All finance states</option>
-          {payoutStatuses.map((status) => (
-            <option key={status} value={status}>{normalizeLabel(status)}</option>
-          ))}
-        </select>
-
-        <label className="admin-cases-page__date-field">
-          <span>From</span>
-          <input
-            type="date"
-            value={dateRange.from}
-            onChange={(event) => setDateRange((current) => ({ ...current, from: event.target.value }))}
-          />
-        </label>
-
-        <label className="admin-cases-page__date-field">
-          <span>To</span>
-          <input
-            type="date"
-            value={dateRange.to}
-            onChange={(event) => setDateRange((current) => ({ ...current, to: event.target.value }))}
-          />
-        </label>
-
-        <button type="button" className="admin-cases-page__clear" onClick={clearFilters}>
-          <FilterX size={15} />
-          <span>Clear filters</span>
-        </button>
-
-        <button
-          type="button"
-          className="admin-cases-page__export"
-          onClick={() => exportCasesCsv(filteredCases)}
-          disabled={!filteredCases.length}
+        <AdminFilterBar
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search case, customer, email, route, airline"
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          statusOptions={[
+            { value: "all", label: "All case statuses" },
+            ...caseStatuses.map((status) => ({ value: status, label: normalizeLabel(status) })),
+          ]}
+          ownerFilter={ownerFilter}
+          onOwnerFilterChange={setOwnerFilter}
+          ownerOptions={[
+            { value: "all", label: "All owners" },
+            ...((moduleData?.managers || []).map((manager) => ({ value: manager.id, label: manager.full_name || manager.email }))),
+          ]}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
         >
-          <Download size={15} />
-          <span>Export CSV</span>
-        </button>
-      </section>
+          <select className="admin-filter-control admin-select" value={airlineFilter} onChange={(event) => setAirlineFilter(event.target.value)}>
+            <option value="all">All airlines</option>
+            {airlineOptions.map((airline) => (
+              <option key={airline} value={airline}>{airline}</option>
+            ))}
+          </select>
 
-      <section className={`admin-cases-page__workspace${selectedCase ? " has-selection" : ""}${previewOpen ? " is-preview-open" : ""}`}>
-        <div className="admin-cases-page__list-pane">
-          <header className="admin-cases-page__list-header">
-            <div>
-              <span className="admin-cases-page__eyebrow">Case inbox</span>
-              <h2>{listCountLabel}</h2>
-            </div>
-            <p>Most recently updated cases first.</p>
-          </header>
+          <select className="admin-filter-control admin-select" value={financeFilter} onChange={(event) => setFinanceFilter(event.target.value)}>
+            <option value="all">All finance states</option>
+            {payoutStatuses.map((status) => (
+              <option key={status} value={status}>{normalizeLabel(status)}</option>
+            ))}
+          </select>
 
-          <div className="admin-cases-page__list-scroll">
-            {isLoading ? (
-              <div className="admin-cases-page__state">Loading cases...</div>
-            ) : !filteredCases.length ? (
-              <div className="admin-cases-page__state">No cases yet</div>
-            ) : (
-              filteredCases.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`admin-cases-page__case-row${selectedCase?.id === item.id ? " is-active" : ""}`}
-                  onClick={() => openCase(item.id)}
-                >
-                  <div className="admin-cases-page__case-main">
-                    <div className="admin-cases-page__case-topline">
-                      <strong>{item.reference}</strong>
-                      <span>{formatDateTime(item.updated_at || item.created_at)}</span>
-                    </div>
+          <button type="button" className="admin-btn admin-btn-secondary admin-crm-page__clear" onClick={clearFilters}>
+            <FilterX size={15} />
+            <span>Clear filters</span>
+          </button>
+        </AdminFilterBar>
 
-                    <div className="admin-cases-page__case-customer">
-                      <span>{item.customerName}</span>
-                      <small>{item.customerEmail}</small>
-                    </div>
-
-                    <div className="admin-cases-page__case-route">
-                      <span>{item.routeLabel}</span>
-                      <small>{item.airline || "No airline"}{item.flight_date ? ` • ${formatDate(item.flight_date)}` : ""}</small>
-                    </div>
-                  </div>
-
-                  <div className="admin-cases-page__case-side">
-                    <div className="admin-cases-page__case-badges">
-                      <AdminStatusBadge tone={getStatusTone(item.status)}>{normalizeLabel(item.status)}</AdminStatusBadge>
-                      <AdminStatusBadge tone={getStatusTone(item.financeStatus)}>{normalizeLabel(item.financeStatus)}</AdminStatusBadge>
-                      {item.priority ? <AdminStatusBadge tone={getPriorityTone(item.priority)}>{normalizeLabel(item.priority)}</AdminStatusBadge> : null}
-                    </div>
-
-                    <div className="admin-cases-page__case-meta">
-                      <span>{item.nextAction}</span>
-                      <span>{item.ownerLabel}</span>
-                      <span>{item.estimatedLabel}</span>
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
+        <AdminColumnTable
+          storageKey="ff-admin-table-layout-cases"
+          title="Cases"
+          countLabel={listCountLabel}
+          columns={caseColumns}
+          rows={filteredCases}
+          loading={isLoading}
+          error={error}
+          emptyTitle="No cases found"
+          emptyDetail="Adjust filters or wait for converted leads and updated claims."
+          selectedRowId={selectedCase?.id || ""}
+          getRowKey={(item) => item.id}
+          onRowClick={(item) => openCase(item.id)}
+        />
 
         <AdminSidePanel
           open={Boolean(selectedCase && previewOpen)}

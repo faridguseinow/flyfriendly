@@ -123,6 +123,20 @@
   object-fit: cover;
 }
 
+.account-entry__initials,
+.account-dropdown__avatar-initials,
+.mobile-menu__account-initials {
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.account-entry__initials {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .account-dropdown {
   position: absolute;
   top: 100%;
@@ -195,6 +209,15 @@
     height: 100%;
     object-fit: cover;
   }
+}
+
+.account-dropdown__avatar-initials,
+.mobile-menu__account-initials {
+  width: 100%;
+  height: 100%;
+  color: var(--primary);
+  font-size: 22px;
+  line-height: 1;
 }
 
 .account-dropdown__identity-copy {

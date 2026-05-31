@@ -1,0 +1,117 @@
+.profile-avatar {
+  --avatar-size: 72px;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(223, 233, 246, 0.95);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(17, 69, 255, 0.16), transparent 60%),
+    linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+
+.profile-avatar--xs {
+  --avatar-size: 28px;
+}
+
+.profile-avatar--sm {
+  --avatar-size: 40px;
+}
+
+.profile-avatar--md {
+  --avatar-size: 56px;
+}
+
+.profile-avatar--lg {
+  --avatar-size: 72px;
+}
+
+.profile-avatar--xl {
+  --avatar-size: 96px;
+}
+
+.profile-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar__initials {
+  font-size: calc(var(--avatar-size) * 0.34);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.profile-avatar-uploader {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-avatar-uploader__label {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.profile-avatar-uploader__body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.profile-avatar-uploader__trigger {
+  position: relative;
+  padding: 0;
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-avatar-uploader__trigger:disabled {
+  cursor: default;
+}
+
+.profile-avatar-uploader__overlay {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(223, 233, 246, 0.95);
+  border-radius: 50%;
+  color: var(--primary-dark);
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(35, 66, 114, 0.12);
+}
+
+.profile-avatar-uploader__button {
+  min-width: 150px;
+}
+
+.profile-avatar-uploader__error {
+  color: #b42318;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+@media (max-width: 779px) {
+  .profile-avatar-uploader__body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-avatar-uploader__button {
+    width: 100%;
+  }
+}

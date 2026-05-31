@@ -3,8 +3,11 @@ import { buildPublicAuthUrl } from "../lib/siteUrl.js";
 import { getStoredLanguage, isSupportedLanguage } from "../i18n/languages.js";
 
 const PROFILE_SELECTS = [
+  "id, full_name, email, phone, role, preferred_language, avatar_url, created_at",
   "id, full_name, email, phone, role, preferred_language, created_at",
+  "id, full_name, email, phone, role, avatar_url, created_at",
   "id, full_name, email, phone, role, preferred_language",
+  "id, full_name, email, phone, role, avatar_url",
   "id, full_name, email, phone, role, created_at",
   "id, full_name, email, phone, role",
 ];
@@ -54,6 +57,7 @@ function normalizeProfileInput(input = {}) {
     full_name: input.full_name ?? input.fullName,
     email: input.email,
     phone: input.phone,
+    avatar_url: input.avatar_url ?? input.avatarUrl,
     role: input.role,
     status: input.status,
     preferred_language: normalizeLanguageInput(input.preferred_language ?? input.preferredLanguage ?? input.language) ?? undefined,
@@ -427,6 +431,7 @@ export async function updateCurrentProfile(input = {}) {
     full_name: normalized.full_name,
     email: normalized.email,
     phone: normalized.phone,
+    avatar_url: normalized.avatar_url,
     preferred_language: normalized.preferred_language,
   });
 

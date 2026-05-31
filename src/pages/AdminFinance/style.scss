@@ -8,6 +8,16 @@
   box-shadow: 0 12px 34px rgba(15, 23, 42, 0.05);
 }
 
+.admin-finance-page {
+  .admin-page-header {
+    margin-bottom: 0;
+  }
+
+  .admin-side-panel__body {
+    padding-top: 16px;
+  }
+}
+
 .admin-finance__header {
   display: flex;
   align-items: flex-start;
@@ -485,6 +495,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.admin-finance__panel {
+  width: min(560px, calc(100vw - 24px));
 }
 
 .admin-finance__table .admin-link-button {

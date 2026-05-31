@@ -2,6 +2,42 @@
   display: grid;
   gap: 16px;
   min-height: 100%;
+
+  .admin-page-header {
+    margin-bottom: 0;
+  }
+
+  .admin-filter-bar {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.8fr) repeat(4, minmax(120px, 0.72fr));
+    align-items: end;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  .admin-search,
+  .admin-filter-bar select,
+  .admin-filter-bar input,
+  .admin-filter-control,
+  .admin-select,
+  .admin-input {
+    min-height: 38px;
+    font-size: 13px;
+  }
+
+  .admin-filter-bar__date-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    span {
+      display: none;
+    }
+  }
+
+  .admin-side-panel__body {
+    padding-top: 16px;
+  }
 }
 
 .admin-customers-page__eyebrow {
@@ -270,6 +306,15 @@
 
 .admin-customers-page__compensation small {
   display: block;
+}
+
+.admin-customers-page__account-cell {
+  display: grid;
+  gap: 6px;
+
+  .admin-crm-table__cell-sub {
+    margin-top: 0;
+  }
 }
 
 .admin-customers-page__row-actions {

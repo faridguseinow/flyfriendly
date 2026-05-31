@@ -6,6 +6,58 @@
   .admin-message {
     margin: 0;
   }
+
+  .admin-page-header {
+    margin-bottom: 0;
+  }
+
+  .admin-filter-bar {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.6fr) repeat(5, minmax(130px, 0.8fr)) auto;
+    align-items: end;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  .admin-search,
+  .admin-filter-bar select,
+  .admin-filter-bar input,
+  .admin-filter-control,
+  .admin-select,
+  .admin-input {
+    min-height: 38px;
+    font-size: 13px;
+  }
+
+  .admin-filter-bar__date-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    span {
+      display: none;
+    }
+  }
+}
+
+.admin-cases-page__table-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-cases-page__finance-cell {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+
+  span {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+  }
 }
 
 .admin-cases-page__toolbar {
@@ -269,7 +321,7 @@
 }
 
 .admin-cases-page__preview {
-  width: min(660px, calc(100vw - 24px));
+  width: min(560px, calc(100vw - 24px));
 }
 
 .admin-cases-page__empty-preview {
@@ -718,8 +770,10 @@
 }
 
 @media (max-width: 820px) {
-  .admin-cases-page__toolbar {
-    padding: 10px;
+  .admin-cases-page {
+    .admin-filter-bar {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .admin-cases-page__meta-grid,
@@ -738,14 +792,14 @@
 }
 
 @media (max-width: 640px) {
-  .admin-cases-page__toolbar {
-    display: grid;
-    grid-template-columns: 1fr;
+  .admin-cases-page {
+    .admin-filter-bar {
+      grid-template-columns: 1fr;
+    }
   }
 
-  .admin-cases-page__search,
-  .admin-cases-page__clear,
-  .admin-cases-page__export {
+  .admin-search,
+  .admin-cases-page__clear {
     width: 100%;
   }
 

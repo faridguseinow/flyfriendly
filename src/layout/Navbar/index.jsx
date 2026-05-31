@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, CircleUserRound, LogOut, X } from "lucide-react";
+import { ChevronDown, LogOut, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
@@ -14,27 +14,8 @@ import { replaceLanguageInPath } from "../../i18n/path.js";
 import { updatePreferredLanguage } from "../../services/authService.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getNormalizedRole, resolveProfilePath } from "../../auth/routeUtils.js";
+import { getInitials, getProfileAvatarUrl } from "../../lib/profileAvatar.js";
 import "./style.scss";
-
-function getIdentityAvatarUrl(profile, user) {
-  const metadata = user?.user_metadata || {};
-  const identityData = Array.isArray(user?.identities)
-    ? user.identities
-      .map((identity) => identity?.identity_data || null)
-      .find((identity) => identity?.avatar_url || identity?.picture || identity?.photo_url || identity?.photoURL)
-    : null;
-
-  return profile?.avatar_url
-    || metadata.avatar_url
-    || metadata.picture
-    || metadata.photo_url
-    || metadata.photoURL
-    || identityData?.avatar_url
-    || identityData?.picture
-    || identityData?.photo_url
-    || identityData?.photoURL
-    || "";
-}
 
 function LanguageSwitcher({ currentLanguage, isOpen, onOpen, onClose, onSelectLanguage }) {
   const { t } = useTranslation();
@@ -255,8 +236,9 @@ function Navbar() {
   const accountTitle = t("nav.account", { defaultValue: "My account" });
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || accountTitle;
   const accountEmail = profile?.email || user?.email || "";
-  const profilePhotoUrl = getIdentityAvatarUrl(profile, user);
+  const profilePhotoUrl = getProfileAvatarUrl({ profile, partnerProfile, user });
   const avatarImageUrl = profilePhotoUrl && !hasAvatarLoadError ? profilePhotoUrl : "";
+  const avatarInitials = getInitials(displayName);
   const profilePath = resolveProfilePath(profile, partnerProfile, adminAccess);
 
   useEffect(() => {
@@ -349,7 +331,7 @@ function Navbar() {
                   onError={() => setHasAvatarLoadError(true)}
                 />
               ) : (
-                <CircleUserRound size={20} strokeWidth={1.9} />
+                <span className="account-entry__initials">{avatarInitials}</span>
               )}
             </button>
 
@@ -367,7 +349,7 @@ function Navbar() {
                         {avatarImageUrl ? (
                           <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
                         ) : (
-                          <CircleUserRound size={24} strokeWidth={1.9} />
+                          <span className="account-dropdown__avatar-initials">{avatarInitials}</span>
                         )}
                       </div>
                       <div className="account-dropdown__identity-copy">
@@ -445,7 +427,7 @@ function Navbar() {
                     {avatarImageUrl ? (
                       <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
                     ) : (
-                      <CircleUserRound size={24} strokeWidth={1.9} />
+                      <span className="mobile-menu__account-initials">{avatarInitials}</span>
                     )}
                   </div>
                   <div className="mobile-menu__account-copy">

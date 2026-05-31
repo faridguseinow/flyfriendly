@@ -1249,5 +1249,11 @@
       "paid": "Выплачено",
       "cancelled": "Отменено"
     }
+  },
+  "profileAvatar": {
+    "label": "Фото профиля",
+    "change": "Изменить фото",
+    "uploading": "Загрузка...",
+    "validation": "Загрузите JPG, PNG или WEBP размером до 5 МБ."
   }
 }

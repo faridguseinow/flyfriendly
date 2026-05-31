@@ -1083,6 +1083,7 @@ export async function saveClientProfile(input) {
   return updateCurrentProfile({
     full_name: input.full_name,
     phone: input.phone,
+    avatar_url: input.avatar_url,
     preferred_language: input.preferred_language,
   });
 }

@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
-  BadgeDollarSign,
-  CheckCircle2,
   Copy,
   FilterX,
-  Link2,
   RefreshCcw,
-  Search,
-  UserPlus,
   Users,
-  Wallet,
+  CheckCircle2,
   XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -21,7 +16,14 @@ import {
   updatePartnerPortalStatus,
 } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
-import { AdminKpiCard, AdminPageHeader, AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
+import {
+  AdminColumnTable,
+  AdminFilterBar,
+  AdminMetricsStrip,
+  AdminPageHeader,
+  AdminSidePanel,
+  AdminStatusBadge,
+} from "../../admin/components/AdminUi.jsx";
 import { buildPublicReferralLink } from "../../lib/referralLink.js";
 import "./style.scss";
 
@@ -798,6 +800,347 @@ export default function AdminReferral() {
     return [];
   }, [activeTab, applications, partnerRows]);
 
+  const searchPlaceholder = activeTab === "applications"
+    ? "Search name, email, public name"
+    : activeTab === "partners"
+      ? "Search referral user, email, code"
+      : activeTab === "customers"
+        ? "Search customer, referral code, case"
+        : activeTab === "commissions"
+          ? "Search partner, customer, case"
+          : activeTab === "payouts"
+            ? "Search partner, customer, reference"
+            : "Search referral activity";
+
+  const applicationsColumns = useMemo(() => ([
+    {
+      key: "applicant",
+      label: "Applicant",
+      width: 220,
+      minWidth: 160,
+      maxWidth: 360,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__identity">
+          <span className="admin-referral-page__avatar">{getInitials(item.displayName, item.email)}</span>
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{item.displayName}</span>
+            <span className="admin-crm-table__cell-sub">{item.email || "—"}</span>
+          </div>
+        </div>
+      ),
+      getCellTitle: (item) => item.displayName,
+    },
+    {
+      key: "platform",
+      label: "Platform",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 260,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.primary_platform || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{item.public_name || "No public name"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.primary_platform || "—",
+    },
+    {
+      key: "audience",
+      label: "Audience",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.audience_size || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{normalizeLabel(getAudienceBucket(item.audience_size))}</span>
+        </div>
+      ),
+    },
+    {
+      key: "country",
+      label: "Country",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{item.country || "—"}</span>,
+      getCellTitle: (item) => item.country || "—",
+    },
+    {
+      key: "submitted",
+      label: "Submitted",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{formatDate(item.created_at)}</span>,
+      getCellTitle: (item) => formatDateTime(item.created_at),
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <AdminStatusBadge tone={getStatusTone(item.status)}>{normalizeLabel(item.status)}</AdminStatusBadge>,
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: 120,
+      minWidth: 100,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <button
+          type="button"
+          className="admin-btn admin-btn-secondary admin-btn-sm"
+          onClick={(event) => {
+            event.stopPropagation();
+            openRecord("application", item.id);
+          }}
+        >
+          View
+        </button>
+      ),
+    },
+  ]), []);
+
+  const partnerColumns = useMemo(() => ([
+    {
+      key: "partner",
+      label: "Partner",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__identity">
+          <span className="admin-referral-page__avatar">{item.initials}</span>
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{item.displayName}</span>
+            <span className="admin-crm-table__cell-sub">{item.contact_email || item.contact_name || "No primary contact"}</span>
+          </div>
+        </div>
+      ),
+      getCellTitle: (item) => item.displayName,
+    },
+    {
+      key: "referralCode",
+      label: "Referral code",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.referral_code || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{getPartnerReferralUrl(item) || "Referral link not configured"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => getPartnerReferralUrl(item) || item.referral_code || "—",
+    },
+    {
+      key: "referrals",
+      label: "Referrals",
+      width: 130,
+      minWidth: 100,
+      maxWidth: 200,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.referredCustomersCount}</span>
+          <span className="admin-crm-table__cell-sub">{item.activeCasesCount} active cases</span>
+        </div>
+      ),
+    },
+    {
+      key: "activeCases",
+      label: "Active cases",
+      width: 130,
+      minWidth: 100,
+      maxWidth: 200,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{item.activeCasesCount}</span>,
+    },
+    {
+      key: "commission",
+      label: "Commission",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatCurrency(item.earnedCommission)}</span>
+          <span className="admin-crm-table__cell-sub">Pending {formatCurrency(item.pendingPayout)}</span>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <AdminStatusBadge tone={getStatusTone(item.portal_status || "approved")}>{normalizeLabel(item.portal_status || "approved")}</AdminStatusBadge>,
+    },
+    {
+      key: "updated",
+      label: "Updated",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{formatDateTime(item.lastActivityAt)}</span>,
+      getCellTitle: (item) => formatDateTime(item.lastActivityAt),
+    },
+  ]), []);
+
+  const customerColumns = useMemo(() => ([
+    {
+      key: "customer",
+      label: "Customer",
+      width: 200,
+      minWidth: 150,
+      maxWidth: 340,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__identity">
+          <span className="admin-referral-page__avatar">{getInitials(item.customerName, item.customerEmail)}</span>
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{item.customerName}</span>
+            <span className="admin-crm-table__cell-sub">{item.customerEmail}</span>
+          </div>
+        </div>
+      ),
+      getCellTitle: (item) => item.customerName,
+    },
+    {
+      key: "partner",
+      label: "Partner",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.partnerLabel}</span>
+          <span className="admin-crm-table__cell-sub">{item.referralCode}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.partnerLabel,
+    },
+    {
+      key: "case",
+      label: "Case",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 260,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.caseReference !== "—" ? item.caseReference : item.leadReference}</span>
+          <span className="admin-crm-table__cell-sub">{item.caseReference !== "—" ? item.leadReference : "Case not created yet"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.caseReference !== "—" ? item.caseReference : item.leadReference,
+    },
+    {
+      key: "route",
+      label: "Route",
+      width: 220,
+      minWidth: 160,
+      maxWidth: 420,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.routeLabel}</span>
+          <span className="admin-crm-table__cell-sub">{item.airline}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.routeLabel,
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <AdminStatusBadge tone={getStatusTone(item.caseStatus)}>{normalizeLabel(item.caseStatus)}</AdminStatusBadge>,
+    },
+    {
+      key: "created",
+      label: "Created",
+      width: 140,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{formatDate(item.createdAt)}</span>,
+      getCellTitle: (item) => formatDateTime(item.createdAt),
+    },
+  ]), []);
+
+  const activeTableConfig = useMemo(() => {
+    if (activeTab === "applications") {
+      return { storageKey: "ff-admin-table-layout-referral-applications", title: "Applications", columns: applicationsColumns, type: "application" };
+    }
+    if (activeTab === "partners") {
+      return { storageKey: "ff-admin-table-layout-referral-users", title: "Referral users", columns: partnerColumns, type: "partner" };
+    }
+    if (activeTab === "customers") {
+      return { storageKey: "ff-admin-table-layout-referred-customers", title: "Referred customers", columns: customerColumns, type: "customer" };
+    }
+    return null;
+  }, [activeTab, applicationsColumns, customerColumns, partnerColumns]);
+
   const renderApplicationsTable = () => (
     <div className="admin-referral-page__table admin-table">
       <div className="admin-referral-page__table-head">
@@ -1094,12 +1437,6 @@ export default function AdminReferral() {
     <div className="admin-page admin-referral-page">
       <AdminPageHeader
         title="Referral"
-        subtitle="Control center for partner applications, approved referral users, referred customers, commissions, payouts, and activity."
-        breadcrumbs={[
-          { label: "Admin", path: "/admin" },
-          { label: "People" },
-          { label: "Referral" },
-        ]}
       />
 
       {toast ? (
@@ -1114,16 +1451,16 @@ export default function AdminReferral() {
         </p>
       ) : null}
 
-      <section className="admin-referral-page__kpis">
-        <AdminKpiCard label="Pending applications" value={isLoading ? "—" : metrics.pendingApplications} icon={UserPlus} />
-        <AdminKpiCard label="Approved referral users" value={isLoading ? "—" : metrics.approvedUsers} icon={Users} />
-        <AdminKpiCard label="Referred customers" value={isLoading ? "—" : metrics.referredCustomers} icon={Link2} />
-        <AdminKpiCard label="Active referred cases" value={isLoading ? "—" : metrics.activeReferredCases} icon={Activity} />
-        <AdminKpiCard label="Total earned commission" value={isLoading ? "—" : formatCurrency(metrics.totalEarned)} icon={BadgeDollarSign} />
-        <AdminKpiCard label="Pending payouts" value={isLoading ? "—" : formatCurrency(metrics.pendingPayouts)} icon={Wallet} />
-        <AdminKpiCard label="Paid payouts" value={isLoading ? "—" : formatCurrency(metrics.paidPayouts)} icon={Wallet} />
-        <AdminKpiCard label="Conversion rate" value={isLoading ? "—" : metrics.conversionRate} icon={CheckCircle2} />
-      </section>
+      <AdminMetricsStrip
+        items={[
+          { label: "Pending applications", value: isLoading ? "—" : metrics.pendingApplications },
+          { label: "Approved partners", value: isLoading ? "—" : metrics.approvedUsers },
+          { label: "Referred customers", value: isLoading ? "—" : metrics.referredCustomers },
+          { label: "Active cases", value: isLoading ? "—" : metrics.activeReferredCases },
+          { label: "Commission", value: isLoading ? "—" : formatCurrency(metrics.totalEarned) },
+          { label: "Pending payouts", value: isLoading ? "—" : formatCurrency(metrics.pendingPayouts) },
+        ]}
+      />
 
       <section className="admin-referral-page__tabs admin-card admin-card-compact">
         {tabs.map((tab) => (
@@ -1138,67 +1475,51 @@ export default function AdminReferral() {
         ))}
       </section>
 
-      <section className="admin-referral-page__toolbar admin-card admin-card-compact">
-        <label className="admin-referral-page__search">
-          <Search size={16} />
-          <input
-            className="admin-input"
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={
-              activeTab === "applications"
-                ? "Search name, email, public name"
-                : activeTab === "partners"
-                  ? "Search referral user, email, code"
-                  : activeTab === "customers"
-                    ? "Search customer, referral code, case"
-                    : activeTab === "commissions"
-                      ? "Search partner, customer, case"
-                      : activeTab === "payouts"
-                        ? "Search partner, customer, reference"
-                        : "Search referral activity"
-            }
-          />
-        </label>
-
-        <select className="admin-select admin-filter-control" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-          {primaryStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
-
-        {secondaryOptions.length ? (
-          <select className="admin-select admin-filter-control" value={secondaryFilter} onChange={(event) => setSecondaryFilter(event.target.value)}>
-            {secondaryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        ) : null}
-
-        <input className="admin-input admin-filter-control" type="date" value={dateRange.from} onChange={(event) => setDateRange((current) => ({ ...current, from: event.target.value }))} />
-        <input className="admin-input admin-filter-control" type="date" value={dateRange.to} onChange={(event) => setDateRange((current) => ({ ...current, to: event.target.value }))} />
-
-        <button className="admin-btn admin-btn-ghost admin-btn-sm" type="button" onClick={clearFilters}>
-          <FilterX size={14} />
-          <span>Clear</span>
-        </button>
+      <section className="admin-card admin-card-compact admin-referral-page__toolbar-card">
+        <AdminFilterBar
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={searchPlaceholder}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          statusOptions={primaryStatusOptions}
+          ownerFilter={secondaryFilter}
+          onOwnerFilterChange={setSecondaryFilter}
+          ownerOptions={secondaryOptions}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        >
+          <button className="admin-btn admin-btn-secondary admin-btn-sm" type="button" onClick={clearFilters}>
+            <FilterX size={14} />
+            <span>Clear filters</span>
+          </button>
+        </AdminFilterBar>
       </section>
 
       <section className="admin-card admin-referral-page__table-card">
-        <header className="admin-referral-page__section-head">
-          <div>
-            <span className="admin-referral-page__eyebrow">{tabs.find((tab) => tab.key === activeTab)?.label}</span>
-            <h3>{currentRows.length} records</h3>
-          </div>
-        </header>
-
-        {isLoading ? (
+        {activeTableConfig ? (
+          <AdminColumnTable
+            key={activeTab}
+            storageKey={activeTableConfig.storageKey}
+            title={activeTableConfig.title}
+            countLabel={`${currentRows.length} record${currentRows.length === 1 ? "" : "s"}`}
+            columns={activeTableConfig.columns}
+            rows={currentRows}
+            loading={isLoading}
+            error=""
+            emptyTitle={`No ${tabs.find((tab) => tab.key === activeTab)?.label.toLowerCase()} found`}
+            emptyDetail="Try adjusting the current filters."
+            selectedRowId={drawerOpen ? selectedRecord?.id || "" : ""}
+            getRowKey={(item) => item.id}
+            onRowClick={(item) => openRecord(activeTableConfig.type, item.id)}
+          />
+        ) : isLoading ? (
           <EmptyState label="Loading referral workspace..." />
         ) : !currentRows.length ? (
           <EmptyState label={`No ${tabs.find((tab) => tab.key === activeTab)?.label.toLowerCase()} match the current filters.`} />
-        ) : activeTab === "applications" ? renderApplicationsTable()
-          : activeTab === "partners" ? renderPartnersTable()
-            : activeTab === "customers" ? renderCustomersTable()
-              : activeTab === "commissions" ? renderCommissionsTable()
-                : activeTab === "payouts" ? renderPayoutsTable()
-                  : renderActivityTable()}
+        ) : activeTab === "commissions" ? renderCommissionsTable()
+          : activeTab === "payouts" ? renderPayoutsTable()
+            : renderActivityTable()}
       </section>
 
       <AdminSidePanel

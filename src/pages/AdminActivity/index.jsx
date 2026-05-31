@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, ArrowUpRight, CalendarRange, Eye, Filter, Search, ShieldCheck } from "lucide-react";
+import { Activity, ArrowUpRight, CalendarRange, Filter, FilterX, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { fetchActivityLogsData } from "../../services/adminService.js";
 import {
+  AdminColumnTable,
   AdminFilterBar,
-  AdminKpiCard,
+  AdminMetricsStrip,
   AdminPageHeader,
   AdminSidePanel,
   AdminStatusBadge,
@@ -344,26 +345,129 @@ function AdminActivity() {
     const riskyActions = filteredRows.filter((item) => item.severity === "danger").length;
 
     return [
-      { label: "Actions today", value: todayRows.length, icon: Activity },
-      { label: "Active employees today", value: activeUsers, icon: ShieldCheck },
-      { label: "Most active module", value: topModule ? `${topModule[0]} (${topModule[1]})` : "—", icon: Filter },
-      { label: "Dangerous actions", value: riskyActions, icon: CalendarRange },
+      { label: "Actions today", value: todayRows.length },
+      { label: "Active employees", value: activeUsers },
+      { label: "Most active module", value: topModule ? `${topModule[0]} (${topModule[1]})` : "—" },
+      { label: "Dangerous actions", value: riskyActions },
     ];
   }, [filteredRows]);
 
   const changeRows = useMemo(() => (selectedLog ? buildChangeRows(selectedLog) : []), [selectedLog]);
 
+  const columns = useMemo(() => ([
+    {
+      key: "datetime",
+      label: "Date / time",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatRelativeTime(row.created_at)}</span>
+          <span className="admin-crm-table__cell-sub">{formatDateTime(row.created_at)}</span>
+        </div>
+      ),
+      getCellTitle: (row) => formatDateTime(row.created_at),
+    },
+    {
+      key: "user",
+      label: "User",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__identity">
+          <span className="admin-activity-page__avatar">{String(row.actorLabel || "System").slice(0, 2).toUpperCase()}</span>
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{row.actorLabel}</span>
+            <span className="admin-crm-table__cell-sub">{row.roleLabel || row.user?.email || "System"}</span>
+          </div>
+        </div>
+      ),
+      getCellTitle: (row) => row.actorLabel,
+    },
+    {
+      key: "module",
+      label: "Module",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <AdminStatusBadge tone="info">{row.moduleLabel}</AdminStatusBadge>,
+      getCellTitle: (row) => row.moduleLabel,
+    },
+    {
+      key: "action",
+      label: "Action",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 200,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <AdminStatusBadge tone={row.severity}>{row.actionLabel}</AdminStatusBadge>,
+      getCellTitle: (row) => row.actionLabel,
+    },
+    {
+      key: "target",
+      label: "Target",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{row.targetLabel}</span>
+          <span className="admin-crm-table__cell-sub">{row.target_entity_id ? shortenId(row.target_entity_id) : "No entity id"}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.targetLabel,
+    },
+    {
+      key: "description",
+      label: "Description",
+      width: 320,
+      minWidth: 220,
+      maxWidth: 600,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{row.description}</span>,
+      getCellTitle: (row) => row.description,
+    },
+    {
+      key: "source",
+      label: "Source",
+      width: 160,
+      minWidth: 120,
+      maxWidth: 260,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{row.meta?.ip || row.meta?.source || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{row.meta?.user_agent ? "User agent available" : "No extra source"}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.meta?.ip || row.meta?.source || "—",
+    },
+  ]), []);
+
   return (
     <div className="admin-page admin-activity-page">
       <AdminPageHeader
-        eyebrow={<><Activity size={16} /> Dashboard</>}
         title="Activity Log"
-        subtitle="Track employee actions, system changes, and operational history."
-        breadcrumbs={[
-          { label: "Admin", path: "/admin" },
-          { label: "Dashboard" },
-          { label: "Activity Log" },
-        ]}
       />
 
       {error ? <p className="admin-message is-error">{error}</p> : null}
@@ -377,11 +481,7 @@ function AdminActivity() {
         <p className="admin-message">Loading activity logs...</p>
       ) : (
         <>
-          <section className="admin-activity-page__kpis">
-            {summaryCards.map((item) => (
-              <AdminKpiCard key={item.label} label={item.label} value={item.value} icon={item.icon} />
-            ))}
-          </section>
+          <AdminMetricsStrip items={summaryCards} />
 
           <section className="admin-card admin-card-compact admin-activity-page__toolbar-card">
             <AdminFilterBar
@@ -416,92 +516,26 @@ function AdminActivity() {
                   dateRange: { from: "", to: "" },
                 })}
               >
+                <FilterX size={14} />
                 Clear filters
               </button>
             </AdminFilterBar>
           </section>
 
-          <section className="admin-card admin-card-compact admin-activity-page__table-card">
-            <div className="admin-activity-page__table-head">
-              <div>
-                <span>Audit trail</span>
-                <h3>Operational history</h3>
-              </div>
-              <small>{filteredRows.length} records</small>
-            </div>
-
-            {filteredRows.length ? (
-              <>
-                <div className="admin-activity-page__table-head-row">
-                  <span>Date / Time</span>
-                  <span>User</span>
-                  <span>Module</span>
-                  <span>Action</span>
-                  <span>Target</span>
-                  <span>Description</span>
-                  <span>Source</span>
-                  <span>Actions</span>
-                </div>
-
-                <div className="admin-activity-page__table-wrap">
-                  {filteredRows.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`admin-activity-page__row${selectedLog?.id === item.id ? " is-active" : ""}`}
-                      onClick={() => setSelectedLogId(item.id)}
-                    >
-                      <span className="admin-activity-page__time-cell">
-                        <strong>{formatRelativeTime(item.created_at)}</strong>
-                        <small>{formatDateTime(item.created_at)}</small>
-                      </span>
-
-                      <span className="admin-activity-page__user-cell">
-                        <span className="admin-activity-page__avatar">
-                          {String(item.actorLabel || "System").slice(0, 2).toUpperCase()}
-                        </span>
-                        <span>
-                          <strong>{item.actorLabel}</strong>
-                          <small>{item.roleLabel || item.user?.email || "System"}</small>
-                        </span>
-                      </span>
-
-                      <span>
-                        <AdminStatusBadge tone="info">{item.moduleLabel}</AdminStatusBadge>
-                      </span>
-
-                      <span>
-                        <AdminStatusBadge tone={item.severity}>{item.actionLabel}</AdminStatusBadge>
-                      </span>
-
-                      <span className="admin-activity-page__target-cell">
-                        <strong>{item.targetLabel}</strong>
-                        <small>{item.target_entity_id ? shortenId(item.target_entity_id) : "No entity id"}</small>
-                      </span>
-
-                      <span className="admin-activity-page__description-cell">
-                        <strong>{item.description}</strong>
-                      </span>
-
-                      <span className="admin-activity-page__source-cell">
-                        <strong>{item.meta?.ip || item.meta?.source || "—"}</strong>
-                        <small>{item.meta?.user_agent ? "User agent available" : "No extra source"}</small>
-                      </span>
-
-                      <span className="admin-activity-page__actions-cell">
-                        <span className="admin-btn admin-btn-ghost admin-btn-sm">
-                          <Eye size={14} />
-                          <span>View</span>
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="admin-message">No activity records found for the current filters.</p>
-            )}
-          </section>
+          <AdminColumnTable
+            storageKey="ff-admin-table-layout-activity-log"
+            title="Activity log"
+            countLabel={`${filteredRows.length} record${filteredRows.length === 1 ? "" : "s"}`}
+            columns={columns}
+            rows={filteredRows}
+            loading={false}
+            error=""
+            emptyTitle="No activity records found"
+            emptyDetail="Try adjusting the current filters."
+            selectedRowId={selectedLog?.id || ""}
+            getRowKey={(row) => row.id}
+            onRowClick={(row) => setSelectedLogId(row.id)}
+          />
 
           <section className="admin-activity-page__mobile-cards">
             {filteredRows.map((item) => (

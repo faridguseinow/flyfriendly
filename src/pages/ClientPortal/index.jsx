@@ -33,8 +33,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
+import ProfileAvatarUploader from "../../components/profile/ProfileAvatarUploader.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { languages } from "../../i18n/languages.js";
+import { getInitials, getProfileAvatarUrl, uploadProfileAvatar, validateAvatarFile } from "../../lib/profileAvatar.js";
+import { requireSupabase } from "../../lib/supabase.js";
 import {
   deleteClientDocument,
   fetchClientClaimDetails,
@@ -165,26 +168,6 @@ function formatStatusLabel(value, fallback = "Unknown") {
   return input
     .replace(/_/g, " ")
     .replace(/\b\w/g, (match) => match.toUpperCase());
-}
-
-function getIdentityAvatarUrl(profile, user) {
-  const metadata = user?.user_metadata || {};
-  const identityData = Array.isArray(user?.identities)
-    ? user.identities
-      .map((identity) => identity?.identity_data || null)
-      .find((identity) => identity?.avatar_url || identity?.picture || identity?.photo_url || identity?.photoURL)
-    : null;
-
-  return profile?.avatar_url
-    || metadata.avatar_url
-    || metadata.picture
-    || metadata.photo_url
-    || metadata.photoURL
-    || identityData?.avatar_url
-    || identityData?.picture
-    || identityData?.photo_url
-    || identityData?.photoURL
-    || "";
 }
 
 function splitFullName(value) {
@@ -794,11 +777,17 @@ function PaymentProgress({ status, t }) {
   );
 }
 
-function ClientPortalNavLink({ to, icon: Icon, label, end = false, mobile = false, avatarUrl = "" }) {
+function ClientPortalNavLink({ to, icon: Icon, label, end = false, mobile = false, avatarUrl = "", avatarInitials = "" }) {
   return (
     <LocalizedNavLink to={to} end={end} className={({ isActive }) => `client-portal-nav__link${mobile ? " is-mobile" : ""}${isActive ? " is-active" : ""}`}>
       <span className="client-portal-nav__icon">
-        {avatarUrl && mobile ? <img src={avatarUrl} alt="" className="client-portal-nav__avatar" /> : <Icon size={18} />}
+        {mobile ? (
+          avatarUrl
+            ? <img src={avatarUrl} alt="" className="client-portal-nav__avatar" />
+            : avatarInitials
+              ? <span className="client-portal-nav__avatar client-portal-nav__avatar--fallback">{avatarInitials}</span>
+              : <Icon size={18} />
+        ) : <Icon size={18} />}
       </span>
       <span className="client-portal-nav__label">{label}</span>
     </LocalizedNavLink>
@@ -1318,7 +1307,8 @@ export function ClientPortalLayout() {
   const { t } = useTranslation();
   const location = useLocation();
   const { profile, user } = useAuth();
-  const avatarUrl = getIdentityAvatarUrl(profile, user);
+  const avatarUrl = getProfileAvatarUrl({ profile, user });
+  const avatarInitials = getInitials(profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "Client");
 
   const navItems = useMemo(() => ([
     { label: t("clientPortal.nav.home", { defaultValue: "Home" }), path: "/client/dashboard", icon: House, end: true },
@@ -1377,6 +1367,7 @@ export function ClientPortalLayout() {
                   end={item.end}
                   mobile
                   avatarUrl={item.path.endsWith("/client/dashboard") ? avatarUrl : ""}
+                  avatarInitials={item.path.endsWith("/client/dashboard") ? avatarInitials : ""}
                 />
               ))}
             </nav>,
@@ -2194,11 +2185,20 @@ function ClientAccountPageInner() {
     last_name: initialNameParts.lastName,
     email: profile?.email || user?.email || "",
     phone: profile?.phone || user?.user_metadata?.phone || "",
+    avatar_url: profile?.avatar_url || "",
     preferred_language: profile?.preferred_language || document.documentElement.lang || "en",
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const avatarFallbackUrl = getProfileAvatarUrl({ profile, user });
+  const avatarName = [form.first_name, form.last_name].filter(Boolean).join(" ").trim()
+    || profile?.full_name
+    || user?.user_metadata?.full_name
+    || "Client";
 
   useEffect(() => {
     debugClientPortal("rendered-page", {
@@ -2214,23 +2214,73 @@ function ClientAccountPageInner() {
       last_name: nextNameParts.lastName,
       email: profile?.email || user?.email || "",
       phone: profile?.phone || user?.user_metadata?.phone || "",
+      avatar_url: profile?.avatar_url || "",
       preferred_language: profile?.preferred_language || document.documentElement.lang || "en",
     });
+    setAvatarFile(null);
+    setAvatarPreviewUrl("");
   }, [profile, user]);
+
+  useEffect(() => () => {
+    if (avatarPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+    }
+  }, [avatarPreviewUrl]);
+
+  const handleAvatarSelected = async (file) => {
+    setAvatarError("");
+    setError("");
+    setMessage("");
+
+    try {
+      validateAvatarFile(file);
+      setAvatarFile(file);
+      setAvatarPreviewUrl((current) => {
+        if (current.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return URL.createObjectURL(file);
+      });
+    } catch (validationError) {
+      setAvatarError(validationError.message || t("profileAvatar.validation", { defaultValue: "Please upload JPG, PNG, or WEBP up to 5MB." }));
+    }
+  };
 
   const submit = async (event) => {
     event.preventDefault();
     setMessage("");
     setError("");
+    setAvatarError("");
     setIsSaving(true);
 
     try {
+      let nextAvatarUrl = form.avatar_url || "";
+
+      if (avatarFile) {
+        const uploaded = await uploadProfileAvatar({
+          supabase: requireSupabase(),
+          file: avatarFile,
+          ownerType: "client",
+          ownerId: profile?.id || user?.id,
+        });
+        nextAvatarUrl = uploaded.publicUrl;
+      }
+
       await saveClientProfile({
         full_name: [form.first_name, form.last_name].filter(Boolean).join(" ").trim(),
         phone: form.phone,
+        avatar_url: nextAvatarUrl,
         preferred_language: form.preferred_language,
       });
       await refreshProfile();
+      setForm((current) => ({ ...current, avatar_url: nextAvatarUrl }));
+      setAvatarFile(null);
+      setAvatarPreviewUrl((current) => {
+        if (current.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return "";
+      });
       setMessage(t("clientPortal.account.saved", { defaultValue: "Account details updated." }));
     } catch (saveError) {
       setError(saveError.message || t("clientPortal.account.error", { defaultValue: "Could not update your account." }));
@@ -2249,6 +2299,21 @@ function ClientAccountPageInner() {
             </div>
 
             <form className="portal-form client-portal-account-form" onSubmit={submit}>
+              <div className="client-portal-account-avatar">
+                <ProfileAvatarUploader
+                  avatarUrl={avatarPreviewUrl || form.avatar_url}
+                  fallbackImageUrl={avatarFallbackUrl}
+                  fallbackName={avatarName}
+                  size="xl"
+                  editable
+                  uploading={isSaving}
+                  onFileSelected={handleAvatarSelected}
+                  error={avatarError}
+                  label={t("profileAvatar.label", { defaultValue: "Profile photo" })}
+                  actionLabel={t("profileAvatar.change", { defaultValue: "Change photo" })}
+                  uploadingLabel={t("profileAvatar.uploading", { defaultValue: "Uploading..." })}
+                />
+              </div>
               <label>
                 <span>{t("clientPortal.account.firstName", { defaultValue: "First name" })}</span>
                 <input value={form.first_name} onChange={(event) => setForm((current) => ({ ...current, first_name: event.target.value }))} />
