@@ -11,8 +11,10 @@ import {
   fetchAdminSidebarMenu,
   heartbeatAdminWorkSession,
   logAdminActivity,
+  preloadAdminWorkspaceData,
   startAdminWorkSession,
 } from "../services/adminService.js";
+import { preloadAdminFinanceWorkspaceData } from "../services/adminFinanceService.js";
 import { requireSupabase } from "../lib/supabase.js";
 import { adminNavigation, adminNavigationSections, buildAdminNavigationSections } from "./navigation.js";
 import { useAdminAuth } from "./AdminAuthContext.jsx";
@@ -283,6 +285,35 @@ function AdminLayout() {
   };
 
   useEffect(() => {
+    if (!profile?.id || !isAdminUser) {
+      return undefined;
+    }
+
+    let active = true;
+    setIsSearchLoading(true);
+
+    fetchAdminSearchData()
+      .then((data) => {
+        if (active) {
+          setSearchIndex(data);
+        }
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (active) {
+          setIsSearchLoading(false);
+        }
+      });
+
+    void preloadAdminWorkspaceData().catch(() => null);
+    void preloadAdminFinanceWorkspaceData().catch(() => null);
+
+    return () => {
+      active = false;
+    };
+  }, [isAdminUser, profile?.id]);
+
+  useEffect(() => {
     if (!isSearchOpen || searchIndex || isSearchLoading) {
       return;
     }
@@ -393,7 +424,7 @@ function AdminLayout() {
         id: `lead:${row.id}`,
         label: row.full_name || row.lead_code || "Lead",
         meta: [row.lead_code, row.email, row.airline, row.departure_airport, row.arrival_airport, row.status].filter(Boolean).join(" • "),
-        path: `/admin/leads?lead=${row.id}`,
+        path: `/admin/operations/leads?lead=${row.id}`,
         score:
           rankSearchValue(row.full_name, query) * 3 +
           rankSearchValue(row.lead_code, query) +
@@ -404,49 +435,49 @@ function AdminLayout() {
         id: `case:${row.id}`,
         label: row.case_code || "Case",
         meta: [row.airline, row.route_from && row.route_to ? `${row.route_from} → ${row.route_to}` : "", row.status].filter(Boolean).join(" • "),
-        path: `/admin/cases?case=${row.id}`,
+        path: `/admin/operations/cases?case=${row.id}`,
         score: rankSearchValue(row.case_code, query) + rankSearchValue(row.airline, query),
       }));
       addMatches("Customers", searchIndex.customers || [], (row) => ({
         id: `customer:${row.id}`,
         label: row.full_name || row.email || "Customer",
         meta: [row.email, row.phone, row.country].filter(Boolean).join(" • "),
-        path: `/admin/customers?customer=${row.id}`,
+        path: `/admin/people/customers?customer=${row.id}`,
         score: rankSearchValue(row.full_name, query) + rankSearchValue(row.email, query),
       }));
       addMatches("Tasks", searchIndex.tasks || [], (row) => ({
         id: `task:${row.id}`,
         label: row.title || "Task",
         meta: [row.related_entity_type, row.status].filter(Boolean).join(" • "),
-        path: `/admin/tasks?task=${row.id}`,
+        path: `/admin/operations/tasks?task=${row.id}`,
         score: rankSearchValue(row.title, query),
       }));
       addMatches("Partners", searchIndex.partners || [], (row) => ({
         id: `partner:${row.id}`,
         label: row.name || "Partner",
         meta: [row.referral_code, row.status].filter(Boolean).join(" • "),
-        path: `/admin/referral-partners?partner=${row.id}`,
+        path: `/admin/people/referral?partner=${row.id}`,
         score: rankSearchValue(row.name, query) + rankSearchValue(row.referral_code, query),
       }));
       addMatches("Blog", searchIndex.blogPosts || [], (row) => ({
         id: `post:${row.id}`,
         label: row.title || "Post",
         meta: [row.slug, row.status].filter(Boolean).join(" • "),
-        path: `/admin/blog?post=${row.id}`,
+        path: `/admin/content/pages?post=${row.id}`,
         score: rankSearchValue(row.title, query) + rankSearchValue(row.slug, query),
       }));
       addMatches("FAQ", searchIndex.faqItems || [], (row) => ({
         id: `faq:${row.id}`,
         label: row.question || "FAQ item",
         meta: [row.category, row.status].filter(Boolean).join(" • "),
-        path: `/admin/faq?faq=${row.id}`,
+        path: `/admin/content/pages?faq=${row.id}`,
         score: rankSearchValue(row.question, query),
       }));
       addMatches("CMS", searchIndex.cmsPages || [], (row) => ({
         id: `page:${row.id}`,
         label: row.title || row.page_key || "Page",
         meta: [row.page_key, row.slug, row.status].filter(Boolean).join(" • "),
-        path: `/admin/cms?page=${row.id}`,
+        path: `/admin/content/cms?page=${row.id}`,
         score: rankSearchValue(row.title, query) + rankSearchValue(row.page_key, query),
       }));
       addMatches("Settings", searchIndex.settings || [], (row) => ({
@@ -570,6 +601,12 @@ function AdminLayout() {
                 onFocus={() => setIsSearchOpen(true)}
                 onBlur={() => window.setTimeout(() => setIsSearchOpen(false), 120)}
                 onChange={(event) => setSearchValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && searchResults[0]?.path) {
+                    event.preventDefault();
+                    goToSearchResult(searchResults[0].path);
+                  }
+                }}
               />
               <AnimatePresence>
                 {isSearchOpen ? (

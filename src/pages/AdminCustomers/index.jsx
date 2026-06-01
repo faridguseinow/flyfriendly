@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, FilterX, Mail, ShieldCheck } from "lucide-react";
+import { Download, FilterX, Mail, RefreshCw, ShieldCheck } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { fetchCustomersModuleData } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
@@ -118,12 +118,12 @@ export default function AdminCustomers() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadCustomers = async () => {
+  const loadCustomers = async (options = {}) => {
     setError("");
     setIsLoading(true);
 
     try {
-      const next = await fetchCustomersModuleData();
+      const next = await fetchCustomersModuleData({ force: options.force });
       setModuleData(next);
     } catch (nextError) {
       setError(nextError.message || "Could not load customers module.");
@@ -133,7 +133,7 @@ export default function AdminCustomers() {
   };
 
   useEffect(() => {
-    loadCustomers();
+    void loadCustomers();
   }, []);
 
   useEffect(() => {
@@ -518,6 +518,12 @@ export default function AdminCustomers() {
       <AdminPageHeader
         title="Customers"
         secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: () => void loadCustomers({ force: true }),
+            disabled: isLoading,
+          },
           {
             label: "Export CSV",
             icon: Download,

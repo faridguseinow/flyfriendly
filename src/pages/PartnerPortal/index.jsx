@@ -368,20 +368,6 @@ export function PartnerPortalLayout() {
     <div className="client-portal-shell section partner-portal-shell">
       <div className="client-portal-layout partner-portal-layout">
         <aside className="client-portal-sidebar partner-portal-sidebar">
-          <div className="partner-portal-sidebar-card">
-            <div className="partner-portal-sidebar-card__identity">
-              <ProfileAvatar
-                avatarUrl={avatarUrl}
-                fallbackName={partnerName}
-                size="md"
-                className="partner-portal-sidebar-card__avatar"
-              />
-              <div className="partner-portal-sidebar-card__copy">
-                <strong>{partnerName}</strong>
-              </div>
-            </div>
-            <PartnerStatusBadge value={statusKey} t={t} />
-          </div>
 
           <nav className="client-portal-nav partner-portal-nav" aria-label={t("partnerPortal.navLabel", { defaultValue: "Partner account sections" })}>
             {navItems.map((item) => (
@@ -470,7 +456,6 @@ export function PartnerDashboardPage() {
             <strong>{data.partnerName || t("partnerPortal.profile.defaultName", { defaultValue: "Partner" })}</strong>
             <div className="partner-portal-hero-card__badges">
               <PartnerStatusBadge value={data.partnerStatusKey} t={t} />
-              {data.referralCode ? <span className="partner-portal-inline-pill">{data.referralCode}</span> : null}
             </div>
           </div>
         </div>

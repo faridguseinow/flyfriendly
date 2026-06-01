@@ -30,6 +30,47 @@ const EXISTING_PARTNER_PAYOUT_STATUSES = new Set([
   "cancelled",
   "unpaid",
 ]);
+const financeDatasetCache = new Map();
+const financeDatasetPending = new Map();
+
+function stableSerializeCacheValue(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerializeCacheValue(item)).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerializeCacheValue(value[key])}`).join(",")}}`;
+  }
+
+  return JSON.stringify(value ?? null);
+}
+
+function buildFinanceCacheKey(scope, params = null) {
+  return params === null ? scope : `${scope}:${stableSerializeCacheValue(params)}`;
+}
+
+async function withFinanceCache(cacheKey, loader, { force = false } = {}) {
+  if (!force && financeDatasetCache.has(cacheKey)) {
+    return financeDatasetCache.get(cacheKey);
+  }
+
+  if (!force && financeDatasetPending.has(cacheKey)) {
+    return financeDatasetPending.get(cacheKey);
+  }
+
+  const pending = Promise.resolve()
+    .then(loader)
+    .then((result) => {
+      financeDatasetCache.set(cacheKey, result);
+      return result;
+    })
+    .finally(() => {
+      financeDatasetPending.delete(cacheKey);
+    });
+
+  financeDatasetPending.set(cacheKey, pending);
+  return pending;
+}
 
 function isMissingOptionalTable(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -485,11 +526,12 @@ async function getCurrentUserId() {
   return user?.id || null;
 }
 
-async function fetchFinanceDataset(filters = {}) {
-  const client = requireSupabase();
-  const limit = Number(filters.limit || DEFAULT_FETCH_LIMIT);
-  const caseId = filters.caseId || null;
-  const partnerId = filters.partnerId || null;
+async function fetchFinanceDataset(filters = {}, options = {}) {
+  return withFinanceCache(buildFinanceCacheKey("finance-dataset", filters), async () => {
+    const client = requireSupabase();
+    const limit = Number(filters.limit || DEFAULT_FETCH_LIMIT);
+    const caseId = filters.caseId || null;
+    const partnerId = filters.partnerId || null;
 
   const financeQuery = client
     .from("case_finance")
@@ -564,15 +606,16 @@ async function fetchFinanceDataset(filters = {}) {
     }
   });
 
-  return {
-    finance: finance.data || [],
-    cases: cases.data || [],
-    customers: customers.error ? [] : customers.data || [],
-    referrals: referrals.error ? [] : referrals.data || [],
-    partners: partners.error ? [] : partners.data || [],
-    commissions: commissions.error ? [] : commissions.data || [],
-    payouts: payouts.error ? [] : payouts.data || [],
-  };
+    return {
+      finance: finance.data || [],
+      cases: cases.data || [],
+      customers: customers.error ? [] : customers.data || [],
+      referrals: referrals.error ? [] : referrals.data || [],
+      partners: partners.error ? [] : partners.data || [],
+      commissions: commissions.error ? [] : commissions.data || [],
+      payouts: payouts.error ? [] : payouts.data || [],
+    };
+  }, options);
 }
 
 async function getCaseFinanceRecordByCaseId(client, caseId) {
@@ -887,8 +930,8 @@ function buildPartnerCommissionRow(commissionRow, caseRow, partner, referralRow)
   };
 }
 
-export async function getFinanceRows(filters = {}) {
-  const dataset = await fetchFinanceDataset(filters);
+export async function getFinanceRows(filters = {}, options = {}) {
+  const dataset = await fetchFinanceDataset(filters, options);
   const casesById = mapRowsByKey(dataset.cases, "id");
   const customersById = mapRowsByKey(dataset.customers, "id");
   const referralsByCaseId = mapRowsByKey(dataset.referrals.filter((item) => item.case_id), "case_id");
@@ -918,11 +961,11 @@ export async function getFinanceRows(filters = {}) {
   return applyFinanceRowFilters(rows, filters);
 }
 
-export async function getFinanceSummary(filters = {}) {
+export async function getFinanceSummary(filters = {}, options = {}) {
   const rows = await getFinanceRows({
     ...filters,
     internalCompensationConfirmed: filters.internalCompensationConfirmed ?? true,
-  });
+  }, options);
 
   return rows.reduce((summary, row) => {
     const totalCompensation = summary.totalCompensation + normalizeMoneyAmount(row.compensationAmount);
@@ -961,8 +1004,8 @@ export async function getFinanceSummary(filters = {}) {
   });
 }
 
-export async function getClientPayments(filters = {}) {
-  const dataset = await fetchFinanceDataset(filters);
+export async function getClientPayments(filters = {}, options = {}) {
+  const dataset = await fetchFinanceDataset(filters, options);
   const casesById = mapRowsByKey(dataset.cases, "id");
   const customersById = mapRowsByKey(dataset.customers, "id");
 
@@ -975,8 +1018,8 @@ export async function getClientPayments(filters = {}) {
   return applyClientPaymentFilters(rows, filters);
 }
 
-export async function getPartnerPayments(filters = {}) {
-  const dataset = await fetchFinanceDataset(filters);
+export async function getPartnerPayments(filters = {}, options = {}) {
+  const dataset = await fetchFinanceDataset(filters, options);
   const casesById = mapRowsByKey(dataset.cases, "id");
   const referralsByCaseId = mapRowsByKey(dataset.referrals.filter((item) => item.case_id), "case_id");
   const partnerMaps = buildPartnerLabelMaps(dataset.partners);
@@ -994,6 +1037,14 @@ export async function getPartnerPayments(filters = {}) {
   });
 
   return applyPartnerPaymentFilters(rows, filters);
+}
+
+export function preloadAdminFinanceWorkspaceData({ force = false } = {}) {
+  return Promise.allSettled([
+    getFinanceRows({}, { force }),
+    getClientPayments({}, { force }),
+    getPartnerPayments({}, { force }),
+  ]).then(() => undefined);
 }
 
 export async function getPartnerCommissions(filters = {}) {

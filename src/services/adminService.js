@@ -3,6 +3,7 @@ import { getCurrentUser, resetPassword } from "./authService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
+import { buildCaseCode, buildLeadCode, extractRecordSuffix, generateRandomRecordSuffix } from "../lib/recordCodes.js";
 import { buildReferralPath, generateRandomReferralCode } from "../../shared/referral-code.js";
 
 function isMissingOptionalTable(error) {
@@ -76,6 +77,8 @@ const countryAliases = {
   SY: ["Syrian Arab Republic"],
 };
 const adminMenuCache = new Map();
+const adminModuleCache = new Map();
+const adminModulePending = new Map();
 const ADMIN_MENU_CACHE_PREFIX = "admin-menu:";
 const ADMIN_MENU_CACHE_VERSION = "v6-role-visibility-fix";
 const ADMIN_WORK_SESSION_STORAGE_KEY = "fly-friendly-admin-work-session";
@@ -100,6 +103,65 @@ const ADMIN_ACTIVITY_SENSITIVE_KEYS = [
   "customer_phone",
   "customer_name",
 ];
+
+function stableSerializeCacheValue(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerializeCacheValue(item)).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerializeCacheValue(value[key])}`).join(",")}}`;
+  }
+
+  return JSON.stringify(value ?? null);
+}
+
+function buildAdminModuleCacheKey(scope, params = null) {
+  return params === null ? scope : `${scope}:${stableSerializeCacheValue(params)}`;
+}
+
+async function withAdminModuleCache(cacheKey, loader, { force = false } = {}) {
+  if (!force && adminModuleCache.has(cacheKey)) {
+    return adminModuleCache.get(cacheKey);
+  }
+
+  if (!force && adminModulePending.has(cacheKey)) {
+    return adminModulePending.get(cacheKey);
+  }
+
+  const pending = Promise.resolve()
+    .then(loader)
+    .then((result) => {
+      adminModuleCache.set(cacheKey, result);
+      return result;
+    })
+    .finally(() => {
+      adminModulePending.delete(cacheKey);
+    });
+
+  adminModulePending.set(cacheKey, pending);
+  return pending;
+}
+
+export function clearAdminModuleCache(prefixes = []) {
+  if (!Array.isArray(prefixes) || !prefixes.length) {
+    adminModuleCache.clear();
+    adminModulePending.clear();
+    return;
+  }
+
+  const normalizedPrefixes = prefixes.filter(Boolean);
+  [...adminModuleCache.keys()].forEach((key) => {
+    if (normalizedPrefixes.some((prefix) => key === prefix || key.startsWith(`${prefix}:`))) {
+      adminModuleCache.delete(key);
+    }
+  });
+  [...adminModulePending.keys()].forEach((key) => {
+    if (normalizedPrefixes.some((prefix) => key === prefix || key.startsWith(`${prefix}:`))) {
+      adminModulePending.delete(key);
+    }
+  });
+}
 
 function generateClientUuid() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -832,67 +894,69 @@ async function fetchCaseLeadsWithEstimateFallback(client) {
   return { data: fallback.data || [] };
 }
 
-export async function fetchLeadsModuleData() {
-  const client = requireSupabase();
+export async function fetchLeadsModuleData(options = {}) {
+  return withAdminModuleCache("leads-module", async () => {
+    const client = requireSupabase();
 
-  const [leadsResponse, assignableUsers, leadNotes, leadStatusHistory, leadDocuments, leadSignatures] = await Promise.all([
-    fetchLeadsWithFallback(client),
-    fetchAssignableAdminProfiles(client),
-    client
-      .from("lead_notes")
-      .select("id, lead_id, body, created_by, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("lead_status_history")
-      .select("id, lead_id, previous_status, next_status, changed_by, note, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("lead_documents")
-      .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(800),
-    client
-      .from("lead_signatures")
-      .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-  ]);
+    const [leadsResponse, assignableUsers, leadNotes, leadStatusHistory, leadDocuments, leadSignatures] = await Promise.all([
+      fetchLeadsWithFallback(client),
+      fetchAssignableAdminProfiles(client),
+      client
+        .from("lead_notes")
+        .select("id, lead_id, body, created_by, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("lead_status_history")
+        .select("id, lead_id, previous_status, next_status, changed_by, note, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("lead_documents")
+        .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(800),
+      client
+        .from("lead_signatures")
+        .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
 
-  if (leadNotes.error && !isMissingOptionalTable(leadNotes.error)) {
-    throw leadNotes.error;
-  }
+    if (leadNotes.error && !isMissingOptionalTable(leadNotes.error)) {
+      throw leadNotes.error;
+    }
 
-  if (leadStatusHistory.error && !isMissingOptionalTable(leadStatusHistory.error)) {
-    throw leadStatusHistory.error;
-  }
+    if (leadStatusHistory.error && !isMissingOptionalTable(leadStatusHistory.error)) {
+      throw leadStatusHistory.error;
+    }
 
-  if (leadDocuments.error && !isMissingOptionalTable(leadDocuments.error) && !isMissingColumnError(leadDocuments.error)) {
-    throw leadDocuments.error;
-  }
+    if (leadDocuments.error && !isMissingOptionalTable(leadDocuments.error) && !isMissingColumnError(leadDocuments.error)) {
+      throw leadDocuments.error;
+    }
 
-  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error)) {
-    throw leadSignatures.error;
-  }
+    if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error)) {
+      throw leadSignatures.error;
+    }
 
-  return {
-    leads: leadsResponse.data,
-    assignableUsers,
-    notes: leadNotes.data || [],
-    statusHistory: leadStatusHistory.data || [],
-    documents: (leadDocuments.data || []).map((item) => ({
-      ...item,
-      bucket: "claim-lead-documents",
-      kind: "document",
-    })),
-    signatures: leadSignatures.data || [],
-    supportsCoreSchemaV1: leadsResponse.supportsCoreSchemaV1,
-    supportsNotes: !leadNotes.error,
-    supportsHistory: !leadStatusHistory.error,
-    supportsLeadDocuments: !leadDocuments.error,
-    supportsLeadSignatures: !leadSignatures.error,
-  };
+    return {
+      leads: leadsResponse.data,
+      assignableUsers,
+      notes: leadNotes.data || [],
+      statusHistory: leadStatusHistory.data || [],
+      documents: (leadDocuments.data || []).map((item) => ({
+        ...item,
+        bucket: "claim-lead-documents",
+        kind: "document",
+      })),
+      signatures: leadSignatures.data || [],
+      supportsCoreSchemaV1: leadsResponse.supportsCoreSchemaV1,
+      supportsNotes: !leadNotes.error,
+      supportsHistory: !leadStatusHistory.error,
+      supportsLeadDocuments: !leadDocuments.error,
+      supportsLeadSignatures: !leadSignatures.error,
+    };
+  }, options);
 }
 
 async function fetchCasesWithFallback(client, page, pageSize, filters = {}) {
@@ -942,91 +1006,93 @@ function applyCaseFilters(query, filters) {
   return nextQuery;
 }
 
-export async function fetchCasesModuleData({ page = 1, pageSize = 12, filters = {} } = {}) {
-  const client = requireSupabase();
+export async function fetchCasesModuleData({ page = 1, pageSize = 12, filters = {}, force = false } = {}) {
+  return withAdminModuleCache(buildAdminModuleCacheKey("cases-module", { page, pageSize, filters }), async () => {
+    const client = requireSupabase();
 
-  const [casesResponse, managers, leads, customers, finance, statusHistory, documents, tasks, caseTasks, communications, caseCommunications] = await Promise.all([
-    fetchCasesWithFallback(client, page, pageSize, filters),
-    fetchAssignableAdminProfiles(client),
-    fetchCaseLeadsWithEstimateFallback(client),
-    client
-      .from("customers")
-      .select("id, full_name, email, phone, country, preferred_language, total_cases, total_compensation")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("case_finance")
-      .select("id, case_id, compensation_amount, company_fee, customer_payout, referral_commission, agent_bonus, payment_status, payment_method, currency, notes, payment_received_at, customer_paid_at, referral_paid_at, updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(500),
-    client
-      .from("case_status_history")
-      .select("id, case_id, previous_status, next_status, changed_by, note, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("case_documents")
-      .select("id, case_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("tasks")
-      .select("id, title, status, priority, due_date, assigned_user_id, related_entity_type, related_entity_id")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("case_tasks")
-      .select("id, case_id, task_id, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("communications")
-      .select("id, entity_type, entity_id, channel, direction, subject, body, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("case_communications")
-      .select("id, case_id, communication_id, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-  ]);
+    const [casesResponse, managers, leads, customers, finance, statusHistory, documents, tasks, caseTasks, communications, caseCommunications] = await Promise.all([
+      fetchCasesWithFallback(client, page, pageSize, filters),
+      fetchAssignableAdminProfiles(client),
+      fetchCaseLeadsWithEstimateFallback(client),
+      client
+        .from("customers")
+        .select("id, full_name, email, phone, country, preferred_language, total_cases, total_compensation")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("case_finance")
+        .select("id, case_id, compensation_amount, company_fee, customer_payout, referral_commission, agent_bonus, payment_status, payment_method, currency, notes, payment_received_at, customer_paid_at, referral_paid_at, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(500),
+      client
+        .from("case_status_history")
+        .select("id, case_id, previous_status, next_status, changed_by, note, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("case_documents")
+        .select("id, case_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("tasks")
+        .select("id, title, status, priority, due_date, assigned_user_id, related_entity_type, related_entity_id")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("case_tasks")
+        .select("id, case_id, task_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("communications")
+        .select("id, entity_type, entity_id, channel, direction, subject, body, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("case_communications")
+        .select("id, case_id, communication_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
 
-  const requiredErrors = [leads].map((result) => result.error).filter(Boolean);
-  if (requiredErrors.length) {
-    throw requiredErrors[0];
-  }
-
-  const optional = { customers, finance, statusHistory, documents, tasks, caseTasks, communications, caseCommunications };
-  for (const result of Object.values(optional)) {
-    if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
-      throw result.error;
+    const requiredErrors = [leads].map((result) => result.error).filter(Boolean);
+    if (requiredErrors.length) {
+      throw requiredErrors[0];
     }
-  }
 
-  const metricsQuery = await client
-    .from("cases")
-    .select("id, status, estimated_compensation, created_at, approved_at, rejected_at, paid_at, closed_at");
+    const optional = { customers, finance, statusHistory, documents, tasks, caseTasks, communications, caseCommunications };
+    for (const result of Object.values(optional)) {
+      if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
+        throw result.error;
+      }
+    }
 
-  const metricsRows = metricsQuery.error ? [] : metricsQuery.data || [];
+    const metricsQuery = await client
+      .from("cases")
+      .select("id, status, estimated_compensation, created_at, approved_at, rejected_at, paid_at, closed_at");
 
-  return {
-    cases: casesResponse.data,
-    totalCount: casesResponse.count,
-    page,
-    pageSize,
-    managers,
-    leads: leads.data || [],
-    customers: customers.data || [],
-    finance: finance.data || [],
-    statusHistory: statusHistory.data || [],
-    documents: documents.data || [],
-    tasks: tasks.data || [],
-    caseTasks: caseTasks.data || [],
-    communications: communications.data || [],
-    caseCommunications: caseCommunications.data || [],
-    metricsRows,
-    supportsCaseModuleV1: casesResponse.supportsCaseModuleV1,
-  };
+    const metricsRows = metricsQuery.error ? [] : metricsQuery.data || [];
+
+    return {
+      cases: casesResponse.data,
+      totalCount: casesResponse.count,
+      page,
+      pageSize,
+      managers,
+      leads: leads.data || [],
+      customers: customers.data || [],
+      finance: finance.data || [],
+      statusHistory: statusHistory.data || [],
+      documents: documents.data || [],
+      tasks: tasks.data || [],
+      caseTasks: caseTasks.data || [],
+      communications: communications.data || [],
+      caseCommunications: caseCommunications.data || [],
+      metricsRows,
+      supportsCaseModuleV1: casesResponse.supportsCaseModuleV1,
+    };
+  }, { force });
 }
 
 async function syncCustomerStats(client, customerId) {
@@ -1064,8 +1130,31 @@ async function syncCustomerStats(client, customerId) {
   }
 }
 
-function buildCaseCode() {
-  return `CASE-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+async function generateUniqueLeadCaseSuffix(client) {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const suffix = generateRandomRecordSuffix();
+    const nextLeadCode = buildLeadCode(suffix);
+    const nextCaseCode = buildCaseCode(suffix);
+
+    const [leadMatch, caseMatch] = await Promise.all([
+      client.from("leads").select("id").eq("lead_code", nextLeadCode).maybeSingle(),
+      client.from("cases").select("id").eq("case_code", nextCaseCode).maybeSingle(),
+    ]);
+
+    if (leadMatch.error && leadMatch.error.code !== "PGRST116") {
+      throw leadMatch.error;
+    }
+
+    if (caseMatch.error && caseMatch.error.code !== "PGRST116") {
+      throw caseMatch.error;
+    }
+
+    if (!leadMatch.data?.id && !caseMatch.data?.id) {
+      return suffix;
+    }
+  }
+
+  throw new Error("Could not generate a unique case reference.");
 }
 
 function deriveIssueType(lead) {
@@ -1547,8 +1636,11 @@ export async function convertLeadToCase(leadId) {
     }
   }
 
+  const isClaimFlowLead = String(lead.source || "").trim().toLowerCase() === "claim_flow";
+  const suffix = (isClaimFlowLead && extractRecordSuffix(lead.lead_code)) || await generateUniqueLeadCaseSuffix(client);
+  const normalizedLeadCode = isClaimFlowLead ? buildLeadCode(suffix) : (lead.lead_code || null);
   const caseId = crypto.randomUUID();
-  const caseCode = buildCaseCode();
+  const caseCode = buildCaseCode(suffix);
   const now = new Date().toISOString();
   const partner = await findReferralPartnerForContext(client, lead, null).catch(() => null);
   const estimatedCompensation = roundMoney(lead.estimated_compensation_eur || 0);
@@ -1588,6 +1680,7 @@ export async function convertLeadToCase(leadId) {
   const { error: leadUpdateError } = await client
     .from("leads")
     .update({
+      ...(isClaimFlowLead ? { lead_code: normalizedLeadCode } : {}),
       status: "converted",
       customer_id: customerId,
       referral_partner_id: partner?.id || lead.referral_partner_id || null,
@@ -1717,149 +1810,151 @@ export async function convertLeadToCase(leadId) {
   return { caseId, caseCode, customerId, alreadyExists: false };
 }
 
-export async function fetchCustomersModuleData() {
-  const client = requireSupabase();
-  const activeCustomerCaseStatuses = ["documents_pending", "ready_to_submit", "submitted_to_airline", "awaiting_response", "approved", "payment_processing"];
-  const fetchProfiles = async () => {
-    const primary = await client
-      .from("profiles")
-      .select("id, full_name, email, phone, role, created_at, status, last_login_at")
-      .order("created_at", { ascending: false })
-      .limit(500);
-
-    if (primary.error && isMissingColumnError(primary.error)) {
-      return client
+export async function fetchCustomersModuleData(options = {}) {
+  return withAdminModuleCache("customers-module", async () => {
+    const client = requireSupabase();
+    const activeCustomerCaseStatuses = ["documents_pending", "ready_to_submit", "submitted_to_airline", "awaiting_response", "approved", "payment_processing"];
+    const fetchProfiles = async () => {
+      const primary = await client
         .from("profiles")
-        .select("id, full_name, email, phone, role, created_at")
+        .select("id, full_name, email, phone, role, created_at, status, last_login_at")
         .order("created_at", { ascending: false })
         .limit(500);
+
+      if (primary.error && isMissingColumnError(primary.error)) {
+        return client
+          .from("profiles")
+          .select("id, full_name, email, phone, role, created_at")
+          .order("created_at", { ascending: false })
+          .limit(500);
+      }
+
+      return primary;
+    };
+
+    const [customers, leads, cases, communications, profiles, finance, leadDocuments, caseDocuments, leadSignatures, referrals] = await Promise.all([
+      client
+        .from("customers")
+        .select("id, full_name, email, phone, country, preferred_language, notes, total_leads, total_cases, total_approved_cases, total_compensation, created_at, updated_at")
+        .order("created_at", { ascending: false })
+        .limit(300),
+      client
+        .from("leads")
+        .select("id, lead_code, customer_id, status, stage, full_name, email, phone, departure_airport, arrival_airport, airline, created_at, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(500),
+      client
+        .from("cases")
+        .select("id, case_code, customer_id, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at, updated_at, paid_at")
+        .order("updated_at", { ascending: false })
+        .limit(500),
+      client
+        .from("communications")
+        .select("id, customer_id, entity_type, entity_id, channel, direction, subject, body, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      fetchProfiles(),
+      client
+        .from("case_finance")
+        .select("id, case_id, compensation_amount, customer_payout, payment_status, currency, updated_at, customer_paid_at")
+        .order("updated_at", { ascending: false })
+        .limit(600),
+      client
+        .from("lead_documents")
+        .select("id, lead_id, document_type, status, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(800),
+      client
+        .from("case_documents")
+        .select("id, case_id, document_type, status, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(800),
+      client
+        .from("lead_signatures")
+        .select("id, lead_id, terms_accepted, signed_at, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      client
+        .from("referrals")
+        .select("id, partner_id, customer_id, lead_id, case_id, referral_code, attribution_meta, created_at, updated_at")
+        .order("created_at", { ascending: false })
+        .limit(600),
+    ]);
+
+    const requiredErrors = [customers, leads, cases].map((result) => result.error).filter(Boolean);
+    if (requiredErrors.length) {
+      if (requiredErrors.some((error) => isMissingOptionalTable(error) || isMissingColumnError(error))) {
+        return {
+          customers: [],
+          leads: leads.data || [],
+          cases: cases.data || [],
+          communications: communications.data || [],
+          profiles: [],
+          finance: [],
+          leadDocuments: [],
+          caseDocuments: [],
+          leadSignatures: [],
+          supportsCustomersModuleV1: false,
+          supportsCustomerProfiles: false,
+          supportsCustomerFinance: false,
+          supportsCustomerDocuments: false,
+        };
+      }
+      throw requiredErrors[0];
     }
 
-    return primary;
-  };
-
-  const [customers, leads, cases, communications, profiles, finance, leadDocuments, caseDocuments, leadSignatures, referrals] = await Promise.all([
-    client
-      .from("customers")
-      .select("id, full_name, email, phone, country, preferred_language, notes, total_leads, total_cases, total_approved_cases, total_compensation, created_at, updated_at")
-      .order("created_at", { ascending: false })
-      .limit(300),
-    client
-      .from("leads")
-      .select("id, lead_code, customer_id, status, stage, full_name, email, phone, departure_airport, arrival_airport, airline, created_at, updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(500),
-    client
-      .from("cases")
-      .select("id, case_code, customer_id, status, payout_status, airline, route_from, route_to, estimated_compensation, created_at, updated_at, paid_at")
-      .order("updated_at", { ascending: false })
-      .limit(500),
-    client
-      .from("communications")
-      .select("id, customer_id, entity_type, entity_id, channel, direction, subject, body, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    fetchProfiles(),
-    client
-      .from("case_finance")
-      .select("id, case_id, compensation_amount, customer_payout, payment_status, currency, updated_at, customer_paid_at")
-      .order("updated_at", { ascending: false })
-      .limit(600),
-    client
-      .from("lead_documents")
-      .select("id, lead_id, document_type, status, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(800),
-    client
-      .from("case_documents")
-      .select("id, case_id, document_type, status, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(800),
-    client
-      .from("lead_signatures")
-      .select("id, lead_id, terms_accepted, signed_at, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(500),
-    client
-      .from("referrals")
-      .select("id, partner_id, customer_id, lead_id, case_id, referral_code, attribution_meta, created_at, updated_at")
-      .order("created_at", { ascending: false })
-      .limit(600),
-  ]);
-
-  const requiredErrors = [customers, leads, cases].map((result) => result.error).filter(Boolean);
-  if (requiredErrors.length) {
-    if (requiredErrors.some((error) => isMissingOptionalTable(error) || isMissingColumnError(error))) {
-      return {
-        customers: [],
-        leads: leads.data || [],
-        cases: cases.data || [],
-        communications: communications.data || [],
-        profiles: [],
-        finance: [],
-        leadDocuments: [],
-        caseDocuments: [],
-        leadSignatures: [],
-        supportsCustomersModuleV1: false,
-        supportsCustomerProfiles: false,
-        supportsCustomerFinance: false,
-        supportsCustomerDocuments: false,
-      };
+    if (communications.error && !isMissingOptionalTable(communications.error)) {
+      throw communications.error;
     }
-    throw requiredErrors[0];
-  }
 
-  if (communications.error && !isMissingOptionalTable(communications.error)) {
-    throw communications.error;
-  }
+    if (profiles.error && !isMissingOptionalTable(profiles.error) && !isMissingColumnError(profiles.error)) {
+      throw profiles.error;
+    }
 
-  if (profiles.error && !isMissingOptionalTable(profiles.error) && !isMissingColumnError(profiles.error)) {
-    throw profiles.error;
-  }
+    if (finance.error && !isMissingOptionalTable(finance.error) && !isMissingColumnError(finance.error)) {
+      throw finance.error;
+    }
 
-  if (finance.error && !isMissingOptionalTable(finance.error) && !isMissingColumnError(finance.error)) {
-    throw finance.error;
-  }
+    if (leadDocuments.error && !isMissingOptionalTable(leadDocuments.error) && !isMissingColumnError(leadDocuments.error)) {
+      throw leadDocuments.error;
+    }
 
-  if (leadDocuments.error && !isMissingOptionalTable(leadDocuments.error) && !isMissingColumnError(leadDocuments.error)) {
-    throw leadDocuments.error;
-  }
+    if (caseDocuments.error && !isMissingOptionalTable(caseDocuments.error) && !isMissingColumnError(caseDocuments.error)) {
+      throw caseDocuments.error;
+    }
 
-  if (caseDocuments.error && !isMissingOptionalTable(caseDocuments.error) && !isMissingColumnError(caseDocuments.error)) {
-    throw caseDocuments.error;
-  }
+    if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error) && !isMissingColumnError(leadSignatures.error)) {
+      throw leadSignatures.error;
+    }
 
-  if (leadSignatures.error && !isMissingOptionalTable(leadSignatures.error) && !isMissingColumnError(leadSignatures.error)) {
-    throw leadSignatures.error;
-  }
+    if (referrals.error && !isMissingOptionalTable(referrals.error) && !isMissingColumnError(referrals.error)) {
+      throw referrals.error;
+    }
 
-  if (referrals.error && !isMissingOptionalTable(referrals.error) && !isMissingColumnError(referrals.error)) {
-    throw referrals.error;
-  }
-
-  return {
-    customers: customers.data || [],
-    leads: leads.data || [],
-    cases: (cases.data || []).map((item) => ({
-      ...item,
-      is_active_customer_case: activeCustomerCaseStatuses.includes(String(item.status || "").toLowerCase()),
-    })),
-    communications: communications.data || [],
-    profiles: profiles.data || [],
-    finance: finance.data || [],
-    leadDocuments: leadDocuments.data || [],
-    caseDocuments: caseDocuments.data || [],
-    leadSignatures: leadSignatures.data || [],
-    referrals: referrals.data || [],
-    supportsCustomersModuleV1: true,
-    supportsCustomerProfiles: !profiles.error,
-    supportsCustomerFinance: !finance.error,
-    supportsCustomerDocuments: !leadDocuments.error && !caseDocuments.error,
-    supportsCustomerReferrals: !referrals.error,
-  };
+    return {
+      customers: customers.data || [],
+      leads: leads.data || [],
+      cases: (cases.data || []).map((item) => ({
+        ...item,
+        is_active_customer_case: activeCustomerCaseStatuses.includes(String(item.status || "").toLowerCase()),
+      })),
+      communications: communications.data || [],
+      profiles: profiles.data || [],
+      finance: finance.data || [],
+      leadDocuments: leadDocuments.data || [],
+      caseDocuments: caseDocuments.data || [],
+      leadSignatures: leadSignatures.data || [],
+      referrals: referrals.data || [],
+      supportsCustomersModuleV1: true,
+      supportsCustomerProfiles: !profiles.error,
+      supportsCustomerFinance: !finance.error,
+      supportsCustomerDocuments: !leadDocuments.error && !caseDocuments.error,
+      supportsCustomerReferrals: !referrals.error,
+    };
+  }, options);
 }
 
 export async function updateCustomerProfile(customerId, updates) {
@@ -2324,8 +2419,9 @@ export async function fetchDocumentsCenterData() {
   };
 }
 
-export async function fetchFinanceModuleData() {
-  const client = requireSupabase();
+export async function fetchFinanceModuleData(options = {}) {
+  return withAdminModuleCache("finance-module", async () => {
+    const client = requireSupabase();
 
   const [finance, cases, customers, profiles] = await Promise.all([
     client
@@ -2377,13 +2473,14 @@ export async function fetchFinanceModuleData() {
     throw finance.error;
   }
 
-  return {
-    finance: finance.data || [],
-    cases: cases.data || [],
-    customers: customers.data || [],
-    profiles: profiles.data || [],
-    supportsFinanceModuleV1: true,
-  };
+    return {
+      finance: finance.data || [],
+      cases: cases.data || [],
+      customers: customers.data || [],
+      profiles: profiles.data || [],
+      supportsFinanceModuleV1: true,
+    };
+  }, options);
 }
 
 export async function updateCaseFinance(financeId, updates) {
@@ -2450,8 +2547,9 @@ function matchPartnerForRow(row, partners = []) {
   }) || null;
 }
 
-export async function fetchReferralPartnersModuleData() {
-  const client = requireSupabase();
+export async function fetchReferralPartnersModuleData(options = {}) {
+  return withAdminModuleCache("referral-partners-module", async () => {
+    const client = requireSupabase();
 
   const [partners, payouts, leads, cases, finance, commissions, referrals] = await Promise.all([
     client
@@ -2501,21 +2599,23 @@ export async function fetchReferralPartnersModuleData() {
     throw optionalErrors.find((error) => !isMissingOptionalTable(error) && !isMissingColumnError(error));
   }
 
-  return {
-    partners: partners.data || [],
-    payouts: payouts.data || [],
-    leads: leads.data || [],
-    cases: cases.data || [],
-    finance: finance.data || [],
-    commissions: commissions.data || [],
-    referrals: referrals.data || [],
-    supportsPartnersModuleV1: !partners.error,
-    supportsReferralsModuleV1: !referrals.error,
-  };
+    return {
+      partners: partners.data || [],
+      payouts: payouts.data || [],
+      leads: leads.data || [],
+      cases: cases.data || [],
+      finance: finance.data || [],
+      commissions: commissions.data || [],
+      referrals: referrals.data || [],
+      supportsPartnersModuleV1: !partners.error,
+      supportsReferralsModuleV1: !referrals.error,
+    };
+  }, options);
 }
 
-export async function fetchReferralControlCenterData() {
-  const client = requireSupabase();
+export async function fetchReferralControlCenterData(options = {}) {
+  return withAdminModuleCache("referral-control-center-module", async () => {
+    const client = requireSupabase();
 
   const [partnerModule, applicationsModule, referrals, customers] = await Promise.all([
     fetchReferralPartnersModuleData(),
@@ -2540,18 +2640,20 @@ export async function fetchReferralControlCenterData() {
     throw customers.error;
   }
 
-  return {
-    ...partnerModule,
-    ...applicationsModule,
-    referrals: referrals.data || [],
-    customers: customers.data || [],
-    supportsReferralsModuleV1: !referrals.error,
-    supportsReferralCustomersV1: !customers.error,
-  };
+    return {
+      ...partnerModule,
+      ...applicationsModule,
+      referrals: referrals.data || [],
+      customers: customers.data || [],
+      supportsReferralsModuleV1: !referrals.error,
+      supportsReferralCustomersV1: !customers.error,
+    };
+  }, options);
 }
 
-export async function fetchPartnerApplicationsModuleData() {
-  const client = requireSupabase();
+export async function fetchPartnerApplicationsModuleData(options = {}) {
+  return withAdminModuleCache("partner-applications-module", async () => {
+    const client = requireSupabase();
 
   const { data, error } = await client
     .from("partner_applications")
@@ -2591,13 +2693,14 @@ export async function fetchPartnerApplicationsModuleData() {
     return normalized;
   };
 
-  return {
-    applications: (data || []).map((item) => ({
-      ...item,
-      status: normalizePartnerApplicationStatus(item.status),
-      reviewer: item.reviewed_by ? reviewersById.get(item.reviewed_by) || null : null,
-    })),
-  };
+    return {
+      applications: (data || []).map((item) => ({
+        ...item,
+        status: normalizePartnerApplicationStatus(item.status),
+        reviewer: item.reviewed_by ? reviewersById.get(item.reviewed_by) || null : null,
+      })),
+    };
+  }, options);
 }
 
 export async function reviewPartnerApplication(applicationId, input = {}) {
@@ -2658,6 +2761,17 @@ async function invokePartnerApplicationReviewFunction(functionName, body) {
   });
 
   if (error) {
+    const context = error.context;
+    if (context && typeof context.json === "function") {
+      let message = "";
+      try {
+        const payload = await context.json();
+        message = payload?.error?.message || payload?.message || "";
+      } catch {}
+      if (message) {
+        throw new Error(message);
+      }
+    }
     throw error;
   }
 
@@ -2757,6 +2871,25 @@ export async function updatePartnerPortalStatus(partnerId, portalStatus, notes) 
       portal_status: normalizedStatus,
     });
   }
+
+  return result;
+}
+
+export async function deletePartnerAccount(partnerId) {
+  const normalizedPartnerId = String(partnerId || "").trim();
+  if (!normalizedPartnerId) {
+    throw new Error("partner_id is required.");
+  }
+
+  const result = await invokePartnerApplicationReviewFunction("delete-partner-account", {
+    partner_id: normalizedPartnerId,
+  });
+
+  void logAdminActivity("delete_partner", "referral_partner", normalizedPartnerId, {
+    module: "partner_program",
+    profile_id: result?.profile?.id || null,
+    application_id: result?.application?.id || null,
+  });
 
   return result;
 }
@@ -2895,8 +3028,9 @@ export async function createReferralPartnerPayout(input) {
   return data;
 }
 
-export async function fetchActivityLogsData() {
-  const client = requireSupabase();
+export async function fetchActivityLogsData(options = {}) {
+  return withAdminModuleCache("activity-logs-module", async () => {
+    const client = requireSupabase();
 
   const [logs, profiles] = await Promise.all([
     client
@@ -2926,11 +3060,12 @@ export async function fetchActivityLogsData() {
     throw logs.error;
   }
 
-  return {
-    logs: logs.data || [],
-    users: profiles.data || [],
-    supportsActivityLogsV1: true,
-  };
+    return {
+      logs: logs.data || [],
+      users: profiles.data || [],
+      supportsActivityLogsV1: true,
+    };
+  }, options);
 }
 
 export async function fetchReportsModuleData() {
@@ -3596,8 +3731,9 @@ async function fetchRoleMemberStats(client) {
   };
 }
 
-export async function fetchAdminRolesModuleData() {
-  const client = requireSupabase();
+export async function fetchAdminRolesModuleData(options = {}) {
+  return withAdminModuleCache("admin-roles-module", async () => {
+    const client = requireSupabase();
 
   const [rolesRaw, permissionsRaw, rolePermissionsRaw, memberStats, menuAccess] = await Promise.all([
     fetchRolesCatalog(client),
@@ -3639,37 +3775,38 @@ export async function fetchAdminRolesModuleData() {
     memberCountByRoleCode.set(item.role_code, (memberCountByRoleCode.get(item.role_code) || 0) + 1);
   });
 
-  return {
-    roles: roles.map((role) => ({
-      ...role,
-      memberCount: memberStats.supportsTeamMembers
-        ? (memberCountByRoleId.get(role.id) || 0)
-        : (memberCountByRoleCode.get(role.code) || 0),
-    })),
-    permissions,
-    rolePermissions,
-    menuItems: (menuAccess.menuItems || []).map((item) => ({
-      id: item.id || item.key,
-      key: item.key,
-      label: item.label,
-      route: item.route,
-      icon: item.icon || null,
-      groupKey: item.group_key || item.groupKey || null,
-      groupLabel: item.group_label || item.groupLabel || null,
-      sortOrder: item.sort_order ?? item.sortOrder ?? 0,
-      requiredPermissions: Array.isArray(item.required_permissions)
-        ? item.required_permissions
-        : Array.isArray(item.requiredPermissions)
-          ? item.requiredPermissions
-          : [],
-      isCritical: Boolean(item.is_critical ?? item.isCritical),
-      isEnabled: item.is_enabled ?? item.isEnabled ?? true,
-    })),
-    roleMenuVisibility: menuAccess.roleMenuVisibility || [],
-    supportsDynamicRolesV1: roles.length > 0 && permissions.length > 0,
-    supportsTeamMembersV1: memberStats.supportsTeamMembers,
-    supportsMenuAccessV1: menuAccess.supportsMenuAccessV1,
-  };
+    return {
+      roles: roles.map((role) => ({
+        ...role,
+        memberCount: memberStats.supportsTeamMembers
+          ? (memberCountByRoleId.get(role.id) || 0)
+          : (memberCountByRoleCode.get(role.code) || 0),
+      })),
+      permissions,
+      rolePermissions,
+      menuItems: (menuAccess.menuItems || []).map((item) => ({
+        id: item.id || item.key,
+        key: item.key,
+        label: item.label,
+        route: item.route,
+        icon: item.icon || null,
+        groupKey: item.group_key || item.groupKey || null,
+        groupLabel: item.group_label || item.groupLabel || null,
+        sortOrder: item.sort_order ?? item.sortOrder ?? 0,
+        requiredPermissions: Array.isArray(item.required_permissions)
+          ? item.required_permissions
+          : Array.isArray(item.requiredPermissions)
+            ? item.requiredPermissions
+            : [],
+        isCritical: Boolean(item.is_critical ?? item.isCritical),
+        isEnabled: item.is_enabled ?? item.isEnabled ?? true,
+      })),
+      roleMenuVisibility: menuAccess.roleMenuVisibility || [],
+      supportsDynamicRolesV1: roles.length > 0 && permissions.length > 0,
+      supportsTeamMembersV1: memberStats.supportsTeamMembers,
+      supportsMenuAccessV1: menuAccess.supportsMenuAccessV1,
+    };
+  }, options);
 }
 
 function buildRolePayload(input = {}) {
@@ -4340,8 +4477,9 @@ export async function fetchAdminTeamMemberActivity(profileId, filters = {}) {
   };
 }
 
-export async function fetchAdminTeamModuleData() {
-  const client = requireSupabase();
+export async function fetchAdminTeamModuleData(options = {}) {
+  return withAdminModuleCache("admin-team-module", async () => {
+    const client = requireSupabase();
 
   const [rolesModule, teamMembersResponse, legacyRolesResponse, activityResponse, adminActivityResponse, sessionsResponse] = await Promise.all([
     fetchAdminRolesModuleData(),
@@ -4513,24 +4651,25 @@ export async function fetchAdminTeamModuleData() {
     return String(left.fullName || left.email).localeCompare(String(right.fullName || right.email));
   });
 
-  return {
-    members,
-    roles: sortRolesByRank(rolesModule.roles).filter((role) => role.isActive),
-    permissions: rolesModule.permissions || [],
-    rolePermissions: rolesModule.rolePermissions || [],
-    menuItems: rolesModule.menuItems || [],
-    roleMenuVisibility: rolesModule.roleMenuVisibility || [],
-    activityTimeline: combinedActivityLogs
-      .filter((item) => item.admin_profile_id)
-      .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime()),
-    workSessions: sessions,
-    supportsTeamMembersV1: !teamMembersResponse.error,
-    supportsAdminActivityLogsV1: !adminActivityResponse.error,
-    supportsCoreActivityLogsV1: !activityResponse.error,
-    supportsWorkSessionsV1: !sessionsResponse.error,
-    supportsMenuAccessV1: rolesModule.supportsMenuAccessV1,
-    supportsInviteEmailFlow: false,
-  };
+    return {
+      members,
+      roles: sortRolesByRank(rolesModule.roles).filter((role) => role.isActive),
+      permissions: rolesModule.permissions || [],
+      rolePermissions: rolesModule.rolePermissions || [],
+      menuItems: rolesModule.menuItems || [],
+      roleMenuVisibility: rolesModule.roleMenuVisibility || [],
+      activityTimeline: combinedActivityLogs
+        .filter((item) => item.admin_profile_id)
+        .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime()),
+      workSessions: sessions,
+      supportsTeamMembersV1: !teamMembersResponse.error,
+      supportsAdminActivityLogsV1: !adminActivityResponse.error,
+      supportsCoreActivityLogsV1: !activityResponse.error,
+      supportsWorkSessionsV1: !sessionsResponse.error,
+      supportsMenuAccessV1: rolesModule.supportsMenuAccessV1,
+      supportsInviteEmailFlow: false,
+    };
+  }, options);
 }
 
 async function getRoleById(client, roleId) {
@@ -5779,44 +5918,60 @@ export async function fetchAdminSidebarMenu(profileId, roleCodes = []) {
   return payload;
 }
 
-export async function fetchAdminSearchData() {
-  const client = requireSupabase();
+export async function fetchAdminSearchData(options = {}) {
+  return withAdminModuleCache("admin-search-index", async () => {
+    const client = requireSupabase();
 
-  const [leads, cases, customers, tasks, partners, blogPosts, faqItems, cmsPages, settings] = await Promise.all([
-    client.from("leads").select("id, lead_code, full_name, email, airline, departure_airport, arrival_airport, status").order("created_at", { ascending: false }).limit(250),
-    client.from("cases").select("id, case_code, airline, route_from, route_to, status").order("created_at", { ascending: false }).limit(100),
-    client.from("customers").select("id, full_name, email, phone, country").order("created_at", { ascending: false }).limit(100),
-    client.from("tasks").select("id, title, status, related_entity_type").order("created_at", { ascending: false }).limit(100),
-    client.from("referral_partners").select("id, name, referral_code, status").order("created_at", { ascending: false }).limit(100),
-    client.from("blog_posts").select("id, title, slug, status").order("updated_at", { ascending: false }).limit(100),
-    client.from("faq_items").select("id, question, category, status").order("updated_at", { ascending: false }).limit(100),
-    client.from("cms_pages").select("id, page_key, title, slug, status").order("updated_at", { ascending: false }).limit(100),
-    client.from("system_settings").select("id, setting_key, label, group_key").order("updated_at", { ascending: false }).limit(100),
-  ]);
+    const [leads, cases, customers, tasks, partners, blogPosts, faqItems, cmsPages, settings] = await Promise.all([
+      client.from("leads").select("id, lead_code, full_name, email, airline, departure_airport, arrival_airport, status").order("created_at", { ascending: false }).limit(250),
+      client.from("cases").select("id, case_code, airline, route_from, route_to, status").order("created_at", { ascending: false }).limit(100),
+      client.from("customers").select("id, full_name, email, phone, country").order("created_at", { ascending: false }).limit(100),
+      client.from("tasks").select("id, title, status, related_entity_type").order("created_at", { ascending: false }).limit(100),
+      client.from("referral_partners").select("id, name, referral_code, status").order("created_at", { ascending: false }).limit(100),
+      client.from("blog_posts").select("id, title, slug, status").order("updated_at", { ascending: false }).limit(100),
+      client.from("faq_items").select("id, question, category, status").order("updated_at", { ascending: false }).limit(100),
+      client.from("cms_pages").select("id, page_key, title, slug, status").order("updated_at", { ascending: false }).limit(100),
+      client.from("system_settings").select("id, setting_key, label, group_key").order("updated_at", { ascending: false }).limit(100),
+    ]);
 
-  const tolerate = [partners, blogPosts, faqItems, cmsPages, settings];
-  for (const result of [leads, cases, customers, tasks]) {
-    if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
-      throw result.error;
+    const tolerate = [partners, blogPosts, faqItems, cmsPages, settings];
+    for (const result of [leads, cases, customers, tasks]) {
+      if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
+        throw result.error;
+      }
     }
-  }
-  for (const result of tolerate) {
-    if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
-      throw result.error;
+    for (const result of tolerate) {
+      if (result.error && !isMissingOptionalTable(result.error) && !isMissingColumnError(result.error)) {
+        throw result.error;
+      }
     }
-  }
 
-  return {
-    leads: leads.data || [],
-    cases: cases.data || [],
-    customers: customers.data || [],
-    tasks: tasks.data || [],
-    partners: partners.data || [],
-    blogPosts: blogPosts.data || [],
-    faqItems: faqItems.data || [],
-    cmsPages: cmsPages.data || [],
-    settings: settings.data || [],
-  };
+    return {
+      leads: leads.data || [],
+      cases: cases.data || [],
+      customers: customers.data || [],
+      tasks: tasks.data || [],
+      partners: partners.data || [],
+      blogPosts: blogPosts.data || [],
+      faqItems: faqItems.data || [],
+      cmsPages: cmsPages.data || [],
+      settings: settings.data || [],
+    };
+  }, options);
+}
+
+export function preloadAdminWorkspaceData({ force = false } = {}) {
+  return Promise.allSettled([
+    fetchAdminSearchData({ force }),
+    fetchLeadsModuleData({ force }),
+    fetchCasesModuleData({ page: 1, pageSize: 500, force }),
+    fetchCustomersModuleData({ force }),
+    fetchFinanceModuleData({ force }),
+    fetchReferralControlCenterData({ force }),
+    fetchActivityLogsData({ force }),
+    fetchAdminRolesModuleData({ force }),
+    fetchAdminTeamModuleData({ force }),
+  ]).then(() => undefined);
 }
 
 export async function createCmsPage(input) {

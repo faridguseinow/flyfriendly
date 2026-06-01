@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FilterX, Plus, X } from "lucide-react";
+import { Download, FilterX, Plus, RefreshCw, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   createTask,
@@ -300,11 +300,11 @@ export default function AdminCases() {
   const [activeFinanceAction, setActiveFinanceAction] = useState("");
   const lastViewedCaseIdRef = useRef("");
 
-  const loadCases = async () => {
+  const loadCases = async (options = {}) => {
     setError("");
     setIsLoading(true);
     try {
-      const next = await fetchCasesModuleData({ page: 1, pageSize: 500 });
+      const next = await fetchCasesModuleData({ page: 1, pageSize: 500, force: options.force });
       setModuleData(next);
     } catch (nextError) {
       setError(nextError.message || "Could not load cases module.");
@@ -314,7 +314,7 @@ export default function AdminCases() {
   };
 
   useEffect(() => {
-    loadCases();
+    void loadCases();
   }, []);
 
   useEffect(() => {
@@ -666,7 +666,7 @@ export default function AdminCases() {
     setIsSaving(true);
     try {
       await updateCaseWorkflow(selectedCase.id, updates);
-      await loadCases();
+      await loadCases({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not update case.");
     } finally {
@@ -735,7 +735,7 @@ export default function AdminCases() {
   };
 
   const refreshSelectedCaseFinance = async (caseId, successMessage = "") => {
-    await loadCases();
+    await loadCases({ force: true });
     await loadSelectedCaseFinance(caseId, { showLoader: false, resetMessages: false });
     if (successMessage) {
       setFinanceNotice(successMessage);
@@ -846,7 +846,7 @@ export default function AdminCases() {
         status: "todo",
       });
       setTaskModalOpen(false);
-      await loadCases();
+      await loadCases({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not create task.");
     } finally {
@@ -906,6 +906,12 @@ export default function AdminCases() {
       <AdminPageHeader
         title="Cases"
         secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: () => void loadCases({ force: true }),
+            disabled: isLoading || isSaving || isCreatingTask,
+          },
           {
             label: "Export CSV",
             icon: Download,
@@ -1041,7 +1047,7 @@ export default function AdminCases() {
                     <article><strong>Arrival airport</strong><span>{selectedCase.route_to || selectedCase.lead?.arrival_airport || "—"}</span></article>
                     <article><strong>Flight date</strong><span>{formatDate(selectedCase.flight_date)}</span></article>
                     <article><strong>Airline</strong><span>{selectedCase.airline || "—"}</span></article>
-                    <article><strong>Flight number</strong><span>Not configured</span></article>
+                    <article><strong>Connection airport</strong><span>{selectedCase.lead?.payload?.connectionCity || selectedCase.lead?.flight_number || "—"}</span></article>
                     <article><strong>Route type</strong><span>Not configured</span></article>
                   </div>
                 </section>

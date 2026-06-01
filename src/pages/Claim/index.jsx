@@ -237,15 +237,17 @@ function readStoredClaimDraft() {
       departureAirportSource: parsed?.departureAirportSource || null,
       destinationAirportId: parsed?.destinationAirportId || null,
       destinationAirportSource: parsed?.destinationAirportSource || null,
+      connectionAirportId: parsed?.connectionAirportId || null,
+      connectionAirportSource: parsed?.connectionAirportSource || null,
       airline: parsed?.airline || "",
       airlineId: parsed?.airlineId || null,
       airlineSource: parsed?.airlineSource || null,
       date: parsed?.date || "",
-    delayDuration: parsed?.delayDuration || "",
-    direct: parsed?.direct || "",
-    connectionCity: parsed?.connectionCity || "",
-    preferredLanguage: parsed?.preferredLanguage || null,
-  };
+      delayDuration: parsed?.delayDuration || "",
+      direct: parsed?.direct || "",
+      connectionCity: parsed?.connectionCity || "",
+      preferredLanguage: parsed?.preferredLanguage || null,
+    };
   } catch {
     clearStoredClaimDraft();
     return {};
@@ -264,6 +266,8 @@ function buildStoredClaimDraft(data, stage, currentLanguageCode) {
     departureAirportSource: data.departureAirportSource || null,
     destinationAirportId: data.destinationAirportId || null,
     destinationAirportSource: data.destinationAirportSource || null,
+    connectionAirportId: data.connectionAirportId || null,
+    connectionAirportSource: data.connectionAirportSource || null,
     airline: data.airline || "",
     airlineId: data.airlineId || null,
     airlineSource: data.airlineSource || null,
@@ -278,15 +282,16 @@ function buildStoredClaimDraft(data, stage, currentLanguageCode) {
 function hasStoredClaimDraftContent(draft) {
   return Boolean(
     draft.departure
-      || draft.destination
-      || draft.departureAirportId
-      || draft.destinationAirportId
-      || draft.airline
-      || draft.airlineId
-      || draft.date
-      || draft.delayDuration
-      || draft.direct
-      || draft.connectionCity,
+    || draft.destination
+    || draft.departureAirportId
+    || draft.destinationAirportId
+    || draft.connectionAirportId
+    || draft.airline
+    || draft.airlineId
+    || draft.date
+    || draft.delayDuration
+    || draft.direct
+    || draft.connectionCity,
   );
 }
 
@@ -451,17 +456,17 @@ function Field({
 function PhoneField({ data, onChange, error = "", t }) {
   return (
     <label className={`claim-phone-field claim-phone-field--plain${error ? " is-error" : ""}`}>
-        <Phone size={18} strokeWidth={1.8} aria-hidden="true" />
-        <input
-          name="phone"
-          type="tel"
-          inputMode="tel"
-          value={data.phone || ""}
-          onChange={(event) => onChange("phone", event.target.value)}
-          placeholder={t("claim.contact.phonePlaceholder")}
-          aria-invalid={Boolean(error)}
-          aria-label={t("claim.contact.phone")}
-        />
+      <Phone size={18} strokeWidth={1.8} aria-hidden="true" />
+      <input
+        name="phone"
+        type="tel"
+        inputMode="tel"
+        value={data.phone || ""}
+        onChange={(event) => onChange("phone", event.target.value)}
+        placeholder={t("claim.contact.phonePlaceholder")}
+        aria-invalid={Boolean(error)}
+        aria-label={t("claim.contact.phone")}
+      />
     </label>
   );
 }
@@ -950,13 +955,22 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
         {data.direct === "no" ? (
           <label className="claim-wide-field">
             <span>{t("claim.eligibility.connectionCity")}</span>
-            <Field
+            <SearchCombobox
               icon={MapPin}
               name="connectionCity"
               value={data.connectionCity || ""}
-              onChange={onChange}
               placeholder={t("claim.eligibility.connectionCityPlaceholder")}
-              required
+              options={airportOptions.connection}
+              onInputChange={onChange}
+              onSelect={onSelect}
+              renderOption={(option) => ({
+                title: option.title,
+                subtitle: option.subtitle,
+                meta: option.meta,
+                countryCode: option.countryCode,
+                code: option.code,
+              })}
+              emptyLabel={t("claim.eligibility.noAirportsFound")}
             />
             <small className="claim-field-help">{t("claim.eligibility.connectionCityHelp")}</small>
           </label>
@@ -1027,10 +1041,7 @@ function DocumentsStep({ data, files, onChange, onFile, onRemoveFile, onNext, on
         <textarea name="reason" value={data.reason || ""} onChange={onChange} placeholder={t("claim.documents.reasonPlaceholder")} minLength={3} maxLength={200} required />
         <small className="claim-limit">{(data.reason || "").length}/200</small>
       </section>
-      <div className="claim-note">
-        <Info size={18} strokeWidth={1.8} />
-        <p>{t("claim.documents.signatureNote")}</p>
-      </div>
+
       <div className="claim-actions">
         <button className="claim-back" type="button" onClick={onBack}>{t("common.back")}</button>
         <button className="btn btn-primary" type="submit" disabled={isSaving}>{isSaving ? t("common.saving") : t("common.next")}</button>
@@ -1222,6 +1233,12 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
           </div>
           <small>{t("claim.finish.signatureHint")}</small>
         </div>
+
+        <div className="claim-note">
+          <Info size={18} strokeWidth={1.8} />
+          <p>{t("claim.documents.signatureNote")}</p>
+        </div>
+
         <label className="claim-sign__terms">
           <input type="checkbox" name="termsAccepted" checked={Boolean(data.termsAccepted)} onChange={onChange} required />
           <span>
@@ -1345,6 +1362,7 @@ function ClaimFlow() {
   const [files, setFiles] = useState(() => navigationClaimState?.files || {});
   const [departureMatches, setDepartureMatches] = useState([]);
   const [destinationMatches, setDestinationMatches] = useState([]);
+  const [connectionMatches, setConnectionMatches] = useState([]);
   const [airlineMatches, setAirlineMatches] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [syncError, setSyncError] = useState("");
@@ -1453,6 +1471,29 @@ function ClaimFlow() {
   }, [data.destination, stage]);
 
   useEffect(() => {
+    if (stage !== "eligibility" || data.direct !== "no") {
+      setConnectionMatches([]);
+      return;
+    }
+
+    if (!data.connectionCity || data.connectionCity.length < 2) {
+      setConnectionMatches([]);
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      try {
+        const airports = await searchAirports(data.connectionCity);
+        setConnectionMatches(airports.map((airport) => describeAirportOption(airport)));
+      } catch {
+        setConnectionMatches([]);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [data.connectionCity, data.direct, stage]);
+
+  useEffect(() => {
     if (stage !== "eligibility" || !data.airline || data.airline.length < 2) {
       setAirlineMatches([]);
       return;
@@ -1483,6 +1524,12 @@ function ClaimFlow() {
       nextData.destination = selectedOption.label;
       nextData.destinationAirportId = selectedOption.id || null;
       nextData.destinationAirportSource = selectedOption.source || null;
+    }
+
+    if (name === "connectionCity") {
+      nextData.connectionCity = selectedOption.label;
+      nextData.connectionAirportId = selectedOption.id || null;
+      nextData.connectionAirportSource = selectedOption.source || null;
     }
 
     if (name === "airline") {
@@ -1522,8 +1569,15 @@ function ClaimFlow() {
       nextData.airlineSource = null;
     }
 
+    if (name === "connectionCity") {
+      nextData.connectionAirportId = null;
+      nextData.connectionAirportSource = null;
+    }
+
     if (name === "direct" && value === "yes") {
       nextData.connectionCity = "";
+      nextData.connectionAirportId = null;
+      nextData.connectionAirportSource = null;
     }
 
     if ((name === "departure" || name === "destination") && syncError) {
@@ -1558,6 +1612,17 @@ function ClaimFlow() {
     if (name === "airline") {
       nextData.airlineId = null;
       nextData.airlineSource = null;
+    }
+
+    if (name === "connectionCity") {
+      nextData.connectionAirportId = null;
+      nextData.connectionAirportSource = null;
+    }
+
+    if (name === "direct" && value === "yes") {
+      nextData.connectionCity = "";
+      nextData.connectionAirportId = null;
+      nextData.connectionAirportSource = null;
     }
 
     if ((name === "departure" || name === "destination") && syncError) {
@@ -1777,6 +1842,12 @@ function ClaimFlow() {
         airportOptions={{
           departure: departureMatches.filter((option) => String(option.id || "") !== String(data.destinationAirportId || "") && normalizeAirportValue(option.label) !== normalizeAirportValue(data.destination)),
           destination: destinationMatches.filter((option) => String(option.id || "") !== String(data.departureAirportId || "") && normalizeAirportValue(option.label) !== normalizeAirportValue(data.departure)),
+          connection: connectionMatches.filter((option) => (
+            String(option.id || "") !== String(data.departureAirportId || "")
+            && String(option.id || "") !== String(data.destinationAirportId || "")
+            && normalizeAirportValue(option.label) !== normalizeAirportValue(data.departure)
+            && normalizeAirportValue(option.label) !== normalizeAirportValue(data.destination)
+          )),
         }}
         airlineOptions={airlineMatches}
         isSaving={isSaving}

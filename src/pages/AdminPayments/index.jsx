@@ -151,8 +151,8 @@ export default function AdminPayments() {
 
     try {
       const [nextClientRows, nextPartnerRows] = await Promise.all([
-        getClientPayments(clientFilters),
-        getPartnerPayments(partnerFilters),
+        getClientPayments(clientFilters, { force: options.force }),
+        getPartnerPayments(partnerFilters, { force: options.force }),
       ]);
 
       setClientRows(nextClientRows);
@@ -220,7 +220,7 @@ export default function AdminPayments() {
 
     try {
       await action();
-      await loadPayments({ preserveSelection: true });
+      await loadPayments({ preserveSelection: true, force: true });
       setDrawerNotice(successMessage);
     } catch (nextError) {
       setDrawerError(nextError.message || "Could not update payment.");
@@ -230,7 +230,7 @@ export default function AdminPayments() {
   };
 
   const handleRefresh = async () => {
-    await loadPayments({ preserveSelection: true });
+    await loadPayments({ preserveSelection: true, force: true });
   };
 
   const handleExport = async () => {

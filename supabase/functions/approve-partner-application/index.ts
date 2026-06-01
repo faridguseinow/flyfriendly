@@ -24,6 +24,7 @@ const MANAGER_ROLE_CODES = new Set([
 
 const REQUIRED_PERMISSION = "partner_applications.manage";
 const MAX_REFERRAL_CODE_ATTEMPTS = 10;
+const MODERN_REFERRAL_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/;
 
 type RequestBody = {
   application_id?: string;
@@ -171,6 +172,10 @@ function slugify(value = "") {
 function buildCandidate(base: string, index: number, limit: number) {
   const normalized = String(base || "partner").replace(/^-+|-+$/g, "") || "partner";
   return (index === 0 ? normalized : `${normalized}-${index + 1}`).slice(0, limit);
+}
+
+function isModernReferralCode(value: string | null | undefined) {
+  return MODERN_REFERRAL_CODE_PATTERN.test(String(value || "").trim().toUpperCase());
 }
 
 function normalizeRecoveryActionLink(actionLink: string | null | undefined, language: string) {
@@ -483,6 +488,30 @@ async function generateUniquePartnerIdentity(
   throw new Error("Unable to generate a unique referral code. Please try again.");
 }
 
+async function generateUniquePartnerReferralCode(
+  supabase: ReturnType<typeof createClient>,
+) {
+  for (let index = 0; index < MAX_REFERRAL_CODE_ATTEMPTS; index += 1) {
+    const referralCode = generateRandomReferralCode();
+
+    const existing = await supabase
+      .from("referral_partners")
+      .select("id")
+      .eq("referral_code", referralCode)
+      .limit(1);
+
+    if (existing.error) {
+      throw existing.error;
+    }
+
+    if (!(existing.data || []).length) {
+      return referralCode;
+    }
+  }
+
+  throw new Error("Unable to generate a unique referral code. Please try again.");
+}
+
 async function createOrLinkPartnerRecord(
   supabase: ReturnType<typeof createClient>,
   profile: ProfileRow,
@@ -500,7 +529,31 @@ async function createOrLinkPartnerRecord(
   }
 
   if (existingByApplication.data) {
-    return existingByApplication.data as PartnerRow;
+    const existing = existingByApplication.data as PartnerRow;
+    if (isModernReferralCode(existing.referral_code)) {
+      return existing;
+    }
+
+    const nextReferralCode = await generateUniquePartnerReferralCode(supabase);
+    const updates = {
+      referral_code: nextReferralCode,
+      referral_link: buildReferralPath(nextReferralCode),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from("referral_partners")
+      .update(updates)
+      .eq("id", existing.id);
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      ...existing,
+      ...updates,
+    } as PartnerRow;
   }
 
   const existingByProfile = await supabase
@@ -524,6 +577,9 @@ async function createOrLinkPartnerRecord(
 
   if (existingByProfile.data) {
     const existing = existingByProfile.data as PartnerRow;
+    const nextReferralCode = isModernReferralCode(existing.referral_code)
+      ? existing.referral_code
+      : await generateUniquePartnerReferralCode(supabase);
     const updates = {
       application_id: existing.application_id || application.id,
       name: existing.name || publicName,
@@ -531,6 +587,8 @@ async function createOrLinkPartnerRecord(
       contact_name: contactName,
       contact_email: normalizeString(application.email),
       contact_phone: normalizeString(application.phone),
+      referral_code: nextReferralCode,
+      referral_link: buildReferralPath(nextReferralCode),
       commission_rate: commissionRate,
       status: "active",
       portal_status: "approved",

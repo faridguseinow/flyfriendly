@@ -103,38 +103,36 @@
 
 .partner-portal-banner {
   display: grid;
-  gap: 18px;
+  gap: 16px;
   align-items: center;
-  padding: 18px 18px 16px;
+  padding: 16px;
   border-color: transparent;
-  background:
-    radial-gradient(circle at 20% 120%, rgba(94, 180, 255, 0.35) 0 20%, rgba(94, 180, 255, 0) 45%),
-    linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 58%, #112f9d 100%);
+  background: #ffffff;
 
-  .partner-portal-page-header__copy strong,
+    
+  .partner-portal-page-header__copy strong {
+    color: #000000;
+  }
+
+
   .partner-referral-link-card__copy strong,
   .partner-referral-link-card__copy small,
   .partner-portal-inline-message {
-    color: #fff;
-  }
-
-  .partner-portal-inline-pill {
-    color: #e9efff;
-    background: rgba(255, 255, 255, 0.12);
+    color: #000000;
   }
 
   .partner-portal-status-badge {
     color: #fff;
-    background: rgba(255, 255, 255, 0.14);
+    background: rgb(122, 128, 211);
     border-color: rgba(255, 255, 255, 0.22);
   }
 }
 
 .partner-portal-page-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
 }
 
 .partner-portal-page-header__avatar {
@@ -142,9 +140,10 @@
 }
 
 .partner-portal-page-header__copy {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  align-content: center;
+  align-items: flex-start;
 
   strong {
     color: var(--ink);
@@ -160,7 +159,6 @@
   gap: 6px;
 }
 
-.partner-portal-inline-pill,
 .partner-portal-status-badge,
 .partner-portal-filter-chip {
   min-height: 28px;
@@ -172,11 +170,6 @@
   font-size: 12px;
   line-height: 16px;
   font-weight: 700;
-}
-
-.partner-portal-inline-pill {
-  color: #5c6b82;
-  background: #f4f8fd;
 }
 
 .partner-portal-status-badge {
@@ -237,16 +230,15 @@
 }
 
 .partner-referral-link-card {
-  padding: 14px;
+  padding: 16px;
   display: grid;
   gap: 12px;
   border-radius: 18px;
 }
 
 .partner-referral-link-card--embedded {
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 8px;
+  background: radial-gradient(circle at 30% 20%, rgba(17, 69, 255, 0.16), transparent 90%), linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);;
 }
 
 .partner-referral-link-card__copy {

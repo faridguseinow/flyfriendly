@@ -558,7 +558,7 @@
   right: 12px;
   bottom: 12px;
   z-index: 50;
-  width: min(560px, calc(100vw - 24px));
+  width: min(720px, calc(100vw - 24px));
   pointer-events: none;
   transform: translateX(calc(100% + 24px));
   transition: transform 220ms ease;
@@ -919,10 +919,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid rgba(203, 213, 225, 0.85);
   border-radius: 11px;
   color: #8d98aa;
   background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.24);
 
   input {
     width: 100%;

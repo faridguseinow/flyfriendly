@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, ArrowUpRight, CalendarRange, Filter, FilterX, ShieldCheck } from "lucide-react";
+import { Activity, ArrowUpRight, CalendarRange, Filter, FilterX, RefreshCw, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { fetchActivityLogsData } from "../../services/adminService.js";
 import {
@@ -256,12 +256,12 @@ function AdminActivity() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadLogs = async () => {
+  const loadLogs = async (options = {}) => {
     setError("");
     setIsLoading(true);
 
     try {
-      const next = await fetchActivityLogsData();
+      const next = await fetchActivityLogsData({ force: options.force });
       setModuleData(next);
     } catch (nextError) {
       setError(nextError.message || "Could not load activity logs.");
@@ -271,7 +271,7 @@ function AdminActivity() {
   };
 
   useEffect(() => {
-    loadLogs();
+    void loadLogs();
   }, []);
 
   const rows = useMemo(() => {
@@ -468,6 +468,14 @@ function AdminActivity() {
     <div className="admin-page admin-activity-page">
       <AdminPageHeader
         title="Activity Log"
+        secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: () => void loadLogs({ force: true }),
+            disabled: isLoading,
+          },
+        ]}
       />
 
       {error ? <p className="admin-message is-error">{error}</p> : null}

@@ -1,4 +1,5 @@
 import { requireSupabase } from "../lib/supabase.js";
+import { buildLeadCode, buildCaseCode, generateRandomRecordSuffix } from "../lib/recordCodes.js";
 import { getCurrentUser } from "./authService.js";
 import { attachReferralToLead, getStoredReferralData } from "./referralService.js";
 
@@ -26,8 +27,35 @@ function mapEdgeFunctionError(error, functionName) {
   return error instanceof Error ? error : new Error(message || `${functionName} failed.`);
 }
 
-function leadCode() {
-  return `FL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+function isUniqueViolation(error) {
+  return error?.code === "23505" || String(error?.message || "").toLowerCase().includes("duplicate key");
+}
+
+async function generateUniqueLeadCaseSuffix(client) {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const suffix = generateRandomRecordSuffix();
+    const nextLeadCode = buildLeadCode(suffix);
+    const nextCaseCode = buildCaseCode(suffix);
+
+    const [leadMatch, caseMatch] = await Promise.all([
+      client.from("leads").select("id").eq("lead_code", nextLeadCode).maybeSingle(),
+      client.from("cases").select("id").eq("case_code", nextCaseCode).maybeSingle(),
+    ]);
+
+    if (leadMatch.error && leadMatch.error.code !== "PGRST116") {
+      throw leadMatch.error;
+    }
+
+    if (caseMatch.error && caseMatch.error.code !== "PGRST116") {
+      throw caseMatch.error;
+    }
+
+    if (!leadMatch.data?.id && !caseMatch.data?.id) {
+      return suffix;
+    }
+  }
+
+  throw new Error("Could not generate a unique claim reference.");
 }
 
 function parseFlightDate(value) {
@@ -42,6 +70,7 @@ function parseFlightDate(value) {
 }
 
 function baseLeadPayload(data = {}) {
+  const connectionAirport = data.direct === "no" ? (data.connectionCity || null) : null;
   return {
     departure_airport_id: data.departureAirportId || null,
     arrival_airport_id: data.destinationAirportId || null,
@@ -53,6 +82,7 @@ function baseLeadPayload(data = {}) {
     delay_duration: data.delayDuration || null,
     disruption_type: data.delayDuration === "cancelled" ? "cancellation" : "delay",
     is_direct: data.direct ? data.direct === "yes" : null,
+    flight_number: connectionAirport,
     full_name: data.fullName || null,
     email: data.email || null,
     phone: data.phone || null,
@@ -68,39 +98,48 @@ export async function createLead(data = {}, source = "claim_flow") {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const referral = getStoredReferralData();
-  const id = crypto.randomUUID();
-  const lead_code = leadCode();
-  const payload = {
-    id,
-    lead_code,
-    source,
-    status: "new",
-    stage: "eligibility",
-    profile_id: user?.id || null,
-    referral_partner_id: referral?.partnerId || null,
-    source_details: referral ? {
-      referral_code: referral.referralCode,
-      referral_source_url: referral.sourceUrl || null,
-      referral_source_path: referral.sourcePath || null,
-    } : undefined,
-    ...baseLeadPayload(data),
-  };
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const suffix = await generateUniqueLeadCaseSuffix(client);
+    const id = crypto.randomUUID();
+    const lead_code = buildLeadCode(suffix);
+    const payload = {
+      id,
+      lead_code,
+      source,
+      status: "new",
+      stage: "eligibility",
+      profile_id: user?.id || null,
+      referral_partner_id: referral?.partnerId || null,
+      source_details: referral ? {
+        referral_code: referral.referralCode,
+        referral_source_url: referral.sourceUrl || null,
+        referral_source_path: referral.sourcePath || null,
+      } : undefined,
+      ...baseLeadPayload(data),
+    };
 
-  const { error } = await client
-    .from("leads")
-    .insert(payload);
+    const { error } = await client
+      .from("leads")
+      .insert(payload);
 
-  if (error) {
-    throw error;
+    if (error) {
+      if (isUniqueViolation(error)) {
+        continue;
+      }
+
+      throw error;
+    }
+
+    if (referral?.partnerId) {
+      attachReferralToLead(id, data).catch((attachError) => {
+        console.warn("Referral attribution could not be attached to lead.", attachError);
+      });
+    }
+
+    return { id, lead_code };
   }
 
-  if (referral?.partnerId) {
-    attachReferralToLead(id, data).catch((attachError) => {
-      console.warn("Referral attribution could not be attached to lead.", attachError);
-    });
-  }
-
-  return { id, lead_code };
+  throw new Error("Could not generate a unique claim reference.");
 }
 
 export async function linkLeadToCurrentProfile(leadId, data = {}) {

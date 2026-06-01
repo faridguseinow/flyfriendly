@@ -516,10 +516,10 @@
       "directFlight": "Was it a direct flight?",
       "directYes": "Yes, that was direct",
       "directNo": "No, that was not direct",
-      "connectionCity": "Where did you make the connection?",
-      "connectionCityPlaceholder": "Connection city",
-      "connectionCityHelp": "Enter the city where you changed planes.",
-      "connectionCityRequired": "Please enter the city where you changed planes."
+      "connectionCity": "Where was your connection airport?",
+      "connectionCityPlaceholder": "Connection airport",
+      "connectionCityHelp": "Choose the airport where you changed planes.",
+      "connectionCityRequired": "Please choose the airport where you changed planes."
     },
     "contact": {
       "title": "Please, enter your contact information.",

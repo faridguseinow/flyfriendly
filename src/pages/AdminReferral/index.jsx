@@ -11,6 +11,7 @@ import {
 import { Link } from "react-router-dom";
 import {
   approvePartnerApplication,
+  deletePartnerAccount,
   fetchReferralControlCenterData,
   rejectPartnerApplication,
   updatePartnerPortalStatus,
@@ -199,11 +200,11 @@ export default function AdminReferral() {
     handler();
   };
 
-  const loadData = async () => {
+  const loadData = async (options = {}) => {
     setError("");
     setIsLoading(true);
     try {
-      const next = await fetchReferralControlCenterData();
+      const next = await fetchReferralControlCenterData({ force: options.force });
       setModuleData(next);
     } catch (nextError) {
       setError(nextError.message || "Could not load referral control center.");
@@ -213,7 +214,7 @@ export default function AdminReferral() {
   };
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
   useEffect(() => {
@@ -707,7 +708,7 @@ export default function AdminReferral() {
         commission_rate: applicationReview.commission_rate ? Number(applicationReview.commission_rate) : undefined,
         notes: applicationReview.notes || undefined,
       });
-      await loadData();
+      await loadData({ force: true });
       setToast({ type: "success", message: "Referral application approved." });
       setDrawerOpen(false);
     } catch (nextError) {
@@ -728,11 +729,28 @@ export default function AdminReferral() {
     setError("");
     try {
       await rejectPartnerApplication(selectedItem.id, applicationReview.rejection_reason);
-      await loadData();
+      await loadData({ force: true });
       setToast({ type: "success", message: "Referral application rejected." });
       setDrawerOpen(false);
     } catch (nextError) {
       setError(nextError.message || "Could not reject application.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeletePartner = async () => {
+    if (!selectedItem || selectedRecord?.type !== "partner") return;
+    if (!window.confirm(`Delete partner ${selectedItem.displayName}? This only works when the partner has no linked referrals, leads, cases, commissions, or payouts.`)) return;
+    setIsSaving(true);
+    setError("");
+    try {
+      await deletePartnerAccount(selectedItem.id);
+      await loadData({ force: true });
+      setToast({ type: "success", message: "Partner deleted." });
+      setDrawerOpen(false);
+    } catch (nextError) {
+      setError(nextError.message || "Could not delete partner.");
     } finally {
       setIsSaving(false);
     }
@@ -746,7 +764,7 @@ export default function AdminReferral() {
     setError("");
     try {
       await updatePartnerPortalStatus(selectedItem.id, nextStatus, partnerActionNotes);
-      await loadData();
+      await loadData({ force: true });
       setToast({ type: "success", message: nextStatus === "suspended" ? "Referral user suspended." : "Referral user reactivated." });
     } catch (nextError) {
       setError(nextError.message || "Could not update referral user status.");
@@ -1437,6 +1455,14 @@ export default function AdminReferral() {
     <div className="admin-page admin-referral-page">
       <AdminPageHeader
         title="Referral"
+        secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCcw,
+            onClick: () => void loadData({ force: true }),
+            disabled: isLoading || isSaving,
+          },
+        ]}
       />
 
       {toast ? (
@@ -1612,11 +1638,11 @@ export default function AdminReferral() {
                 </label>
               </div>
               <div className="admin-referral-page__drawer-actions">
-                <button className="admin-btn admin-btn-primary" type="button" disabled={!canManageApplications || isSaving || isApprovedLike(selectedItem.status)} onClick={handleApprove}>
+                <button className="admin-btn admin-btn-primary" type="button" disabled={!canManageApplications || isSaving || selectedItem.status !== "pending"} onClick={handleApprove}>
                   <CheckCircle2 size={14} />
                   <span>Approve application</span>
                 </button>
-                <button className="admin-btn admin-btn-danger" type="button" disabled={!canManageApplications || isSaving || selectedItem.status === "rejected"} onClick={handleReject}>
+                <button className="admin-btn admin-btn-danger" type="button" disabled={!canManageApplications || isSaving || selectedItem.status !== "pending"} onClick={handleReject}>
                   <XCircle size={14} />
                   <span>Reject application</span>
                 </button>
@@ -1722,6 +1748,10 @@ export default function AdminReferral() {
                 <button className="admin-btn admin-btn-primary" type="button" disabled={!canEditPartners || isSaving || selectedItem.portal_status === "approved"} onClick={() => handlePartnerStatusChange("approved")}>
                   <RefreshCcw size={14} />
                   <span>Reactivate partner</span>
+                </button>
+                <button className="admin-btn admin-btn-danger" type="button" disabled={!canEditPartners || isSaving} onClick={handleDeletePartner}>
+                  <XCircle size={14} />
+                  <span>Delete partner</span>
                 </button>
                 <Link className="admin-btn admin-btn-secondary" to={`/admin/people/customers`}>
                   <Users size={14} />

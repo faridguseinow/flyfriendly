@@ -516,10 +516,10 @@
       "directFlight": "Это был прямой рейс?",
       "directYes": "Да, без пересадок",
       "directNo": "Нет, с пересадкой",
-      "connectionCity": "В каком городе была пересадка?",
-      "connectionCityPlaceholder": "Город пересадки",
-      "connectionCityHelp": "Укажите город, где вы сделали пересадку.",
-      "connectionCityRequired": "Пожалуйста, укажите город пересадки."
+      "connectionCity": "В каком аэропорту была пересадка?",
+      "connectionCityPlaceholder": "Аэропорт пересадки",
+      "connectionCityHelp": "Выберите аэропорт, где вы пересели на другой рейс.",
+      "connectionCityRequired": "Пожалуйста, выберите аэропорт пересадки."
     },
     "contact": {
       "title": "Пожалуйста, введите вашу контактную информацию.",

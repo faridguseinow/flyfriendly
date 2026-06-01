@@ -219,14 +219,14 @@ export default function AdminFinance() {
 
   const baseFilters = useMemo(() => buildDateFilters(dateRange), [dateRange]);
 
-  const loadFinance = async () => {
+  const loadFinance = async (options = {}) => {
     setErrorState(null);
     setIsLoading(true);
 
     try {
       const [nextSummary, nextRows] = await Promise.all([
-        getFinanceSummary(baseFilters),
-        getFinanceRows(baseFilters),
+        getFinanceSummary(baseFilters, { force: options.force }),
+        getFinanceRows(baseFilters, { force: options.force }),
       ]);
 
       setRemoteSummary(nextSummary);
@@ -543,7 +543,7 @@ export default function AdminFinance() {
           {
             label: "Refresh",
             icon: RefreshCw,
-            onClick: () => void loadFinance(),
+            onClick: () => void loadFinance({ force: true }),
             disabled: isLoading || isExporting,
           },
           {

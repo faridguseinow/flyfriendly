@@ -6,6 +6,7 @@ import {
   FilterX,
   PauseCircle,
   Plus,
+  RefreshCw,
   ShieldCheck,
   UserCog,
   UserPlus,
@@ -324,13 +325,13 @@ export default function AdminTeam() {
 
   const canManageEmployees = isAdminUser || hasAnyPermission(["team.view", "users.view", "team.manage", "roles.manage", "menu.manage"]);
 
-  const loadModule = async () => {
+  const loadModule = async (options = {}) => {
     setIsLoading(true);
     setError("");
     try {
       const [nextTeamModule, nextRolesModule] = await Promise.all([
-        fetchAdminTeamModuleData(),
-        fetchAdminRolesModuleData(),
+        fetchAdminTeamModuleData({ force: options.force }),
+        fetchAdminRolesModuleData({ force: options.force }),
       ]);
       setTeamModule(nextTeamModule);
       setRolesModule(nextRolesModule);
@@ -343,7 +344,7 @@ export default function AdminTeam() {
   };
 
   useEffect(() => {
-    loadModule();
+    void loadModule();
   }, []);
 
   const menuCatalog = useMemo(
@@ -572,7 +573,7 @@ export default function AdminTeam() {
       }
 
       closePanel();
-      await loadModule();
+      await loadModule({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not save employee.");
     } finally {
@@ -608,7 +609,7 @@ export default function AdminTeam() {
       }
 
       closePanel();
-      await loadModule();
+      await loadModule({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not save role.");
     } finally {
@@ -622,7 +623,7 @@ export default function AdminTeam() {
     try {
       await sendAdminEmployeeSetupLink({ email: employee.email, profileId: employee.profileId });
       setNotice(`Setup link sent to ${employee.email}.`);
-      await loadModule();
+      await loadModule({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not send setup link.");
     }
@@ -641,7 +642,7 @@ export default function AdminTeam() {
     try {
       await updateAdminTeamMemberStatus(employee.profileId, nextStatus);
       setNotice(nextStatus === "active" ? "Employee reactivated." : "Employee status updated.");
-      await loadModule();
+      await loadModule({ force: true });
       if (selectedEmployee?.profileId === employee.profileId && panel?.type === "employee-view") {
         setPanel({ ...panel });
       }
@@ -660,7 +661,7 @@ export default function AdminTeam() {
       await removeAdminTeamMember(employee.profileId);
       setNotice("Employee removed.");
       closePanel();
-      await loadModule();
+      await loadModule({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not remove employee.");
     }
@@ -672,7 +673,7 @@ export default function AdminTeam() {
     try {
       await duplicateAdminRole(role.id);
       setNotice(`Role "${role.name}" duplicated.`);
-      await loadModule();
+      await loadModule({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not duplicate role.");
     }
@@ -689,7 +690,7 @@ export default function AdminTeam() {
       await deactivateAdminRole(role.id, nextIsActive);
       setNotice(nextIsActive ? "Role activated." : "Role deactivated.");
       closePanel();
-      await loadModule();
+      await loadModule({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not update role state.");
     }
@@ -705,7 +706,7 @@ export default function AdminTeam() {
       await deleteAdminRole(role.id);
       setNotice("Role deleted.");
       closePanel();
-      await loadModule();
+      await loadModule({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not delete role.");
     }
@@ -1585,6 +1586,12 @@ export default function AdminTeam() {
           onClick: openEmployeeCreate,
         } : null}
         secondaryActions={canManageEmployees ? [
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: () => void loadModule({ force: true }),
+            disabled: isLoading,
+          },
           {
             label: "Create role",
             icon: Plus,

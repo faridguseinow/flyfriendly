@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FilterX, UserRoundPlus } from "lucide-react";
+import { Download, FilterX, RefreshCw, UserRoundPlus } from "lucide-react";
 import {
   assignLeadOwner,
   convertLeadToCase,
@@ -174,11 +174,11 @@ export default function AdminLeads() {
   const [activeDownloadId, setActiveDownloadId] = useState("");
   const lastViewedLeadIdRef = useRef("");
 
-  const loadLeads = async () => {
+  const loadLeads = async (options = {}) => {
     setError("");
     setIsLoading(true);
     try {
-      const next = await fetchLeadsModuleData();
+      const next = await fetchLeadsModuleData({ force: options.force });
       setModuleData(next);
     } catch (nextError) {
       setError(nextError.message || "Could not load leads module.");
@@ -188,7 +188,7 @@ export default function AdminLeads() {
   };
 
   useEffect(() => {
-    loadLeads();
+    void loadLeads();
   }, []);
 
   useEffect(() => {
@@ -419,7 +419,7 @@ export default function AdminLeads() {
     setError("");
     try {
       await updateLeadStatus(leadId, status);
-      await loadLeads();
+      await loadLeads({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not update lead status.");
     } finally {
@@ -432,7 +432,7 @@ export default function AdminLeads() {
     setError("");
     try {
       await assignLeadOwner(leadId, assignedUserId);
-      await loadLeads();
+      await loadLeads({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not assign lead owner.");
     } finally {
@@ -447,7 +447,7 @@ export default function AdminLeads() {
     try {
       await createLeadNote(selectedLead.id, noteDraft.trim());
       setNoteDraft("");
-      await loadLeads();
+      await loadLeads({ force: true });
     } catch (nextError) {
       setError(nextError.message || "Could not save lead note.");
     } finally {
@@ -466,7 +466,7 @@ export default function AdminLeads() {
     setError("");
     try {
       const result = await convertLeadToCase(selectedLead.id);
-      await loadLeads();
+      await loadLeads({ force: true });
       setPreviewOpen(false);
       navigate(`/admin/cases?case=${result.caseId}`);
     } catch (nextError) {
@@ -530,6 +530,12 @@ export default function AdminLeads() {
       <AdminPageHeader
         title="Leads"
         secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: () => void loadLeads({ force: true }),
+            disabled: isLoading || isSaving,
+          },
           {
             label: "Export CSV",
             icon: Download,
@@ -652,7 +658,7 @@ export default function AdminLeads() {
                     <article><strong>Arrival airport</strong><span>{selectedLead.arrival_airport || "—"}</span></article>
                     <article><strong>Flight date</strong><span>{formatDate(selectedLead.scheduled_departure_date)}</span></article>
                     <article><strong>Airline</strong><span>{selectedLead.airline || "—"}</span></article>
-                    <article><strong>Flight number</strong><span>{selectedLead.payload?.flightNumber || selectedLead.payload?.flight_number || "—"}</span></article>
+                    <article><strong>Connection airport</strong><span>{selectedLead.payload?.connectionCity || selectedLead.flight_number || "—"}</span></article>
                     <article><strong>Route type</strong><span>{formatDirectLabel(selectedLead.is_direct)}</span></article>
                   </div>
                 </section>

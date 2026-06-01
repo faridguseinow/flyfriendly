@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, HandCoins, XCircle } from "lucide-react";
+import { CheckCircle2, HandCoins, RefreshCw, XCircle } from "lucide-react";
 import {
   approvePartnerApplication,
   fetchPartnerApplicationsModuleData,
@@ -45,11 +45,11 @@ export default function AdminPartnerApplications() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [toast, setToast] = useState(null);
 
-  const loadApplications = async () => {
+  const loadApplications = async (options = {}) => {
     setError("");
     setIsLoading(true);
     try {
-      const next = await fetchPartnerApplicationsModuleData();
+      const next = await fetchPartnerApplicationsModuleData({ force: options.force });
       setModuleData(next);
       if (!selectedApplicationId && next.applications[0]) {
         const pending = next.applications.find((item) => item.status === "pending");
@@ -63,7 +63,7 @@ export default function AdminPartnerApplications() {
   };
 
   useEffect(() => {
-    loadApplications();
+    void loadApplications();
   }, []);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function AdminPartnerApplications() {
     setActiveAction("approve");
     try {
       await approvePartnerApplication(selectedApplication.id);
-      await loadApplications();
+      await loadApplications({ force: true });
       setToast({ type: "success", message: "Partner application approved." });
       setDrawerOpen(false);
     } catch (nextError) {
@@ -142,7 +142,7 @@ export default function AdminPartnerApplications() {
     setActiveAction("reject");
     try {
       await rejectPartnerApplication(selectedApplication.id, rejectionReason);
-      await loadApplications();
+      await loadApplications({ force: true });
       setToast({ type: "success", message: "Partner application rejected." });
       setDrawerOpen(false);
     } catch (nextError) {
@@ -163,6 +163,14 @@ export default function AdminPartnerApplications() {
         breadcrumbs={[
           { label: "Admin", path: "/admin" },
           { label: "Partner Applications" },
+        ]}
+        secondaryActions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onClick: () => void loadApplications({ force: true }),
+            disabled: isLoading || isSaving,
+          },
         ]}
       />
 
@@ -269,10 +277,10 @@ export default function AdminPartnerApplications() {
             </section>
 
             <div className="admin-partner-program__action-row">
-              <button className="btn btn--primary" type="button" disabled={!canManageApplications || isSaving || selectedApplication.status === "approved"} onClick={handleApprove}>
+              <button className="btn btn--primary" type="button" disabled={!canManageApplications || isSaving || selectedApplication.status !== "pending"} onClick={handleApprove}>
                 {activeAction === "approve" ? "Approving..." : "Approve"}
               </button>
-              <button className="admin-link-button" type="button" disabled={!canManageApplications || isSaving} onClick={handleReject}>
+              <button className="admin-link-button" type="button" disabled={!canManageApplications || isSaving || selectedApplication.status !== "pending"} onClick={handleReject}>
                 {activeAction === "reject" ? "Rejecting..." : "Reject"}
               </button>
             </div>

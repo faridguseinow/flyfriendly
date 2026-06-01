@@ -321,7 +321,7 @@
 }
 
 .admin-cases-page__preview {
-  width: min(560px, calc(100vw - 24px));
+  width: min(720px, calc(100vw - 24px));
 }
 
 .admin-cases-page__empty-preview {
@@ -350,7 +350,7 @@
 .admin-cases-page__preview-inner {
   min-height: 0;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .admin-cases-page__preview-header {
@@ -388,7 +388,7 @@
 .admin-cases-page__preview-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .admin-cases-page__preview-actions--body {
@@ -782,9 +782,9 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-cases-page__preview {
-    width: 100vw;
-  }
+.admin-cases-page__preview {
+  width: 100vw;
+}
 
   .admin-cases-page__task-modal-layer {
     padding: 12px;
