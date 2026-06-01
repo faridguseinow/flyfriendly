@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, LogOut, X } from "lucide-react";
+import { ChevronDown, LogOut, User, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SocialIcon from "../../components/SocialIcon/index.jsx";
@@ -240,6 +240,8 @@ function Navbar() {
   const avatarImageUrl = profilePhotoUrl && !hasAvatarLoadError ? profilePhotoUrl : "";
   const avatarInitials = getInitials(displayName);
   const profilePath = resolveProfilePath(profile, partnerProfile, adminAccess);
+  const shouldShowAvatarPhoto = isAuthenticated && Boolean(avatarImageUrl);
+  const shouldShowAvatarInitials = isAuthenticated && !avatarImageUrl;
 
   useEffect(() => {
     setHasAvatarLoadError(false);
@@ -323,15 +325,17 @@ function Navbar() {
               aria-expanded={isAccountOpen}
               onClick={toggleAccountMenu}
             >
-              {avatarImageUrl ? (
+              {shouldShowAvatarPhoto ? (
                 <img
                   className="account-entry__photo"
                   src={avatarImageUrl}
                   alt=""
                   onError={() => setHasAvatarLoadError(true)}
                 />
-              ) : (
+              ) : shouldShowAvatarInitials ? (
                 <span className="account-entry__initials">{avatarInitials}</span>
+              ) : (
+                <User size={28} strokeWidth={2} />
               )}
             </button>
 

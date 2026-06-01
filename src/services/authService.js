@@ -26,6 +26,11 @@ function isMissingTableError(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
 }
 
+function isMissingAvatarUrlColumnError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return isMissingColumnError(error) && message.includes("avatar_url");
+}
+
 function isMissingRpcError(error) {
   return error?.code === "PGRST202"
     || error?.code === "42883"
@@ -445,6 +450,26 @@ export async function updateCurrentProfile(input = {}) {
     .eq("id", user.id);
 
   if (error) {
+    if (isMissingAvatarUrlColumnError(error) && "avatar_url" in payload) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.avatar_url;
+
+      if (!Object.keys(fallbackPayload).length) {
+        throw new Error("Apply the latest profiles avatar_url migration in Supabase to save profile photos.");
+      }
+
+      const fallback = await client
+        .from("profiles")
+        .update(fallbackPayload)
+        .eq("id", user.id);
+
+      if (fallback.error) {
+        throw fallback.error;
+      }
+
+      return getCurrentProfile();
+    }
+
     throw error;
   }
 
