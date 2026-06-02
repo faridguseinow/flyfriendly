@@ -1356,6 +1356,7 @@ function ClaimFlow() {
   const location = useLocation();
   const toLocalizedPath = useLocalizedPath();
   const { t, i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const { stage = "eligibility", lang } = useParams();
   const [searchParams] = useSearchParams();
   const storedClaim = readStoredClaimDraft();
