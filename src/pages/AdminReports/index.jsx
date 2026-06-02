@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Briefcase, CircleCheckBig, Download, FileCheck2, TrendingUp, Users, Wallet } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { fetchReportsModuleData } from "../../services/adminService.js";
 import { AdminKpiCard, AdminPageHeader } from "../../admin/components/AdminUi.jsx";
 import "./style.scss";
@@ -23,9 +24,15 @@ function simpleTop(items, key, limit = 5) {
     .slice(0, limit);
 }
 
-function StatusChart({ rows = [] }) {
+function normalizeLabel(value) {
+  return String(value || "unknown")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function StatusChart({ rows = [], emptyLabel }) {
   if (!rows.length) {
-    return <div className="admin-reports__empty">No distribution data yet.</div>;
+    return <div className="admin-reports__empty">{emptyLabel}</div>;
   }
 
   const max = Math.max(1, ...rows.map((item) => item.value));
@@ -43,7 +50,7 @@ function StatusChart({ rows = [] }) {
   );
 }
 
-function ListCard({ title, subtitle, rows = [], formatter = null }) {
+function ListCard({ title, subtitle, rows = [], formatter = null, emptyLabel }) {
   return (
     <section className="admin-panel">
       <div className="admin-panel__head">
@@ -60,7 +67,7 @@ function ListCard({ title, subtitle, rows = [], formatter = null }) {
             <span>{formatter ? formatter(item) : item.value}</span>
           </article>
         )) : (
-          <div className="admin-reports__empty">No data yet.</div>
+          <div className="admin-reports__empty">{emptyLabel}</div>
         )}
       </div>
     </section>
@@ -68,6 +75,7 @@ function ListCard({ title, subtitle, rows = [], formatter = null }) {
 }
 
 export default function AdminReports() {
+  const { t } = useTranslation();
   const [moduleData, setModuleData] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -79,15 +87,15 @@ export default function AdminReports() {
     try {
       setModuleData(await fetchReportsModuleData());
     } catch (nextError) {
-      setError(nextError.message || "Could not load reports module.");
+      setError(nextError.message || t("admin.revenue.loadError"));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadReports();
-  }, []);
+    void loadReports();
+  }, [t]);
 
   const metrics = useMemo(() => {
     const leads = moduleData?.leads || [];
@@ -115,12 +123,12 @@ export default function AdminReports() {
     const partners = moduleData?.partners || [];
 
     return {
-      leadsByStatus: simpleTop(leads, (item) => item.status, 8),
-      casesByStatus: simpleTop(cases, (item) => item.status, 8),
+      leadsByStatus: simpleTop(leads, (item) => item.status, 8).map((item) => ({ ...item, label: t(`admin.common.enums.${String(item.label || "").toLowerCase()}`, { defaultValue: normalizeLabel(item.label) }) })),
+      casesByStatus: simpleTop(cases, (item) => item.status, 8).map((item) => ({ ...item, label: t(`admin.common.enums.${String(item.label || "").toLowerCase()}`, { defaultValue: normalizeLabel(item.label) }) })),
       topAirlines: simpleTop(cases, (item) => item.airline, 6),
       topRoutes: simpleTop(cases, (item) => item.route_from && item.route_to ? `${item.route_from} → ${item.route_to}` : null, 6),
-      leadsBySource: simpleTop(leads, (item) => item.source, 6),
-      taskStatus: simpleTop(tasks, (item) => item.status, 6),
+      leadsBySource: simpleTop(leads, (item) => item.source, 6).map((item) => ({ ...item, label: normalizeLabel(item.label) })),
+      taskStatus: simpleTop(tasks, (item) => item.status, 6).map((item) => ({ ...item, label: t(`admin.common.enums.${String(item.label || "").toLowerCase()}`, { defaultValue: normalizeLabel(item.label) }) })),
       partnerPerformance: partners.map((partner) => {
         const linkedCases = cases.filter((item) => item.referral_partner_id === partner.id || String(item.referral_partner_label || "").toLowerCase() === String(partner.referral_code || "").toLowerCase());
         const linkedFinance = finance.filter((item) => linkedCases.some((caseItem) => caseItem.id === item.case_id));
@@ -132,7 +140,7 @@ export default function AdminReports() {
         };
       }).sort((a, b) => b.value - a.value).slice(0, 6),
     };
-  }, [moduleData]);
+  }, [moduleData, t]);
 
   const exportReportSnapshot = () => {
     const snapshot = {
@@ -154,16 +162,16 @@ export default function AdminReports() {
   return (
     <div className="admin-page admin-reports-page">
       <AdminPageHeader
-        title="Revenue"
-        subtitle="Operational revenue, pipeline mix, and top-performing dimensions."
+        title={t("admin.revenue.title")}
+        subtitle={t("admin.revenue.subtitle")}
         breadcrumbs={[
-          { label: "Admin", path: "/admin" },
-          { label: "Dashboard" },
-          { label: "Revenue" },
+          { label: t("admin.common.admin"), path: "/admin" },
+          { label: t("admin.nav.sections.dashboard") },
+          { label: t("admin.revenue.title") },
         ]}
         secondaryActions={[
           {
-            label: "Export JSON",
+            label: t("admin.revenue.exportJson"),
             icon: Download,
             onClick: exportReportSnapshot,
             disabled: isLoading,
@@ -174,42 +182,42 @@ export default function AdminReports() {
       {error ? <p className="admin-message is-error">{error}</p> : null}
 
       {isLoading ? (
-        <p className="admin-message">Loading revenue dashboard...</p>
+        <p className="admin-message">{t("admin.revenue.loading")}</p>
       ) : (
         <>
           <section className="admin-reports__kpis">
-            <AdminKpiCard icon={Users} label="Total leads" value={metrics.totalLeads} />
-            <AdminKpiCard icon={Briefcase} label="Total cases" value={metrics.totalCases} />
-            <AdminKpiCard icon={TrendingUp} label="Conversion rate" value={`${metrics.conversionRate.toFixed(1)}%`} />
-            <AdminKpiCard icon={Wallet} label="Company revenue" value={formatCurrency(metrics.revenue)} />
-            <AdminKpiCard icon={BarChart3} label="Compensation" value={formatCurrency(metrics.compensation)} />
-            <AdminKpiCard icon={CircleCheckBig} label="Completed tasks" value={metrics.completedTasks} />
+            <AdminKpiCard icon={Users} label={t("admin.leads.metrics.total")} value={metrics.totalLeads} />
+            <AdminKpiCard icon={Briefcase} label={t("admin.cases.title")} value={metrics.totalCases} />
+            <AdminKpiCard icon={TrendingUp} label={t("admin.revenue.leadsToCaseRatio")} value={`${metrics.conversionRate.toFixed(1)}%`} />
+            <AdminKpiCard icon={Wallet} label={t("admin.common.revenue")} value={formatCurrency(metrics.revenue)} />
+            <AdminKpiCard icon={BarChart3} label={t("admin.common.compensation")} value={formatCurrency(metrics.compensation)} />
+            <AdminKpiCard icon={CircleCheckBig} label={t("admin.revenue.taskStatus")} value={metrics.completedTasks} />
             <AdminKpiCard icon={FileCheck2} label="Doc completion" value={`${metrics.documentCompletion.toFixed(1)}%`} />
           </section>
 
           <section className="admin-panel admin-reports__hero">
             <div className="admin-panel__head">
               <div>
-                <h2>Overview</h2>
-                <p>Revenue health and pipeline efficiency across leads, cases, and referrals.</p>
+                <h2>{t("admin.revenue.overviewTitle")}</h2>
+                <p>{t("admin.revenue.overviewSubtitle")}</p>
               </div>
             </div>
 
             <div className="admin-reports__hero-grid">
               <article className="admin-reports__hero-card">
-                <small>Revenue per case</small>
+                <small>{t("admin.revenue.revenuePerCase")}</small>
                 <strong>{metrics.totalCases ? formatCurrency(metrics.revenue / metrics.totalCases) : "—"}</strong>
-                <span>Average company fee across all tracked cases.</span>
+                <span>{t("admin.revenue.revenuePerCaseDescription")}</span>
               </article>
               <article className="admin-reports__hero-card">
-                <small>Compensation per case</small>
+                <small>{t("admin.revenue.compensationPerCase")}</small>
                 <strong>{metrics.totalCases ? formatCurrency(metrics.compensation / metrics.totalCases) : "—"}</strong>
-                <span>Average client compensation amount in finance records.</span>
+                <span>{t("admin.revenue.compensationPerCaseDescription")}</span>
               </article>
               <article className="admin-reports__hero-card">
-                <small>Leads to case ratio</small>
+                <small>{t("admin.revenue.leadsToCaseRatio")}</small>
                 <strong>{metrics.totalLeads ? `${Math.round((metrics.totalCases / metrics.totalLeads) * 100)}%` : "—"}</strong>
-                <span>Share of leads that have already turned into cases.</span>
+                <span>{t("admin.revenue.leadsToCaseRatioDescription")}</span>
               </article>
             </div>
           </section>
@@ -218,56 +226,61 @@ export default function AdminReports() {
             <section className="admin-panel">
               <div className="admin-panel__head">
                 <div>
-                  <h2>Leads by status</h2>
-                  <p>Inbound pipeline distribution.</p>
+                  <h2>{t("admin.revenue.leadsByStatus")}</h2>
+                  <p>{t("admin.revenue.leadsByStatusSubtitle")}</p>
                 </div>
               </div>
               <div className="admin-reports__panel-body">
-                <StatusChart rows={reports.leadsByStatus} />
+                <StatusChart rows={reports.leadsByStatus} emptyLabel={t("admin.revenue.noDistributionData")} />
               </div>
             </section>
 
             <section className="admin-panel">
               <div className="admin-panel__head">
                 <div>
-                  <h2>Cases by status</h2>
-                  <p>Case workflow distribution.</p>
+                  <h2>{t("admin.revenue.casesByStatus")}</h2>
+                  <p>{t("admin.revenue.casesByStatusSubtitle")}</p>
                 </div>
               </div>
               <div className="admin-reports__panel-body">
-                <StatusChart rows={reports.casesByStatus} />
+                <StatusChart rows={reports.casesByStatus} emptyLabel={t("admin.revenue.noDistributionData")} />
               </div>
             </section>
 
             <ListCard
-              title="Top airlines"
-              subtitle="Highest-volume airline distribution."
+              title={t("admin.revenue.topAirlines")}
+              subtitle={t("admin.revenue.topAirlinesSubtitle")}
               rows={reports.topAirlines}
+              emptyLabel={t("admin.revenue.noData")}
             />
 
             <ListCard
-              title="Top routes"
-              subtitle="Most common route patterns."
+              title={t("admin.revenue.topRoutes")}
+              subtitle={t("admin.revenue.topRoutesSubtitle")}
               rows={reports.topRoutes}
+              emptyLabel={t("admin.revenue.noData")}
             />
 
             <ListCard
-              title="Leads by source"
-              subtitle="Acquisition mix by source."
+              title={t("admin.revenue.leadsBySource")}
+              subtitle={t("admin.revenue.leadsBySourceSubtitle")}
               rows={reports.leadsBySource}
+              emptyLabel={t("admin.revenue.noData")}
             />
 
             <ListCard
-              title="Task status"
-              subtitle="Current workflow pressure and completion."
+              title={t("admin.revenue.taskStatus")}
+              subtitle={t("admin.revenue.taskStatusSubtitle")}
               rows={reports.taskStatus}
+              emptyLabel={t("admin.revenue.noData")}
             />
 
             <ListCard
-              title="Partner performance"
-              subtitle="Cases and earned commission by referral partner."
+              title={t("admin.revenue.partnerPerformance")}
+              subtitle={t("admin.revenue.partnerPerformanceSubtitle")}
               rows={reports.partnerPerformance}
               formatter={(item) => `${item.value} cases · ${formatCurrency(item.earned)}`}
+              emptyLabel={t("admin.revenue.noData")}
             />
           </section>
         </>

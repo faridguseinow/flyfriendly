@@ -3,6 +3,14 @@ import { isSupabaseConfigured, requireSupabase } from "../lib/supabase.js";
 import { ALL_PERMISSIONS, getAvailablePermissions, getRoleDefinition, hasPermission, isAdminRoleCode, normalizeRoleCode } from "./rbac.js";
 
 const AdminAuthContext = createContext(null);
+const ADMIN_PROFILE_SELECTS = [
+  "id, full_name, email, phone, role, preferred_language, avatar_url, deleted_at, purge_after, created_at",
+  "id, full_name, email, phone, role, preferred_language, deleted_at, purge_after, created_at",
+  "id, full_name, email, phone, role, avatar_url, deleted_at, purge_after, created_at",
+  "id, full_name, email, phone, role, deleted_at, purge_after, created_at",
+  "id, full_name, email, phone, role, deleted_at, created_at",
+  "id, full_name, email, phone, role",
+];
 
 function isMissingTableError(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -12,18 +20,38 @@ function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.message?.includes("column") || error?.message?.includes("schema cache");
 }
 
-async function fetchProfile(client, userId) {
-  const { data, error } = await client
-    .from("profiles")
-    .select("id, full_name, email, phone, role, deleted_at, purge_after, created_at")
-    .eq("id", userId)
-    .maybeSingle();
+async function selectMaybeSingleWithFallback(buildQuery, selectVariants) {
+  let lastError = null;
 
-  if (error) {
-    throw error;
+  for (const fields of selectVariants) {
+    const { data, error } = await buildQuery(fields);
+    if (!error) {
+      return data || null;
+    }
+
+    if (!isMissingColumnError(error)) {
+      throw error;
+    }
+
+    lastError = error;
   }
 
-  return data;
+  if (lastError) {
+    throw lastError;
+  }
+
+  return null;
+}
+
+async function fetchProfile(client, userId) {
+  return selectMaybeSingleWithFallback(
+    (fields) => client
+      .from("profiles")
+      .select(fields)
+      .eq("id", userId)
+      .maybeSingle(),
+    ADMIN_PROFILE_SELECTS,
+  );
 }
 
 async function fetchAssignedRoles(client, userId) {

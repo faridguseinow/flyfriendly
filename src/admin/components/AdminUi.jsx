@@ -1,4 +1,5 @@
 import { ChevronRight, Search, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 export { AdminColumnTable } from "./AdminColumnTable.jsx";
 
@@ -107,11 +108,14 @@ export function AdminDataTable({
   rows = [],
   loading = false,
   error = "",
-  emptyLabel = "No data available.",
+  emptyLabel,
   compact = false,
   renderRow,
   actions = null,
 }) {
+  const { t } = useTranslation();
+  const resolvedEmptyLabel = emptyLabel || t("admin.common.noData");
+
   return (
     <section className={`admin-panel admin-data-table${compact ? " is-compact" : ""}`}>
       {(title || description || actions) ? (
@@ -124,9 +128,9 @@ export function AdminDataTable({
         </div>
       ) : null}
 
-      {loading ? <div className="admin-data-table__state">Loading...</div> : null}
+      {loading ? <div className="admin-data-table__state">{t("admin.common.loading")}</div> : null}
       {!loading && error ? <div className="admin-data-table__state is-error">{error}</div> : null}
-      {!loading && !error && !rows.length ? <div className="admin-data-table__state">{emptyLabel}</div> : null}
+      {!loading && !error && !rows.length ? <div className="admin-data-table__state">{resolvedEmptyLabel}</div> : null}
 
       {!loading && !error && rows.length ? (
         <div className="admin-table-wrap">
@@ -147,7 +151,7 @@ export function AdminDataTable({
 export function AdminFilterBar({
   searchValue = "",
   onSearchChange,
-  searchPlaceholder = "Search",
+  searchPlaceholder,
   statusFilter = null,
   onStatusFilterChange,
   statusOptions = [],
@@ -158,6 +162,9 @@ export function AdminFilterBar({
   onDateRangeChange,
   children = null,
 }) {
+  const { t } = useTranslation();
+  const resolvedSearchPlaceholder = searchPlaceholder || t("admin.common.search");
+
   return (
     <div className="admin-filter-bar">
       {typeof onSearchChange === "function" ? (
@@ -168,7 +175,7 @@ export function AdminFilterBar({
             type="search"
             value={searchValue}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={resolvedSearchPlaceholder}
           />
         </label>
       ) : null}
@@ -203,7 +210,7 @@ export function AdminFilterBar({
             value={dateRange.from || ""}
             onChange={(event) => onDateRangeChange({ ...dateRange, from: event.target.value })}
           />
-          <span>to</span>
+          <span>{t("admin.common.to")}</span>
           <input
             className="admin-filter-control admin-input"
             type="date"
@@ -223,15 +230,16 @@ export function AdminDetailDrawer({
   onClose,
   children,
 }) {
+  const { t } = useTranslation();
   return (
     <aside className={`admin-detail-drawer${open ? " is-open" : ""}`} aria-hidden={!open}>
       <div className="admin-detail-drawer__head">
         <div>
-          <h2>{title || "Detail"}</h2>
+          <h2>{title || t("admin.common.details")}</h2>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
         {onClose ? (
-          <button type="button" className="admin-detail-drawer__close" onClick={onClose} aria-label="Close detail">
+          <button type="button" className="admin-detail-drawer__close" onClick={onClose} aria-label={t("admin.common.closeDetail")}>
             <X size={16} />
           </button>
         ) : null}

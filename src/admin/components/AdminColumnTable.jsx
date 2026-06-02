@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAdminTableColumns } from "../hooks/useAdminTableColumns.js";
 
 export function AdminColumnTable({
@@ -15,6 +16,7 @@ export function AdminColumnTable({
   getRowKey,
   onRowClick,
 }) {
+  const { t } = useTranslation();
   const {
     orderedColumns,
     moveColumn,
@@ -27,13 +29,13 @@ export function AdminColumnTable({
 
   const renderState = () => {
     if (loading) {
-      return <div className="admin-crm-page__state">Loading...</div>;
+      return <div className="admin-crm-page__state">{t("admin.common.loading")}</div>;
     }
 
     if (error) {
       return (
         <div className="admin-crm-page__state is-error">
-          <strong>Data could not be loaded.</strong>
+          <strong>{t("admin.common.dataLoadErrorTitle")}</strong>
           {error ? <span>{error}</span> : null}
         </div>
       );
@@ -62,7 +64,7 @@ export function AdminColumnTable({
         </div>
         <button type="button" className="admin-btn admin-btn-secondary admin-crm-table__reset" onClick={resetLayout}>
           <RotateCcw size={14} />
-          <span>Reset columns</span>
+          <span>{t("admin.common.resetColumns")}</span>
         </button>
       </div>
 
@@ -94,8 +96,8 @@ export function AdminColumnTable({
                               moveColumn(column.key, "left");
                             }}
                             disabled={index === 0}
-                            aria-label={`Move ${column.label} left`}
-                            title="Move left"
+                            aria-label={t("admin.common.moveColumnLeft", { column: column.label })}
+                            title={t("admin.common.moveLeft")}
                           >
                             <ChevronLeft size={12} />
                           </button>
@@ -107,8 +109,8 @@ export function AdminColumnTable({
                               moveColumn(column.key, "right");
                             }}
                             disabled={index === orderedColumns.length - 1}
-                            aria-label={`Move ${column.label} right`}
-                            title="Move right"
+                            aria-label={t("admin.common.moveColumnRight", { column: column.label })}
+                            title={t("admin.common.moveRight")}
                           >
                             <ChevronRight size={12} />
                           </button>
@@ -121,8 +123,8 @@ export function AdminColumnTable({
                         className="admin-crm-table__resize-handle"
                         onMouseDown={(event) => startResize(event, column.key)}
                         onClick={(event) => event.stopPropagation()}
-                        aria-label={`Resize ${column.label} column`}
-                        title="Resize column"
+                        aria-label={t("admin.common.resizeColumn", { column: column.label })}
+                        title={t("admin.common.resize")}
                       />
                     ) : null}
                   </th>

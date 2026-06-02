@@ -1,261 +1,333 @@
+import { MonitorCog, Moon, Palette, Shield, Sun, Type, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Cog, Globe2, Save, Search, SlidersHorizontal } from "lucide-react";
-import { fetchSettingsModuleData, upsertSystemSetting } from "../../services/adminService.js";
-import { useSearchParams } from "react-router-dom";
-import "../AdminContent/style.scss";
+import { useTranslation } from "react-i18next";
+import { languages } from "../../i18n/languages.js";
+import { requireSupabase } from "../../lib/supabase.js";
+import { getProfileAvatarUrl, uploadProfileAvatar, validateAvatarFile } from "../../lib/profileAvatar.js";
+import ProfileAvatarUploader from "../../components/profile/ProfileAvatarUploader.jsx";
+import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
+import { useAdminPreferences } from "../../admin/AdminPreferencesContext.jsx";
+import { updateCurrentProfile, updatePassword } from "../../services/authService.js";
 
-function MetricCard({ icon: Icon, label, value }) {
-  return (
-    <article className="admin-metric">
-      <span><Icon size={22} strokeWidth={1.8} /></span>
-      <div>
-        <strong>{value}</strong>
-        <small>{label}</small>
-      </div>
-    </article>
-  );
-}
+const ADMIN_LANGUAGE_CODES = new Set(["en", "ru", "az"]);
 
-function safeJsonStringify(value) {
-  if (typeof value === "string") return value;
-  return JSON.stringify(value ?? "", null, 2);
-}
-
-function parseSettingValue(raw, type) {
-  if (type === "number") return Number(raw || 0);
-  if (type === "boolean") return raw === "true" || raw === true;
-  if (type === "json" || type === "array") return JSON.parse(raw || (type === "array" ? "[]" : "{}"));
-  return raw;
-}
-
-const emptyDraft = {
-  id: null,
-  group_key: "general",
-  setting_key: "",
-  label: "",
-  value_type: "string",
-  value_input: "",
-  description: "",
-  is_public: false,
-};
+const textScaleOptions = [
+  { value: "compact", labelKey: "admin.preferences.textScaleOptions.compact" },
+  { value: "default", labelKey: "admin.preferences.textScaleOptions.default" },
+  { value: "large", labelKey: "admin.preferences.textScaleOptions.large" },
+];
 
 export default function AdminSettings() {
-  const [searchParams] = useSearchParams();
-  const [moduleData, setModuleData] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
-  const [draft, setDraft] = useState(emptyDraft);
-  const [search, setSearch] = useState("");
-  const [groupFilter, setGroupFilter] = useState("all");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const { t } = useTranslation();
+  const { profile, user, refreshAuth } = useAdminAuth();
+  const { preferences, resolvedTheme, setPreference, resetPreferences } = useAdminPreferences();
+  const [profileDraft, setProfileDraft] = useState({ fullName: "", avatar_url: "" });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+  const [passwordDraft, setPasswordDraft] = useState({ password: "", confirmPassword: "" });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
-  const loadModule = async (keepSelected = true) => {
-    setError("");
-    setIsLoading(true);
+  useEffect(() => {
+    setProfileDraft({
+      fullName: profile?.full_name || "",
+      avatar_url: profile?.avatar_url || "",
+    });
+  }, [profile?.avatar_url, profile?.full_name]);
+
+  useEffect(() => () => {
+    if (avatarPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+    }
+  }, [avatarPreviewUrl]);
+
+  const currentAvatarUrl = getProfileAvatarUrl({
+    avatarUrl: avatarPreviewUrl || profileDraft.avatar_url,
+    profile,
+    user,
+  });
+
+  const adminLanguages = useMemo(
+    () => languages.filter((language) => ADMIN_LANGUAGE_CODES.has(language.code)),
+    [],
+  );
+  const themeOptions = useMemo(() => ([
+    { value: "light", label: t("admin.preferences.themeOptions.light"), icon: Sun },
+    { value: "dark", label: t("admin.preferences.themeOptions.dark"), icon: Moon },
+    { value: "system", label: t("admin.preferences.themeOptions.system"), icon: MonitorCog },
+  ]), [t]);
+  const selectedLanguage = useMemo(
+    () => adminLanguages.find((language) => language.code === preferences.language) || adminLanguages.find((language) => language.code === "en"),
+    [adminLanguages, preferences.language],
+  );
+
+  const selectAvatarFile = async (file) => {
+    setAvatarError("");
+    setProfileError("");
+    setProfileMessage("");
+
     try {
-      const next = await fetchSettingsModuleData();
-      setModuleData(next);
-      if (!keepSelected && next.settings[0]) {
-        setSelectedId(next.settings[0].id);
+      validateAvatarFile(file);
+      setAvatarFile(file);
+      setAvatarPreviewUrl((current) => {
+        if (current.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return URL.createObjectURL(file);
+      });
+    } catch (error) {
+      setAvatarError(error.message || t("profileAvatar.validation"));
+    }
+  };
+
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    setProfileError("");
+    setProfileMessage("");
+    setAvatarError("");
+    setIsSavingProfile(true);
+
+    try {
+      let nextAvatarUrl = profileDraft.avatar_url || "";
+
+      if (avatarFile) {
+        const uploaded = await uploadProfileAvatar({
+          supabase: requireSupabase(),
+          file: avatarFile,
+          ownerType: "client",
+          ownerId: profile?.id || user?.id,
+        });
+        nextAvatarUrl = uploaded.publicUrl;
       }
-    } catch (nextError) {
-      setError(nextError.message || "Could not load settings.");
+
+      await updateCurrentProfile({
+        full_name: profileDraft.fullName,
+        avatar_url: nextAvatarUrl,
+      });
+
+      await refreshAuth();
+      setProfileDraft((current) => ({ ...current, avatar_url: nextAvatarUrl }));
+      setAvatarFile(null);
+      setAvatarPreviewUrl((current) => {
+        if (current.startsWith("blob:")) {
+          URL.revokeObjectURL(current);
+        }
+        return "";
+      });
+      setProfileMessage(t("admin.preferences.profileUpdated"));
+    } catch (error) {
+      setProfileError(error.message || t("admin.preferences.profileSaveError"));
     } finally {
-      setIsLoading(false);
+      setIsSavingProfile(false);
     }
   };
 
-  useEffect(() => {
-    loadModule(false);
-  }, []);
+  const savePassword = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
 
-  useEffect(() => {
-    const deepLinkedSettingId = searchParams.get("setting");
-    if (deepLinkedSettingId) {
-      setSelectedId(deepLinkedSettingId);
+    if (passwordDraft.password.length < 8) {
+      setPasswordError(t("admin.preferences.passwordMin"));
+      return;
     }
-  }, [searchParams]);
 
-  const settings = moduleData?.settings || [];
+    if (passwordDraft.password !== passwordDraft.confirmPassword) {
+      setPasswordError(t("admin.preferences.passwordsMismatch"));
+      return;
+    }
 
-  const groups = useMemo(
-    () => Array.from(new Set(settings.map((item) => item.group_key))).sort(),
-    [settings],
-  );
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return settings.filter((item) => {
-      const matchesSearch = !q || [item.setting_key, item.label, item.description, item.group_key].some((value) =>
-        String(value || "").toLowerCase().includes(q),
-      );
-      const matchesGroup = groupFilter === "all" || item.group_key === groupFilter;
-      return matchesSearch && matchesGroup;
-    });
-  }, [groupFilter, search, settings]);
-
-  const selected = useMemo(
-    () => filtered.find((item) => item.id === selectedId) || settings.find((item) => item.id === selectedId) || null,
-    [filtered, selectedId, settings],
-  );
-
-  useEffect(() => {
-    if (!selected) return;
-    setDraft({
-      id: selected.id,
-      group_key: selected.group_key,
-      setting_key: selected.setting_key,
-      label: selected.label,
-      value_type: selected.value_type,
-      value_input: safeJsonStringify(selected.value),
-      description: selected.description || "",
-      is_public: Boolean(selected.is_public),
-    });
-  }, [selected]);
-
-  const metrics = useMemo(() => ({
-    total: settings.length,
-    groups: groups.length,
-    publicCount: settings.filter((item) => item.is_public).length,
-    jsonCount: settings.filter((item) => item.value_type === "json" || item.value_type === "array").length,
-  }), [groups.length, settings]);
-
-  const saveSetting = async () => {
-    setIsSaving(true);
-    setError("");
+    setIsSavingPassword(true);
     try {
-      const payload = {
-        ...draft,
-        value: parseSettingValue(draft.value_input, draft.value_type),
-      };
-      const result = await upsertSystemSetting(payload);
-      await loadModule();
-      setSelectedId(result.id);
-    } catch (nextError) {
-      setError(nextError.message || "Could not save setting.");
+      await updatePassword(passwordDraft.password);
+      setPasswordDraft({ password: "", confirmPassword: "" });
+      setPasswordMessage(t("admin.preferences.passwordUpdated"));
+    } catch (error) {
+      setPasswordError(error.message || t("admin.preferences.passwordSaveError"));
     } finally {
-      setIsSaving(false);
+      setIsSavingPassword(false);
     }
-  };
-
-  const startNew = () => {
-    setSelectedId(null);
-    setDraft(emptyDraft);
   };
 
   return (
-    <div className="admin-page admin-content-system-page">
+    <div className="admin-page admin-preferences-page">
+      <div className="admin-page-header">
+        <div className="admin-page-header__content">
+          <h1>{t("admin.preferences.title")}</h1>
+          <p>{t("admin.preferences.description")}</p>
+        </div>
+      </div>
 
-      {error && <p className="admin-message is-error">{error}</p>}
-      {moduleData && !moduleData.supportsSettingsModuleV1 && (
-        <p className="admin-message">Run `010_content_system_v1.sql` in Supabase to enable the Settings module.</p>
-      )}
-
-      {isLoading ? (
-        <p className="admin-message">Loading settings...</p>
-      ) : (
-        <>
-          <section className="admin-metrics">
-            <MetricCard icon={Cog} label="Settings" value={metrics.total} />
-            <MetricCard icon={Globe2} label="Public keys" value={metrics.publicCount} />
-            <MetricCard icon={SlidersHorizontal} label="Groups" value={metrics.groups} />
-            <MetricCard icon={Save} label="Structured values" value={metrics.jsonCount} />
-          </section>
-
-          <section className="admin-panel">
-            <div className="admin-panel__head">
-              <div><h2>System settings</h2><p>Grouped configuration store for admin-driven business rules.</p></div>
-              <button className="admin-link-button" type="button" onClick={startNew}>New setting</button>
+      <div className="admin-preferences-page__grid">
+        <section className="admin-card admin-preferences-card">
+          <header className="admin-preferences-card__head">
+            <div className="admin-preferences-card__icon"><Palette size={18} /></div>
+            <div>
+              <h2>{t("admin.preferences.workspaceTitle")}</h2>
+              <p>{t("admin.preferences.workspaceDescription")}</p>
             </div>
+          </header>
 
-            <div className="admin-content-system__filters">
-              <label className="admin-search">
-                <Search size={16} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search key, label, description" />
-              </label>
-              <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}>
-                <option value="all">All groups</option>
-                {groups.map((group) => <option key={group} value={group}>{group}</option>)}
-              </select>
-            </div>
-
-            <div className="admin-content-system__layout">
-              <div className="admin-content-system__list">
-                {filtered.length ? filtered.map((item) => (
-                  <article
-                    key={item.id}
-                    className={`admin-content-system__row ${selectedId === item.id ? "is-active" : ""}`}
-                    onClick={() => setSelectedId(item.id)}
+          <div className="admin-preferences-card__section">
+            <label>{t("admin.preferences.theme")}</label>
+            <div className="admin-preferences-card__choices">
+              {themeOptions.map((option) => {
+                const Icon = option.icon;
+                const isActive = preferences.theme === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`admin-preferences-chip${isActive ? " is-active" : ""}`}
+                    onClick={() => setPreference("theme", option.value)}
                   >
-                    <strong>{item.label}</strong>
-                    <div className="admin-content-system__badges">
-                      <span className="admin-content-system__badge">{item.group_key}</span>
-                      <span className="admin-content-system__badge">{item.value_type}</span>
-                      {item.is_public && <span className="admin-content-system__badge">public</span>}
-                    </div>
-                    <p>{item.setting_key}</p>
-                    <small>{item.description || "No description"}</small>
-                  </article>
-                )) : <div className="admin-content-system__empty">No settings match the current filters.</div>}
-              </div>
-
-              <section className="admin-panel">
-                <div className="admin-panel__head">
-                  <div><h2>{draft.id ? "Edit setting" : "Create setting"}</h2><p>JSON-backed value storage with lightweight typing.</p></div>
-                </div>
-
-                <div className="admin-content-system__form">
-                  <div className="admin-content-system__form-grid">
-                    <div className="admin-content-system__field">
-                      <label>Group</label>
-                      <input value={draft.group_key} onChange={(event) => setDraft((state) => ({ ...state, group_key: event.target.value }))} />
-                    </div>
-                    <div className="admin-content-system__field">
-                      <label>Setting key</label>
-                      <input value={draft.setting_key} onChange={(event) => setDraft((state) => ({ ...state, setting_key: event.target.value }))} />
-                    </div>
-                    <div className="admin-content-system__field">
-                      <label>Label</label>
-                      <input value={draft.label} onChange={(event) => setDraft((state) => ({ ...state, label: event.target.value }))} />
-                    </div>
-                    <div className="admin-content-system__field">
-                      <label>Value type</label>
-                      <select value={draft.value_type} onChange={(event) => setDraft((state) => ({ ...state, value_type: event.target.value }))}>
-                        <option value="string">string</option>
-                        <option value="number">number</option>
-                        <option value="boolean">boolean</option>
-                        <option value="json">json</option>
-                        <option value="array">array</option>
-                      </select>
-                    </div>
-                    <div className="admin-content-system__field is-wide">
-                      <label>Value</label>
-                      <textarea value={draft.value_input} onChange={(event) => setDraft((state) => ({ ...state, value_input: event.target.value }))} />
-                    </div>
-                    <div className="admin-content-system__field is-wide">
-                      <label>Description</label>
-                      <textarea value={draft.description} onChange={(event) => setDraft((state) => ({ ...state, description: event.target.value }))} />
-                    </div>
-                  </div>
-                  <label className="admin-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={draft.is_public}
-                      onChange={(event) => setDraft((state) => ({ ...state, is_public: event.target.checked }))}
-                    />
-                    <span>Expose this setting to public site consumers.</span>
-                  </label>
-                  <div className="admin-content-system__actions">
-                    <button className="btn btn--ghost" type="button" onClick={startNew}>Reset</button>
-                    <button className="btn btn--primary" type="button" disabled={isSaving} onClick={saveSetting}>Save setting</button>
-                  </div>
-                </div>
-              </section>
+                    <Icon size={15} />
+                    <span>{option.label}</span>
+                  </button>
+                );
+              })}
             </div>
-          </section>
-        </>
-      )}
+            <small>{t("admin.preferences.currentAppliedTheme", { theme: t(`admin.preferences.themeOptions.${resolvedTheme}`) })}</small>
+          </div>
+
+          <div className="admin-preferences-card__section">
+            <label>{t("admin.preferences.adminLanguage")}</label>
+            <select
+              className="admin-select"
+              value={preferences.language}
+              onChange={(event) => setPreference("language", event.target.value)}
+            >
+              {adminLanguages.map((language) => (
+                <option key={language.code} value={language.code}>
+                  {language.label} - {language.nativeLabel}
+                </option>
+              ))}
+            </select>
+            <small>{t("admin.preferences.currentLanguage", { language: selectedLanguage?.label || "English" })}</small>
+          </div>
+
+          <div className="admin-preferences-card__section">
+            <label>{t("admin.preferences.textScale")}</label>
+            <div className="admin-preferences-card__choices">
+              {textScaleOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`admin-preferences-chip${preferences.textScale === option.value ? " is-active" : ""}`}
+                  onClick={() => setPreference("textScale", option.value)}
+                >
+                  <Type size={15} />
+                  <span>{t(option.labelKey)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-preferences-card__actions">
+            <button type="button" className="btn btn--ghost" onClick={resetPreferences}>{t("admin.preferences.resetPreferences")}</button>
+          </div>
+        </section>
+
+        <section className="admin-card admin-preferences-card">
+          <header className="admin-preferences-card__head">
+            <div className="admin-preferences-card__icon"><UserRound size={18} /></div>
+            <div>
+              <h2>{t("admin.preferences.profileTitle")}</h2>
+              <p>{t("admin.preferences.profileDescription")}</p>
+            </div>
+          </header>
+
+          <form className="admin-preferences-form" onSubmit={saveProfile}>
+            <ProfileAvatarUploader
+              avatarUrl={currentAvatarUrl}
+              fallbackName={profileDraft.fullName || profile?.email || "Admin"}
+              size="xl"
+              editable
+              uploading={isSavingProfile}
+              onFileSelected={selectAvatarFile}
+              error={avatarError}
+              label={t("admin.preferences.profilePhoto")}
+              actionLabel={t("admin.preferences.changeProfilePhoto")}
+            />
+
+            <div className="admin-preferences-form__grid">
+              <label className="admin-preferences-field">
+                <span>{t("admin.preferences.fullName")}</span>
+                <input
+                  className="admin-input"
+                  value={profileDraft.fullName}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, fullName: event.target.value }))}
+                  placeholder={t("admin.preferences.adminNamePlaceholder")}
+                />
+              </label>
+
+              <label className="admin-preferences-field">
+                <span>{t("admin.common.email")}</span>
+                <input className="admin-input" value={profile?.email || ""} readOnly />
+              </label>
+            </div>
+
+            {profileError ? <p className="admin-message is-error">{profileError}</p> : null}
+            {profileMessage ? <p className="admin-message">{profileMessage}</p> : null}
+
+            <div className="admin-preferences-card__actions">
+              <button type="submit" className="btn btn--primary" disabled={isSavingProfile}>
+                {isSavingProfile ? t("admin.common.saving") : t("admin.preferences.saveProfile")}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section className="admin-card admin-preferences-card">
+          <header className="admin-preferences-card__head">
+            <div className="admin-preferences-card__icon"><Shield size={18} /></div>
+            <div>
+              <h2>{t("admin.preferences.securityTitle")}</h2>
+              <p>{t("admin.preferences.securityDescription")}</p>
+            </div>
+          </header>
+
+          <form className="admin-preferences-form" onSubmit={savePassword}>
+            <div className="admin-preferences-form__grid">
+              <label className="admin-preferences-field">
+                <span>{t("admin.preferences.newPassword")}</span>
+                <input
+                  className="admin-input"
+                  type="password"
+                  value={passwordDraft.password}
+                  onChange={(event) => setPasswordDraft((current) => ({ ...current, password: event.target.value }))}
+                  placeholder={t("admin.preferences.passwordPlaceholder")}
+                />
+              </label>
+
+              <label className="admin-preferences-field">
+                <span>{t("admin.preferences.confirmPassword")}</span>
+                <input
+                  className="admin-input"
+                  type="password"
+                  value={passwordDraft.confirmPassword}
+                  onChange={(event) => setPasswordDraft((current) => ({ ...current, confirmPassword: event.target.value }))}
+                  placeholder={t("admin.preferences.confirmPasswordPlaceholder")}
+                />
+              </label>
+            </div>
+
+            {passwordError ? <p className="admin-message is-error">{passwordError}</p> : null}
+            {passwordMessage ? <p className="admin-message">{passwordMessage}</p> : null}
+
+            <div className="admin-preferences-card__actions">
+              <button type="submit" className="btn btn--primary" disabled={isSavingPassword}>
+                {isSavingPassword ? t("admin.common.updating") : t("admin.preferences.updatePassword")}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
     </div>
   );
 }

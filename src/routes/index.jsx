@@ -44,6 +44,7 @@ import AdminPayments from "../pages/AdminPayments/index.jsx";
 import AdminReports from "../pages/AdminReports/index.jsx";
 import AdminCms from "../pages/AdminCms/index.jsx";
 import AdminSettings from "../pages/AdminSettings/index.jsx";
+import AdminSystemSettings from "../pages/AdminSystemSettings/index.jsx";
 import AdminTeam from "../pages/AdminTeam/index.jsx";
 import AdminTeamActivity from "../pages/AdminTeamActivity/index.jsx";
 import AdminRoles from "../pages/AdminRoles/index.jsx";
@@ -54,6 +55,7 @@ import AdminReferrals from "../pages/AdminReferrals/index.jsx";
 import AdminPartnerCommissions from "../pages/AdminPartnerCommissions/index.jsx";
 import AdminPartnerPayouts from "../pages/AdminPartnerPayouts/index.jsx";
 import AdminReferral from "../pages/AdminReferral/index.jsx";
+import AdminDashboardMain from "../pages/AdminDashboardMain/index.jsx";
 import {
   PartnerAssetsPage,
   PartnerDashboardPage,
@@ -153,7 +155,7 @@ function AnimatedRoutes({ location }) {
       <Route path="/admin/forbidden" element={<AdminForbiddenPage />} />
       <Route element={<AdminRouteGuard />}>
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={withAdminPermission(adminPlaceholder("Main"), "dashboard.view")} />
+          <Route index element={withAdminPermission(<AdminDashboardMain />, "dashboard.view")} />
 
           <Route path="dashboard/marketing" element={withAdminPermission(adminPlaceholder("Marketing"), "dashboard.view")} />
           <Route
@@ -193,6 +195,7 @@ function AnimatedRoutes({ location }) {
           <Route path="content/cms" element={withAdminPermission(<AdminCms />, "cms.view")} />
 
           <Route path="settings" element={withAdminPermission(<AdminSettings />, "settings.view")} />
+          <Route path="settings/system" element={withAdminPermission(<AdminSystemSettings />, "settings.view")} />
 
           <Route path="activity" element={<Navigate to="/admin/dashboard/activity" replace />} />
           <Route path="marketing" element={<Navigate to="/admin/dashboard/marketing" replace />} />

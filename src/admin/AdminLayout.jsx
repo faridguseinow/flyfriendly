@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Menu, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "../assets/icons/logo-image.svg";
 import logoText from "../assets/icons/fly-friendly.svg";
@@ -16,7 +17,8 @@ import {
 } from "../services/adminService.js";
 import { preloadAdminFinanceWorkspaceData } from "../services/adminFinanceService.js";
 import { requireSupabase } from "../lib/supabase.js";
-import { adminNavigation, adminNavigationSections, buildAdminNavigationSections } from "./navigation.js";
+import { buildAdminNavigationSections, getAdminNavigation, getAdminNavigationSections } from "./navigation.js";
+import { AdminPreferencesProvider, useAdminPreferencesState } from "./AdminPreferencesContext.jsx";
 import { useAdminAuth } from "./AdminAuthContext.jsx";
 import "./admin.scss";
 
@@ -46,8 +48,8 @@ function isPathActive(itemPath, pathname) {
   return itemPath === "/admin" ? pathname === "/admin" : pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 
-function buildShellBreadcrumbs(activeSection, currentItem) {
-  const crumbs = [{ key: "admin", label: "Admin" }];
+function buildShellBreadcrumbs(activeSection, currentItem, t) {
+  const crumbs = [{ key: "admin", label: t("admin.common.admin") }];
 
   if (activeSection?.label) {
     crumbs.push({ key: activeSection.key, label: activeSection.label });
@@ -126,6 +128,7 @@ function dedupeNavigationItems(items = []) {
 }
 
 export function AdminLoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { refreshAuth } = useAdminAuth();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -138,20 +141,20 @@ export function AdminLoginPage() {
     setIsSubmitting(true);
 
     try {
-      await signInCustomer(form);
-      const accessState = await refreshAuth();
-      if (!accessState?.isAdminUser) {
-        await signOutUser().catch(() => null);
-        setError("This account does not have admin access.");
-        return;
-      }
+        await signInCustomer(form);
+        const accessState = await refreshAuth();
+        if (!accessState?.isAdminUser) {
+          await signOutUser().catch(() => null);
+          setError(t("admin.auth.noAccess"));
+          return;
+        }
       await logAdminActivity("login", "admin_session", null, {
         module: "auth",
         source: "admin_login",
       });
       navigate("/admin", { replace: true });
     } catch (authError) {
-      setError(authError.message || "Could not sign in.");
+      setError(authError.message || t("admin.auth.signInError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -163,26 +166,26 @@ export function AdminLoginPage() {
         <div className="admin-brand">
           <img src={logoImage} alt="" />
         </div>
-        <h1>Admin sign in</h1>
-        <p>Use an internal account with an assigned Fly Friendly admin role.</p>
+        <h1>{t("admin.auth.signInTitle")}</h1>
+        <p>{t("admin.auth.signInDescription")}</p>
         <form className="admin-auth-form" onSubmit={submit}>
           <input
             type="email"
-            placeholder="Email"
+            placeholder={t("admin.common.email")}
             value={form.email}
             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
             required
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t("admin.auth.password")}
             value={form.password}
             onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
             required
           />
           {error && <p className="admin-auth-error">{error}</p>}
           <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Log in"}
+            {isSubmitting ? t("admin.auth.signingIn") : t("admin.auth.logIn")}
           </button>
         </form>
       </section>
@@ -191,24 +194,27 @@ export function AdminLoginPage() {
 }
 
 export function AdminForbiddenPage() {
+  const { t } = useTranslation();
   return (
     <main className="admin-auth-page">
       <section className="admin-auth-card">
         <div className="admin-brand">
           <img src={logoImage} alt="" />
         </div>
-        <h1>Access restricted</h1>
-        <p>Your account is authenticated, but it does not have permission to access this admin area.</p>
-        <NavLink className="btn btn-primary" to="/">Back to site</NavLink>
+        <h1>{t("admin.auth.accessRestricted")}</h1>
+        <p>{t("admin.auth.accessRestrictedDescription")}</p>
+        <NavLink className="btn btn-primary" to="/">{t("admin.auth.backToSite")}</NavLink>
       </section>
     </main>
   );
 }
 
 function AdminLayout() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, primaryRoleLabel, roleLabels, roles, hasPermission, isAdminUser } = useAdminAuth();
+  const preferencesState = useAdminPreferencesState(profile?.email, profile?.preferred_language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchIndex, setSearchIndex] = useState(null);
@@ -253,23 +259,31 @@ function AdminLayout() {
     };
   }, [profile?.id, roles]);
 
-  const navItems = useMemo(() => (
-    dedupeNavigationItems(dynamicMenu?.items || adminNavigation).filter(isMenuItemAllowed)
-  ), [dynamicMenu?.items, hasPermission]);
+  const translatedNavigation = useMemo(() => getAdminNavigation(t), [t]);
+  const translatedNavigationSections = useMemo(() => getAdminNavigationSections(t), [t]);
+  const navItems = useMemo(() => {
+    const sourceItems = dedupeNavigationItems(dynamicMenu?.items || translatedNavigation).filter(isMenuItemAllowed);
+    const translatedByPath = new Map(translatedNavigation.map((item) => [item.path, item]));
+
+    return sourceItems.map((item) => ({
+      ...item,
+      ...(translatedByPath.get(item.path) || {}),
+    }));
+  }, [dynamicMenu?.items, hasPermission, translatedNavigation]);
 
   const navSections = useMemo(
-    () => buildAdminNavigationSections(navItems, adminNavigationSections),
-    [navItems],
+    () => buildAdminNavigationSections(navItems, translatedNavigationSections),
+    [navItems, translatedNavigationSections],
   );
 
   const currentItem = findBestMatch(navItems, location.pathname);
   const activeSection = navSections.find((section) => section.pages.some((item) => isPathActive(item.path, location.pathname))) || navSections[0] || null;
-  const currentLabel = currentItem?.label || activeSection?.label || "Admin";
-  const currentRoleLabel = primaryRoleLabel || roleLabels[0] || "No role assigned";
-  const currentUserEmail = profile?.email || "No email available";
+  const currentLabel = currentItem?.label || activeSection?.label || t("admin.common.admin");
+  const currentRoleLabel = primaryRoleLabel || roleLabels[0] || t("admin.common.noRoleAssigned");
+  const currentUserEmail = profile?.email || t("admin.common.noEmailAvailable");
   const breadcrumbs = useMemo(
-    () => buildShellBreadcrumbs(activeSection, currentItem),
-    [activeSection, currentItem],
+    () => buildShellBreadcrumbs(activeSection, currentItem, t),
+    [activeSection, currentItem, t],
   );
 
   const signOut = async () => {
@@ -399,7 +413,7 @@ function AdminLayout() {
       if (item.label.toLowerCase().includes(query)) {
         results.push({
           id: `module:${item.path}`,
-          group: "Modules",
+          group: t("admin.search.groups.modules"),
           label: item.label,
           meta: item.path,
           path: item.path,
@@ -420,7 +434,7 @@ function AdminLayout() {
     };
 
     if (searchIndex) {
-      addMatches("Leads", searchIndex.leads || [], (row) => ({
+      addMatches(t("admin.search.groups.leads"), searchIndex.leads || [], (row) => ({
         id: `lead:${row.id}`,
         label: row.full_name || row.lead_code || "Lead",
         meta: [row.lead_code, row.email, row.airline, row.departure_airport, row.arrival_airport, row.status].filter(Boolean).join(" • "),
@@ -431,60 +445,60 @@ function AdminLayout() {
           rankSearchValue(row.email, query) +
           rankSearchValue(row.airline, query),
       }));
-      addMatches("Cases", searchIndex.cases || [], (row) => ({
+      addMatches(t("admin.search.groups.cases"), searchIndex.cases || [], (row) => ({
         id: `case:${row.id}`,
         label: row.case_code || "Case",
         meta: [row.airline, row.route_from && row.route_to ? `${row.route_from} → ${row.route_to}` : "", row.status].filter(Boolean).join(" • "),
         path: `/admin/operations/cases?case=${row.id}`,
         score: rankSearchValue(row.case_code, query) + rankSearchValue(row.airline, query),
       }));
-      addMatches("Customers", searchIndex.customers || [], (row) => ({
+      addMatches(t("admin.search.groups.customers"), searchIndex.customers || [], (row) => ({
         id: `customer:${row.id}`,
         label: row.full_name || row.email || "Customer",
         meta: [row.email, row.phone, row.country].filter(Boolean).join(" • "),
         path: `/admin/people/customers?customer=${row.id}`,
         score: rankSearchValue(row.full_name, query) + rankSearchValue(row.email, query),
       }));
-      addMatches("Tasks", searchIndex.tasks || [], (row) => ({
+      addMatches(t("admin.search.groups.tasks"), searchIndex.tasks || [], (row) => ({
         id: `task:${row.id}`,
         label: row.title || "Task",
         meta: [row.related_entity_type, row.status].filter(Boolean).join(" • "),
         path: `/admin/operations/tasks?task=${row.id}`,
         score: rankSearchValue(row.title, query),
       }));
-      addMatches("Partners", searchIndex.partners || [], (row) => ({
+      addMatches(t("admin.search.groups.partners"), searchIndex.partners || [], (row) => ({
         id: `partner:${row.id}`,
         label: row.name || "Partner",
         meta: [row.referral_code, row.status].filter(Boolean).join(" • "),
         path: `/admin/people/referral?partner=${row.id}`,
         score: rankSearchValue(row.name, query) + rankSearchValue(row.referral_code, query),
       }));
-      addMatches("Blog", searchIndex.blogPosts || [], (row) => ({
+      addMatches(t("admin.search.groups.blog"), searchIndex.blogPosts || [], (row) => ({
         id: `post:${row.id}`,
         label: row.title || "Post",
         meta: [row.slug, row.status].filter(Boolean).join(" • "),
         path: `/admin/content/pages?post=${row.id}`,
         score: rankSearchValue(row.title, query) + rankSearchValue(row.slug, query),
       }));
-      addMatches("FAQ", searchIndex.faqItems || [], (row) => ({
+      addMatches(t("admin.search.groups.faq"), searchIndex.faqItems || [], (row) => ({
         id: `faq:${row.id}`,
         label: row.question || "FAQ item",
         meta: [row.category, row.status].filter(Boolean).join(" • "),
         path: `/admin/content/pages?faq=${row.id}`,
         score: rankSearchValue(row.question, query),
       }));
-      addMatches("CMS", searchIndex.cmsPages || [], (row) => ({
+      addMatches(t("admin.search.groups.cms"), searchIndex.cmsPages || [], (row) => ({
         id: `page:${row.id}`,
         label: row.title || row.page_key || "Page",
         meta: [row.page_key, row.slug, row.status].filter(Boolean).join(" • "),
         path: `/admin/content/cms?page=${row.id}`,
         score: rankSearchValue(row.title, query) + rankSearchValue(row.page_key, query),
       }));
-      addMatches("Settings", searchIndex.settings || [], (row) => ({
+      addMatches(t("admin.search.groups.settings"), searchIndex.settings || [], (row) => ({
         id: `setting:${row.id}`,
         label: row.label || row.setting_key || "Setting",
         meta: [row.group_key, row.setting_key].filter(Boolean).join(" • "),
-        path: `/admin/settings?setting=${row.id}`,
+        path: `/admin/settings/system?setting=${row.id}`,
         score: rankSearchValue(row.label, query) + rankSearchValue(row.setting_key, query),
       }));
     }
@@ -513,14 +527,20 @@ function AdminLayout() {
   };
 
   return (
-    <div className={`admin-shell${isSidebarOpen ? " is-sidebar-open" : ""}`}>
-      {isSidebarOpen ? <button type="button" className="admin-sidebar__overlay" aria-label="Close menu" onClick={() => setIsSidebarOpen(false)} /> : null}
+    <AdminPreferencesProvider value={preferencesState}>
+      <div
+        className={`admin-shell${isSidebarOpen ? " is-sidebar-open" : ""}`}
+        data-admin-theme={preferencesState.resolvedTheme}
+        data-admin-theme-mode={preferencesState.preferences.theme}
+        data-admin-text-scale={preferencesState.preferences.textScale}
+      >
+      {isSidebarOpen ? <button type="button" className="admin-sidebar__overlay" aria-label={t("admin.common.closeMenu")} onClick={() => setIsSidebarOpen(false)} /> : null}
       <aside className="admin-icon-rail">
         <div className="admin-rail-logo-wrap">
-          <NavLink to="/admin" className="admin-rail-logo" onClick={() => setIsSidebarOpen(false)} aria-label="Fly Friendly admin">
+          <NavLink to="/admin" className="admin-rail-logo" onClick={() => setIsSidebarOpen(false)} aria-label={t("admin.common.adminHomeLabel")}>
             <img src={logoImage} alt="" />
           </NavLink>
-          <button type="button" className="admin-sidebar__close" onClick={() => setIsSidebarOpen(false)} aria-label="Close menu">
+          <button type="button" className="admin-sidebar__close" onClick={() => setIsSidebarOpen(false)} aria-label={t("admin.common.closeMenu")}>
             <Menu size={18} />
           </button>
         </div>
@@ -538,8 +558,8 @@ function AdminLayout() {
 
       <aside className="admin-section-sidebar">
         <div className="admin-section-header">
-          <span>Section</span>
-          <strong>{activeSection?.label || "Admin"}</strong>
+          <span>{t("admin.common.section")}</span>
+          <strong>{activeSection?.label || t("admin.common.admin")}</strong>
         </div>
         <div className="admin-mobile-sections" aria-label="Admin sections">
           {navSections.map((section) => (
@@ -558,16 +578,16 @@ function AdminLayout() {
         </nav>
         <div className="admin-mobile-account">
           <div className="admin-user-chip">
-            <span>Email</span>
+            <span>{t("admin.common.email")}</span>
             <strong>{currentUserEmail}</strong>
           </div>
           <div className="admin-user-chip">
-            <span>Role</span>
+            <span>{t("admin.common.role")}</span>
             <strong>{currentRoleLabel}</strong>
           </div>
           <button type="button" className="admin-logout" onClick={signOut}>
             <LogOut size={16} />
-            <span>Log out</span>
+            <span>{t("admin.common.logOut")}</span>
           </button>
         </div>
       </aside>
@@ -579,7 +599,7 @@ function AdminLayout() {
               type="button"
               className="admin-menu-button"
               onClick={() => setIsSidebarOpen((current) => !current)}
-              aria-label="Open admin navigation"
+              aria-label={t("admin.common.openAdminNavigation")}
             >
               <Menu size={18} />
             </button>
@@ -596,7 +616,7 @@ function AdminLayout() {
               <Search size={16} />
               <input
                 type="search"
-                placeholder="Search modules, leads, cases"
+                placeholder={t("admin.search.placeholder")}
                 value={searchValue}
                 onFocus={() => setIsSearchOpen(true)}
                 onBlur={() => window.setTimeout(() => setIsSearchOpen(false), 120)}
@@ -618,7 +638,7 @@ function AdminLayout() {
                     transition={{ duration: 0.18, ease: "easeOut" }}
                   >
                   {isSearchLoading && !searchIndex ? (
-                    <div className="admin-search__empty">Loading search index...</div>
+                    <div className="admin-search__empty">{t("admin.search.loading")}</div>
                   ) : searchValue.trim() ? (
                     searchResults.length ? (
                       searchResults.map((item) => (
@@ -636,26 +656,26 @@ function AdminLayout() {
                         </button>
                       ))
                     ) : (
-                      <div className="admin-search__empty">No results for this query.</div>
+                      <div className="admin-search__empty">{t("admin.search.noResults")}</div>
                     )
                   ) : (
-                    <div className="admin-search__empty">Start typing to search modules and records.</div>
+                    <div className="admin-search__empty">{t("admin.search.startTyping")}</div>
                   )}
                   </motion.div>
                 ) : null}
               </AnimatePresence>
             </label>
             <div className="admin-user-chip">
-              <span>Email</span>
+              <span>{t("admin.common.email")}</span>
               <strong>{currentUserEmail}</strong>
             </div>
             <div className="admin-user-chip">
-              <span>Role</span>
+              <span>{t("admin.common.role")}</span>
               <strong>{currentRoleLabel}</strong>
             </div>
             <button type="button" className="admin-logout" onClick={signOut}>
               <LogOut size={16} />
-              <span>Log out</span>
+              <span>{t("admin.common.logOut")}</span>
             </button>
           </div>
         </header>
@@ -687,7 +707,8 @@ function AdminLayout() {
           </AnimatePresence>
         </main>
       </div>
-    </div>
+      </div>
+    </AdminPreferencesProvider>
   );
 }
 

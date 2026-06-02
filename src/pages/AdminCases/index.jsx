@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, FilterX, Plus, RefreshCw, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   createTask,
@@ -77,38 +78,47 @@ function formatDate(value) {
   return formatFinanceDateParts(value).date;
 }
 
-function formatCaseReference(caseRow) {
-  if (caseRow?.case_code) return caseRow.case_code;
-  if (caseRow?.id) return `Case ${String(caseRow.id).slice(0, 8)}`;
-  return "Case";
-}
-
-function formatCurrency(value, currency = "EUR") {
-  return formatFinanceCurrency(value, currency, { emptyLabel: "Pending review" });
-}
-
-function formatEstimateCurrency(value, currency = "EUR") {
-  if (value === null || value === undefined || value === "") return "Estimate pending review";
-  return `Up to €${Number(value || 0).toFixed(0)}${currency && currency !== "EUR" ? ` ${currency}` : ""}`;
-}
-
-function formatEstimateStatus(status) {
-  if (status === "calculated") return "Calculated";
-  if (status === "manual_override") return "Manual override";
-  return "Estimate pending review";
-}
-
-function formatDistanceBand(band) {
-  if (band === "short") return "Short";
-  if (band === "medium") return "Medium";
-  if (band === "long") return "Long";
-  return "Unknown";
-}
-
 function normalizeLabel(value) {
   return String(value || "unknown")
     .replace(/_/g, " ")
     .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function translateEnum(t, value) {
+  const normalized = String(value || "unknown").trim().toLowerCase();
+  return t(`admin.common.enums.${normalized}`, { defaultValue: normalizeLabel(value) });
+}
+
+function formatCaseReference(caseRow, t = null) {
+  if (caseRow?.case_code) return caseRow.case_code;
+  if (caseRow?.id) return `${t ? t("admin.cases.title") : "Case"} ${String(caseRow.id).slice(0, 8)}`;
+  return t ? t("admin.cases.title") : "Case";
+}
+
+function formatCurrency(value, currency = "EUR", t = null) {
+  return formatFinanceCurrency(value, currency, {
+    emptyLabel: t ? t("admin.common.enums.pending_review") : "Pending review",
+  });
+}
+
+function formatEstimateCurrency(value, currency = "EUR", t = null) {
+  if (value === null || value === undefined || value === "") {
+    return t ? t("admin.leads.estimate.pendingReview") : "Estimate pending review";
+  }
+  return `Up to €${Number(value || 0).toFixed(0)}${currency && currency !== "EUR" ? ` ${currency}` : ""}`;
+}
+
+function formatEstimateStatus(status, t = null) {
+  if (status === "calculated") return t ? t("admin.leads.estimate.calculated") : "Calculated";
+  if (status === "manual_override") return t ? t("admin.leads.estimate.manualOverride") : "Manual override";
+  return t ? t("admin.leads.estimate.pendingReview") : "Estimate pending review";
+}
+
+function formatDistanceBand(band, t = null) {
+  if (band === "short") return t ? t("admin.leads.distance.short") : "Short";
+  if (band === "medium") return t ? t("admin.leads.distance.medium") : "Medium";
+  if (band === "long") return t ? t("admin.leads.distance.long") : "Long";
+  return t ? t("admin.leads.distance.unknown") : "Unknown";
 }
 
 function getStatusTone(status) {
@@ -148,8 +158,8 @@ function getBooleanTone(value) {
   return value ? "success" : "neutral";
 }
 
-function normalizeBooleanLabel(value) {
-  return value ? "Yes" : "No";
+function normalizeBooleanLabel(value, t = null) {
+  return value ? (t ? t("admin.common.yes") : "Yes") : (t ? t("admin.common.no") : "No");
 }
 
 function normalizeCompactPaymentStatus(value, paidAt = null) {
@@ -173,35 +183,35 @@ function getPaymentTone(status) {
   return "neutral";
 }
 
-function formatPaymentFlow(value) {
-  if (value === "direct_to_client") return "Direct to client";
-  return "Through company";
+function formatPaymentFlow(value, t = null) {
+  if (value === "direct_to_client") return t ? t("admin.common.enums.direct_to_client") : "Direct to client";
+  return t ? t("admin.common.enums.through_company") : "Through company";
 }
 
-function deriveNextAction(caseRow, lead, finance, documents = []) {
-  if (!caseRow) return "Review case";
+function deriveNextAction(caseRow, lead, finance, documents = [], t = null) {
+  if (!caseRow) return t ? t("admin.cases.nextActions.reviewCase") : "Review case";
   if (caseRow.status === "documents_pending" || documents.some((item) => item.status === "missing" || item.status === "requested")) {
-    return "Collect documents";
+    return t ? t("admin.cases.nextActions.collectDocuments") : "Collect documents";
   }
   if (lead?.estimate_status === "pending_review") {
-    return "Review estimate";
+    return t ? t("admin.cases.nextActions.reviewEstimate") : "Review estimate";
   }
   if (caseRow.status === "ready_to_submit") {
-    return "Submit to airline";
+    return t ? t("admin.cases.nextActions.submitToAirline") : "Submit to airline";
   }
   if (caseRow.status === "submitted_to_airline" || caseRow.status === "awaiting_response") {
-    return "Wait for airline";
+    return t ? t("admin.cases.nextActions.waitForAirline") : "Wait for airline";
   }
   if ((finance?.payment_status || caseRow.payout_status) === "awaiting_payment") {
-    return "Collect payment";
+    return t ? t("admin.cases.nextActions.collectPayment") : "Collect payment";
   }
   if (caseRow.status === "approved" && (finance?.payment_status || caseRow.payout_status) !== "completed") {
-    return "Prepare payout";
+    return t ? t("admin.cases.nextActions.preparePayout") : "Prepare payout";
   }
   if (["paid", "closed"].includes(caseRow.status)) {
-    return "Completed";
+    return t ? t("admin.cases.nextActions.completed") : "Completed";
   }
-  return "Review case";
+  return t ? t("admin.cases.nextActions.reviewCase") : "Review case";
 }
 
 function formatRouteLabel(caseRow) {
@@ -256,6 +266,7 @@ function exportCasesCsv(rows) {
 }
 
 export default function AdminCases() {
+  const { t } = useTranslation();
   const { hasPermission } = useAdminAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [moduleData, setModuleData] = useState(null);
@@ -307,7 +318,7 @@ export default function AdminCases() {
       const next = await fetchCasesModuleData({ page: 1, pageSize: 500, force: options.force });
       setModuleData(next);
     } catch (nextError) {
-      setError(nextError.message || "Could not load cases module.");
+      setError(nextError.message || t("admin.cases.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -315,7 +326,7 @@ export default function AdminCases() {
 
   useEffect(() => {
     void loadCases();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const deepLinkedCaseId = searchParams.get("case");
@@ -384,7 +395,7 @@ export default function AdminCases() {
       const owner = managerById.get(caseRow.assigned_manager_id) || null;
       const finance = financeByCaseId.get(caseRow.id) || null;
       const documents = documentsByCaseId.get(caseRow.id) || [];
-      const nextAction = deriveNextAction(caseRow, lead, finance, documents);
+      const nextAction = deriveNextAction(caseRow, lead, finance, documents, t);
       const financeStatus = finance?.payment_status || caseRow.payout_status || "not_started";
 
       return {
@@ -396,18 +407,18 @@ export default function AdminCases() {
         documents,
         nextAction,
         financeStatus,
-        reference: formatCaseReference(caseRow),
-        customerName: customer?.full_name || lead?.full_name || "Unknown customer",
-        customerEmail: customer?.email || lead?.email || "No email",
-        ownerLabel: owner?.full_name || owner?.email || "Unassigned",
+        reference: formatCaseReference(caseRow, t),
+        customerName: customer?.full_name || lead?.full_name || t("admin.common.unknownCustomer"),
+        customerEmail: customer?.email || lead?.email || t("admin.common.noEmail"),
+        ownerLabel: owner?.full_name || owner?.email || t("admin.common.unassigned"),
         routeLabel: formatRouteLabel(caseRow),
         estimatedLabel: lead
-          ? formatEstimateCurrency(lead.estimated_compensation_eur, lead.compensation_currency)
-          : formatCurrency(caseRow.estimated_compensation),
+          ? formatEstimateCurrency(lead.estimated_compensation_eur, lead.compensation_currency, t)
+          : formatCurrency(caseRow.estimated_compensation, undefined, t),
         sortTimestamp: getSortTimestamp(caseRow),
       };
     })
-  ), [customerById, documentsByCaseId, financeByCaseId, leadById, managerById, moduleData?.cases]);
+  ), [customerById, documentsByCaseId, financeByCaseId, leadById, managerById, moduleData?.cases, t]);
 
   const airlineOptions = useMemo(() => {
     const values = Array.from(new Set(casesWithMeta.map((item) => item.airline).filter(Boolean)));
@@ -450,19 +461,19 @@ export default function AdminCases() {
     const paid = filteredCases.filter((item) => item.status === "paid").length;
 
     return [
-      { label: "Total", value: total },
-      { label: "Active", value: active },
-      { label: "Documents pending", value: documentsPending },
-      { label: "Ready to submit", value: readyToSubmit },
-      { label: "Approved", value: approved },
-      { label: "Paid", value: paid },
+      { label: t("admin.cases.metrics.total"), value: total },
+      { label: t("admin.cases.metrics.active"), value: active },
+      { label: t("admin.cases.metrics.documentsPending"), value: documentsPending },
+      { label: t("admin.cases.metrics.readyToSubmit"), value: readyToSubmit },
+      { label: t("admin.cases.metrics.approved"), value: approved },
+      { label: t("admin.cases.metrics.paid"), value: paid },
     ];
-  }, [filteredCases]);
+  }, [filteredCases, t]);
 
   const caseColumns = useMemo(() => ([
     {
       key: "case",
-      label: "Case",
+      label: t("admin.cases.title"),
       width: 140,
       minWidth: 110,
       maxWidth: 240,
@@ -479,7 +490,7 @@ export default function AdminCases() {
     },
     {
       key: "customer",
-      label: "Customer",
+      label: t("admin.common.customer"),
       width: 180,
       minWidth: 140,
       maxWidth: 320,
@@ -496,7 +507,7 @@ export default function AdminCases() {
     },
     {
       key: "route",
-      label: "Route",
+      label: t("admin.common.route"),
       width: 260,
       minWidth: 180,
       maxWidth: 480,
@@ -506,14 +517,14 @@ export default function AdminCases() {
       renderCell: (item) => (
         <div className="admin-crm-page__route">
           <strong className="admin-crm-table__cell-main" title={item.routeLabel}>{item.routeLabel}</strong>
-          <span className="admin-crm-table__cell-sub">{item.lead?.disruption_type ? normalizeLabel(item.lead.disruption_type) : "—"}</span>
+          <span className="admin-crm-table__cell-sub">{item.lead?.disruption_type ? translateEnum(t, item.lead.disruption_type) : "—"}</span>
         </div>
       ),
       getCellTitle: (item) => item.routeLabel,
     },
     {
       key: "flight",
-      label: "Flight",
+      label: t("admin.common.flight"),
       width: 180,
       minWidth: 130,
       maxWidth: 300,
@@ -530,7 +541,7 @@ export default function AdminCases() {
     },
     {
       key: "caseStatus",
-      label: "Case status",
+      label: t("admin.cases.sections.caseStatus"),
       width: 190,
       minWidth: 150,
       maxWidth: 320,
@@ -539,14 +550,14 @@ export default function AdminCases() {
       wrap: false,
       renderCell: (item) => (
         <div className="admin-cases-page__table-badges">
-          <AdminStatusBadge tone={getStatusTone(item.status)}>{normalizeLabel(item.status)}</AdminStatusBadge>
-          {item.priority ? <AdminStatusBadge tone={getPriorityTone(item.priority)}>{normalizeLabel(item.priority)}</AdminStatusBadge> : null}
+          <AdminStatusBadge tone={getStatusTone(item.status)}>{translateEnum(t, item.status)}</AdminStatusBadge>
+          {item.priority ? <AdminStatusBadge tone={getPriorityTone(item.priority)}>{translateEnum(t, item.priority)}</AdminStatusBadge> : null}
         </div>
       ),
     },
     {
       key: "finance",
-      label: "Finance",
+      label: t("admin.cases.sections.finance"),
       width: 180,
       minWidth: 140,
       maxWidth: 300,
@@ -555,7 +566,7 @@ export default function AdminCases() {
       wrap: false,
       renderCell: (item) => (
         <div className="admin-cases-page__finance-cell">
-          <AdminStatusBadge tone={getStatusTone(item.financeStatus)}>{normalizeLabel(item.financeStatus)}</AdminStatusBadge>
+          <AdminStatusBadge tone={getStatusTone(item.financeStatus)}>{translateEnum(t, item.financeStatus)}</AdminStatusBadge>
           <span className="admin-crm-table__cell-sub" title={item.estimatedLabel}>{item.estimatedLabel}</span>
         </div>
       ),
@@ -563,7 +574,7 @@ export default function AdminCases() {
     },
     {
       key: "owner",
-      label: "Owner",
+      label: t("admin.common.owner"),
       width: 130,
       minWidth: 100,
       maxWidth: 220,
@@ -579,7 +590,7 @@ export default function AdminCases() {
     },
     {
       key: "updated",
-      label: "Updated",
+      label: t("admin.common.created"),
       width: 130,
       minWidth: 110,
       maxWidth: 180,
@@ -597,7 +608,7 @@ export default function AdminCases() {
       },
       getCellTitle: (item) => formatDateTime(item.updated_at || item.created_at),
     },
-  ]), []);
+  ]), [t]);
 
   const selectedCase = useMemo(
     () => filteredCases.find((item) => item.id === selectedCaseId)
@@ -854,7 +865,7 @@ export default function AdminCases() {
     }
   };
 
-  const listCountLabel = `${filteredCases.length} case${filteredCases.length === 1 ? "" : "s"}`;
+  const listCountLabel = t("admin.cases.countLabel", { count: filteredCases.length });
   const selectedFinanceStatus = selectedCase?.finance?.payment_status || selectedCase?.payout_status || "not_started";
   const internalNotes = [selectedCase?.finance?.notes, selectedCase?.legal_basis].filter(Boolean);
   const canManageCaseStatus = hasPermission("cases.update") || hasPermission("cases.edit");
@@ -898,22 +909,22 @@ export default function AdminCases() {
       {error ? <p className="admin-message is-error">{error}</p> : null}
       {moduleData && !moduleData.supportsCaseModuleV1 ? (
         <p className="admin-message">
-          Cases schema is not available yet. Run `006_core_operations_schema_v1.sql` and `007_cases_module_v1.sql` in Supabase
+          {t("admin.cases.title")} schema is not available yet. Run `006_core_operations_schema_v1.sql` and `007_cases_module_v1.sql` in Supabase
           to unlock the full cases module.
         </p>
       ) : null}
 
       <AdminPageHeader
-        title="Cases"
+        title={t("admin.cases.title")}
         secondaryActions={[
           {
-            label: "Refresh",
+            label: t("admin.common.refresh"),
             icon: RefreshCw,
             onClick: () => void loadCases({ force: true }),
             disabled: isLoading || isSaving || isCreatingTask,
           },
           {
-            label: "Export CSV",
+            label: t("admin.common.exportCsv"),
             icon: Download,
             onClick: () => exportCasesCsv(filteredCases),
             disabled: !filteredCases.length,
@@ -927,52 +938,52 @@ export default function AdminCases() {
         <AdminFilterBar
           searchValue={search}
           onSearchChange={setSearch}
-          searchPlaceholder="Search case, customer, email, route, airline"
+          searchPlaceholder={t("admin.cases.searchPlaceholder")}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           statusOptions={[
-            { value: "all", label: "All case statuses" },
-            ...caseStatuses.map((status) => ({ value: status, label: normalizeLabel(status) })),
+            { value: "all", label: t("admin.cases.filters.allCaseStatuses") },
+            ...caseStatuses.map((status) => ({ value: status, label: translateEnum(t, status) })),
           ]}
           ownerFilter={ownerFilter}
           onOwnerFilterChange={setOwnerFilter}
           ownerOptions={[
-            { value: "all", label: "All owners" },
+            { value: "all", label: t("admin.cases.filters.allOwners") },
             ...((moduleData?.managers || []).map((manager) => ({ value: manager.id, label: manager.full_name || manager.email }))),
           ]}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         >
           <select className="admin-filter-control admin-select" value={airlineFilter} onChange={(event) => setAirlineFilter(event.target.value)}>
-            <option value="all">All airlines</option>
+            <option value="all">{t("admin.cases.filters.allAirlines")}</option>
             {airlineOptions.map((airline) => (
               <option key={airline} value={airline}>{airline}</option>
             ))}
           </select>
 
           <select className="admin-filter-control admin-select" value={financeFilter} onChange={(event) => setFinanceFilter(event.target.value)}>
-            <option value="all">All finance states</option>
+            <option value="all">{t("admin.cases.filters.allFinanceStates")}</option>
             {payoutStatuses.map((status) => (
-              <option key={status} value={status}>{normalizeLabel(status)}</option>
+              <option key={status} value={status}>{translateEnum(t, status)}</option>
             ))}
           </select>
 
           <button type="button" className="admin-btn admin-btn-secondary admin-crm-page__clear" onClick={clearFilters}>
             <FilterX size={15} />
-            <span>Clear filters</span>
+            <span>{t("admin.common.clearFilters")}</span>
           </button>
         </AdminFilterBar>
 
         <AdminColumnTable
           storageKey="ff-admin-table-layout-cases"
-          title="Cases"
+          title={t("admin.cases.title")}
           countLabel={listCountLabel}
           columns={caseColumns}
           rows={filteredCases}
           loading={isLoading}
           error={error}
-          emptyTitle="No cases found"
-          emptyDetail="Adjust filters or wait for converted leads and updated claims."
+          emptyTitle={t("admin.cases.emptyTitle")}
+          emptyDetail={t("admin.cases.emptyDetail")}
           selectedRowId={selectedCase?.id || ""}
           getRowKey={(item) => item.id}
           onRowClick={(item) => openCase(item.id)}
@@ -980,19 +991,19 @@ export default function AdminCases() {
 
         <AdminSidePanel
           open={Boolean(selectedCase && previewOpen)}
-          eyebrow="Case preview"
-          title={selectedCase ? formatCaseReference(selectedCase) : "Case preview"}
-          subtitle={selectedCase ? `${selectedCase.customerName} • Updated ${formatDateTime(selectedCase.updated_at || selectedCase.created_at)}` : ""}
+          eyebrow={t("admin.cases.previewEyebrow")}
+          title={selectedCase ? formatCaseReference(selectedCase, t) : t("admin.cases.previewTitle")}
+          subtitle={selectedCase ? `${selectedCase.customerName} • ${t("admin.common.created")} ${formatDateTime(selectedCase.updated_at || selectedCase.created_at)}` : ""}
           onClose={closePreview}
           className="admin-cases-page__preview"
           withOverlay
           overlayClassName="admin-cases-page__overlay"
-          overlayLabel="Close case preview"
+          overlayLabel={t("admin.cases.closePreview")}
         >
           {!selectedCase ? (
             <div className="admin-cases-page__empty-preview">
-              <strong>Select a case to preview details</strong>
-              <p>Choose a case from the list to inspect customer, route, documents, finance, communications, tasks, and operational status.</p>
+              <strong>{t("admin.cases.selectCaseTitle")}</strong>
+              <p>{t("admin.cases.selectCaseDescription")}</p>
             </div>
           ) : (
             <div className="admin-cases-page__preview-inner">
@@ -1002,10 +1013,10 @@ export default function AdminCases() {
                   type="button"
                   onClick={openTaskModal}
                   disabled={!hasPermission("tasks.edit") || isCreatingTask}
-                  title={hasPermission("tasks.edit") ? "Create task" : "You do not have permission to create tasks."}
+                  title={hasPermission("tasks.edit") ? t("admin.cases.createTask") : t("admin.cases.createTask")}
                 >
                   <Plus size={15} />
-                  <span>Create task</span>
+                  <span>{t("admin.cases.createTask")}</span>
                 </button>
               </div>
               <div className="admin-cases-page__preview-scroll">
@@ -1015,24 +1026,24 @@ export default function AdminCases() {
                     <p>{selectedCase.customerEmail}{selectedCase.customer?.phone ? ` • ${selectedCase.customer.phone}` : ""}</p>
                   </div>
                   <div className="admin-cases-page__case-badges">
-                    <AdminStatusBadge tone={getStatusTone(selectedCase.status)}>{normalizeLabel(selectedCase.status)}</AdminStatusBadge>
-                    <AdminStatusBadge tone={getStatusTone(selectedFinanceStatus)}>{normalizeLabel(selectedFinanceStatus)}</AdminStatusBadge>
-                    {selectedCase.priority ? <AdminStatusBadge tone={getPriorityTone(selectedCase.priority)}>{normalizeLabel(selectedCase.priority)}</AdminStatusBadge> : null}
+                    <AdminStatusBadge tone={getStatusTone(selectedCase.status)}>{translateEnum(t, selectedCase.status)}</AdminStatusBadge>
+                    <AdminStatusBadge tone={getStatusTone(selectedFinanceStatus)}>{translateEnum(t, selectedFinanceStatus)}</AdminStatusBadge>
+                    {selectedCase.priority ? <AdminStatusBadge tone={getPriorityTone(selectedCase.priority)}>{translateEnum(t, selectedCase.priority)}</AdminStatusBadge> : null}
                   </div>
                 </section>
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Customer</h4>
+                    <h4>{t("admin.cases.sections.customer")}</h4>
                   </div>
                   <div className="admin-cases-page__meta-grid">
-                    <article><strong>Full name</strong><span>{selectedCase.customerName}</span></article>
-                    <article><strong>Email</strong><span>{selectedCase.customerEmail}</span></article>
-                    <article><strong>Phone</strong><span>{selectedCase.customer?.phone || selectedCase.lead?.phone || "—"}</span></article>
+                    <article><strong>{t("admin.common.customer")}</strong><span>{selectedCase.customerName}</span></article>
+                    <article><strong>{t("admin.common.email")}</strong><span>{selectedCase.customerEmail}</span></article>
+                    <article><strong>{t("admin.common.phone")}</strong><span>{selectedCase.customer?.phone || selectedCase.lead?.phone || "—"}</span></article>
                     <article>
-                      <strong>Client record</strong>
+                      <strong>{t("admin.common.customer")}</strong>
                       <span>
-                        {selectedCase.customer_id ? <Link to={`/admin/customers?customer=${selectedCase.customer_id}`}>Open customer</Link> : "Not linked"}
+                        {selectedCase.customer_id ? <Link to={`/admin/customers?customer=${selectedCase.customer_id}`}>{t("admin.common.open")}</Link> : t("admin.common.notLinked")}
                       </span>
                     </article>
                   </div>
@@ -1040,58 +1051,58 @@ export default function AdminCases() {
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Route / Flight</h4>
+                    <h4>{t("admin.cases.sections.routeFlight")}</h4>
                   </div>
                   <div className="admin-cases-page__meta-grid">
-                    <article><strong>Departure airport</strong><span>{selectedCase.route_from || selectedCase.lead?.departure_airport || "—"}</span></article>
-                    <article><strong>Arrival airport</strong><span>{selectedCase.route_to || selectedCase.lead?.arrival_airport || "—"}</span></article>
-                    <article><strong>Flight date</strong><span>{formatDate(selectedCase.flight_date)}</span></article>
-                    <article><strong>Airline</strong><span>{selectedCase.airline || "—"}</span></article>
-                    <article><strong>Connection airport</strong><span>{selectedCase.lead?.payload?.connectionCity || selectedCase.lead?.flight_number || "—"}</span></article>
-                    <article><strong>Route type</strong><span>Not configured</span></article>
+                    <article><strong>{t("admin.common.departureAirport")}</strong><span>{selectedCase.route_from || selectedCase.lead?.departure_airport || "—"}</span></article>
+                    <article><strong>{t("admin.common.arrivalAirport")}</strong><span>{selectedCase.route_to || selectedCase.lead?.arrival_airport || "—"}</span></article>
+                    <article><strong>{t("admin.common.flightDate")}</strong><span>{formatDate(selectedCase.flight_date)}</span></article>
+                    <article><strong>{t("admin.common.airline")}</strong><span>{selectedCase.airline || "—"}</span></article>
+                    <article><strong>{t("admin.common.connectionAirport")}</strong><span>{selectedCase.lead?.payload?.connectionCity || selectedCase.lead?.flight_number || "—"}</span></article>
+                    <article><strong>{t("admin.common.routeType")}</strong><span>{t("admin.common.notConfigured")}</span></article>
                   </div>
                 </section>
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Case status</h4>
+                    <h4>{t("admin.cases.sections.caseStatus")}</h4>
                   </div>
                   <div className="admin-cases-page__meta-grid">
-                    <article><strong>Current status</strong><span>{normalizeLabel(selectedCase.status)}</span></article>
-                    <article><strong>Owner</strong><span>{selectedCase.ownerLabel}</span></article>
-                    <article><strong>Next action</strong><span>{selectedCase.nextAction}</span></article>
-                    <article><strong>Priority</strong><span>{selectedCase.priority ? normalizeLabel(selectedCase.priority) : "Not configured"}</span></article>
+                    <article><strong>{t("admin.common.currentStatus")}</strong><span>{translateEnum(t, selectedCase.status)}</span></article>
+                    <article><strong>{t("admin.common.owner")}</strong><span>{selectedCase.ownerLabel}</span></article>
+                    <article><strong>{t("admin.common.nextAction")}</strong><span>{selectedCase.nextAction}</span></article>
+                    <article><strong>{t("admin.common.priority")}</strong><span>{selectedCase.priority ? translateEnum(t, selectedCase.priority) : t("admin.common.notConfigured")}</span></article>
                   </div>
 
                   <div className="admin-cases-page__workflow-grid">
                     <label>
-                      <span>Case status</span>
+                      <span>{t("admin.cases.sections.caseStatus")}</span>
                       <select
                         value={selectedCase.status || "draft"}
                         onChange={(event) => updateCase({ status: event.target.value })}
                         disabled={!canManageCaseStatus || isSaving}
                       >
-                        {caseStatuses.map((status) => <option key={status} value={status}>{normalizeLabel(status)}</option>)}
+                        {caseStatuses.map((status) => <option key={status} value={status}>{translateEnum(t, status)}</option>)}
                       </select>
                     </label>
                     <label>
-                      <span>Finance status</span>
+                      <span>{t("admin.cases.sections.finance")}</span>
                       <select
                         value={selectedCase.payout_status || "not_started"}
                         onChange={(event) => updateCase({ payout_status: event.target.value })}
                         disabled={!canManageCaseStatus || isSaving}
                       >
-                        {payoutStatuses.map((status) => <option key={status} value={status}>{normalizeLabel(status)}</option>)}
+                        {payoutStatuses.map((status) => <option key={status} value={status}>{translateEnum(t, status)}</option>)}
                       </select>
                     </label>
                     <label>
-                      <span>Owner</span>
+                      <span>{t("admin.common.owner")}</span>
                       <select
                         value={selectedCase.assigned_manager_id || ""}
                         onChange={(event) => updateCase({ assigned_manager_id: event.target.value || null })}
                         disabled={!canManageCaseStatus || isSaving}
                       >
-                        <option value="">Unassigned</option>
+                        <option value="">{t("admin.common.unassigned")}</option>
                         {(moduleData?.managers || []).map((manager) => (
                           <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
                         ))}
@@ -1102,35 +1113,35 @@ export default function AdminCases() {
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Finance</h4>
+                    <h4>{t("admin.cases.sections.finance")}</h4>
                   </div>
                   {financeError ? <p className="admin-message is-error">{financeError}</p> : null}
                   {financeNotice ? <p className="admin-message">{financeNotice}</p> : null}
-                  {isFinanceLoading ? <p className="admin-cases-page__empty-copy">Loading finance details...</p> : null}
+                  {isFinanceLoading ? <p className="admin-cases-page__empty-copy">{t("admin.common.loading")}</p> : null}
                   <div className="admin-cases-page__finance-flags">
-                    <AdminStatusBadge tone={getBooleanTone(internalCompensationConfirmed)}>Confirmed: {normalizeBooleanLabel(internalCompensationConfirmed)}</AdminStatusBadge>
-                    <AdminStatusBadge tone={getBooleanTone(clientVisibleApproval)}>Client visible: {normalizeBooleanLabel(clientVisibleApproval)}</AdminStatusBadge>
-                    <AdminStatusBadge tone={getPaymentTone(clientPaymentStatus)}>Client payment: {normalizeLabel(clientPaymentStatus)}</AdminStatusBadge>
+                    <AdminStatusBadge tone={getBooleanTone(internalCompensationConfirmed)}>{t("admin.common.status")}: {normalizeBooleanLabel(internalCompensationConfirmed, t)}</AdminStatusBadge>
+                    <AdminStatusBadge tone={getBooleanTone(clientVisibleApproval)}>{t("admin.common.clientVisible")}: {normalizeBooleanLabel(clientVisibleApproval, t)}</AdminStatusBadge>
+                    <AdminStatusBadge tone={getPaymentTone(clientPaymentStatus)}>{t("admin.common.clientPayment")}: {translateEnum(t, clientPaymentStatus)}</AdminStatusBadge>
                     {isReferralCase ? (
                       <AdminStatusBadge tone={getPaymentTone(partnerPaymentStatus || "unpaid")}>
-                        Partner payment: {partnerPaymentStatus ? normalizeLabel(partnerPaymentStatus) : "No payout yet"}
+                        {t("admin.common.partnerPayment")}: {partnerPaymentStatus ? translateEnum(t, partnerPaymentStatus) : t("admin.common.pending")}
                       </AdminStatusBadge>
                     ) : null}
                   </div>
                   <div className="admin-cases-page__meta-grid">
-                    <article><strong>Compensation</strong><span>{formatCurrency(caseCompensationAmount)}</span></article>
-                    <article><strong>Revenue</strong><span>{formatCurrency(financeRevenueAmount)}</span></article>
-                    <article><strong>Client payout</strong><span>{formatCurrency(financeClientPayoutAmount)}</span></article>
-                    <article><strong>Flow</strong><span>{formatPaymentFlow(selectedCaseFinanceState.clientPayment?.paymentFlowType || "through_company")}</span></article>
-                    <article><strong>Confirmed</strong><span>{normalizeBooleanLabel(internalCompensationConfirmed)}</span></article>
-                    <article><strong>Client visible</strong><span>{normalizeBooleanLabel(clientVisibleApproval)}</span></article>
-                    <article><strong>Client payment</strong><span>{normalizeLabel(clientPaymentStatus)}</span></article>
-                    <article><strong>Payment reference</strong><span>{selectedCaseFinanceState.clientPayment?.paymentReference || "—"}</span></article>
+                    <article><strong>{t("admin.common.compensation")}</strong><span>{formatCurrency(caseCompensationAmount, undefined, t)}</span></article>
+                    <article><strong>{t("admin.common.revenue")}</strong><span>{formatCurrency(financeRevenueAmount, undefined, t)}</span></article>
+                    <article><strong>{t("admin.common.clientPayout")}</strong><span>{formatCurrency(financeClientPayoutAmount, undefined, t)}</span></article>
+                    <article><strong>{t("admin.common.flow")}</strong><span>{formatPaymentFlow(selectedCaseFinanceState.clientPayment?.paymentFlowType || "through_company", t)}</span></article>
+                    <article><strong>{t("admin.common.status")}</strong><span>{normalizeBooleanLabel(internalCompensationConfirmed, t)}</span></article>
+                    <article><strong>{t("admin.common.clientVisible")}</strong><span>{normalizeBooleanLabel(clientVisibleApproval, t)}</span></article>
+                    <article><strong>{t("admin.common.clientPayment")}</strong><span>{translateEnum(t, clientPaymentStatus)}</span></article>
+                    <article><strong>{t("admin.common.paymentReference")}</strong><span>{selectedCaseFinanceState.clientPayment?.paymentReference || "—"}</span></article>
                     {isReferralCase ? (
-                      <article><strong>Partner commission</strong><span>{partnerCommissionAmount ? `${formatCurrency(partnerCommissionAmount)}${partnerRate ? ` • ${(partnerRate * 100).toFixed(0)}%` : ""}` : "Pending confirmation"}</span></article>
+                      <article><strong>{t("admin.common.partnerCommission")}</strong><span>{partnerCommissionAmount ? `${formatCurrency(partnerCommissionAmount, undefined, t)}${partnerRate ? ` • ${(partnerRate * 100).toFixed(0)}%` : ""}` : t("admin.common.pending")}</span></article>
                     ) : null}
                     {isReferralCase ? (
-                      <article><strong>Partner payment</strong><span>{selectedCaseFinanceState.partnerPayment?.id ? normalizeLabel(partnerPaymentStatus || "unpaid") : "No partner payout yet"}</span></article>
+                      <article><strong>{t("admin.common.partnerPayment")}</strong><span>{selectedCaseFinanceState.partnerPayment?.id ? translateEnum(t, partnerPaymentStatus || "unpaid") : t("admin.common.noPartnerPayoutYet")}</span></article>
                     ) : null}
                   </div>
                   <div className="admin-cases-page__finance-actions">
@@ -1198,7 +1209,7 @@ export default function AdminCases() {
                     ) : null}
                   </div>
                   {isReferralCase && !selectedCaseFinanceState.partnerPayment?.id ? (
-                    <p className="admin-cases-page__empty-copy">No partner payout yet</p>
+                    <p className="admin-cases-page__empty-copy">{t("admin.common.noPartnerPayoutYet")}</p>
                   ) : null}
                   <div className="admin-cases-page__finance-edit-grid">
                     <label>
@@ -1292,14 +1303,14 @@ export default function AdminCases() {
                   ) : null}
                   {selectedCase.lead ? (
                     <div className="admin-cases-page__finance-tags">
-                      <AdminStatusBadge tone={getEstimateTone(selectedCase.lead.estimate_status)}>{formatEstimateStatus(selectedCase.lead.estimate_status)}</AdminStatusBadge>
+                      <AdminStatusBadge tone={getEstimateTone(selectedCase.lead.estimate_status)}>{formatEstimateStatus(selectedCase.lead.estimate_status, t)}</AdminStatusBadge>
                     </div>
                   ) : null}
                 </section>
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Documents</h4>
+                    <h4>{t("admin.cases.sections.documents")}</h4>
                   </div>
                   {selectedDocuments.length ? (
                     <div className="admin-cases-page__timeline">
@@ -1307,49 +1318,49 @@ export default function AdminCases() {
                         <article key={item.id}>
                           <div>
                             <strong>{item.file_name || item.document_type || "Case document"}</strong>
-                            <p>{item.document_type || "—"} • {normalizeLabel(item.status || "uploaded")} • {formatDateTime(item.created_at)}</p>
+                            <p>{item.document_type || "—"} • {translateEnum(t, item.status || "uploaded")} • {formatDateTime(item.created_at)}</p>
                           </div>
                           <button
                             type="button"
                             className="admin-link-button"
                             onClick={() => downloadDocument(item)}
                             disabled={!item.file_path || activeDownloadId === item.id}
-                            title={item.file_path ? "Open document" : "Document file path is not available."}
+                            title={item.file_path ? t("admin.leads.openDocumentTitle") : t("admin.leads.documentPreviewUnavailable")}
                           >
-                            {activeDownloadId === item.id ? "Opening..." : "Open"}
+                            {activeDownloadId === item.id ? t("admin.common.opening") : t("admin.common.open")}
                           </button>
                         </article>
                       ))}
                     </div>
                   ) : (
-                    <p className="admin-cases-page__empty-copy">No documents uploaded yet</p>
+                    <p className="admin-cases-page__empty-copy">{t("admin.leads.noDocuments")}</p>
                   )}
                 </section>
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Communications</h4>
+                    <h4>{t("admin.cases.sections.communications")}</h4>
                   </div>
                   {selectedCommunications.length ? (
                     <div className="admin-cases-page__timeline">
                       {selectedCommunications.map((item) => (
                         <article key={item.id}>
                           <div>
-                            <strong>{normalizeLabel(item.channel || "message")} • {formatDateTime(item.created_at)}</strong>
-                            <p>{item.subject || item.body || "No content"}</p>
+                            <strong>{translateEnum(t, item.channel || "message")} • {formatDateTime(item.created_at)}</strong>
+                            <p>{item.subject || item.body || t("admin.common.noData")}</p>
                           </div>
-                          <span className="admin-cases-page__signature-summary">{normalizeLabel(item.direction || "internal")}</span>
+                          <span className="admin-cases-page__signature-summary">{translateEnum(t, item.direction || "internal")}</span>
                         </article>
                       ))}
                     </div>
                   ) : (
-                    <p className="admin-cases-page__empty-copy">No communications yet</p>
+                    <p className="admin-cases-page__empty-copy">{t("admin.revenue.noData")}</p>
                   )}
                 </section>
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Tasks</h4>
+                    <h4>{t("admin.cases.sections.tasks")}</h4>
                     <button
                       type="button"
                       className="admin-link-button"
@@ -1357,7 +1368,7 @@ export default function AdminCases() {
                       disabled={!hasPermission("tasks.edit") || isCreatingTask}
                     >
                       <Plus size={14} />
-                      <span>Create task</span>
+                      <span>{t("admin.cases.createTask")}</span>
                     </button>
                   </div>
                   {selectedTasks.length ? (
@@ -1367,36 +1378,36 @@ export default function AdminCases() {
                         return (
                           <article key={task.id}>
                             <div>
-                              <strong>{task.title || "Untitled task"}</strong>
+                              <strong>{task.title || t("admin.cases.createTask")}</strong>
                               <p>
-                                {assignee?.full_name || assignee?.email || "Unassigned"}
+                                {assignee?.full_name || assignee?.email || t("admin.common.unassigned")}
                                 {" • "}
-                                {task.due_date ? `Due ${formatDate(task.due_date)}` : "No due date"}
+                                {task.due_date ? `${formatDate(task.due_date)}` : t("admin.common.notConfigured")}
                               </p>
                             </div>
                             <div className="admin-cases-page__task-meta">
-                              <AdminStatusBadge tone={getTaskStatusTone(task.status)}>{normalizeLabel(task.status)}</AdminStatusBadge>
-                              <AdminStatusBadge tone={getPriorityTone(task.priority)}>{normalizeLabel(task.priority || "medium")}</AdminStatusBadge>
+                              <AdminStatusBadge tone={getTaskStatusTone(task.status)}>{translateEnum(t, task.status)}</AdminStatusBadge>
+                              <AdminStatusBadge tone={getPriorityTone(task.priority)}>{translateEnum(t, task.priority || "medium")}</AdminStatusBadge>
                             </div>
                           </article>
                         );
                       })}
                     </div>
                   ) : (
-                    <p className="admin-cases-page__empty-copy">No tasks created for this case yet</p>
+                    <p className="admin-cases-page__empty-copy">{t("admin.revenue.noData")}</p>
                   )}
                 </section>
 
                 <section className="admin-cases-page__section">
                   <div className="admin-cases-page__section-title">
-                    <h4>Internal notes / timeline</h4>
+                    <h4>{t("admin.cases.sections.timeline")}</h4>
                   </div>
                   {internalNotes.length || selectedStatusHistory.length ? (
                     <div className="admin-cases-page__timeline">
                       {internalNotes.map((note, index) => (
                         <article key={`note-${index}`}>
                           <div>
-                            <strong>Internal note</strong>
+                            <strong>{t("admin.common.internalNote")}</strong>
                             <p>{note}</p>
                           </div>
                         </article>
@@ -1404,14 +1415,14 @@ export default function AdminCases() {
                       {selectedStatusHistory.map((item) => (
                         <article key={item.id}>
                           <div>
-                            <strong>{normalizeLabel(item.previous_status || "unknown")} → {normalizeLabel(item.next_status || "unknown")}</strong>
-                            <p>{item.note || "No note"} • {formatDateTime(item.created_at)}</p>
+                            <strong>{translateEnum(t, item.previous_status || "unknown")} → {translateEnum(t, item.next_status || "unknown")}</strong>
+                            <p>{item.note || t("admin.common.noNote")} • {formatDateTime(item.created_at)}</p>
                           </div>
                         </article>
                       ))}
                     </div>
                   ) : (
-                    <p className="admin-cases-page__empty-copy">No internal notes or timeline entries yet</p>
+                    <p className="admin-cases-page__empty-copy">{t("admin.revenue.noData")}</p>
                   )}
                 </section>
               </div>
@@ -1427,7 +1438,7 @@ export default function AdminCases() {
             <header className="admin-cases-page__task-modal-header">
               <div>
                 <span className="admin-cases-page__eyebrow">Task</span>
-                <h3 id="case-task-modal-title">Create task for {formatCaseReference(selectedCase)}</h3>
+                <h3 id="case-task-modal-title">{t("admin.cases.createTask")} · {formatCaseReference(selectedCase, t)}</h3>
                 <p>The task will be linked to this case and appear in the case task list after refresh.</p>
               </div>
               <button type="button" className="admin-cases-page__close" onClick={closeTaskModal} aria-label="Close task creator">
@@ -1452,7 +1463,7 @@ export default function AdminCases() {
                   value={taskForm.assigned_user_id}
                   onChange={(event) => setTaskForm((current) => ({ ...current, assigned_user_id: event.target.value }))}
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">{t("admin.common.unassigned")}</option>
                   {(moduleData?.managers || []).map((manager) => (
                     <option key={manager.id} value={manager.id}>{manager.full_name || manager.email}</option>
                   ))}
@@ -1467,7 +1478,7 @@ export default function AdminCases() {
                     onChange={(event) => setTaskForm((current) => ({ ...current, priority: event.target.value }))}
                   >
                     {taskPriorities.map((priority) => (
-                      <option key={priority} value={priority}>{normalizeLabel(priority)}</option>
+                      <option key={priority} value={priority}>{translateEnum(t, priority)}</option>
                     ))}
                   </select>
                 </label>
@@ -1494,7 +1505,7 @@ export default function AdminCases() {
               <div className="admin-cases-page__task-form-actions">
                 <button type="button" className="admin-link-button" onClick={closeTaskModal}>Cancel</button>
                 <button type="submit" className="btn btn--primary" disabled={!hasPermission("tasks.edit") || isCreatingTask}>
-                  <span>{isCreatingTask ? "Creating..." : "Create task"}</span>
+                  <span>{isCreatingTask ? t("admin.common.saving") : t("admin.cases.createTask")}</span>
                 </button>
               </div>
             </form>

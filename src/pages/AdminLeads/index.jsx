@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, FilterX, RefreshCw, UserRoundPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   assignLeadOwner,
   convertLeadToCase,
@@ -43,17 +44,17 @@ function formatLeadReference(lead) {
   return "Lead";
 }
 
-function formatEstimateStatus(status) {
-  if (status === "calculated") return "Calculated";
-  if (status === "manual_override") return "Manual override";
-  return "Estimate pending review";
+function formatEstimateStatus(status, t = null) {
+  if (status === "calculated") return t ? t("admin.leads.estimate.calculated") : "Calculated";
+  if (status === "manual_override") return t ? t("admin.leads.estimate.manualOverride") : "Manual override";
+  return t ? t("admin.leads.estimate.pendingReview") : "Estimate pending review";
 }
 
-function formatDistanceBand(band) {
-  if (band === "short") return "Short";
-  if (band === "medium") return "Medium";
-  if (band === "long") return "Long";
-  return "Unknown";
+function formatDistanceBand(band, t = null) {
+  if (band === "short") return t ? t("admin.leads.distance.short") : "Short";
+  if (band === "medium") return t ? t("admin.leads.distance.medium") : "Medium";
+  if (band === "long") return t ? t("admin.leads.distance.long") : "Long";
+  return t ? t("admin.leads.distance.unknown") : "Unknown";
 }
 
 function formatCurrency(value, currency = "EUR") {
@@ -74,6 +75,11 @@ function normalizeLabel(value) {
   return String(value || "unknown")
     .replace(/_/g, " ")
     .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function translateEnum(t, value) {
+  const normalized = String(value || "unknown").trim().toLowerCase();
+  return t(`admin.common.enums.${normalized}`, { defaultValue: normalizeLabel(value) });
 }
 
 function getEstimateTone(status) {
@@ -106,9 +112,9 @@ function formatOwnerLabel(lead, users = []) {
   return users.find((user) => user.id === lead?.assigned_user_id)?.full_name || users.find((user) => user.id === lead?.assigned_user_id)?.email || "Unassigned";
 }
 
-function formatDirectLabel(value) {
-  if (value === true) return "Direct flight";
-  if (value === false) return "Connecting flight";
+function formatDirectLabel(value, t = null) {
+  if (value === true) return t ? t("admin.leads.routeType.direct") : "Direct flight";
+  if (value === false) return t ? t("admin.leads.routeType.connecting") : "Connecting flight";
   return "—";
 }
 
@@ -156,6 +162,7 @@ function downloadCsv(rows) {
 }
 
 export default function AdminLeads() {
+  const { t } = useTranslation();
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -181,7 +188,7 @@ export default function AdminLeads() {
       const next = await fetchLeadsModuleData({ force: options.force });
       setModuleData(next);
     } catch (nextError) {
-      setError(nextError.message || "Could not load leads module.");
+      setError(nextError.message || t("admin.leads.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -189,7 +196,7 @@ export default function AdminLeads() {
 
   useEffect(() => {
     void loadLeads();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const deepLinkedLeadId = searchParams.get("lead");
@@ -245,18 +252,18 @@ export default function AdminLeads() {
     const pendingEstimate = filteredLeads.filter((lead) => (lead.estimate_status || "pending_review") === "pending_review").length;
 
     return [
-      { label: "Total", value: total },
-      { label: "New", value: nextLeads },
-      { label: "Submitted", value: submittedLeads },
-      { label: "Converted", value: convertedLeads },
-      { label: "Estimate pending", value: pendingEstimate },
+      { label: t("admin.leads.metrics.total"), value: total },
+      { label: t("admin.leads.metrics.new"), value: nextLeads },
+      { label: t("admin.leads.metrics.submitted"), value: submittedLeads },
+      { label: t("admin.leads.metrics.converted"), value: convertedLeads },
+      { label: t("admin.leads.metrics.estimatePending"), value: pendingEstimate },
     ];
-  }, [filteredLeads]);
+  }, [filteredLeads, t]);
 
   const leadColumns = useMemo(() => ([
     {
       key: "lead",
-      label: "Lead",
+      label: t("admin.common.lead"),
       width: 140,
       minWidth: 110,
       maxWidth: 240,
@@ -266,14 +273,14 @@ export default function AdminLeads() {
       renderCell: (lead) => (
         <div className="admin-crm-page__primary" title={formatLeadReference(lead)}>
           <strong className="admin-crm-page__code admin-crm-table__cell-main">{formatLeadReference(lead)}</strong>
-          <span className="admin-crm-table__cell-sub">{normalizeLabel(lead.source || "direct")}</span>
+          <span className="admin-crm-table__cell-sub">{translateEnum(t, lead.source || "direct")}</span>
         </div>
       ),
       getCellTitle: (lead) => formatLeadReference(lead),
     },
     {
       key: "customer",
-      label: "Customer",
+      label: t("admin.common.customer"),
       width: 180,
       minWidth: 140,
       maxWidth: 320,
@@ -290,7 +297,7 @@ export default function AdminLeads() {
     },
     {
       key: "route",
-      label: "Route",
+      label: t("admin.common.route"),
       width: 280,
       minWidth: 180,
       maxWidth: 480,
@@ -300,14 +307,14 @@ export default function AdminLeads() {
       renderCell: (lead) => (
         <div className="admin-crm-page__route">
           <strong className="admin-crm-table__cell-main" title={formatRouteLabel(lead)}>{formatRouteLabel(lead)}</strong>
-          <span className="admin-crm-table__cell-sub">{normalizeLabel(formatDisruption(lead))}</span>
+          <span className="admin-crm-table__cell-sub">{translateEnum(t, formatDisruption(lead))}</span>
         </div>
       ),
       getCellTitle: (lead) => formatRouteLabel(lead),
     },
     {
       key: "flight",
-      label: "Flight",
+      label: t("admin.common.flight"),
       width: 180,
       minWidth: 130,
       maxWidth: 300,
@@ -324,7 +331,7 @@ export default function AdminLeads() {
     },
     {
       key: "status",
-      label: "Status",
+      label: t("admin.common.status"),
       width: 160,
       minWidth: 130,
       maxWidth: 260,
@@ -333,14 +340,14 @@ export default function AdminLeads() {
       wrap: false,
       renderCell: (lead) => (
         <div className="admin-leads-page__table-badges">
-          <AdminStatusBadge tone={getLeadStatusTone(lead.status)}>{normalizeLabel(lead.status || "new")}</AdminStatusBadge>
-          {lead.stage ? <AdminStatusBadge tone={getStageTone(lead.stage)}>{normalizeLabel(lead.stage)}</AdminStatusBadge> : null}
+          <AdminStatusBadge tone={getLeadStatusTone(lead.status)}>{translateEnum(t, lead.status || "new")}</AdminStatusBadge>
+          {lead.stage ? <AdminStatusBadge tone={getStageTone(lead.stage)}>{translateEnum(t, lead.stage)}</AdminStatusBadge> : null}
         </div>
       ),
     },
     {
       key: "estimate",
-      label: "Estimate",
+      label: t("admin.common.estimate"),
       width: 190,
       minWidth: 150,
       maxWidth: 300,
@@ -350,13 +357,13 @@ export default function AdminLeads() {
       renderCell: (lead) => (
         <div className="admin-leads-page__estimate-cell">
           <strong className="admin-crm-table__cell-main">{formatCurrency(lead.estimated_compensation_eur, lead.compensation_currency)}</strong>
-          <AdminStatusBadge tone={getEstimateTone(lead.estimate_status)}>{formatEstimateStatus(lead.estimate_status)}</AdminStatusBadge>
+          <AdminStatusBadge tone={getEstimateTone(lead.estimate_status)}>{formatEstimateStatus(lead.estimate_status, t)}</AdminStatusBadge>
         </div>
       ),
     },
     {
       key: "created",
-      label: "Created",
+      label: t("admin.common.created"),
       width: 130,
       minWidth: 110,
       maxWidth: 180,
@@ -374,7 +381,7 @@ export default function AdminLeads() {
       },
       getCellTitle: (lead) => formatDateTime(lead.created_at),
     },
-  ]), []);
+  ]), [t]);
 
   const selectedLead = useMemo(
     () => filteredLeads.find((lead) => lead.id === selectedLeadId)
@@ -421,7 +428,7 @@ export default function AdminLeads() {
       await updateLeadStatus(leadId, status);
       await loadLeads({ force: true });
     } catch (nextError) {
-      setError(nextError.message || "Could not update lead status.");
+      setError(nextError.message || t("admin.leads.statusSaveError"));
     } finally {
       setIsSaving(false);
     }
@@ -434,7 +441,7 @@ export default function AdminLeads() {
       await assignLeadOwner(leadId, assignedUserId);
       await loadLeads({ force: true });
     } catch (nextError) {
-      setError(nextError.message || "Could not assign lead owner.");
+      setError(nextError.message || t("admin.leads.ownerSaveError"));
     } finally {
       setIsSaving(false);
     }
@@ -449,7 +456,7 @@ export default function AdminLeads() {
       setNoteDraft("");
       await loadLeads({ force: true });
     } catch (nextError) {
-      setError(nextError.message || "Could not save lead note.");
+      setError(nextError.message || t("admin.leads.noteSaveError"));
     } finally {
       setIsSaving(false);
     }
@@ -470,7 +477,7 @@ export default function AdminLeads() {
       setPreviewOpen(false);
       navigate(`/admin/cases?case=${result.caseId}`);
     } catch (nextError) {
-      setError(nextError.message || "Could not convert lead to case.");
+      setError(nextError.message || t("admin.leads.convertError"));
     } finally {
       setIsSaving(false);
     }
@@ -501,7 +508,7 @@ export default function AdminLeads() {
       link.click();
       document.body.removeChild(link);
     } catch (nextError) {
-      setError(nextError.message || "Could not open this document.");
+      setError(nextError.message || t("admin.leads.documentOpenError"));
     } finally {
       setActiveDownloadId("");
     }
@@ -515,7 +522,7 @@ export default function AdminLeads() {
     setDateRange({ from: "", to: "" });
   };
 
-  const countLabel = `${filteredLeads.length} lead${filteredLeads.length === 1 ? "" : "s"}`;
+  const countLabel = t("admin.leads.countLabel", { count: filteredLeads.length });
 
   return (
     <div className="admin-page admin-leads-page admin-crm-page">
@@ -528,16 +535,16 @@ export default function AdminLeads() {
       ) : null}
 
       <AdminPageHeader
-        title="Leads"
+        title={t("admin.nav.pages.operationsLeads")}
         secondaryActions={[
           {
-            label: "Refresh",
+            label: t("admin.common.refresh"),
             icon: RefreshCw,
             onClick: () => void loadLeads({ force: true }),
             disabled: isLoading || isSaving,
           },
           {
-            label: "Export CSV",
+            label: t("admin.common.exportCsv"),
             icon: Download,
             onClick: () => downloadCsv(filteredLeads),
             disabled: !filteredLeads.length,
@@ -551,46 +558,46 @@ export default function AdminLeads() {
         <AdminFilterBar
           searchValue={search}
           onSearchChange={setSearch}
-          searchPlaceholder="Search name, email, route, airline"
+          searchPlaceholder={t("admin.leads.searchPlaceholder")}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           statusOptions={[
-            { value: "all", label: "All statuses" },
-            ...leadStatuses.map((status) => ({ value: status, label: normalizeLabel(status) })),
+            { value: "all", label: t("admin.leads.filters.allStatuses") },
+            ...leadStatuses.map((status) => ({ value: status, label: translateEnum(t, status) })),
           ]}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         >
           <select className="admin-filter-control admin-select" value={disruptionFilter} onChange={(event) => setDisruptionFilter(event.target.value)}>
-            <option value="all">All disruption types</option>
+            <option value="all">{t("admin.leads.filters.allDisruptionTypes")}</option>
             {disruptionOptions.map((value) => (
-              <option key={value} value={value}>{normalizeLabel(value)}</option>
+              <option key={value} value={value}>{translateEnum(t, value)}</option>
             ))}
           </select>
 
           <select className="admin-filter-control admin-select" value={estimateStatusFilter} onChange={(event) => setEstimateStatusFilter(event.target.value)}>
-            <option value="all">All estimate states</option>
-            <option value="calculated">Calculated</option>
-            <option value="pending_review">Pending review</option>
-            <option value="manual_override">Manual override</option>
+            <option value="all">{t("admin.leads.filters.allEstimateStates")}</option>
+            <option value="calculated">{t("admin.leads.estimate.calculated")}</option>
+            <option value="pending_review">{t("admin.leads.estimate.pendingReview")}</option>
+            <option value="manual_override">{t("admin.leads.estimate.manualOverride")}</option>
           </select>
 
           <button type="button" className="admin-btn admin-btn-secondary admin-crm-page__clear" onClick={clearFilters}>
             <FilterX size={15} />
-            <span>Clear filters</span>
+            <span>{t("admin.common.clearFilters")}</span>
           </button>
         </AdminFilterBar>
 
         <AdminColumnTable
           storageKey="ff-admin-table-layout-leads"
-          title="Leads"
+          title={t("admin.nav.pages.operationsLeads")}
           countLabel={countLabel}
           columns={leadColumns}
           rows={filteredLeads}
           loading={isLoading}
           error={error}
-          emptyTitle="No leads found"
-          emptyDetail="Adjust filters or wait for new partner and client submissions."
+          emptyTitle={t("admin.leads.emptyTitle")}
+          emptyDetail={t("admin.leads.emptyDetail")}
           selectedRowId={selectedLead?.id || ""}
           getRowKey={(lead) => lead.id}
           onRowClick={(lead) => handleOpenLead(lead.id)}
@@ -598,19 +605,19 @@ export default function AdminLeads() {
 
         <AdminSidePanel
           open={Boolean(selectedLead && previewOpen)}
-          eyebrow="Lead preview"
-          title={selectedLead ? formatLeadReference(selectedLead) : "Lead preview"}
-          subtitle={selectedLead ? `${selectedLead.full_name || "Unknown customer"} • ${formatDateTime(selectedLead.created_at)}` : ""}
+          eyebrow={t("admin.leads.previewEyebrow")}
+          title={selectedLead ? formatLeadReference(selectedLead) : t("admin.leads.previewTitle")}
+          subtitle={selectedLead ? `${selectedLead.full_name || t("admin.common.unknownCustomer")} • ${formatDateTime(selectedLead.created_at)}` : ""}
           onClose={handleClosePreview}
           className="admin-leads-page__preview"
           withOverlay
           overlayClassName="admin-leads-page__overlay"
-          overlayLabel="Close lead preview"
+          overlayLabel={t("admin.leads.closePreview")}
         >
           {!selectedLead ? (
             <div className="admin-leads-page__empty-preview">
-              <strong>Select a lead to preview details</strong>
-              <p>Choose a lead from the list to inspect customer, flight, disruption, documents, signature, and workflow details.</p>
+              <strong>{t("admin.leads.selectLeadTitle")}</strong>
+              <p>{t("admin.leads.selectLeadDescription")}</p>
             </div>
           ) : (
             <div className="admin-leads-page__preview-inner">
@@ -622,68 +629,68 @@ export default function AdminLeads() {
                   disabled={!hasPermission("cases.update") || isSaving}
                 >
                   <UserRoundPlus size={15} />
-                  <span>{selectedLead.status === "converted" ? "Open case" : "Convert to case"}</span>
+                  <span>{selectedLead.status === "converted" ? t("admin.leads.openCase") : t("admin.leads.convertToCase")}</span>
                 </button>
               </div>
               <div className="admin-leads-page__preview-scroll">
                 <section className="admin-leads-page__identity">
                   <div>
-                    <h4>{selectedLead.full_name || "Unknown customer"}</h4>
-                    <p>{selectedLead.email || "No email"}{selectedLead.phone ? ` • ${selectedLead.phone}` : ""}</p>
+                    <h4>{selectedLead.full_name || t("admin.common.unknownCustomer")}</h4>
+                    <p>{selectedLead.email || t("admin.common.noEmail")}{selectedLead.phone ? ` • ${selectedLead.phone}` : ""}</p>
                   </div>
                   <div className="admin-leads-page__claim-state">
-                    <AdminStatusBadge tone={getLeadStatusTone(selectedLead.status)}>{normalizeLabel(selectedLead.status || "new")}</AdminStatusBadge>
-                    {selectedLead.stage ? <AdminStatusBadge tone={getStageTone(selectedLead.stage)}>{normalizeLabel(selectedLead.stage)}</AdminStatusBadge> : null}
+                    <AdminStatusBadge tone={getLeadStatusTone(selectedLead.status)}>{translateEnum(t, selectedLead.status || "new")}</AdminStatusBadge>
+                    {selectedLead.stage ? <AdminStatusBadge tone={getStageTone(selectedLead.stage)}>{translateEnum(t, selectedLead.stage)}</AdminStatusBadge> : null}
                   </div>
                 </section>
 
                 <section className="admin-leads-page__section">
                   <div className="admin-leads-page__section-title">
-                    <h4>Customer</h4>
+                    <h4>{t("admin.leads.sections.customer")}</h4>
                   </div>
                   <div className="admin-leads-page__meta-grid">
-                    <article><strong>Full name</strong><span>{selectedLead.full_name || "—"}</span></article>
-                    <article><strong>Email</strong><span>{selectedLead.email || "—"}</span></article>
-                    <article><strong>Phone</strong><span>{selectedLead.phone || "—"}</span></article>
-                    <article><strong>Preferred language</strong><span>{selectedLead.preferred_language || "—"}</span></article>
+                    <article><strong>{t("admin.preferences.fullName")}</strong><span>{selectedLead.full_name || "—"}</span></article>
+                    <article><strong>{t("admin.common.email")}</strong><span>{selectedLead.email || "—"}</span></article>
+                    <article><strong>{t("admin.common.phone")}</strong><span>{selectedLead.phone || "—"}</span></article>
+                    <article><strong>{t("admin.common.preferredLanguage")}</strong><span>{selectedLead.preferred_language || "—"}</span></article>
                   </div>
                 </section>
 
                 <section className="admin-leads-page__section">
                   <div className="admin-leads-page__section-title">
-                    <h4>Route / Flight</h4>
+                    <h4>{t("admin.leads.sections.routeFlight")}</h4>
                   </div>
                   <div className="admin-leads-page__meta-grid">
-                    <article><strong>Departure airport</strong><span>{selectedLead.departure_airport || "—"}</span></article>
-                    <article><strong>Arrival airport</strong><span>{selectedLead.arrival_airport || "—"}</span></article>
-                    <article><strong>Flight date</strong><span>{formatDate(selectedLead.scheduled_departure_date)}</span></article>
-                    <article><strong>Airline</strong><span>{selectedLead.airline || "—"}</span></article>
-                    <article><strong>Connection airport</strong><span>{selectedLead.payload?.connectionCity || selectedLead.flight_number || "—"}</span></article>
-                    <article><strong>Route type</strong><span>{formatDirectLabel(selectedLead.is_direct)}</span></article>
+                    <article><strong>{t("admin.common.departureAirport")}</strong><span>{selectedLead.departure_airport || "—"}</span></article>
+                    <article><strong>{t("admin.common.arrivalAirport")}</strong><span>{selectedLead.arrival_airport || "—"}</span></article>
+                    <article><strong>{t("admin.common.flightDate")}</strong><span>{formatDate(selectedLead.scheduled_departure_date)}</span></article>
+                    <article><strong>{t("admin.common.airline")}</strong><span>{selectedLead.airline || "—"}</span></article>
+                    <article><strong>{t("admin.common.connectionAirport")}</strong><span>{selectedLead.payload?.connectionCity || selectedLead.flight_number || "—"}</span></article>
+                    <article><strong>{t("admin.common.routeType")}</strong><span>{formatDirectLabel(selectedLead.is_direct, t)}</span></article>
                   </div>
                 </section>
 
                 <section className="admin-leads-page__section">
                   <div className="admin-leads-page__section-title">
-                    <h4>Disruption</h4>
+                    <h4>{t("admin.leads.sections.disruption")}</h4>
                   </div>
                   <div className="admin-leads-page__meta-grid">
-                    <article><strong>Disruption type</strong><span>{normalizeLabel(formatDisruption(selectedLead))}</span></article>
-                    <article><strong>Delay duration</strong><span>{selectedLead.delay_duration || "—"}</span></article>
-                    <article><strong>Cancellation / denied boarding</strong><span>{selectedLead.reason || selectedLead.payload?.denialReason || "—"}</span></article>
-                    <article><strong>Notes</strong><span>{selectedLead.payload?.notes || selectedLead.payload?.description || "—"}</span></article>
+                    <article><strong>{t("admin.common.disruptionType")}</strong><span>{translateEnum(t, formatDisruption(selectedLead))}</span></article>
+                    <article><strong>{t("admin.common.delayDuration")}</strong><span>{selectedLead.delay_duration || "—"}</span></article>
+                    <article><strong>{t("admin.common.cancellationDenied")}</strong><span>{selectedLead.reason || selectedLead.payload?.denialReason || "—"}</span></article>
+                    <article><strong>{t("admin.common.notes")}</strong><span>{selectedLead.payload?.notes || selectedLead.payload?.description || "—"}</span></article>
                   </div>
                 </section>
 
                 <section className="admin-leads-page__section">
                   <div className="admin-leads-page__section-title">
-                    <h4>Compensation estimate</h4>
+                    <h4>{t("admin.leads.sections.compensationEstimate")}</h4>
                   </div>
                   <div className="admin-leads-page__meta-grid">
-                    <article><strong>Estimated compensation</strong><span>{formatCurrency(selectedLead.estimated_compensation_eur, selectedLead.compensation_currency)}</span></article>
-                    <article><strong>Distance</strong><span>{selectedLead.distance_km ? `${Math.round(Number(selectedLead.distance_km))} km` : "—"}</span></article>
-                    <article><strong>Distance band</strong><span>{formatDistanceBand(selectedLead.distance_band)}</span></article>
-                    <article><strong>Estimate status</strong><span>{formatEstimateStatus(selectedLead.estimate_status)}</span></article>
+                    <article><strong>{t("admin.common.estimatedCompensation")}</strong><span>{formatCurrency(selectedLead.estimated_compensation_eur, selectedLead.compensation_currency)}</span></article>
+                    <article><strong>{t("admin.common.distance")}</strong><span>{selectedLead.distance_km ? `${Math.round(Number(selectedLead.distance_km))} km` : "—"}</span></article>
+                    <article><strong>{t("admin.common.distanceBand")}</strong><span>{formatDistanceBand(selectedLead.distance_band, t)}</span></article>
+                    <article><strong>{t("admin.common.estimateStatus")}</strong><span>{formatEstimateStatus(selectedLead.estimate_status, t)}</span></article>
                   </div>
                   {extractReasonCodes(selectedLead.estimate_explanation).length ? (
                     <div className="admin-leads__reason-codes">
@@ -692,13 +699,13 @@ export default function AdminLeads() {
                       ))}
                     </div>
                   ) : (
-                    <p className="admin-leads-page__empty-copy">Estimate pending review</p>
+                    <p className="admin-leads-page__empty-copy">{t("admin.leads.estimate.pendingReview")}</p>
                   )}
                 </section>
 
                 <section className="admin-leads-page__section">
                   <div className="admin-leads-page__section-title">
-                    <h4>Documents</h4>
+                    <h4>{t("admin.leads.sections.documents")}</h4>
                   </div>
                   {selectedDocuments.length ? (
                     <div className="admin-leads-page__timeline">
@@ -713,62 +720,62 @@ export default function AdminLeads() {
                             className="admin-link-button"
                             onClick={() => handleDownloadDocument(document)}
                             disabled={!document.file_path || activeDownloadId === document.id}
-                            title={document.file_path ? "Open document" : "Document preview is not available with the current record payload."}
+                            title={document.file_path ? t("admin.leads.openDocumentTitle") : t("admin.leads.documentPreviewUnavailable")}
                           >
-                            {activeDownloadId === document.id ? "Opening..." : "Open"}
+                            {activeDownloadId === document.id ? t("admin.common.opening") : t("admin.common.open")}
                           </button>
                         </article>
                       ))}
                     </div>
                   ) : (
-                    <p className="admin-leads-page__empty-copy">No documents uploaded yet</p>
+                    <p className="admin-leads-page__empty-copy">{t("admin.leads.noDocuments")}</p>
                   )}
                 </section>
 
                 <section className="admin-leads-page__section">
                   <div className="admin-leads-page__section-title">
-                    <h4>Signature / Consent</h4>
+                    <h4>{t("admin.leads.sections.signatureConsent")}</h4>
                   </div>
                   {selectedSignatures.length ? (
                     <div className="admin-leads-page__timeline">
                       {selectedSignatures.map((signature) => (
                         <article key={signature.id}>
                           <div>
-                            <strong>{signature.signer_name || signature.signer_email || "Signature"}</strong>
-                            <p>{signature.terms_accepted ? "Signed" : "Pending"} • {formatDateTime(signature.signed_at || signature.created_at)}</p>
+                            <strong>{signature.signer_name || signature.signer_email || t("admin.common.signature")}</strong>
+                            <p>{signature.terms_accepted ? t("admin.common.signed") : t("admin.common.pending")} • {formatDateTime(signature.signed_at || signature.created_at)}</p>
                           </div>
-                          <span className="admin-leads-page__signature-summary">{signature.terms_accepted ? "Consent recorded" : "Awaiting signature"}</span>
+                          <span className="admin-leads-page__signature-summary">{signature.terms_accepted ? t("admin.common.consentRecorded") : t("admin.common.awaitingSignature")}</span>
                         </article>
                       ))}
                     </div>
                   ) : (
-                    <p className="admin-leads-page__empty-copy">No signatures saved yet</p>
+                    <p className="admin-leads-page__empty-copy">{t("admin.leads.noSignatures")}</p>
                   )}
                 </section>
 
                 <section className="admin-leads-page__section">
                   <div className="admin-leads-page__section-title">
-                    <h4>Internal workflow</h4>
+                    <h4>{t("admin.leads.sections.internalWorkflow")}</h4>
                   </div>
                   <div className="admin-leads-page__workflow-grid">
                     <label>
-                      <span>Status</span>
+                      <span>{t("admin.common.status")}</span>
                       <select
                         value={selectedLead.status || "new"}
                         onChange={(event) => saveStatus(selectedLead.id, event.target.value)}
                         disabled={!hasPermission("leads.update") || isSaving}
                       >
-                        {leadStatuses.map((status) => <option key={status} value={status}>{normalizeLabel(status)}</option>)}
+                        {leadStatuses.map((status) => <option key={status} value={status}>{translateEnum(t, status)}</option>)}
                       </select>
                     </label>
                     <label>
-                      <span>Owner</span>
+                      <span>{t("admin.common.owner")}</span>
                       <select
                         value={selectedLead.assigned_user_id || ""}
                         onChange={(event) => saveOwner(selectedLead.id, event.target.value)}
                         disabled={!hasPermission("leads.update") || !moduleData?.supportsCoreSchemaV1 || isSaving}
                       >
-                        <option value="">Unassigned</option>
+                        <option value="">{t("admin.common.unassigned")}</option>
                         {(moduleData?.assignableUsers || []).map((user) => (
                           <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
                         ))}
@@ -781,17 +788,17 @@ export default function AdminLeads() {
                       type="button"
                       className="admin-link-button"
                       disabled={!moduleData?.supportsCoreSchemaV1}
-                      title="Owner assignment is available only when Core Operations schema V1 is enabled."
+                      title={t("admin.leads.ownerAssignUnavailable")}
                     >
-                      Assign owner
+                      {t("admin.leads.assignOwner")}
                     </button>
                     <button
                       type="button"
                       className="admin-link-button"
                       disabled
-                      title="A dedicated 'needs documents' action is not available in the current leads workflow service yet."
+                      title={t("admin.leads.markNeedsDocumentsUnavailable")}
                     >
-                      Mark needs documents
+                      {t("admin.leads.markNeedsDocuments")}
                     </button>
                   </div>
 
@@ -799,15 +806,15 @@ export default function AdminLeads() {
                     <textarea
                       value={noteDraft}
                       onChange={(event) => setNoteDraft(event.target.value)}
-                      placeholder="Add an internal note for this lead"
+                      placeholder={t("admin.leads.addInternalNote")}
                       disabled={!moduleData?.supportsNotes}
                     />
                     <div className="admin-leads-page__note-actions">
                       <button className="admin-link-button" type="button" onClick={submitNote} disabled={!moduleData?.supportsNotes || !noteDraft.trim() || isSaving}>
-                        Save note
+                        {t("admin.leads.saveNote")}
                       </button>
                     </div>
-                    {!moduleData?.supportsNotes ? <small>Apply Core Operations schema V1 to enable internal notes.</small> : null}
+                    {!moduleData?.supportsNotes ? <small>{t("admin.leads.notesUnavailable")}</small> : null}
                   </div>
 
                   {selectedNotes.length ? (
@@ -828,8 +835,8 @@ export default function AdminLeads() {
                       {selectedHistory.map((entry) => (
                         <article key={entry.id}>
                           <div>
-                            <strong>{normalizeLabel(entry.previous_status || "unknown")} → {normalizeLabel(entry.next_status || "unknown")}</strong>
-                            <p>{entry.note || "No note"} • {formatDateTime(entry.created_at)}</p>
+                            <strong>{translateEnum(t, entry.previous_status || "unknown")} → {translateEnum(t, entry.next_status || "unknown")}</strong>
+                            <p>{entry.note || t("admin.common.noNote")} • {formatDateTime(entry.created_at)}</p>
                           </div>
                         </article>
                       ))}
