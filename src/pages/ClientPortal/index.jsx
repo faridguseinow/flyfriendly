@@ -600,7 +600,6 @@ function PortalSectionHeader({ title, text, action }) {
     <div className="client-portal-section-header">
       <div>
         <h2>{title}</h2>
-        {text ? <p>{text}</p> : null}
       </div>
       {action ? <div className="client-portal-section-header__action">{action}</div> : null}
     </div>
@@ -1318,6 +1317,8 @@ export function ClientPortalLayout() {
     { label: t("clientPortal.nav.account", { defaultValue: "Account" }), path: "/client/account", icon: UserRound },
   ]), [t]);
 
+  const isAccountPath = (path) => path.endsWith("/client/account");
+
   const activeNavItem = useMemo(
     () => navItems.find((item) => {
       if (item.end) {
@@ -1366,8 +1367,8 @@ export function ClientPortalLayout() {
                   label={item.label}
                   end={item.end}
                   mobile
-                  avatarUrl={item.path.endsWith("/client/dashboard") ? avatarUrl : ""}
-                  avatarInitials={item.path.endsWith("/client/dashboard") ? avatarInitials : ""}
+                  avatarUrl={isAccountPath(item.path) ? avatarUrl : ""}
+                  avatarInitials={isAccountPath(item.path) ? avatarInitials : ""}
                 />
               ))}
             </nav>,
@@ -2283,7 +2284,20 @@ function ClientAccountPageInner() {
       });
       setMessage(t("clientPortal.account.saved", { defaultValue: "Account details updated." }));
     } catch (saveError) {
-      setError(saveError.message || t("clientPortal.account.error", { defaultValue: "Could not update your account." }));
+      const errorMessage = String(saveError?.message || "");
+      const isMissingAvatarColumn = errorMessage.toLowerCase().includes("avatar_url")
+        || errorMessage.toLowerCase().includes("profiles.avatar_url")
+        || errorMessage.toLowerCase().includes("schema cache");
+
+      if (isMissingAvatarColumn) {
+        setError(
+          t("profileAvatar.schemaMissing", {
+            defaultValue: "Profile photo upload needs the latest database update. Add profiles.avatar_url in Supabase and try again.",
+          }),
+        );
+      } else {
+        setError(saveError.message || t("clientPortal.account.error", { defaultValue: "Could not update your account." }));
+      }
     } finally {
       setIsSaving(false);
     }

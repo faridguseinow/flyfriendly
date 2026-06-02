@@ -1,6 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { buildLeadCode, buildCaseCode, generateRandomRecordSuffix } from "../lib/recordCodes.js";
-import { getCurrentUser } from "./authService.js";
+import { getCurrentProfile, getCurrentUser } from "./authService.js";
 import { attachReferralToLead, getStoredReferralData } from "./referralService.js";
 
 const LEAD_DOCUMENT_BUCKET = "claim-lead-documents";
@@ -29,6 +29,11 @@ function mapEdgeFunctionError(error, functionName) {
 
 function isUniqueViolation(error) {
   return error?.code === "23505" || String(error?.message || "").toLowerCase().includes("duplicate key");
+}
+
+function isPassportDocumentType(value = "") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized.includes("passport") || normalized.includes("id");
 }
 
 async function generateUniqueLeadCaseSuffix(client) {
@@ -230,6 +235,79 @@ export async function sendLeadConfirmationEmail(leadId) {
   return data;
 }
 
+export async function fetchClaimReuseData() {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+
+  if (!user) {
+    return null;
+  }
+
+  const [profile, leadsResponse] = await Promise.all([
+    getCurrentProfile().catch(() => null),
+    client
+      .from("leads")
+      .select("id, full_name, email, phone, city, preferred_language, has_whatsapp, payload, created_at, updated_at, submitted_at")
+      .eq("profile_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  if (leadsResponse.error) {
+    throw leadsResponse.error;
+  }
+
+  const leads = leadsResponse.data || [];
+  const leadIds = leads.map((item) => item.id).filter(Boolean);
+  const latestLead = leads[0] || null;
+
+  let passportDocument = null;
+  let signature = null;
+
+  if (leadIds.length) {
+    const [leadDocumentsResponse, signaturesResponse] = await Promise.all([
+      client
+        .from("lead_documents")
+        .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
+        .in("lead_id", leadIds)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      client
+        .from("lead_signatures")
+        .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+
+    if (leadDocumentsResponse.error) {
+      throw leadDocumentsResponse.error;
+    }
+
+    if (signaturesResponse.error && !isMissingTableError(signaturesResponse.error)) {
+      throw signaturesResponse.error;
+    }
+
+    passportDocument = (leadDocumentsResponse.data || []).find((item) => isPassportDocumentType(item.document_type)) || null;
+    signature = (signaturesResponse.data || []).find((item) => item.signature_data_url && item.terms_accepted) || null;
+  }
+
+  return {
+    fullName: profile?.full_name || latestLead?.full_name || latestLead?.payload?.fullName || user.user_metadata?.full_name || user.user_metadata?.name || "",
+    email: profile?.email || latestLead?.email || latestLead?.payload?.email || user.email || "",
+    phone: profile?.phone || latestLead?.phone || latestLead?.payload?.phone || "",
+    city: latestLead?.city || latestLead?.payload?.city || "",
+    preferredLanguage: profile?.preferred_language || latestLead?.preferred_language || latestLead?.payload?.preferredLanguage || latestLead?.payload?.language || null,
+    whatsapp: typeof latestLead?.has_whatsapp === "boolean"
+      ? latestLead.has_whatsapp
+      : Boolean(latestLead?.payload?.whatsapp),
+    passportDocument,
+    signatureDataUrl: signature?.signature_data_url || "",
+    termsAccepted: Boolean(signature?.terms_accepted),
+  };
+}
+
 export async function submitClaimServerSide(leadId, data = {}) {
   const client = requireSupabase();
   const referral = getStoredReferralData();
@@ -326,7 +404,34 @@ export async function uploadLeadDocument(leadId, documentType, file) {
   return path;
 }
 
-export async function saveLeadDocuments(leadId, data, files) {
+async function reuseLeadDocument(leadId, document = null) {
+  if (!leadId || !document?.file_path) {
+    return null;
+  }
+
+  const client = requireSupabase();
+  const { error } = await client.from("lead_documents").insert({
+    lead_id: leadId,
+    document_type: document.document_type || "passport",
+    file_path: document.file_path,
+    file_name: document.file_name || "passport",
+    mime_type: document.mime_type || null,
+    file_size: document.file_size || null,
+    status: "uploaded",
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return document.file_path;
+}
+
+export async function saveLeadDocuments(leadId, data, files, options = {}) {
+  if (!files?.passport && options?.reusablePassportDocument) {
+    await reuseLeadDocument(leadId, options.reusablePassportDocument);
+  }
+
   for (const [documentType, file] of Object.entries(files)) {
     if (file) {
       await uploadLeadDocument(leadId, documentType, file);

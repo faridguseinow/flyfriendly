@@ -307,7 +307,7 @@
 }
 
 .client-portal-shell {
-  padding-top: 112px;
+  padding-top: 112px !important;
   padding-bottom: calc(110px + env(safe-area-inset-bottom));
   text-align: left;
 }
@@ -2207,7 +2207,7 @@
 
 @media (min-width: 640px) {
   .client-portal-shell {
-    padding-top: 106px;
+    padding-top: 106px !important;
     padding-bottom: calc(102px + env(safe-area-inset-bottom));
   }
 

@@ -40,6 +40,7 @@ import {
 } from "../../services/catalogService.js";
 import {
   createLead,
+  fetchClaimReuseData,
   saveLeadDocuments,
   saveLeadStep,
   submitClaimServerSide,
@@ -814,7 +815,7 @@ function PromoCard() {
   );
 }
 
-function UploadBox({ title, documentType, icon: Icon, file, onFile }) {
+function UploadBox({ title, documentType, icon: Icon, file, existingDocument = null, onFile }) {
   const { t } = useTranslation();
 
   const dropFile = (event) => {
@@ -826,12 +827,12 @@ function UploadBox({ title, documentType, icon: Icon, file, onFile }) {
     <label className={`upload-box${file ? " has-file" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={dropFile}>
       <input
         type="file"
-        required={!file}
+        required={!file && !existingDocument}
         accept=".png,.jpg,.jpeg,.pdf"
         onChange={(event) => onFile(documentType, event.target.files?.[0] || null)}
       />
       <span><Icon size={34} strokeWidth={1.8} /></span>
-      <strong>{file ? file.name : t("claim.documents.dragAndDrop")}</strong>
+      <strong>{file ? file.name : existingDocument?.file_name || t("claim.documents.dragAndDrop")}</strong>
       <em>{t("claim.documents.or")}</em>
       <b>{t("claim.documents.uploadFile")}</b>
       <small>{t("claim.documents.uploadHint")}</small>
@@ -840,7 +841,7 @@ function UploadBox({ title, documentType, icon: Icon, file, onFile }) {
   );
 }
 
-function FileRow({ file, done, onRemove }) {
+function FileRow({ file, done, onRemove, metaText = "" }) {
   const { t } = useTranslation();
 
   return (
@@ -848,13 +849,15 @@ function FileRow({ file, done, onRemove }) {
       <FileText size={22} strokeWidth={1.8} />
       <div>
         <strong>{file?.name || t("claim.documents.boardingPass")}</strong>
-        <small>{formatFileSize(file?.size || 0)} / {formatFileSize(file?.size || 0)}</small>
+        <small>{metaText || `${formatFileSize(file?.size || 0)} / ${formatFileSize(file?.size || 0)}`}</small>
         <span />
       </div>
       {done ? <CircleCheck size={20} /> : <ShieldCheck size={20} />}
-      <button type="button" className="claim-file__remove" aria-label={t("claim.status.removeFile", { file: file?.name || "file" })} onClick={onRemove}>
-        <X size={18} />
-      </button>
+      {onRemove ? (
+        <button type="button" className="claim-file__remove" aria-label={t("claim.status.removeFile", { file: file?.name || "file" })} onClick={onRemove}>
+          <X size={18} />
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -1021,7 +1024,7 @@ function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, emailError
   );
 }
 
-function DocumentsStep({ data, files, onChange, onFile, onRemoveFile, onNext, onBack, isSaving }) {
+function DocumentsStep({ data, files, reusablePassportDocument, onChange, onFile, onRemoveFile, onNext, onBack, isSaving }) {
   const { t } = useTranslation();
 
   return (
@@ -1030,10 +1033,17 @@ function DocumentsStep({ data, files, onChange, onFile, onRemoveFile, onNext, on
         <h3>{t("claim.documents.title")}</h3>
         <p>{t("claim.documents.subtitle")}</p>
         <div className="claim-upload-grid">
-          <UploadBox title={t("claim.documents.passport")} documentType="passport" icon={User} file={files.passport} onFile={onFile} />
+          <UploadBox title={t("claim.documents.passport")} documentType="passport" icon={User} file={files.passport} existingDocument={!files.passport ? reusablePassportDocument : null} onFile={onFile} />
           <UploadBox title={t("claim.documents.boardingPass")} documentType="boarding_pass" icon={FileText} file={files.boarding_pass} onFile={onFile} />
         </div>
-        {files.passport && <FileRow file={files.passport} done onRemove={() => onRemoveFile("passport")} />}
+        {files.passport ? <FileRow file={files.passport} done onRemove={() => onRemoveFile("passport")} /> : null}
+        {!files.passport && reusablePassportDocument ? (
+          <FileRow
+            file={{ name: reusablePassportDocument.file_name || t("claim.documents.passport"), size: reusablePassportDocument.file_size || 0 }}
+            done
+            metaText={t("claim.documents.savedPassportReuse", { defaultValue: "Saved passport on file will be reused." })}
+          />
+        ) : null}
         {files.boarding_pass && <FileRow file={files.boarding_pass} done onRemove={() => onRemoveFile("boarding_pass")} />}
       </section>
       <section className="claim-question">
@@ -1067,6 +1077,10 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
     context.shadowColor = "rgba(20, 47, 97, 0.14)";
     context.shadowBlur = 0.6;
   };
+
+  useEffect(() => {
+    setHasInk(Boolean(data.signatureDataUrl));
+  }, [data.signatureDataUrl]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1360,6 +1374,7 @@ function ClaimFlow() {
     };
   });
   const [files, setFiles] = useState(() => navigationClaimState?.files || {});
+  const [reusablePassportDocument, setReusablePassportDocument] = useState(null);
   const [departureMatches, setDepartureMatches] = useState([]);
   const [destinationMatches, setDestinationMatches] = useState([]);
   const [connectionMatches, setConnectionMatches] = useState([]);
@@ -1388,6 +1403,39 @@ function ClaimFlow() {
 
     window.localStorage.setItem(CLAIM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
   }, [currentLanguageCode, data, stage]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!isAuthenticated || !isSupabaseConfigured) {
+      return undefined;
+    }
+
+    fetchClaimReuseData()
+      .then((prefill) => {
+        if (!active || !prefill) {
+          return;
+        }
+
+        setReusablePassportDocument(prefill.passportDocument || null);
+        setData((current) => ({
+          ...current,
+          fullName: current.fullName || prefill.fullName || "",
+          email: current.email || prefill.email || "",
+          phone: current.phone || prefill.phone || "",
+          city: current.city || prefill.city || "",
+          preferredLanguage: current.preferredLanguage || prefill.preferredLanguage || current.preferredLanguage || "",
+          whatsapp: typeof current.whatsapp === "boolean" ? current.whatsapp : Boolean(prefill.whatsapp),
+          signatureDataUrl: current.signatureDataUrl || prefill.signatureDataUrl || "",
+          termsAccepted: typeof current.termsAccepted === "boolean" ? current.termsAccepted : Boolean(prefill.termsAccepted),
+        }));
+      })
+      .catch(() => null);
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated]);
 
   const go = (nextStage, nextData = data, nextFiles = files) => navigate(
     toLocalizedPath(`/claim/${nextStage}`),
@@ -1765,7 +1813,9 @@ function ClaimFlow() {
       }
 
       if (stage === "documents") {
-        await saveLeadDocuments(leadId, withCurrentLanguage(), files);
+        await saveLeadDocuments(leadId, withCurrentLanguage(), files, {
+          reusablePassportDocument: files.passport ? null : reusablePassportDocument,
+        });
       }
 
       if (stage === "finish") {
@@ -1820,7 +1870,7 @@ function ClaimFlow() {
     if (stage === "denied") return <DeniedResult data={data} />;
     if (stage === "approved") return <ApprovedResult data={data} />;
     if (stage === "contact") return <ContactStep data={data} onChange={onChange} onPhoneChange={onPhoneChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} emailError={emailError} phoneError={phoneError} isSaving={isSaving} />;
-    if (stage === "documents") return <DocumentsStep data={data} files={files} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
+    if (stage === "documents") return <DocumentsStep data={data} files={files} reusablePassportDocument={reusablePassportDocument} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
     if (stage === "finish") {
       return (
         <FinishStep
