@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Settings2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAdminTableColumns } from "../hooks/useAdminTableColumns.js";
 
@@ -17,15 +18,43 @@ export function AdminColumnTable({
   onRowClick,
 }) {
   const { t } = useTranslation();
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const columnsMenuRef = useRef(null);
   const {
+    layoutColumns,
     orderedColumns,
     moveColumn,
     resetLayout,
     startResize,
+    toggleColumnVisibility,
   } = useAdminTableColumns({
     storageKey,
     columns,
   });
+
+  const hideableColumns = useMemo(
+    () => layoutColumns.filter((column) => column.hideable !== false),
+    [layoutColumns],
+  );
+
+  useEffect(() => {
+    if (!columnsOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (columnsMenuRef.current?.contains(event.target)) {
+        return;
+      }
+
+      setColumnsOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [columnsOpen]);
 
   const renderState = () => {
     if (loading) {
@@ -62,10 +91,45 @@ export function AdminColumnTable({
           <h2>{title}</h2>
           {countLabel ? <p>{countLabel}</p> : null}
         </div>
-        <button type="button" className="admin-btn admin-btn-secondary admin-crm-table__reset" onClick={resetLayout}>
-          <RotateCcw size={14} />
-          <span>{t("admin.common.resetColumns")}</span>
-        </button>
+        <div className="admin-crm-page__table-controls">
+          {hideableColumns.length ? (
+            <div className="admin-crm-table__columns-menu" ref={columnsMenuRef}>
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary admin-crm-table__columns-trigger"
+                onClick={() => setColumnsOpen((current) => !current)}
+                aria-expanded={columnsOpen}
+              >
+                <Settings2 size={14} />
+                <span>{t("admin.common.columns")}</span>
+              </button>
+              {columnsOpen ? (
+                <div className="admin-crm-table__columns-popover">
+                  <div className="admin-crm-table__columns-popover-head">
+                    <strong>{t("admin.common.manageColumns")}</strong>
+                    <span>{t("admin.common.toggleColumnsHint")}</span>
+                  </div>
+                  <div className="admin-crm-table__columns-list">
+                    {hideableColumns.map((column) => (
+                      <label key={column.key} className="admin-crm-table__columns-item">
+                        <input
+                          type="checkbox"
+                          checked={column.isVisible}
+                          onChange={() => toggleColumnVisibility(column.key)}
+                        />
+                        <span>{column.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <button type="button" className="admin-btn admin-btn-secondary admin-crm-table__reset" onClick={resetLayout}>
+            <RotateCcw size={14} />
+            <span>{t("admin.common.resetColumns")}</span>
+          </button>
+        </div>
       </div>
 
       {state || (

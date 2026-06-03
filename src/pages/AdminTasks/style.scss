@@ -182,7 +182,24 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(260px, 1fr));
   gap: 12px;
-  overflow-x: auto;
+  overflow-x: scroll;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: auto;
+
+  &::-webkit-scrollbar {
+    height: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.72);
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.68);
+    border-radius: 999px;
+    border: 2px solid rgba(226, 232, 240, 0.72);
+  }
 }
 
 .admin-tasks-page__column {

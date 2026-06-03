@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 function clampWidth(value, column) {
   const width = Number(value);
@@ -26,7 +26,12 @@ function safeReadLayout(storageKey) {
     }
 
     const parsed = JSON.parse(raw);
-    if (!parsed || parsed.version !== STORAGE_VERSION || !Array.isArray(parsed.order) || typeof parsed.widths !== "object") {
+    if (
+      !parsed
+      || ![1, STORAGE_VERSION].includes(parsed.version)
+      || !Array.isArray(parsed.order)
+      || typeof parsed.widths !== "object"
+    ) {
       return null;
     }
 
@@ -83,39 +88,61 @@ function buildWidths(columns, savedWidths) {
   );
 }
 
+function buildVisibility(columns, savedVisibility) {
+  return Object.fromEntries(
+    columns.map((column) => [
+      column.key,
+      column.hideable === false
+        ? true
+        : savedVisibility?.[column.key] !== false,
+    ]),
+  );
+}
+
 export function useAdminTableColumns({ storageKey, columns = [] }) {
   const resizeRef = useRef(null);
   const savedLayout = useMemo(() => safeReadLayout(storageKey), [storageKey]);
   const [order, setOrder] = useState(() => mergeOrder(columns, savedLayout?.order || buildDefaultOrder(columns)));
   const [widths, setWidths] = useState(() => buildWidths(columns, savedLayout?.widths || {}));
+  const [visibility, setVisibility] = useState(() => buildVisibility(columns, savedLayout?.visibility || {}));
 
   const columnsByKey = useMemo(
     () => new Map(columns.map((column) => [column.key, column])),
     [columns],
   );
 
-  const orderedColumns = useMemo(
+  const layoutColumns = useMemo(
     () => mergeOrder(columns, order)
       .map((key) => columnsByKey.get(key))
       .filter(Boolean)
       .map((column) => ({
         ...column,
         width: clampWidth(widths[column.key] ?? column.width, column),
+        isVisible: visibility[column.key] !== false,
+        hideable: column.hideable !== false,
       })),
-    [columns, columnsByKey, order, widths],
+    [columns, columnsByKey, order, visibility, widths],
+  );
+
+  const orderedColumns = useMemo(
+    () => layoutColumns.filter((column) => column.isVisible),
+    [layoutColumns],
   );
 
   useEffect(() => {
     const nextSavedLayout = safeReadLayout(storageKey);
     setOrder(mergeOrder(columns, nextSavedLayout?.order || buildDefaultOrder(columns)));
     setWidths(buildWidths(columns, nextSavedLayout?.widths || {}));
+    setVisibility(buildVisibility(columns, nextSavedLayout?.visibility || {}));
   }, [columns, storageKey]);
 
   useEffect(() => {
     const nextOrder = mergeOrder(columns, order);
     const nextWidths = buildWidths(columns, widths);
+    const nextVisibility = buildVisibility(columns, visibility);
     const sameOrder = nextOrder.length === order.length && nextOrder.every((key, index) => key === order[index]);
     const sameWidths = columns.every((column) => nextWidths[column.key] === widths[column.key]);
+    const sameVisibility = columns.every((column) => nextVisibility[column.key] === visibility[column.key]);
 
     if (!sameOrder) {
       setOrder(nextOrder);
@@ -124,15 +151,20 @@ export function useAdminTableColumns({ storageKey, columns = [] }) {
     if (!sameWidths) {
       setWidths(nextWidths);
     }
-  }, [columns, order, widths]);
+
+    if (!sameVisibility) {
+      setVisibility(nextVisibility);
+    }
+  }, [columns, order, visibility, widths]);
 
   useEffect(() => {
     safeWriteLayout(storageKey, {
       version: STORAGE_VERSION,
       order,
       widths,
+      visibility,
     });
-  }, [order, storageKey, widths]);
+  }, [order, storageKey, visibility, widths]);
 
   useEffect(() => () => {
     if (resizeRef.current) {
@@ -165,6 +197,27 @@ export function useAdminTableColumns({ storageKey, columns = [] }) {
   const resetLayout = () => {
     setOrder(buildDefaultOrder(columns));
     setWidths(buildWidths(columns, {}));
+    setVisibility(buildVisibility(columns, {}));
+  };
+
+  const toggleColumnVisibility = (columnKey) => {
+    const column = columnsByKey.get(columnKey);
+    if (!column || column.hideable === false) {
+      return;
+    }
+
+    setVisibility((current) => {
+      const currentlyVisibleCount = columns.reduce((total, item) => total + ((item.hideable === false || current[item.key] !== false) ? 1 : 0), 0);
+      const nextValue = current[columnKey] === false;
+      if (!nextValue && currentlyVisibleCount <= 1) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [columnKey]: nextValue,
+      };
+    });
   };
 
   const startResize = (event, columnKey) => {
@@ -203,9 +256,11 @@ export function useAdminTableColumns({ storageKey, columns = [] }) {
   };
 
   return {
+    layoutColumns,
     orderedColumns,
     moveColumn,
     resetLayout,
     startResize,
+    toggleColumnVisibility,
   };
 }
