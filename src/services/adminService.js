@@ -3,7 +3,7 @@ import { getCurrentUser, resetPassword } from "./authService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
-import { buildCaseCode, buildLeadCode, extractRecordSuffix, generateRandomRecordSuffix } from "../lib/recordCodes.js";
+import { buildCaseCode, buildLeadCode, extractRecordSuffix } from "../lib/recordCodes.js";
 import { buildReferralPath, generateRandomReferralCode } from "../../shared/referral-code.js";
 
 function isMissingOptionalTable(error) {
@@ -1130,33 +1130,6 @@ async function syncCustomerStats(client, customerId) {
   }
 }
 
-async function generateUniqueLeadCaseSuffix(client) {
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const suffix = generateRandomRecordSuffix();
-    const nextLeadCode = buildLeadCode(suffix);
-    const nextCaseCode = buildCaseCode(suffix);
-
-    const [leadMatch, caseMatch] = await Promise.all([
-      client.from("leads").select("id").eq("lead_code", nextLeadCode).maybeSingle(),
-      client.from("cases").select("id").eq("case_code", nextCaseCode).maybeSingle(),
-    ]);
-
-    if (leadMatch.error && leadMatch.error.code !== "PGRST116") {
-      throw leadMatch.error;
-    }
-
-    if (caseMatch.error && caseMatch.error.code !== "PGRST116") {
-      throw caseMatch.error;
-    }
-
-    if (!leadMatch.data?.id && !caseMatch.data?.id) {
-      return suffix;
-    }
-  }
-
-  throw new Error("Could not generate a unique case reference.");
-}
-
 function deriveIssueType(lead) {
   if (lead.issue_type) return lead.issue_type;
   if (lead.disruption_type === "cancellation") return "Cancellation";
@@ -1636,11 +1609,19 @@ export async function convertLeadToCase(leadId) {
     }
   }
 
-  const isClaimFlowLead = String(lead.source || "").trim().toLowerCase() === "claim_flow";
-  const suffix = (isClaimFlowLead && extractRecordSuffix(lead.lead_code)) || await generateUniqueLeadCaseSuffix(client);
-  const normalizedLeadCode = isClaimFlowLead ? buildLeadCode(suffix) : (lead.lead_code || null);
+  const rawLeadCode = String(lead.lead_code || "").trim();
+  const leadSuffix = extractRecordSuffix(rawLeadCode);
+  const shouldSyncLeadAndCaseCode = Boolean(leadSuffix);
+  const normalizedLeadCode = shouldSyncLeadAndCaseCode ? buildLeadCode(leadSuffix) : (rawLeadCode || null);
+  const caseCode = shouldSyncLeadAndCaseCode
+    ? buildCaseCode(leadSuffix)
+    : (rawLeadCode || null);
+
+  if (!caseCode) {
+    throw new Error("Lead reference is missing. Deterministic case conversion requires an existing lead code.");
+  }
+
   const caseId = crypto.randomUUID();
-  const caseCode = buildCaseCode(suffix);
   const now = new Date().toISOString();
   const partner = await findReferralPartnerForContext(client, lead, null).catch(() => null);
   const estimatedCompensation = roundMoney(lead.estimated_compensation_eur || 0);
@@ -1680,7 +1661,7 @@ export async function convertLeadToCase(leadId) {
   const { error: leadUpdateError } = await client
     .from("leads")
     .update({
-      ...(isClaimFlowLead ? { lead_code: normalizedLeadCode } : {}),
+      ...(normalizedLeadCode ? { lead_code: normalizedLeadCode } : {}),
       status: "converted",
       customer_id: customerId,
       referral_partner_id: partner?.id || lead.referral_partner_id || null,

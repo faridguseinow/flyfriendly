@@ -333,8 +333,8 @@ export default function AdminTasks() {
       const compensationFinance = relatedFinance || (compensationCase?.id ? financeByCase.get(compensationCase.id) : null) || null;
       const customerLabel = relatedCustomer?.full_name
         || (relatedCase ? customers.get(relatedCase?.customer_id)?.full_name : null);
-      const relatedLabel = relatedLead?.lead_code
-        || relatedCase?.case_code
+      const relatedLabel = compensationCase?.case_code
+        || compensationLead?.lead_code
         || relatedCustomer?.full_name
         || relatedDocument?.file_name
         || relatedPartner?.public_name
