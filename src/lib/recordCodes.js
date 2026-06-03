@@ -1,7 +1,8 @@
 const RECORD_CODE_LENGTH = 5;
+const RECORD_CODE_MIN_LENGTH = 4;
 const RECORD_CODE_ALPHABET = "0123456789";
-const LEAD_CODE_PATTERN = /^FF-(\d{5})$/i;
-const CASE_CODE_PATTERN = /^CASE-(\d{5})$/i;
+const LEAD_CODE_PATTERN = /^FF-(\d{4,})$/i;
+const CASE_CODE_PATTERN = /^CASE-(\d{4,})$/i;
 
 function getCrypto() {
   if (typeof globalThis !== "undefined" && globalThis.crypto?.getRandomValues) {
@@ -33,13 +34,27 @@ export function generateRandomRecordSuffix(length = RECORD_CODE_LENGTH) {
   return suffix;
 }
 
+function normalizeRecordSuffix(value = "") {
+  const normalized = String(value || "").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    return normalized.padStart(RECORD_CODE_MIN_LENGTH, "0");
+  }
+
+  return normalized;
+}
+
 export function buildLeadCode(suffix = "") {
-  const normalized = String(suffix || "").trim();
+  const normalized = normalizeRecordSuffix(suffix);
   return normalized ? `FF-${normalized}` : "";
 }
 
 export function buildCaseCode(suffix = "") {
-  const normalized = String(suffix || "").trim();
+  const normalized = normalizeRecordSuffix(suffix);
   return normalized ? `CASE-${normalized}` : "";
 }
 

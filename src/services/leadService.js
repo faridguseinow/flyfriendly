@@ -1,5 +1,5 @@
 import { requireSupabase } from "../lib/supabase.js";
-import { buildLeadCode, buildCaseCode, generateRandomRecordSuffix } from "../lib/recordCodes.js";
+import { buildCaseCode, buildLeadCode } from "../lib/recordCodes.js";
 import { getCurrentProfile, getCurrentUser } from "./authService.js";
 import { attachReferralToLead, getStoredReferralData } from "./referralService.js";
 
@@ -27,18 +27,35 @@ function mapEdgeFunctionError(error, functionName) {
   return error instanceof Error ? error : new Error(message || `${functionName} failed.`);
 }
 
-function isUniqueViolation(error) {
-  return error?.code === "23505" || String(error?.message || "").toLowerCase().includes("duplicate key");
-}
-
 function isPassportDocumentType(value = "") {
   const normalized = String(value || "").trim().toLowerCase();
   return normalized.includes("passport") || normalized.includes("id");
 }
 
-async function generateUniqueLeadCaseSuffix(client) {
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const suffix = generateRandomRecordSuffix();
+function isMissingSequenceFunctionError(error) {
+  return error?.code === "PGRST202"
+    || error?.code === "42883"
+    || String(error?.message || "").toLowerCase().includes("next_claim_record_number");
+}
+
+async function getNextSequentialLeadSuffix(client) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const { data, error } = await client.rpc("next_claim_record_number");
+
+    if (error) {
+      if (isMissingSequenceFunctionError(error)) {
+        throw new Error("Apply claim record numbering SQL in Supabase to enable sequential FF/CASE references.");
+      }
+
+      throw error;
+    }
+
+    const nextNumber = Number(Array.isArray(data) ? data[0] : data);
+    if (!Number.isFinite(nextNumber) || nextNumber <= 0) {
+      throw new Error("Supabase claim record numbering returned an invalid value.");
+    }
+
+    const suffix = String(Math.trunc(nextNumber)).padStart(4, "0");
     const nextLeadCode = buildLeadCode(suffix);
     const nextCaseCode = buildCaseCode(suffix);
 
@@ -60,7 +77,7 @@ async function generateUniqueLeadCaseSuffix(client) {
     }
   }
 
-  throw new Error("Could not generate a unique claim reference.");
+  throw new Error("Could not generate the next sequential claim reference.");
 }
 
 function parseFlightDate(value) {
@@ -103,48 +120,40 @@ export async function createLead(data = {}, source = "claim_flow") {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const referral = getStoredReferralData();
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const suffix = await generateUniqueLeadCaseSuffix(client);
-    const id = crypto.randomUUID();
-    const lead_code = buildLeadCode(suffix);
-    const payload = {
-      id,
-      lead_code,
-      source,
-      status: "new",
-      stage: "eligibility",
-      profile_id: user?.id || null,
-      referral_partner_id: referral?.partnerId || null,
-      source_details: referral ? {
-        referral_code: referral.referralCode,
-        referral_source_url: referral.sourceUrl || null,
-        referral_source_path: referral.sourcePath || null,
-      } : undefined,
-      ...baseLeadPayload(data),
-    };
+  const suffix = await getNextSequentialLeadSuffix(client);
+  const id = crypto.randomUUID();
+  const lead_code = buildLeadCode(suffix);
+  const payload = {
+    id,
+    lead_code,
+    source,
+    status: "new",
+    stage: "eligibility",
+    profile_id: user?.id || null,
+    referral_partner_id: referral?.partnerId || null,
+    source_details: referral ? {
+      referral_code: referral.referralCode,
+      referral_source_url: referral.sourceUrl || null,
+      referral_source_path: referral.sourcePath || null,
+    } : undefined,
+    ...baseLeadPayload(data),
+  };
 
-    const { error } = await client
-      .from("leads")
-      .insert(payload);
+  const { error } = await client
+    .from("leads")
+    .insert(payload);
 
-    if (error) {
-      if (isUniqueViolation(error)) {
-        continue;
-      }
-
-      throw error;
-    }
-
-    if (referral?.partnerId) {
-      attachReferralToLead(id, data).catch((attachError) => {
-        console.warn("Referral attribution could not be attached to lead.", attachError);
-      });
-    }
-
-    return { id, lead_code };
+  if (error) {
+    throw error;
   }
 
-  throw new Error("Could not generate a unique claim reference.");
+  if (referral?.partnerId) {
+    attachReferralToLead(id, data).catch((attachError) => {
+      console.warn("Referral attribution could not be attached to lead.", attachError);
+    });
+  }
+
+  return { id, lead_code };
 }
 
 export async function linkLeadToCurrentProfile(leadId, data = {}) {
