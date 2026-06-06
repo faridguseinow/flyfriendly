@@ -108,6 +108,24 @@
     outline: none;
     background: transparent;
   }
+
+  .password-field__toggle {
+    width: 30px;
+    height: 30px;
+    color: #7a8595;
+
+    &:hover {
+      color: var(--primary-dark);
+      opacity: 1;
+    }
+  }
+}
+
+.auth-helper-text {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 19px;
 }
 
 .auth-checkbox {

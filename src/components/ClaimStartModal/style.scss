@@ -83,7 +83,8 @@ body.claim-modal-open {
   line-height: 20px;
 }
 
-.claim-modal__form label div {
+.claim-modal__form label div,
+.claim-modal__input {
   min-height: 48px;
   display: flex;
   align-items: center;
@@ -93,6 +94,10 @@ body.claim-modal-open {
   border-radius: 8px;
   background: #fff;
   color: var(--primary);
+}
+
+.claim-modal__input {
+  width: 100%;
 }
 
 .claim-modal__form input {
@@ -149,6 +154,13 @@ body.claim-modal-open {
   border-radius: 8px;
   font-size: 14px !important;
   line-height: 20px !important;
+}
+
+.claim-modal__hint {
+  margin: -8px 0 0 !important;
+  color: #767c87 !important;
+  font-size: 13px !important;
+  line-height: 19px !important;
 }
 
 .claim-modal__message.is-error {

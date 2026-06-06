@@ -24,6 +24,8 @@
     "globalReachCopy": "Bütün dillərdə danışan bütün ölkələrdə milyonlarla sərnişinə xidmət göstərir.",
     "scrollToTop": "Yuxarıya sürüşdürün",
     "loadingAccount": "Hesab yüklənir...",
+    "showPassword": "Şifrəni göstər",
+    "hidePassword": "Şifrəni gizlət",
     "compensationSliderAmount": "Kompensasiya məbləği",
     "compensationSliderAria": "Uçuş məsafəsi {{distance}}, kompensasiya €{{amount}}",
     "compensationSliderInput": "Uçuş məsafəsi kilometrlərlə"
@@ -74,7 +76,7 @@
     "password": "parol",
     "fullNamePlaceholder": "Tam Adınızı daxil edin",
     "emailPlaceholder": "E-poçtunuzu daxil edin",
-    "phonePlaceholder": "Məsələn: 050 XXX XX XX",
+    "phonePlaceholder": "Nömrənizi daxil edin",
     "passwordCreatePlaceholder": "Parolunuzu Yaradın",
     "passwordEnterPlaceholder": "Şifrənizi daxil edin",
     "forgotPassword": "Şifrəni unutmusunuz?",
@@ -86,7 +88,8 @@
     "signUp": "Qeydiyyatdan keçin",
     "supabaseMissing": "Supabase env yoxdur. VITE_SUPABASE_URL və VITE_SUPABASE_PUBLISHABLE_KEY əlavə edin.",
     "confirmEmailNotice": "Hesabınızı təsdiqləmək üçün e-poçtunuzu yoxlayın, sonra davam etmək üçün daxil olun.",
-    "authError": "Doğrulamaq mümkün olmadı. Yenidən cəhd edin."
+    "authError": "Doğrulamaq mümkün olmadı. Yenidən cəhd edin.",
+    "passwordRequirements": "Şifrə ən azı 8 simvol olmalı, 1 böyük hərf və 1 xüsusi simvol içərməlidir."
   },
   "about": {
     "heroLabel": "Bizim haqqımızda",
@@ -526,12 +529,12 @@
       "email": "E-poçt",
       "emailPlaceholder": "E-poçtunuzu daxil edin",
       "address": "Ünvan",
-      "addressPlaceholder": "Şəhərinizə daxil olun",
-      "optional": "Könüllü",
+      "addressPlaceholder": "Şəhərinizi daxil edin",
+      "optional": "Vacib deyil",
       "phone": "Əlaqə nömrəsi (WhatsApp-a üstünlük verilir)",
-      "phonePlaceholder": "Məsələn: 050 XXX XX XX",
+      "phonePlaceholder": "Nömrənizi daxil edin",
       "hasWhatsapp": "Bəli, bu nömrədə Whatsapp var.",
-      "requiredToProceed": "Davam etmək tələb olunur.",
+      "requiredToProceed": "Sonrakı düyməni basın.",
       "phoneSearchPlaceholder": "Ölkə axtarın",
       "phoneSearchEmpty": "Uyğun ölkə tapılmadı."
     },
@@ -1034,8 +1037,12 @@
       "confirmPassword": "Şifrəni təsdiqləyin"
     },
     "placeholders": {
+      "fullName": "Məsələn: Elvin Məmmədov",
       "email": "you@example.com",
-      "password": "Şifrənizi daxil edin"
+      "phone": "Məsələn: +994 50 123 45 67",
+      "password": "Şifrənizi daxil edin",
+      "passwordCreate": "Şifrə yaradın",
+      "confirmPassword": "Şifrəni təkrarlayın"
     },
     "register": {
       "legalText": "Mən <termsLink>İstifadə şərtləri</termsLink> və <privacyLink>Məxfilik siyasəti</privacyLink> ilə razıyam.",
@@ -1050,6 +1057,9 @@
       "submit": "Hesab yaradın",
       "loginPrompt": "Artıq hesabınız var?",
       "loginLink": "Daxil olun"
+    },
+    "validation": {
+      "passwordRequirements": "Şifrə ən azı 8 simvol olmalı, 1 böyük hərf və 1 xüsusi simvol içərməlidir."
     }
   },
   "partnerApply": {
@@ -1363,6 +1373,7 @@
       "passwordPlaceholder": "Ən azı 8 simvol",
       "confirmPasswordPlaceholder": "Şifrəni yenidən yazın",
       "passwordMin": "Ən azı 8 simvoldan istifadə edin.",
+      "passwordRequirements": "Şifrə ən azı 8 simvol olmalı, 1 böyük hərf və 1 xüsusi simvol içərməlidir.",
       "passwordsMismatch": "Şifrələr uyğun gəlmir.",
       "updatePassword": "Şifrəni yenilə",
       "passwordUpdated": "Şifrə yeniləndi.",

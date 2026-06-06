@@ -5,6 +5,7 @@ import { Trans, useTranslation } from "react-i18next";
 import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import { GoogleSignInButton } from "../../components/auth/GoogleSignInButton";
+import PasswordField from "../../components/forms/PasswordField.jsx";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
@@ -16,6 +17,7 @@ import {
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { resolveDashboardPath, resolvePostAuthPath } from "../../auth/routeUtils.js";
 import { ensureCurrentUserProfile } from "../../services/authService.js";
+import { getPasswordValidationError } from "../../lib/passwordValidation.js";
 import { isSupabaseConfigured, requireSupabase } from "../../lib/supabase.js";
 import "./style.scss";
 
@@ -109,16 +111,15 @@ export function LoginPage() {
         </label>
         <label>
           <span>{t("auth.fields.password", { defaultValue: "Password" })}</span>
-          <div className="auth-input">
-            <Lock size={18} />
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-              placeholder={t("auth.placeholders.password", { defaultValue: "Enter your password" })}
-              required
-            />
-          </div>
+          <PasswordField
+            className="auth-input"
+            icon={Lock}
+            value={form.password}
+            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            placeholder={t("auth.placeholders.password", { defaultValue: "Enter your password" })}
+            autoComplete="current-password"
+            required
+          />
         </label>
         {error ? <p className="auth-message is-error">{error}</p> : null}
         <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
@@ -158,8 +159,9 @@ export function RegisterPage() {
     setError("");
     setNotice("");
 
-    if (form.password.length < 6) {
-      setError(t("auth.register.passwordLength", { defaultValue: "Password must be at least 6 characters." }));
+    const passwordValidationError = getPasswordValidationError(form.password, t, "auth.validation.passwordRequirements");
+    if (passwordValidationError) {
+      setError(passwordValidationError);
       return;
     }
 
@@ -205,36 +207,68 @@ export function RegisterPage() {
           <span>{t("auth.fields.fullName", { defaultValue: "Full name" })}</span>
           <div className="auth-input">
             <User size={18} />
-            <input type="text" value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} required />
+            <input
+              type="text"
+              value={form.fullName}
+              onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
+              placeholder={t("auth.placeholders.fullName", { defaultValue: "John Smith" })}
+              required
+            />
           </div>
         </label>
         <label>
           <span>{t("auth.fields.email", { defaultValue: "Email" })}</span>
           <div className="auth-input">
             <Mail size={18} />
-            <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required />
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+              placeholder={t("auth.placeholders.email", { defaultValue: "you@example.com" })}
+              required
+            />
           </div>
         </label>
         <label>
           <span>{t("auth.fields.phone", { defaultValue: "Phone" })}</span>
           <div className="auth-input">
             <Phone size={18} />
-            <input type="tel" value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+              placeholder={t("auth.placeholders.phone", { defaultValue: "+994 50 123 45 67" })}
+            />
           </div>
         </label>
         <label>
           <span>{t("auth.fields.password", { defaultValue: "Password" })}</span>
-          <div className="auth-input">
-            <Lock size={18} />
-            <input type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required />
-          </div>
+          <PasswordField
+            className="auth-input"
+            icon={Lock}
+            value={form.password}
+            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            placeholder={t("auth.placeholders.passwordCreate", { defaultValue: "Create a password" })}
+            autoComplete="new-password"
+            required
+          />
         </label>
+        <p className="auth-helper-text">
+          {t("auth.validation.passwordRequirements", {
+            defaultValue: "Password must be at least 8 characters and include 1 uppercase letter and 1 special character.",
+          })}
+        </p>
         <label>
           <span>{t("auth.fields.confirmPassword", { defaultValue: "Confirm password" })}</span>
-          <div className="auth-input">
-            <Lock size={18} />
-            <input type="password" value={form.confirmPassword} onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))} required />
-          </div>
+          <PasswordField
+            className="auth-input"
+            icon={Lock}
+            value={form.confirmPassword}
+            onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+            placeholder={t("auth.placeholders.confirmPassword", { defaultValue: "Repeat your password" })}
+            autoComplete="new-password"
+            required
+          />
         </label>
         <label className="auth-checkbox">
           <input type="checkbox" checked={form.acceptedLegal} onChange={(event) => setForm((current) => ({ ...current, acceptedLegal: event.target.checked }))} />
@@ -478,8 +512,9 @@ export function ResetPasswordPage() {
     setError("");
     setNotice("");
 
-    if (form.password.length < 6) {
-      setError(t("auth.reset.passwordLength", { defaultValue: "Password must be at least 6 characters." }));
+    const passwordValidationError = getPasswordValidationError(form.password, t, "auth.validation.passwordRequirements");
+    if (passwordValidationError) {
+      setError(passwordValidationError);
       return;
     }
 
@@ -539,17 +574,32 @@ export function ResetPasswordPage() {
       <form className="auth-form" onSubmit={submit}>
         <label>
           <span>{t("auth.fields.password", { defaultValue: "Password" })}</span>
-          <div className="auth-input">
-            <Lock size={18} />
-            <input type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required />
-          </div>
+          <PasswordField
+            className="auth-input"
+            icon={Lock}
+            value={form.password}
+            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            placeholder={t("auth.placeholders.passwordCreate", { defaultValue: "Create a password" })}
+            autoComplete="new-password"
+            required
+          />
         </label>
+        <p className="auth-helper-text">
+          {t("auth.validation.passwordRequirements", {
+            defaultValue: "Password must be at least 8 characters and include 1 uppercase letter and 1 special character.",
+          })}
+        </p>
         <label>
           <span>{t("auth.fields.confirmPassword", { defaultValue: "Confirm password" })}</span>
-          <div className="auth-input">
-            <Lock size={18} />
-            <input type="password" value={form.confirmPassword} onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))} required />
-          </div>
+          <PasswordField
+            className="auth-input"
+            icon={Lock}
+            value={form.confirmPassword}
+            onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+            placeholder={t("auth.placeholders.confirmPassword", { defaultValue: "Repeat your password" })}
+            autoComplete="new-password"
+            required
+          />
         </label>
         {error ? <p className="auth-message is-error">{error}</p> : null}
         {notice ? <p className="auth-message is-notice">{notice}</p> : null}

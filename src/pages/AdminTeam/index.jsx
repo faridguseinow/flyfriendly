@@ -37,6 +37,7 @@ import {
 } from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { adminNavigationSections } from "../../admin/navigation.js";
+import PasswordField from "../../components/forms/PasswordField.jsx";
 import "./style.scss";
 
 const TAB_OPTIONS = [
@@ -1179,9 +1180,8 @@ export default function AdminTeam() {
                 {!isEdit ? (
                   <label>
                     <span>Password</span>
-                    <input
+                    <PasswordField
                       className="admin-input"
-                      type="password"
                       autoComplete="new-password"
                       placeholder="At least 8 characters"
                       value={employeeForm.password}

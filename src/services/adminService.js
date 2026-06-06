@@ -3,7 +3,11 @@ import { getCurrentUser, resetPassword } from "./authService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
-import { buildCaseCode, buildLeadCode, extractRecordSuffix } from "../lib/recordCodes.js";
+import {
+  deriveCaseCodeFromLeadCode,
+  isModernLeadCode,
+  normalizeLeadCode,
+} from "../lib/recordCodes.js";
 import { buildReferralPath, generateRandomReferralCode } from "../../shared/referral-code.js";
 
 function isMissingOptionalTable(error) {
@@ -1609,16 +1613,37 @@ export async function convertLeadToCase(leadId) {
     }
   }
 
+  const normalizedSource = String(lead.source || "").trim().toLowerCase();
   const rawLeadCode = String(lead.lead_code || "").trim();
-  const leadSuffix = extractRecordSuffix(rawLeadCode);
-  const shouldSyncLeadAndCaseCode = Boolean(leadSuffix);
-  const normalizedLeadCode = shouldSyncLeadAndCaseCode ? buildLeadCode(leadSuffix) : (rawLeadCode || null);
-  const caseCode = shouldSyncLeadAndCaseCode
-    ? buildCaseCode(leadSuffix)
+  const normalizedLeadCode = normalizeLeadCode(rawLeadCode);
+  const isModernClaimFlow = normalizedSource === "claim_flow" && isModernLeadCode(rawLeadCode);
+  const isClaimFlow = normalizedSource === "claim_flow";
+  if (isClaimFlow && !isModernClaimFlow) {
+    throw new Error("Claim-flow lead has invalid lead_code. Expected FF-0001 format.");
+  }
+
+  const caseCode = isModernClaimFlow
+    ? deriveCaseCodeFromLeadCode(rawLeadCode)
     : (rawLeadCode || null);
 
   if (!caseCode) {
     throw new Error("Lead reference is missing. Deterministic case conversion requires an existing lead code.");
+  }
+
+  if (isModernClaimFlow) {
+    const conflictingCase = await client
+      .from("cases")
+      .select("id, lead_id, case_code")
+      .eq("case_code", caseCode)
+      .maybeSingle();
+
+    if (conflictingCase.error && !isMissingOptionalTable(conflictingCase.error) && !isMissingColumnError(conflictingCase.error)) {
+      throw conflictingCase.error;
+    }
+
+    if (conflictingCase.data?.id && conflictingCase.data.lead_id !== lead.id) {
+      throw new Error(`Case code collision for ${caseCode}. Do not generate another suffix automatically.`);
+    }
   }
 
   const caseId = crypto.randomUUID();
@@ -1661,11 +1686,17 @@ export async function convertLeadToCase(leadId) {
   const { error: leadUpdateError } = await client
     .from("leads")
     .update({
-      ...(normalizedLeadCode ? { lead_code: normalizedLeadCode } : {}),
       status: "converted",
       customer_id: customerId,
       referral_partner_id: partner?.id || lead.referral_partner_id || null,
       updated_at: now,
+      ...(
+        isModernClaimFlow
+          && normalizedLeadCode
+          && normalizedLeadCode !== rawLeadCode
+          ? { lead_code: normalizedLeadCode }
+          : {}
+      ),
     })
     .eq("id", lead.id);
 

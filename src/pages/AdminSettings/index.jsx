@@ -1,7 +1,9 @@
 import { MonitorCog, Moon, Palette, Shield, Sun, Type, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import PasswordField from "../../components/forms/PasswordField.jsx";
 import { languages } from "../../i18n/languages.js";
+import { getPasswordValidationError } from "../../lib/passwordValidation.js";
 import { requireSupabase } from "../../lib/supabase.js";
 import { getProfileAvatarUrl, uploadProfileAvatar, validateAvatarFile } from "../../lib/profileAvatar.js";
 import ProfileAvatarUploader from "../../components/profile/ProfileAvatarUploader.jsx";
@@ -132,8 +134,9 @@ export default function AdminSettings() {
     setPasswordError("");
     setPasswordMessage("");
 
-    if (passwordDraft.password.length < 8) {
-      setPasswordError(t("admin.preferences.passwordMin"));
+    const passwordValidationError = getPasswordValidationError(passwordDraft.password, t, "admin.preferences.passwordRequirements");
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
       return;
     }
 
@@ -296,23 +299,28 @@ export default function AdminSettings() {
             <div className="admin-preferences-form__grid">
               <label className="admin-preferences-field">
                 <span>{t("admin.preferences.newPassword")}</span>
-                <input
+                <PasswordField
                   className="admin-input"
-                  type="password"
                   value={passwordDraft.password}
                   onChange={(event) => setPasswordDraft((current) => ({ ...current, password: event.target.value }))}
                   placeholder={t("admin.preferences.passwordPlaceholder")}
+                  autoComplete="new-password"
                 />
               </label>
+              <p className="admin-field-hint">
+                {t("admin.preferences.passwordRequirements", {
+                  defaultValue: "Password must be at least 8 characters and include 1 uppercase letter and 1 special character.",
+                })}
+              </p>
 
               <label className="admin-preferences-field">
                 <span>{t("admin.preferences.confirmPassword")}</span>
-                <input
+                <PasswordField
                   className="admin-input"
-                  type="password"
                   value={passwordDraft.confirmPassword}
                   onChange={(event) => setPasswordDraft((current) => ({ ...current, confirmPassword: event.target.value }))}
                   placeholder={t("admin.preferences.confirmPasswordPlaceholder")}
+                  autoComplete="new-password"
                 />
               </label>
             </div>

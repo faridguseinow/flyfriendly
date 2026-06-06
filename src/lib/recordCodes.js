@@ -1,38 +1,6 @@
-const RECORD_CODE_LENGTH = 5;
 const RECORD_CODE_MIN_LENGTH = 4;
-const RECORD_CODE_ALPHABET = "0123456789";
 const LEAD_CODE_PATTERN = /^FF-(\d{4,})$/i;
 const CASE_CODE_PATTERN = /^CASE-(\d{4,})$/i;
-
-function getCrypto() {
-  if (typeof globalThis !== "undefined" && globalThis.crypto?.getRandomValues) {
-    return globalThis.crypto;
-  }
-
-  return null;
-}
-
-function randomIndex(max) {
-  const crypto = getCrypto();
-  if (crypto) {
-    const bytes = new Uint8Array(1);
-    crypto.getRandomValues(bytes);
-    return bytes[0] % max;
-  }
-
-  return Math.floor(Math.random() * max);
-}
-
-export function generateRandomRecordSuffix(length = RECORD_CODE_LENGTH) {
-  const size = Number(length) > 0 ? Number(length) : RECORD_CODE_LENGTH;
-  let suffix = "";
-
-  for (let index = 0; index < size; index += 1) {
-    suffix += RECORD_CODE_ALPHABET[randomIndex(RECORD_CODE_ALPHABET.length)];
-  }
-
-  return suffix;
-}
 
 function normalizeRecordSuffix(value = "") {
   const normalized = String(value || "").trim();
@@ -83,4 +51,25 @@ export function isModernLeadCode(value = "") {
 
 export function isModernCaseCode(value = "") {
   return CASE_CODE_PATTERN.test(String(value || "").trim());
+}
+
+export function normalizeLeadCode(value = "") {
+  const normalized = String(value || "").trim();
+  const match = normalized.match(/^FF-(\d+)$/i);
+
+  if (!match?.[1]) {
+    return "";
+  }
+
+  return buildLeadCode(match[1]);
+}
+
+export function deriveCaseCodeFromLeadCode(leadCode = "") {
+  const normalizedLeadCode = normalizeLeadCode(leadCode) || String(leadCode || "").trim();
+
+  if (!isModernLeadCode(normalizedLeadCode)) {
+    throw new Error("Claim-flow lead has invalid lead_code. Expected FF-0001 format.");
+  }
+
+  return buildCaseCode(extractRecordSuffix(normalizedLeadCode));
 }

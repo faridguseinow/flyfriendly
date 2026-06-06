@@ -429,44 +429,192 @@
 }
 
 .claim-phone-field {
+  position: relative;
+  display: grid;
+  gap: 10px;
+}
+
+.claim-phone-field__control {
   min-height: 56px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 0 16px;
   border: 1px solid var(--line-strong);
   border-radius: 16px;
-  color: var(--primary);
   background: #fff;
+  color: var(--primary);
   min-width: 0;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+
+  svg {
+    color: var(--primary);
+    flex: 0 0 auto;
+  }
+}
+
+.claim-phone-field__country {
+  min-width: 0;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  color: #20242e;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+
+  svg:last-child {
+    color: #7c8ba0;
+  }
+}
+
+.claim-phone-field__dial {
+  white-space: nowrap;
+  font-size: 15px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.claim-phone-field__divider {
+  width: 1px;
+  height: 24px;
+  background: #d9e6f5;
+}
+
+.claim-phone-field__input {
+  width: 100%;
+  min-width: 0;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #20242e;
+  background: transparent;
+  font-size: 16px;
+  line-height: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.claim-phone-field__input::placeholder {
+  color: #989fab;
+}
+
+.claim-phone-field__dropdown {
+  position: relative;
+  z-index: 25;
+  padding: 14px;
+  border: 1px solid rgba(207, 228, 247, 0.95);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 26px 50px rgba(80, 121, 172, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.claim-phone-field__search {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #d9e6f5;
+  border-radius: 14px;
+  background: #fff;
+  color: #46617f;
 
   input {
     width: 100%;
     min-width: 0;
-    min-height: auto;
-    padding: 0;
     border: 0;
-    border-radius: 0;
     outline: 0;
-    color: #20242e;
     background: transparent;
-    font-size: 16px;
-    line-height: 22px;
-    font-variant-numeric: tabular-nums;
+    color: #20242e;
+    font-size: 15px;
   }
 
   input::placeholder {
-    color: #989fab;
+    color: #98a0ad;
   }
 }
 
-.claim-phone-field svg {
-  color: var(--primary);
-  flex: 0 0 auto;
+.claim-phone-field__options {
+  max-height: 260px;
+  margin-top: 12px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.claim-phone-field__option {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: 14px;
+  text-align: left;
+  color: #20242e;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+
+  &:hover,
+  &.is-selected {
+    background: #eef6ff;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  svg {
+    color: #2a64f6;
+  }
+}
+
+.claim-phone-field__option-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.claim-phone-field__option-label {
+  min-width: 0;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.claim-phone-field__option-code {
+  color: #617089;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.claim-phone-field__empty {
+  padding: 14px 6px 4px;
+  color: #7f8997;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .claim-phone-field.is-error {
-  border-color: #bd1f1f;
+  .claim-phone-field__control {
+    border-color: #bd1f1f;
+  }
+}
+
+.claim-phone-field.is-open {
+  .claim-phone-field__control {
+    border-color: #b8d8fb;
+    box-shadow: 0 0 0 4px rgba(42, 100, 246, 0.08);
+  }
 }
 
 .claim-date-picker {
@@ -588,6 +736,15 @@
     font-weight: 500;
   }
 
+  &.is-disabled {
+    color: #c3ccda;
+    background: #f5f7fb;
+    border-color: transparent;
+    cursor: not-allowed;
+    transform: none;
+    pointer-events: none;
+  }
+
   &.is-today {
     border-color: #cfe6ff;
     color: var(--primary);
@@ -629,6 +786,12 @@
       background: #f7fbff;
     }
   }
+}
+
+.claim-date-picker__nav:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .claim-field.is-error {
@@ -1399,8 +1562,38 @@
   }
 
   .claim-phone-field {
-    grid-template-columns: 68px minmax(0, 1fr);
-    gap: 10px;
+    .claim-phone-field__control {
+      grid-template-columns: auto auto auto minmax(0, 1fr);
+      gap: 10px;
+      padding: 0 14px;
+    }
+
+    .claim-phone-field__country {
+      gap: 8px;
+    }
+
+    .claim-phone-field__dial {
+      font-size: 14px;
+    }
+
+    .claim-phone-field__dropdown {
+      padding: 12px;
+      border-radius: 18px;
+    }
+
+    .claim-phone-field__option {
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 11px 8px;
+
+      svg {
+        justify-self: end;
+      }
+    }
+
+    .claim-phone-field__option-code {
+      display: none;
+    }
   }
 
   .claim-option-grid {

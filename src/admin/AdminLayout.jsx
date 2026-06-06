@@ -16,6 +16,7 @@ import {
   startAdminWorkSession,
 } from "../services/adminService.js";
 import { preloadAdminFinanceWorkspaceData } from "../services/adminFinanceService.js";
+import PasswordField from "../components/forms/PasswordField.jsx";
 import { requireSupabase } from "../lib/supabase.js";
 import { buildAdminNavigationSections, getAdminNavigation, getAdminNavigationSections } from "./navigation.js";
 import { AdminPreferencesProvider, useAdminPreferencesState } from "./AdminPreferencesContext.jsx";
@@ -176,11 +177,12 @@ export function AdminLoginPage() {
             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
             required
           />
-          <input
-            type="password"
+          <PasswordField
+            className="admin-input"
             placeholder={t("admin.auth.password")}
             value={form.password}
             onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+            autoComplete="current-password"
             required
           />
           {error && <p className="admin-auth-error">{error}</p>}

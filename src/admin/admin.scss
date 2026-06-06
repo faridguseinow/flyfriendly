@@ -71,6 +71,41 @@
   border-color: rgba(5, 132, 255, 0.34);
 }
 
+.admin-input.password-field,
+.admin-auth-form .password-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-input .password-field__input,
+.admin-auth-form .password-field__input {
+  padding: 0;
+}
+
+.admin-input .password-field__input::placeholder,
+.admin-auth-form .password-field__input::placeholder {
+  color: var(--admin-text-secondary);
+}
+
+.admin-input .password-field__toggle,
+.admin-auth-form .password-field__toggle {
+  color: var(--admin-text-secondary);
+}
+
+.admin-input .password-field__toggle:hover,
+.admin-auth-form .password-field__toggle:hover {
+  color: var(--primary);
+  opacity: 1;
+}
+
+.admin-field-hint {
+  margin: -2px 0 0;
+  color: var(--admin-text-secondary);
+  font-size: calc(12px * var(--admin-scale-ratio));
+  line-height: 1.5;
+}
+
 .admin-card,
 .admin-panel,
 .admin-panel-card {
@@ -828,6 +863,8 @@
 
 .admin-shell[data-admin-theme="dark"] .admin-search input::placeholder,
 .admin-shell[data-admin-theme="dark"] .admin-input::placeholder,
+.admin-shell[data-admin-theme="dark"] .admin-input .password-field__input::placeholder,
+.admin-shell[data-admin-theme="dark"] .admin-auth-form .password-field__input::placeholder,
 .admin-shell[data-admin-theme="dark"] .admin-tasks-page__toolbar input::placeholder,
 .admin-shell[data-admin-theme="dark"] .admin-documents-page__toolbar input::placeholder {
   color: #6b7a90;
@@ -852,6 +889,20 @@
   border-color: rgba(71, 85, 105, 0.42);
   background: #0f172a;
   color: #e5edf7;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-input .password-field__toggle,
+.admin-shell[data-admin-theme="dark"] .admin-auth-form .password-field__toggle {
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-input .password-field__toggle:hover,
+.admin-shell[data-admin-theme="dark"] .admin-auth-form .password-field__toggle:hover {
+  color: #8ec5ff;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-field-hint {
+  color: rgba(226, 232, 240, 0.76);
 }
 
 .admin-shell[data-admin-theme="dark"] .admin-section-link.is-active,
@@ -1282,6 +1333,225 @@
 
 .admin-shell[data-admin-theme="dark"] .admin-reports__chart div {
   background: #162338;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-badge-neutral,
+.admin-shell[data-admin-theme="dark"] .admin-status-badge.is-neutral {
+  background: rgba(71, 85, 105, 0.34);
+  color: #e5edf7;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-badge-warning,
+.admin-shell[data-admin-theme="dark"] .admin-status-badge.is-warning {
+  background: rgba(146, 93, 12, 0.28);
+  color: #fde7b0;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-badge-danger,
+.admin-shell[data-admin-theme="dark"] .admin-status-badge.is-danger {
+  background: rgba(180, 51, 51, 0.28);
+  color: #ffd6d6;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-badge-success,
+.admin-shell[data-admin-theme="dark"] .admin-status-badge.is-success {
+  background: rgba(30, 123, 60, 0.28);
+  color: #d7f6e2;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-badge-info,
+.admin-shell[data-admin-theme="dark"] .admin-status-badge.is-info {
+  background: rgba(11, 109, 207, 0.28);
+  color: #d7e9ff;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__search,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__search,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__tab,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__tab,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__summary article,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__activity-list article,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__drawer-hero,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__missing-list span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-card,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__role-card,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-item,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__toggle-row,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__drawer-list-row,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__mini-activity-row,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__activity-table,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__toolbar-card,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__tabs,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__summary-card,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__meta-grid article,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__mini-list article,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__panel-section,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__preview-card,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__row,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__checklist article.is-complete,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__checklist article.is-missing,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__missing-list span,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__progress-panel,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__activity-list article,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__section textarea,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__section input,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__section select,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__modal,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__close,
+.admin-shell[data-admin-theme="dark"] .admin-payments__button-subtle,
+.admin-shell[data-admin-theme="dark"] .admin-payments__detail-grid article,
+.admin-shell[data-admin-theme="dark"] .admin-finance__detail-grid article {
+  background: var(--admin-surface);
+  border-color: rgba(71, 85, 105, 0.42);
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__avatar,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__avatar,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__toast.is-success,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__thumb,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__thumb.is-large,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__thumb.is-pdf,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__folder-card,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__column-empty,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__card.is-sla-risk,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__modal-header,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-card.is-active,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__role-card.is-active,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__tab.is-active {
+  background: #162338;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__thumb.is-large img {
+  background: #0f172a;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__search,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__clear,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__column-add,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__close,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__search,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__search,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__search,
+.admin-shell[data-admin-theme="dark"] .admin-payments__button-subtle,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__tab,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__tab {
+  color: #d7e3f5;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__header h2,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__table-head h3,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__drawer-hero strong,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__summary article strong,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__section-title h4,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__activity-list strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-meta strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-summary strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__role-card-meta strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__summary-grid strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__role-card-head strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__section-head h3,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__permission-preview-group > strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__permission-group > strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__preview-block > strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-item strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__drawer-list-row strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__mini-activity-row strong,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__identity strong,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__section-head h3,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__cell strong,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__summary-card strong,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__panel-section h3,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__meta-grid strong,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__profile-hero strong,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__mini-list strong,
+.admin-shell[data-admin-theme="dark"] .admin-finance__detail-grid strong,
+.admin-shell[data-admin-theme="dark"] .admin-payments__detail-grid strong,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__summary span,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__meta-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__section h4,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__progress-panel strong,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__activity-list strong {
+  color: #e5edf7;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__header p,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__row > span,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__person small,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__contact small,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__account small,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__claims small,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__compensation small,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__drawer-hero p,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__summary article span,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__activity-list p,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__empty-copy,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__tab,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-meta span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-summary span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__role-card-meta span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__summary-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-footer,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__employee-footer small,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__role-card p,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__role-card-head span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-item span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-item small,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-item time,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__drawer-list-row span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__drawer-list-row small,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__drawer-list-row time,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__mini-activity-row span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__mini-activity-row small,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__mini-activity-row time,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__activity-row time,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__form-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__panel-note,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__identity span,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-required p,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__table-head,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__cell,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__cell small,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__badge-stack small,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__summary-card span,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__summary-card small,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__panel-section p,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__meta-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__profile-hero p,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__form-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__mini-list small,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__state,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__summary strong,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__meta-grid strong,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__empty-copy,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__progress-panel p,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__activity-list p,
+.admin-shell[data-admin-theme="dark"] .admin-finance__detail-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-payments__detail-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-payments__form-grid span,
+.admin-shell[data-admin-theme="dark"] .admin-payments__audit-placeholder,
+.admin-shell[data-admin-theme="dark"] .admin-payments__drawer-state {
+  color: #9fb0c8;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__table-head,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__table-head-row,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__activity-row,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__table-head,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__row,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__row,
+.admin-shell[data-admin-theme="dark"] .admin-customers-page__table-head,
+.admin-shell[data-admin-theme="dark"] .admin-referral-page__section-head,
+.admin-shell[data-admin-theme="dark"] .admin-tasks-page__drawer-header,
+.admin-shell[data-admin-theme="dark"] .admin-payments__table-head,
+.admin-shell[data-admin-theme="dark"] .admin-finance__table tbody td,
+.admin-shell[data-admin-theme="dark"] .admin-payments__table tbody td {
+  border-color: rgba(71, 85, 105, 0.42);
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__checkbox-row,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-required,
+.admin-shell[data-admin-theme="dark"] .admin-employees-page__access-required h2 {
+  color: #e5edf7;
 }
 
 .admin-shell[data-admin-theme="dark"] .admin-cases-page__task-modal-backdrop {

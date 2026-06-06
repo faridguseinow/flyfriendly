@@ -231,7 +231,7 @@ export default function AdminCms() {
   };
 
   return (
-    <div className="admin-page admin-content-system-page">
+    <div className="admin-page admin-content-system-page admin-content-cms-page">
 
       {error && <p className="admin-message is-error">{error}</p>}
       {notice && <p className="admin-message">{notice}</p>}
@@ -243,53 +243,103 @@ export default function AdminCms() {
         <p className="admin-message">Loading CMS data...</p>
       ) : (
         <>
-          <section className="admin-metrics">
+          <section className="admin-panel admin-content-cms__hero">
+            <div className="admin-content-cms__hero-copy">
+              <span className="admin-content-cms__eyebrow">Content CMS</span>
+              <h1>CMS workspace</h1>
+              <p>Manage pages and their ordered blocks in one connected editing flow, with page shell settings and block content kept side by side.</p>
+            </div>
+            <div className="admin-content-cms__hero-actions">
+              <button className="admin-link-button" type="button" disabled={isRefreshingCatalog} onClick={handleRefreshCatalog}>
+                {isRefreshingCatalog ? "Refreshing catalog..." : "Refresh aviation data"}
+              </button>
+              <button className="btn btn--primary" type="button" onClick={startNewPage}>New page</button>
+            </div>
+          </section>
+
+          <section className="admin-content-cms__metrics">
             <MetricCard icon={FileText} label="Pages" value={metrics.pages} />
             <MetricCard icon={LayoutTemplate} label="Published pages" value={metrics.published} />
             <MetricCard icon={Plus} label="Blocks" value={metrics.blocks} />
             <MetricCard icon={Save} label="Published blocks" value={metrics.publishedBlocks} />
           </section>
 
-          <section className="admin-panel">
-            <div className="admin-panel__head">
-              <div><h2>CMS workspace</h2><p>Pages and their ordered blocks stay in one connected editing flow.</p></div>
-              <div className="admin-content-system__toolbar">
-                <button className="admin-link-button" type="button" disabled={isRefreshingCatalog} onClick={handleRefreshCatalog}>
-                  {isRefreshingCatalog ? "Refreshing catalog..." : "Refresh aviation data"}
-                </button>
-                <button className="admin-link-button" type="button" onClick={startNewPage}>New page</button>
-              </div>
-            </div>
-
-            <div className="admin-content-system__filters">
-              <label className="admin-search">
-                <Search size={16} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search page key, title, slug" />
-              </label>
-            </div>
-
-            <div className="admin-content-system__layout">
-              <div className="admin-content-system__list">
-                {filteredPages.length ? filteredPages.map((item) => (
-                  <article key={item.id} className={`admin-content-system__row ${selectedPageId === item.id ? "is-active" : ""}`} onClick={() => setSelectedPageId(item.id)}>
-                    <strong>{item.title}</strong>
-                    <div className="admin-content-system__badges">
-                      <span className="admin-content-system__badge">{item.page_key}</span>
-                      <span className="admin-content-system__badge">{item.status}</span>
-                      <span className="admin-content-system__badge">{item.locale}</span>
-                    </div>
-                    <p>{item.slug}</p>
-                    <small>{blocks.filter((block) => block.page_id === item.id).length} blocks</small>
-                  </article>
-                )) : <div className="admin-content-system__empty">No CMS pages found.</div>}
+          <section className="admin-content-cms__layout">
+            <aside className="admin-panel admin-content-cms__navigator">
+              <div className="admin-content-cms__navigator-head">
+                <div>
+                  <span className="admin-content-cms__eyebrow">Page library</span>
+                  <h2>Pages</h2>
+                </div>
+                <div className="admin-content-cms__navigator-meta">
+                  <strong>{filteredPages.length}</strong>
+                  <small>visible</small>
+                </div>
               </div>
 
-              <div className="admin-content-system__subgrid">
-                <section className="admin-panel">
-                  <div className="admin-panel__head">
-                    <div><h2>{pageDraft.id ? "Edit page" : "Create page"}</h2><p>Page shell with SEO and publication metadata.</p></div>
+              <div className="admin-content-cms__search-wrap">
+                <label className="admin-search">
+                  <Search size={16} />
+                  <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder="Search page key, title, slug" />
+                </label>
+              </div>
+
+              <div className="admin-content-system__list admin-content-cms__page-list">
+                {filteredPages.length ? filteredPages.map((item) => {
+                  const pageBlockCount = blocks.filter((block) => block.page_id === item.id).length;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`admin-content-system__row admin-content-cms__page-card ${selectedPageId === item.id ? "is-active" : ""}`}
+                      onClick={() => setSelectedPageId(item.id)}
+                    >
+                      <div className="admin-content-cms__page-card-head">
+                        <div>
+                          <strong>{item.title || item.page_key || "Untitled page"}</strong>
+                          <p>{item.slug || "/"}</p>
+                        </div>
+                        <span className="admin-content-cms__page-card-count">{pageBlockCount}</span>
+                      </div>
+                      <div className="admin-content-system__badges">
+                        <span className="admin-content-system__badge">{item.page_key}</span>
+                        <span className="admin-content-system__badge">{item.status}</span>
+                        <span className="admin-content-system__badge">{item.locale}</span>
+                      </div>
+                      <div className="admin-content-cms__page-card-footer">
+                        <small>{pageBlockCount} blocks</small>
+                        <small>{selectedPageId === item.id ? "Editing now" : "Open editor"}</small>
+                      </div>
+                    </button>
+                  );
+                }) : <div className="admin-content-system__empty">No CMS pages found.</div>}
+              </div>
+            </aside>
+
+            <div className="admin-content-cms__editor">
+              <section className="admin-panel admin-content-cms__panel">
+                <div className="admin-content-cms__panel-head">
+                  <div>
+                    <span className="admin-content-cms__eyebrow">Page shell</span>
+                    <h2>{pageDraft.id ? "Edit page" : "Create page"}</h2>
+                    <p>Control routing, publishing state, locale, and SEO metadata for the selected page.</p>
                   </div>
-                  <div className="admin-content-system__form">
+                  {(selectedPage || pageDraft.page_key || pageDraft.title) && (
+                    <div className="admin-content-cms__selection-meta">
+                      <span>{pageDraft.page_key || "new page"}</span>
+                      <span>{pageDraft.status || "draft"}</span>
+                      <span>{pageDraft.locale || "en"}</span>
+                      <span>{selectedPage ? `${pageBlocks.length} blocks` : "not saved yet"}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="admin-content-system__form admin-content-cms__form-shell">
+                  <div className="admin-content-cms__section-card">
+                    <div className="admin-content-cms__section-head">
+                      <h3>Page identity</h3>
+                      <p>Stable key, title, and URL path for navigation and lookup.</p>
+                    </div>
                     <div className="admin-content-system__form-grid">
                       <div className="admin-content-system__field">
                         <label>Page key</label>
@@ -299,10 +349,19 @@ export default function AdminCms() {
                         <label>Title</label>
                         <input value={pageDraft.title} onChange={(event) => setPageDraft((state) => ({ ...state, title: event.target.value }))} />
                       </div>
-                      <div className="admin-content-system__field">
+                      <div className="admin-content-system__field is-wide">
                         <label>Slug</label>
                         <input value={pageDraft.slug} onChange={(event) => setPageDraft((state) => ({ ...state, slug: event.target.value }))} />
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="admin-content-cms__section-card">
+                    <div className="admin-content-cms__section-head">
+                      <h3>Publishing</h3>
+                      <p>Keep locale and publication metadata together for faster page operations.</p>
+                    </div>
+                    <div className="admin-content-system__form-grid">
                       <div className="admin-content-system__field">
                         <label>Status</label>
                         <select value={pageDraft.status} onChange={(event) => setPageDraft((state) => ({ ...state, status: event.target.value }))}>
@@ -315,6 +374,15 @@ export default function AdminCms() {
                         <label>Locale</label>
                         <input value={pageDraft.locale} onChange={(event) => setPageDraft((state) => ({ ...state, locale: event.target.value }))} />
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="admin-content-cms__section-card is-wide">
+                    <div className="admin-content-cms__section-head">
+                      <h3>SEO metadata</h3>
+                      <p>Title and description that shape search previews and page sharing.</p>
+                    </div>
+                    <div className="admin-content-system__form-grid">
                       <div className="admin-content-system__field">
                         <label>SEO title</label>
                         <input value={pageDraft.seo_title} onChange={(event) => setPageDraft((state) => ({ ...state, seo_title: event.target.value }))} />
@@ -324,31 +392,54 @@ export default function AdminCms() {
                         <textarea value={pageDraft.seo_description} onChange={(event) => setPageDraft((state) => ({ ...state, seo_description: event.target.value }))} />
                       </div>
                     </div>
-                    <div className="admin-content-system__actions">
-                      <button className="btn btn--ghost" type="button" onClick={startNewPage}>Reset</button>
-                      <button className="btn btn--primary" type="button" disabled={isSaving} onClick={savePage}>Save page</button>
-                    </div>
                   </div>
-                </section>
 
-                <section className="admin-panel">
-                  <div className="admin-panel__head">
-                    <div><h2>Page blocks</h2><p>Ordered sections that make up the selected page.</p></div>
+                  <div className="admin-content-system__actions">
+                    <button className="btn btn--ghost" type="button" onClick={startNewPage}>Reset</button>
+                    <button className="btn btn--primary" type="button" disabled={isSaving} onClick={savePage}>Save page</button>
+                  </div>
+                </div>
+              </section>
+
+              <section className="admin-panel admin-content-cms__panel">
+                <div className="admin-content-cms__panel-head">
+                  <div>
+                    <span className="admin-content-cms__eyebrow">Block builder</span>
+                    <h2>Page blocks</h2>
+                    <p>Arrange and edit structured sections that compose the selected page.</p>
+                  </div>
+                  <div className="admin-content-cms__panel-actions">
                     <button className="admin-link-button" type="button" onClick={startNewBlock}>New block</button>
                   </div>
+                </div>
 
-                  {selectedPage ? (
-                    <>
-                      <div className="admin-content-system__mini-list">
-                        {pageBlocks.length ? pageBlocks.map((item) => (
-                          <article key={item.id} className={`admin-content-system__mini-row ${selectedBlockId === item.id ? "is-active" : ""}`} onClick={() => setSelectedBlockId(item.id)}>
-                            <strong>{item.title || item.block_key}</strong>
-                            <small>{item.block_type} • order {item.sort_order} • {item.status}</small>
-                          </article>
-                        )) : <div className="admin-content-system__empty">No blocks on this page yet.</div>}
-                      </div>
+                {selectedPage ? (
+                  <>
+                    <div className="admin-content-cms__blocks-board">
+                      {pageBlocks.length ? pageBlocks.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`admin-content-system__mini-row admin-content-cms__block-card ${selectedBlockId === item.id ? "is-active" : ""}`}
+                          onClick={() => setSelectedBlockId(item.id)}
+                        >
+                          <div className="admin-content-cms__block-card-top">
+                            <span className="admin-content-cms__block-order">#{item.sort_order}</span>
+                            <span className="admin-content-system__badge">{item.status}</span>
+                          </div>
+                          <strong>{item.title || item.block_key || "Untitled block"}</strong>
+                          <p>{item.block_type}</p>
+                          <small>{item.block_key}</small>
+                        </button>
+                      )) : <div className="admin-content-system__empty">No blocks on this page yet.</div>}
+                    </div>
 
-                      <div className="admin-content-system__form">
+                    <div className="admin-content-system__form admin-content-cms__form-shell">
+                      <div className="admin-content-cms__section-card">
+                        <div className="admin-content-cms__section-head">
+                          <h3>{blockDraft.id ? "Edit block" : "Create block"}</h3>
+                          <p>Define the block identity, type, status, and sort order before filling content.</p>
+                        </div>
                         <div className="admin-content-system__form-grid">
                           <div className="admin-content-system__field">
                             <label>Block key</label>
@@ -370,6 +461,15 @@ export default function AdminCms() {
                             <label>Sort order</label>
                             <input type="number" value={blockDraft.sort_order} onChange={(event) => setBlockDraft((state) => ({ ...state, sort_order: event.target.value, page_id: selectedPage.id }))} />
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="admin-content-cms__section-card">
+                        <div className="admin-content-cms__section-head">
+                          <h3>Visible content</h3>
+                          <p>Title, body, media, and CTA fields that shape the public block output.</p>
+                        </div>
+                        <div className="admin-content-system__form-grid">
                           <div className="admin-content-system__field is-wide">
                             <label>Title</label>
                             <input value={blockDraft.title} onChange={(event) => setBlockDraft((state) => ({ ...state, title: event.target.value, page_id: selectedPage.id }))} />
@@ -386,26 +486,36 @@ export default function AdminCms() {
                             <label>CTA label</label>
                             <input value={blockDraft.cta_label} onChange={(event) => setBlockDraft((state) => ({ ...state, cta_label: event.target.value, page_id: selectedPage.id }))} />
                           </div>
-                          <div className="admin-content-system__field">
+                          <div className="admin-content-system__field is-wide">
                             <label>CTA link</label>
                             <input value={blockDraft.cta_link} onChange={(event) => setBlockDraft((state) => ({ ...state, cta_link: event.target.value, page_id: selectedPage.id }))} />
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="admin-content-cms__section-card is-wide">
+                        <div className="admin-content-cms__section-head">
+                          <h3>Payload JSON</h3>
+                          <p>Raw structured payload for advanced rendering variants and page-specific data.</p>
+                        </div>
+                        <div className="admin-content-system__form-grid">
                           <div className="admin-content-system__field is-wide">
                             <label>Payload JSON</label>
                             <textarea value={blockDraft.payload_input} onChange={(event) => setBlockDraft((state) => ({ ...state, payload_input: event.target.value, page_id: selectedPage.id }))} />
                           </div>
                         </div>
-                        <div className="admin-content-system__actions">
-                          <button className="btn btn--ghost" type="button" onClick={startNewBlock}>Reset block</button>
-                          <button className="btn btn--primary" type="button" disabled={isSaving} onClick={saveBlock}>Save block</button>
-                        </div>
                       </div>
-                    </>
-                  ) : (
-                    <div className="admin-content-system__empty">Select a page to manage its blocks.</div>
-                  )}
-                </section>
-              </div>
+
+                      <div className="admin-content-system__actions">
+                        <button className="btn btn--ghost" type="button" onClick={startNewBlock}>Reset block</button>
+                        <button className="btn btn--primary" type="button" disabled={isSaving} onClick={saveBlock}>Save block</button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="admin-content-system__empty">Select a page to manage its blocks.</div>
+                )}
+              </section>
             </div>
           </section>
         </>

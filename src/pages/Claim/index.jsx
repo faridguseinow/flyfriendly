@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -30,6 +30,7 @@ import CountryFlag from "../../components/CountryFlag/index.jsx";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import { getLanguageByCode } from "../../i18n/languages.js";
+import { getLocalizedCountryName, PHONE_COUNTRY_OPTIONS } from "../../lib/phoneCountries.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import {
@@ -66,28 +67,12 @@ const languageToLocale = {
 };
 const CLAIM_DRAFT_STORAGE_KEY = "flyFriendlyClaim";
 const CLAIM_DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
-const PHONE_COUNTRY_OPTIONS = [
-  { code: "az", iso: "AZ", label: "Azerbaijan", nativeLabel: "Azərbaycan", dialCode: "+994", localLength: 9, placeholder: "50 123 45 67" },
-  { code: "ru", iso: "RU", label: "Russia", nativeLabel: "Россия", dialCode: "+7", localLength: 10, placeholder: "912 345 67 89" },
-  { code: "tr", iso: "TR", label: "Turkey", nativeLabel: "Türkiye", dialCode: "+90", localLength: 10, placeholder: "532 123 45 67" },
-  { code: "ge", iso: "GE", label: "Georgia", nativeLabel: "საქართველო", dialCode: "+995", localLength: 9, placeholder: "555 12 34 56" },
-  { code: "ua", iso: "UA", label: "Ukraine", nativeLabel: "Україна", dialCode: "+380", localLength: 9, placeholder: "50 123 45 67" },
-  { code: "gb", iso: "GB", label: "United Kingdom", nativeLabel: "United Kingdom", dialCode: "+44", minLength: 9, maxLength: 10, placeholder: "7400 123456" },
-  { code: "de", iso: "DE", label: "Germany", nativeLabel: "Deutschland", dialCode: "+49", minLength: 10, maxLength: 11, placeholder: "1512 3456789" },
-  { code: "pl", iso: "PL", label: "Poland", nativeLabel: "Polska", dialCode: "+48", localLength: 9, placeholder: "512 345 678" },
-  { code: "it", iso: "IT", label: "Italy", nativeLabel: "Italia", dialCode: "+39", localLength: 10, placeholder: "312 345 6789" },
-  { code: "es", iso: "ES", label: "Spain", nativeLabel: "España", dialCode: "+34", localLength: 9, placeholder: "612 34 56 78" },
-  { code: "fr", iso: "FR", label: "France", nativeLabel: "France", dialCode: "+33", localLength: 9, placeholder: "6 12 34 56 78" },
-  { code: "pt", iso: "PT", label: "Portugal", nativeLabel: "Portugal", dialCode: "+351", localLength: 9, placeholder: "912 345 678" },
-  { code: "us", iso: "US", label: "United States", nativeLabel: "United States", dialCode: "+1", localLength: 10, placeholder: "202 555 0186" },
-];
-
 function getPhoneCountryOption(countryCode) {
   return PHONE_COUNTRY_OPTIONS.find((option) => option.code === countryCode) || PHONE_COUNTRY_OPTIONS[0];
 }
 
 function normalizeDialCode(value) {
-  const digits = String(value || "").replace(/\D/g, "").slice(0, 4);
+  const digits = String(value || "").replace(/\D/g, "");
   return digits ? `+${digits}` : "";
 }
 
@@ -139,13 +124,26 @@ function buildFullPhoneNumber(dialCode, localNumber) {
   return normalizedDialCode && localDigits ? `${normalizedDialCode}${localDigits}` : normalizedDialCode || localDigits;
 }
 
+function getDialCodeVariants(dialCode) {
+  const digits = String(dialCode || "").replace(/\D/g, "");
+  return digits ? [dialCode, `+${digits}`] : [];
+}
+
 function parseStoredPhone(phone, phoneCountry = "", phoneDialCode = "", phoneLocalNumber = "") {
   if (phoneCountry || phoneDialCode || phoneLocalNumber) {
-    const composed = String(phone || buildFullPhoneNumber(phoneDialCode, phoneLocalNumber) || phoneLocalNumber || "").trim();
+    const nextCountry = phoneCountry || "az";
+    const nextDialCode = normalizeDialCode(phoneDialCode) || getPhoneCountryOption(nextCountry).dialCode;
+    const fullPhoneDigits = phoneDigits(phone);
+    const dialDigits = phoneDigits(nextDialCode);
+    const inferredLocalNumber = fullPhoneDigits.startsWith(dialDigits)
+      ? fullPhoneDigits.slice(dialDigits.length)
+      : fullPhoneDigits;
+    const nextLocalNumber = formatLocalPhoneNumber(phoneLocalNumber || inferredLocalNumber || phone || "", nextCountry);
+    const composed = buildFullPhoneNumber(nextDialCode, nextLocalNumber);
     return {
-      phoneCountry: phoneCountry || "az",
-      phoneDialCode: normalizeDialCode(phoneDialCode) || "",
-      phoneLocalNumber: composed,
+      phoneCountry: nextCountry,
+      phoneDialCode: nextDialCode,
+      phoneLocalNumber: nextLocalNumber,
       phone: composed,
     };
   }
@@ -160,32 +158,58 @@ function parseStoredPhone(phone, phoneCountry = "", phoneDialCode = "", phoneLoc
     };
   }
 
+  const normalizedRaw = raw.replace(/\s+/g, "");
+  if (normalizedRaw.startsWith("+")) {
+    const matched = [...PHONE_COUNTRY_OPTIONS]
+      .sort((a, b) => phoneDigits(b.dialCode).length - phoneDigits(a.dialCode).length)
+      .find((option) => getDialCodeVariants(option.dialCode).some((variant) => normalizedRaw.startsWith(variant.replace(/\s+/g, ""))));
+
+    if (matched) {
+      const dialDigits = phoneDigits(matched.dialCode);
+      const localDigits = phoneDigits(normalizedRaw).slice(dialDigits.length);
+      const localNumber = formatLocalPhoneNumber(localDigits, matched.code);
+      return {
+        phoneCountry: matched.code,
+        phoneDialCode: matched.dialCode,
+        phoneLocalNumber: localNumber,
+        phone: buildFullPhoneNumber(matched.dialCode, localNumber),
+      };
+    }
+  }
+
+  const defaultOption = getPhoneCountryOption("az");
+  const localNumber = formatLocalPhoneNumber(raw, defaultOption.code);
   return {
-    phoneCountry: "az",
-    phoneDialCode: "",
-    phoneLocalNumber: raw,
-    phone: raw,
+    phoneCountry: defaultOption.code,
+    phoneDialCode: normalizeDialCode(defaultOption.dialCode),
+    phoneLocalNumber: localNumber,
+    phone: buildFullPhoneNumber(defaultOption.dialCode, localNumber),
   };
 }
 
 function getPhoneError(data, t) {
-  const phone = String(data.phone || data.phoneLocalNumber || "").trim();
-  const normalized = phone.replace(/[^\d+()\-\s]/g, "");
-  const digits = phoneDigits(normalized);
-
-  if (!digits) {
+  const option = getPhoneCountryOption(data.phoneCountry);
+  const localDigits = phoneDigits(data.phoneLocalNumber || "");
+  if (!localDigits) {
     return t("claim.contact.phoneInvalid", { defaultValue: "Please enter a valid phone number." });
   }
 
-  if (digits.length < 7 || digits.length > 15) {
-    return t("claim.contact.phoneInvalid", { defaultValue: "Please enter a valid phone number." });
-  }
+  const minLength = option.localLength || option.minLength || 7;
+  const maxLength = option.localLength || option.maxLength || 15;
 
-  if (normalized.startsWith("+") && !/^\+[\d()\-\s]+$/.test(normalized)) {
+  if (localDigits.length < minLength || localDigits.length > maxLength) {
     return t("claim.contact.phoneInvalid", { defaultValue: "Please enter a valid phone number." });
   }
 
   return "";
+}
+
+function getSortedPhoneCountries(locale) {
+  return [...PHONE_COUNTRY_OPTIONS].sort((left, right) => {
+    const leftName = getLocalizedCountryName(left, locale);
+    const rightName = getLocalizedCountryName(right, locale);
+    return leftName.localeCompare(rightName, locale, { sensitivity: "base" });
+  });
 }
 
 function normalizeAirportValue(value) {
@@ -358,6 +382,25 @@ function addMonths(date, amount) {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1);
 }
 
+function startOfDay(date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function isFutureDay(date, today) {
+  return startOfDay(date).getTime() > startOfDay(today).getTime();
+}
+
+function isSameCalendarDay(left, right) {
+  if (!(left instanceof Date) || Number.isNaN(left.getTime())) return false;
+  if (!(right instanceof Date) || Number.isNaN(right.getTime())) return false;
+
+  return left.getFullYear() === right.getFullYear()
+    && left.getMonth() === right.getMonth()
+    && left.getDate() === right.getDate();
+}
+
 function buildCalendarDays(viewDate) {
   const monthStart = getMonthStart(viewDate);
   const startDay = (monthStart.getDay() + 6) % 7;
@@ -454,21 +497,146 @@ function Field({
   );
 }
 
-function PhoneField({ data, onChange, error = "", t }) {
+function PhoneField({ data, onChange, error = "", t, i18n }) {
+  const rootRef = useRef(null);
+  const searchRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const locale = i18n.resolvedLanguage || i18n.language || "en";
+  const selectedCountry = getPhoneCountryOption(data.phoneCountry || "az");
+  const sortedCountries = useMemo(() => getSortedPhoneCountries(locale), [locale]);
+  const filteredCountries = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return sortedCountries;
+    }
+
+    return sortedCountries.filter((option) => {
+      const localizedName = getLocalizedCountryName(option, locale).toLowerCase();
+      return localizedName.includes(query)
+        || option.label.toLowerCase().includes(query)
+        || option.iso.toLowerCase().includes(query)
+        || option.code.toLowerCase().includes(query)
+        || option.dialCode.toLowerCase().includes(query);
+    });
+  }, [locale, search, sortedCountries]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const onPointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearch("");
+      return;
+    }
+
+    const timerId = window.setTimeout(() => searchRef.current?.focus(), 0);
+    return () => window.clearTimeout(timerId);
+  }, [isOpen]);
+
+  const phonePlaceholder = selectedCountry.placeholder || t("claim.contact.phonePlaceholder");
+
   return (
-    <label className={`claim-phone-field claim-phone-field--plain${error ? " is-error" : ""}`}>
-      <Phone size={18} strokeWidth={1.8} aria-hidden="true" />
-      <input
-        name="phone"
-        type="tel"
-        inputMode="tel"
-        value={data.phone || ""}
-        onChange={(event) => onChange("phone", event.target.value)}
-        placeholder={t("claim.contact.phonePlaceholder")}
-        aria-invalid={Boolean(error)}
-        aria-label={t("claim.contact.phone")}
-      />
-    </label>
+    <div className={`claim-phone-field${error ? " is-error" : ""}${isOpen ? " is-open" : ""}`} ref={rootRef}>
+      <label className="claim-phone-field__control">
+        <button
+          type="button"
+          className="claim-phone-field__country"
+          onClick={() => setIsOpen((current) => !current)}
+          aria-expanded={isOpen}
+          aria-label={t("claim.contact.phoneSearchPlaceholder")}
+        >
+          <CountryFlag code={selectedCountry.code} size={18} />
+          <span className="claim-phone-field__dial">{normalizeDialCode(selectedCountry.dialCode)}</span>
+          <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
+
+        <span className="claim-phone-field__divider" aria-hidden="true" />
+
+        <Phone size={18} strokeWidth={1.8} aria-hidden="true" />
+
+        <input
+          className="claim-phone-field__input"
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          value={data.phoneLocalNumber || ""}
+          onChange={(event) => onChange("localNumber", event.target.value)}
+          placeholder={phonePlaceholder}
+          aria-invalid={Boolean(error)}
+          aria-label={t("claim.contact.phone")}
+        />
+      </label>
+
+      {isOpen ? (
+        <div className="claim-phone-field__dropdown">
+          <label className="claim-phone-field__search">
+            <Search size={16} strokeWidth={2} aria-hidden="true" />
+            <input
+              ref={searchRef}
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t("claim.contact.phoneSearchPlaceholder")}
+              aria-label={t("claim.contact.phoneSearchPlaceholder")}
+            />
+          </label>
+
+          <div className="claim-phone-field__options" role="listbox" aria-label={t("claim.contact.phoneSearchPlaceholder")}>
+            {filteredCountries.length ? filteredCountries.map((option) => {
+              const isSelected = option.code === selectedCountry.code;
+              return (
+                <button
+                  type="button"
+                  key={option.code}
+                  className={`claim-phone-field__option${isSelected ? " is-selected" : ""}`}
+                  onClick={() => {
+                    onChange("country", option.code);
+                    setIsOpen(false);
+                  }}
+                >
+                  <span className="claim-phone-field__option-flag">
+                    <CountryFlag code={option.code} size={18} />
+                  </span>
+                  <span className="claim-phone-field__option-label">
+                    {getLocalizedCountryName(option, locale)}
+                  </span>
+                  <span className="claim-phone-field__option-code">{normalizeDialCode(option.dialCode)}</span>
+                  {isSelected ? <Check size={16} strokeWidth={2.2} aria-hidden="true" /> : null}
+                </button>
+              );
+            }) : (
+              <div className="claim-phone-field__empty">
+                {t("claim.contact.phoneSearchEmpty")}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -479,16 +647,22 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
   const panelRef = useRef(null);
   const { t, i18n } = useTranslation();
   const locale = getLocale(getLanguageByCode(lang || i18n.resolvedLanguage || i18n.language).code);
-  const selectedDate = parseDateInputValue(value);
+  const selectedDate = useMemo(() => parseDateInputValue(value), [value]);
+  const today = useMemo(() => startOfDay(new Date()), []);
   const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+  const [viewDate, setViewDate] = useState(() => {
+    if (selectedDate && !isFutureDay(selectedDate, today)) {
+      return selectedDate;
+    }
+    return today;
+  });
   const [panelPosition, setPanelPosition] = useState({ top: 0, left: 0, width: 340, maxHeight: 420 });
 
   useEffect(() => {
-    if (selectedDate) {
-      setViewDate(selectedDate);
+    if (selectedDate && !isFutureDay(selectedDate, today)) {
+      setViewDate((current) => (isSameCalendarDay(current, selectedDate) ? current : selectedDate));
     }
-  }, [value]);
+  }, [selectedDate, today]);
 
   useEffect(() => {
     const onPointerDown = (event) => {
@@ -565,10 +739,10 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
     return weekdayFormatter.format(day).replace(/\./g, "");
   });
   const days = buildCalendarDays(viewDate);
-  const today = new Date();
   const todayValue = formatDateInputValue(today);
   const selectedValue = selectedDate ? formatDateInputValue(selectedDate) : "";
   const currentMonth = viewDate.getMonth();
+  const isCurrentOrPastMonth = getMonthStart(viewDate).getTime() < getMonthStart(today).getTime();
 
   const commitValue = (nextValue) => {
     onChange({ target: { name, type: "text", value: nextValue } });
@@ -601,7 +775,17 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
               <ChevronLeft size={18} strokeWidth={2.2} />
             </button>
             <strong>{monthFormatter.format(viewDate)}</strong>
-            <button type="button" className="claim-date-picker__nav" onClick={() => setViewDate((current) => addMonths(current, 1))} aria-label={t("claim.datePicker.nextMonth", { defaultValue: "Next month" })}>
+            <button
+              type="button"
+              className="claim-date-picker__nav"
+              onClick={() => {
+                if (isCurrentOrPastMonth) {
+                  setViewDate((current) => addMonths(current, 1));
+                }
+              }}
+              aria-label={t("claim.datePicker.nextMonth", { defaultValue: "Next month" })}
+              disabled={!isCurrentOrPastMonth}
+            >
               <ChevronRight size={18} strokeWidth={2.2} />
             </button>
           </div>
@@ -616,13 +800,19 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
               const isCurrentMonth = day.getMonth() === currentMonth;
               const isSelected = dayValue === selectedValue;
               const isToday = dayValue === todayValue;
+              const isFuture = isFutureDay(day, today);
 
               return (
                 <button
                   type="button"
                   key={dayValue}
-                  className={`claim-date-picker__day${isCurrentMonth ? "" : " is-outside"}${isSelected ? " is-selected" : ""}${isToday ? " is-today" : ""}`}
-                  onClick={() => commitValue(dayValue)}
+                  className={`claim-date-picker__day${isCurrentMonth ? "" : " is-outside"}${isSelected ? " is-selected" : ""}${isToday ? " is-today" : ""}${isFuture ? " is-disabled" : ""}`}
+                  onClick={() => {
+                    if (!isFuture) {
+                      commitValue(dayValue);
+                    }
+                  }}
+                  disabled={isFuture}
                 >
                   {day.getDate()}
                 </button>
@@ -990,7 +1180,7 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
 }
 
 function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, emailError, phoneError, isSaving }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <form className="claim-form" onSubmit={onNext}>
@@ -1008,7 +1198,7 @@ function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, emailError
         <small className="claim-field-help">{t("claim.contact.optional")}</small>
         <label className="claim-wide-field">
           <span>{t("claim.contact.phone")}</span>
-          <PhoneField data={data} onChange={onPhoneChange} error={phoneError} t={t} />
+          <PhoneField data={data} onChange={onPhoneChange} error={phoneError} t={t} i18n={i18n} />
           {phoneError ? <small className="claim-field-error">{phoneError}</small> : null}
         </label>
         <label className="claim-check"><input type="checkbox" name="whatsapp" checked={Boolean(data.whatsapp)} onChange={onChange} /> {t("claim.contact.hasWhatsapp")}</label>
@@ -1419,11 +1609,18 @@ function ClaimFlow() {
         }
 
         setReusablePassportDocument(prefill.passportDocument || null);
+        const parsedPhone = parseStoredPhone(
+          prefill.phone,
+          prefill.phoneCountry,
+          prefill.phoneDialCode,
+          prefill.phoneLocalNumber,
+        );
+
         setData((current) => ({
           ...current,
           fullName: current.fullName || prefill.fullName || "",
           email: current.email || prefill.email || "",
-          phone: current.phone || prefill.phone || "",
+          ...(current.phone || current.phoneLocalNumber ? {} : parsedPhone),
           city: current.city || prefill.city || "",
           preferredLanguage: current.preferredLanguage || prefill.preferredLanguage || current.preferredLanguage || "",
           whatsapp: typeof current.whatsapp === "boolean" ? current.whatsapp : Boolean(prefill.whatsapp),
@@ -1686,11 +1883,19 @@ function ClaimFlow() {
   };
 
   const onPhoneChange = (kind, value) => {
-    const nextPhone = String(value || "").replace(/[^\d+()\-\s]/g, "");
+    const nextCountry = kind === "country"
+      ? getPhoneCountryOption(value)
+      : getPhoneCountryOption(data.phoneCountry || "az");
+    const nextDialCode = normalizeDialCode(nextCountry.dialCode);
+    const nextLocalNumber = kind === "country"
+      ? formatLocalPhoneNumber(data.phoneLocalNumber || "", nextCountry.code)
+      : formatLocalPhoneNumber(String(value || "").replace(/[^\d()\-\s]/g, ""), nextCountry.code);
     const nextData = {
       ...data,
-      phoneLocalNumber: nextPhone,
-      phone: nextPhone,
+      phoneCountry: nextCountry.code,
+      phoneDialCode: nextDialCode,
+      phoneLocalNumber: nextLocalNumber,
+      phone: buildFullPhoneNumber(nextDialCode, nextLocalNumber),
     };
 
     setData(nextData);

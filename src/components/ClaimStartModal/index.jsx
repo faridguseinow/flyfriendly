@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Lock, Mail, Phone, User, X } from "lucide-react";
 import logoImage from "../../assets/icons/logo-image.svg";
+import PasswordField from "../forms/PasswordField.jsx";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
+import { getPasswordValidationError } from "../../lib/passwordValidation.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import { signInCustomer, signUpCustomer } from "../../services/authService.js";
 import "./style.scss";
@@ -67,6 +69,14 @@ function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo =
     if (!isSupabaseConfigured) {
       setError(t("claimModal.supabaseMissing"));
       return;
+    }
+
+    if (isSignup) {
+      const passwordValidationError = getPasswordValidationError(form.password, t, "claimModal.passwordRequirements");
+      if (passwordValidationError) {
+        setError(passwordValidationError);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -148,19 +158,36 @@ function ClaimStartModal({ isOpen, onClose, initialMode = "signup", redirectTo =
               </label>
               <label>
                 <span>{t("claimModal.password")}</span>
-                <div>
-                  <Lock size={18} strokeWidth={1.8} aria-hidden="true" />
-                  <input name="password" value={form.password} onChange={updateField} type="password" placeholder={t("claimModal.passwordCreatePlaceholder")} minLength={6} required />
-                </div>
+                <PasswordField
+                  className="claim-modal__input"
+                  icon={Lock}
+                  name="password"
+                  value={form.password}
+                  onChange={updateField}
+                  placeholder={t("claimModal.passwordCreatePlaceholder")}
+                  autoComplete="new-password"
+                  required
+                />
               </label>
+              <p className="claim-modal__hint">
+                {t("claimModal.passwordRequirements", {
+                  defaultValue: "Password must be at least 8 characters and include 1 uppercase letter and 1 special character.",
+                })}
+              </p>
             </>
           ) : (
             <label>
               <span>{t("claimModal.password")}</span>
-              <div>
-                <Lock size={18} strokeWidth={1.8} aria-hidden="true" />
-                <input name="password" value={form.password} onChange={updateField} type="password" placeholder={t("claimModal.passwordEnterPlaceholder")} required />
-              </div>
+              <PasswordField
+                className="claim-modal__input"
+                icon={Lock}
+                name="password"
+                value={form.password}
+                onChange={updateField}
+                placeholder={t("claimModal.passwordEnterPlaceholder")}
+                autoComplete="current-password"
+                required
+              />
             </label>
           )}
 

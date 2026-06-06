@@ -24,6 +24,8 @@
     "globalReachCopy": "Serving millions of passengers in all countries, speaking all languages.",
     "scrollToTop": "Scroll to top",
     "loadingAccount": "Loading account...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "compensationSliderAmount": "Amount of compensation",
     "compensationSliderAria": "Flight distance {{distance}}, compensation €{{amount}}",
     "compensationSliderInput": "Flight distance in kilometers"
@@ -76,7 +78,7 @@
     "password": "Password",
     "fullNamePlaceholder": "Enter Your Full Name",
     "emailPlaceholder": "Enter Your Email",
-    "phonePlaceholder": "E.g.: 050 XXX XX XX",
+    "phonePlaceholder": "Enter your phone number",
     "passwordCreatePlaceholder": "Create Your Password",
     "passwordEnterPlaceholder": "Enter Your Password",
     "forgotPassword": "Forgot password?",
@@ -88,7 +90,8 @@
     "signUp": "Sign Up",
     "supabaseMissing": "Supabase env is missing. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.",
     "confirmEmailNotice": "Check your email to confirm your account, then log in to continue.",
-    "authError": "Could not authenticate. Please try again."
+    "authError": "Could not authenticate. Please try again.",
+    "passwordRequirements": "Password must be at least 8 characters and include 1 uppercase letter and 1 special character."
   },
   "about": {
     "heroLabel": "About Fly Friendly",
@@ -531,7 +534,7 @@
       "addressPlaceholder": "Enter Your City",
       "optional": "Optional",
       "phone": "Contact Number (WhatsApp preferred)",
-      "phonePlaceholder": "E.g.: 050 XXX XX XX",
+      "phonePlaceholder": "Enter your phone number",
       "hasWhatsapp": "Yes, this number has Whatsapp.",
       "requiredToProceed": "Required to proceed.",
       "phoneSearchPlaceholder": "Search for countries",
@@ -1036,8 +1039,12 @@
       "confirmPassword": "Confirm password"
     },
     "placeholders": {
+      "fullName": "For example: John Smith",
       "email": "you@example.com",
-      "password": "Enter your password"
+      "phone": "For example: +44 7400 123456",
+      "password": "Enter your password",
+      "passwordCreate": "Create a password",
+      "confirmPassword": "Repeat your password"
     },
     "register": {
       "legalText": "I agree to the <termsLink>Terms of Use</termsLink> and <privacyLink>Privacy Policy</privacyLink>.",
@@ -1052,6 +1059,9 @@
       "submit": "Create account",
       "loginPrompt": "Already have an account?",
       "loginLink": "Sign in"
+    },
+    "validation": {
+      "passwordRequirements": "Password must be at least 8 characters and include 1 uppercase letter and 1 special character."
     }
   },
   "partnerApply": {
@@ -1511,6 +1521,7 @@
       "passwordPlaceholder": "At least 8 characters",
       "confirmPasswordPlaceholder": "Repeat the password",
       "passwordMin": "Use at least 8 characters.",
+      "passwordRequirements": "Password must be at least 8 characters and include 1 uppercase letter and 1 special character.",
       "passwordsMismatch": "Passwords do not match.",
       "updatePassword": "Update password",
       "passwordUpdated": "Password updated.",

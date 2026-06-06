@@ -105,10 +105,10 @@ export function resolveProfilePath(profile, partnerProfile, adminAccess = null) 
   }
 
   if (normalizedRole === "partner") {
-    return "/partner/profile";
+    return "/partner/dashboard";
   }
 
-  return "/client/account";
+  return "/client/dashboard";
 }
 
 function isClientPath(path) {
