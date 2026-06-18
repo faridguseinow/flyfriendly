@@ -273,6 +273,30 @@ export async function updatePassword(newPassword) {
   return data;
 }
 
+export async function updateCurrentUserMetadata(input = {}) {
+  const client = requireSupabase();
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new Error("Please sign in before updating your profile.");
+  }
+
+  const nextMetadata = cleanObject({
+    ...(user.user_metadata || {}),
+    ...cleanObject(input),
+  });
+
+  const { data, error } = await client.auth.updateUser({
+    data: nextMetadata,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.user || user;
+}
+
 export async function getCurrentProfile() {
   const client = requireSupabase();
   const user = await getCurrentUser();

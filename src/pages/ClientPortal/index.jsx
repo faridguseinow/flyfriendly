@@ -35,6 +35,7 @@ import { useTranslation } from "react-i18next";
 import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
 import ProfileAvatarUploader from "../../components/profile/ProfileAvatarUploader.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
+import { updateCurrentUserMetadata } from "../../services/authService.js";
 import { languages } from "../../i18n/languages.js";
 import { getInitials, getProfileAvatarUrl, uploadProfileAvatar, validateAvatarFile } from "../../lib/profileAvatar.js";
 import { requireSupabase } from "../../lib/supabase.js";
@@ -2273,6 +2274,9 @@ function ClientAccountPageInner() {
         avatar_url: nextAvatarUrl,
         preferred_language: form.preferred_language,
       });
+      if (avatarFile && nextAvatarUrl) {
+        await updateCurrentUserMetadata({ avatar_url: nextAvatarUrl }).catch(() => null);
+      }
       await refreshProfile();
       setForm((current) => ({ ...current, avatar_url: nextAvatarUrl }));
       setAvatarFile(null);

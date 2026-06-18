@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import ProfileAvatarUploader, { ProfileAvatar } from "../../components/profile/ProfileAvatarUploader.jsx";
 import { LocalizedLink, LocalizedNavLink } from "../../components/LocalizedLink.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
+import { updateCurrentUserMetadata } from "../../services/authService.js";
 import { languages } from "../../i18n/languages.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { contactEmail } from "../../constants/site.js";
@@ -774,6 +775,9 @@ export function PartnerProfilePage() {
         }),
         updatePreferredLanguage(form.preferred_language),
       ]);
+      if (avatarFile && nextAvatarUrl) {
+        await updateCurrentUserMetadata({ avatar_url: nextAvatarUrl }).catch(() => null);
+      }
       await refreshProfile();
       setForm((current) => ({ ...current, avatar_url: nextAvatarUrl }));
       setAvatarFile(null);

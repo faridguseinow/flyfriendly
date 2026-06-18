@@ -22,11 +22,43 @@
       name="twitter:description"
       content="Fly Friendly helps passengers claim compensation for delayed, canceled, overbooked, and missed connection flights."
     />
+    <!-- Meta Pixel Code -->
+    <script>
+      !(function (f, b, e, v, n, t, s) {
+        if (f.fbq) return;
+        n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n;
+        n.loaded = true;
+        n.version = "2.0";
+        n.queue = [];
+        t = b.createElement(e);
+        t.async = true;
+        t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+      fbq("init", "2657249931344243");
+      fbq("track", "PageView");
+    </script>
+    <!-- End Meta Pixel Code -->
     <script src="https://app.inlyne.ai/scripts/preview.js" async></script>
     <link rel="icon" type="image/svg+xml" href="/src/assets/icons/logo-image.svg" />
     <title>Fly Friendly - Flight Compensation</title>
   </head>
   <body>
+    <!-- Meta Pixel Code -->
+    <noscript>
+      <img
+        height="1"
+        width="1"
+        style="display: none"
+        src="https://www.facebook.com/tr?id=2657249931344243&ev=PageView&noscript=1"
+      />
+    </noscript>
+    <!-- End Meta Pixel Code -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

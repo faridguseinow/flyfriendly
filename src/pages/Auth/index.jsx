@@ -19,6 +19,7 @@ import { resolveDashboardPath, resolvePostAuthPath } from "../../auth/routeUtils
 import { ensureCurrentUserProfile } from "../../services/authService.js";
 import { getPasswordValidationError } from "../../lib/passwordValidation.js";
 import { isSupabaseConfigured, requireSupabase } from "../../lib/supabase.js";
+import { buildPublicAuthUrl } from "../../lib/siteUrl.js";
 import "./style.scss";
 
 function AuthShell({ title, text, children }) {
@@ -53,12 +54,46 @@ function resolveLocalizedDashboardPath(toLocalizedPath, nextAuth) {
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const toLocalizedPath = useLocalizedPath();
-  const { refreshProfile } = useAuth();
+  const {
+    refreshProfile,
+    isAuthenticated,
+    loading: authLoading,
+    profile,
+    partnerProfile,
+    adminAccess,
+  } = useAuth();
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const googleRedirectTo = useMemo(
+    () => buildPublicAuthUrl(`${location.pathname}${location.search}${location.hash}`),
+    [location.hash, location.pathname, location.search],
+  );
+
+  useEffect(() => {
+    if (authLoading || !isAuthenticated) {
+      return;
+    }
+
+    const returnTo = getReturnPath(searchParams);
+    const rawNextPath = resolvePostAuthPath(returnTo, profile, partnerProfile, adminAccess)
+      || resolveDashboardPath(profile, partnerProfile, adminAccess)
+      || "/client/dashboard";
+
+    navigate(toLocalizedPath(rawNextPath), { replace: true });
+  }, [
+    adminAccess,
+    authLoading,
+    isAuthenticated,
+    navigate,
+    partnerProfile,
+    profile,
+    searchParams,
+    toLocalizedPath,
+  ]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -87,6 +122,7 @@ export function LoginPage() {
       text={t("auth.login.text", { defaultValue: "Sign in to view your claims, documents, and payout updates." })}
     >
       <GoogleSignInButton
+        redirectTo={googleRedirectTo}
         disabled={isSubmitting}
         onAuthError={(authError) => {
           setError(authError.message || t("auth.login.googleError", { defaultValue: "Could not continue with Google. Please try again." }));
@@ -141,7 +177,14 @@ export function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const toLocalizedPath = useLocalizedPath();
-  const { refreshProfile } = useAuth();
+  const {
+    refreshProfile,
+    isAuthenticated,
+    loading: authLoading,
+    profile,
+    partnerProfile,
+    adminAccess,
+  } = useAuth();
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -153,6 +196,16 @@ export function RegisterPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (authLoading || !isAuthenticated) {
+      return;
+    }
+
+    navigate(resolveLocalizedDashboardPath(toLocalizedPath, { profile, partnerProfile, adminAccess }), {
+      replace: true,
+    });
+  }, [adminAccess, authLoading, isAuthenticated, navigate, partnerProfile, profile, toLocalizedPath]);
 
   const submit = async (event) => {
     event.preventDefault();
