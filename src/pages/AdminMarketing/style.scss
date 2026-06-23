@@ -1,0 +1,259 @@
+.admin-marketing__workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-marketing-page {
+  .admin-page-header {
+    margin-bottom: 0;
+  }
+
+  .admin-filter-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0;
+  }
+
+  .admin-filter-bar__date-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    span {
+      display: none;
+    }
+  }
+}
+
+.admin-marketing__state {
+  display: grid;
+  gap: 6px;
+
+  strong {
+    font-size: 15px;
+    line-height: 22px;
+  }
+
+  span {
+    color: var(--admin-text-secondary);
+    font-size: 13px;
+    line-height: 20px;
+  }
+}
+
+.admin-marketing__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-marketing__kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  small {
+    display: block;
+    color: var(--admin-text-secondary);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 24px;
+    line-height: 30px;
+    font-weight: 700;
+  }
+}
+
+.admin-marketing__kpi-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+
+  &.is-blue {
+    background: rgba(59, 130, 246, 0.14);
+    color: #2563eb;
+  }
+
+  &.is-green {
+    background: rgba(34, 197, 94, 0.14);
+    color: #15803d;
+  }
+
+  &.is-orange {
+    background: rgba(249, 115, 22, 0.14);
+    color: #c2410c;
+  }
+
+  &.is-violet {
+    background: rgba(124, 58, 237, 0.14);
+    color: #7c3aed;
+  }
+}
+
+.admin-marketing__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-marketing__panel {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-marketing__panel-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-marketing__panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 650;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: var(--admin-text-secondary);
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+.admin-marketing__panel-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--admin-text-secondary);
+}
+
+.admin-marketing__empty {
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.admin-marketing__bars {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-marketing__bar-row {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-marketing__bar-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  strong,
+  span {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  span {
+    color: var(--admin-text-secondary);
+  }
+}
+
+.admin-marketing__bar-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.admin-marketing__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2dd4bf 0%, #2563eb 100%);
+}
+
+.admin-marketing__table-wrap {
+  overflow-x: auto;
+}
+
+.admin-marketing__table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  th {
+    color: var(--admin-text-secondary);
+    font-weight: 600;
+  }
+
+  td strong {
+    display: block;
+    font-weight: 600;
+  }
+
+  td span {
+    display: block;
+    margin-top: 4px;
+    color: var(--admin-text-secondary);
+    font-size: 12px;
+    line-height: 17px;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-marketing__kpis,
+  .admin-marketing__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-marketing-page {
+    .admin-filter-bar {
+      justify-content: stretch;
+    }
+
+    .admin-filter-bar__date-range {
+      width: 100%;
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .admin-marketing__kpis,
+  .admin-marketing__grid {
+    grid-template-columns: 1fr;
+  }
+}
