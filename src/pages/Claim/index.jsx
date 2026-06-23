@@ -32,6 +32,7 @@ import { useAuth } from "../../auth/AuthContext.jsx";
 import { getLanguageByCode } from "../../i18n/languages.js";
 import { getLocalizedCountryName, PHONE_COUNTRY_OPTIONS } from "../../lib/phoneCountries.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
+import { trackAnalyticsEvent } from "../../lib/analyticsTracker.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
 import {
   describeAirlineOption,
@@ -47,6 +48,7 @@ import {
   submitClaimServerSide,
   submitLead,
 } from "../../services/leadService.js";
+import { clearReferralAttribution } from "../../services/referralService.js";
 import "./style.scss";
 
 const stages = ["eligibility", "contact", "documents", "finish"];
@@ -67,6 +69,24 @@ const languageToLocale = {
 };
 const CLAIM_DRAFT_STORAGE_KEY = "flyFriendlyClaim";
 const CLAIM_DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
+const CLAIM_SUBMITTED_ANALYTICS_KEY = "fly-friendly-claim-submitted";
+const CLAIM_FIELD_SELECTORS = {
+  departure: 'input[name="departure"]',
+  destination: 'input[name="destination"]',
+  airline: 'input[name="airline"]',
+  delayDuration: 'input[name="delayDuration"]',
+  date: '[data-field-name="date"] button',
+  direct: 'input[name="direct"]',
+  connectionCity: 'input[name="connectionCity"]',
+  fullName: 'input[name="fullName"]',
+  email: 'input[name="email"]',
+  phone: 'input[name="phone"]',
+  passport: 'input[data-document-type="passport"]',
+  boarding_pass: 'input[data-document-type="boarding_pass"]',
+  reason: 'textarea[name="reason"]',
+  signatureDataUrl: 'canvas[data-field-name="signatureDataUrl"]',
+  termsAccepted: 'input[name="termsAccepted"]',
+};
 function getPhoneCountryOption(countryCode) {
   return PHONE_COUNTRY_OPTIONS.find((option) => option.code === countryCode) || PHONE_COUNTRY_OPTIONS[0];
 }
@@ -239,6 +259,30 @@ function clearStoredClaimDraft() {
   }
 }
 
+function wasClaimSubmissionTracked(trackingKey) {
+  if (typeof window === "undefined" || !trackingKey) {
+    return false;
+  }
+
+  try {
+    return window.sessionStorage.getItem(`${CLAIM_SUBMITTED_ANALYTICS_KEY}:${trackingKey}`) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markClaimSubmissionTracked(trackingKey) {
+  if (typeof window === "undefined" || !trackingKey) {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(`${CLAIM_SUBMITTED_ANALYTICS_KEY}:${trackingKey}`, "true");
+  } catch {
+    // Ignore restrictive storage modes.
+  }
+}
+
 function readStoredClaimDraft() {
   if (typeof window === "undefined") return {};
 
@@ -320,6 +364,30 @@ function hasStoredClaimDraftContent(draft) {
   );
 }
 
+function focusClaimField(fieldName) {
+  if (typeof window === "undefined" || !fieldName) {
+    return;
+  }
+
+  const selector = CLAIM_FIELD_SELECTORS[fieldName];
+  if (!selector) {
+    return;
+  }
+
+  window.setTimeout(() => {
+    const element = window.document.querySelector(selector);
+    if (!element) {
+      return;
+    }
+
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (typeof element.focus === "function") {
+      element.focus({ preventScroll: true });
+    }
+  }, 30);
+}
+
 function getEmailError(value, t) {
   const email = String(value || "").trim();
   if (!email || !emailPattern.test(email)) {
@@ -340,6 +408,21 @@ function formatFileSize(bytes) {
 
   const megabytes = bytes / (1024 * 1024);
   return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`;
+}
+
+function buildSafeApprovedClaimData(data = {}, override = {}) {
+  return {
+    leadId: data.leadId || "",
+    leadCode: data.leadCode || "",
+    departure: data.departure || "",
+    destination: data.destination || "",
+    airline: data.airline || "",
+    date: data.date || "",
+    fullName: data.fullName || "",
+    email: data.email || "",
+    preferredLanguage: data.preferredLanguage || data.language || "",
+    ...override,
+  };
 }
 
 function getLocale(language) {
@@ -640,7 +723,7 @@ function PhoneField({ data, onChange, error = "", t, i18n }) {
   );
 }
 
-function DatePickerField({ icon: Icon, name, value, onChange }) {
+function DatePickerField({ icon: Icon, name, value, onChange, error = "" }) {
   const { lang } = useParams();
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -750,8 +833,14 @@ function DatePickerField({ icon: Icon, name, value, onChange }) {
   };
 
   return (
-    <div className={`claim-date-picker${isOpen ? " is-open" : ""}`} ref={rootRef}>
-      <button type="button" className="claim-field claim-date-picker__trigger" ref={triggerRef} onClick={() => setIsOpen((current) => !current)}>
+    <div className={`claim-date-picker${isOpen ? " is-open" : ""}`} ref={rootRef} data-field-name={name}>
+      <button
+        type="button"
+        className={`claim-field claim-date-picker__trigger${error ? " is-error" : ""}`}
+        ref={triggerRef}
+        onClick={() => setIsOpen((current) => !current)}
+        aria-invalid={Boolean(error)}
+      >
         <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
         <span className={`claim-date-picker__value${selectedValue ? "" : " is-placeholder"}`}>
           {selectedValue ? valueFormatter.format(selectedDate) : (t("claim.datePicker.placeholder", { defaultValue: "Select date" }))}
@@ -848,6 +937,7 @@ function SearchCombobox({
   onSelect,
   renderOption,
   emptyLabel,
+  error = "",
 }) {
   const rootRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -905,7 +995,7 @@ function SearchCombobox({
 
   return (
     <div className={`claim-combobox${isOpen ? " is-open" : ""}`} ref={rootRef}>
-      <label className="claim-field">
+      <label className={`claim-field${error ? " is-error" : ""}`}>
         <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
         <input
           name={name}
@@ -918,6 +1008,7 @@ function SearchCombobox({
           onKeyDown={onKeyDown}
           autoComplete="off"
           placeholder={placeholder}
+          aria-invalid={Boolean(error)}
         />
         <ChevronDown size={18} strokeWidth={1.8} aria-hidden="true" />
       </label>
@@ -1005,7 +1096,7 @@ function PromoCard() {
   );
 }
 
-function UploadBox({ title, documentType, icon: Icon, file, existingDocument = null, onFile }) {
+function UploadBox({ title, documentType, icon: Icon, file, existingDocument = null, onFile, error = "" }) {
   const { t } = useTranslation();
 
   const dropFile = (event) => {
@@ -1014,11 +1105,12 @@ function UploadBox({ title, documentType, icon: Icon, file, existingDocument = n
   };
 
   return (
-    <label className={`upload-box${file ? " has-file" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={dropFile}>
+    <label className={`upload-box${file ? " has-file" : ""}${error ? " is-error" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={dropFile}>
       <input
         type="file"
         required={!file && !existingDocument}
         accept=".png,.jpg,.jpeg,.pdf"
+        data-document-type={documentType}
         onChange={(event) => onFile(documentType, event.target.files?.[0] || null)}
       />
       <span><Icon size={34} strokeWidth={1.8} /></span>
@@ -1052,7 +1144,7 @@ function FileRow({ file, done, onRemove, metaText = "" }) {
   );
 }
 
-function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions, isSaving }) {
+function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, airlineOptions, isSaving, errors = {} }) {
   const { t } = useTranslation();
 
   return (
@@ -1060,40 +1152,48 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
       <section className="claim-question">
         <h3>{t("claim.eligibility.whereDidYouFly")}</h3>
         <div className="claim-two">
-          <SearchCombobox
-            icon={PlaneTakeoff}
-            name="departure"
-            value={data.departure}
-            placeholder={t("claim.eligibility.departurePlaceholder")}
-            options={airportOptions.departure}
-            onInputChange={onChange}
-            onSelect={onSelect}
-            renderOption={(option) => ({
-              title: option.title,
-              subtitle: option.subtitle,
-              meta: option.meta,
-              countryCode: option.countryCode,
-              code: option.code,
-            })}
-            emptyLabel={t("claim.eligibility.noAirportsFound")}
-          />
-          <SearchCombobox
-            icon={PlaneLanding}
-            name="destination"
-            value={data.destination}
-            placeholder={t("claim.eligibility.arrivalPlaceholder")}
-            options={airportOptions.destination}
-            onInputChange={onChange}
-            onSelect={onSelect}
-            renderOption={(option) => ({
-              title: option.title,
-              subtitle: option.subtitle,
-              meta: option.meta,
-              countryCode: option.countryCode,
-              code: option.code,
-            })}
-            emptyLabel={t("claim.eligibility.noAirportsFound")}
-          />
+          <div>
+            <SearchCombobox
+              icon={PlaneTakeoff}
+              name="departure"
+              value={data.departure}
+              placeholder={t("claim.eligibility.departurePlaceholder")}
+              options={airportOptions.departure}
+              onInputChange={onChange}
+              onSelect={onSelect}
+              renderOption={(option) => ({
+                title: option.title,
+                subtitle: option.subtitle,
+                meta: option.meta,
+                countryCode: option.countryCode,
+                code: option.code,
+              })}
+              emptyLabel={t("claim.eligibility.noAirportsFound")}
+              error={errors.departure}
+            />
+            {errors.departure ? <small className="claim-field-error">{errors.departure}</small> : null}
+          </div>
+          <div>
+            <SearchCombobox
+              icon={PlaneLanding}
+              name="destination"
+              value={data.destination}
+              placeholder={t("claim.eligibility.arrivalPlaceholder")}
+              options={airportOptions.destination}
+              onInputChange={onChange}
+              onSelect={onSelect}
+              renderOption={(option) => ({
+                title: option.title,
+                subtitle: option.subtitle,
+                meta: option.meta,
+                countryCode: option.countryCode,
+                code: option.code,
+              })}
+              emptyLabel={t("claim.eligibility.noAirportsFound")}
+              error={errors.destination}
+            />
+            {errors.destination ? <small className="claim-field-error">{errors.destination}</small> : null}
+          </div>
         </div>
       </section>
       <section className="claim-question">
@@ -1112,7 +1212,9 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
             code: option.code,
           })}
           emptyLabel={t("claim.eligibility.noAirlinesFound")}
+          error={errors.airline}
         />
+        {errors.airline ? <small className="claim-field-error">{errors.airline}</small> : null}
       </section>
       <section className="claim-question">
         <div className="claim-question-title">
@@ -1120,31 +1222,34 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
           <h3>{t("claim.eligibility.delayTitle")}</h3>
         </div>
         <div className="claim-option-grid">
-          <label className={`claim-choice-card${data.delayDuration === "less_than_3" ? " is-selected" : ""}`}>
+          <label className={`claim-choice-card${data.delayDuration === "less_than_3" ? " is-selected" : ""}${errors.delayDuration ? " is-error" : ""}`}>
             <input type="radio" name="delayDuration" value="less_than_3" checked={data.delayDuration === "less_than_3"} onChange={onChange} required />
             <strong>{t("claim.eligibility.lessThan3")}</strong>
             <small>{t("claim.eligibility.notEligible")}</small>
           </label>
-          <label className={`claim-choice-card${data.delayDuration === "more_than_3" ? " is-selected" : ""}`}>
+          <label className={`claim-choice-card${data.delayDuration === "more_than_3" ? " is-selected" : ""}${errors.delayDuration ? " is-error" : ""}`}>
             <input type="radio" name="delayDuration" value="more_than_3" checked={data.delayDuration === "more_than_3"} onChange={onChange} required />
             <strong>{t("claim.eligibility.moreThan3")}</strong>
             <small>{t("claim.eligibility.eligibleForClaim")}</small>
           </label>
-          <label className={`claim-choice-card${data.delayDuration === "cancelled" ? " is-selected" : ""}`}>
+          <label className={`claim-choice-card${data.delayDuration === "cancelled" ? " is-selected" : ""}${errors.delayDuration ? " is-error" : ""}`}>
             <input type="radio" name="delayDuration" value="cancelled" checked={data.delayDuration === "cancelled"} onChange={onChange} required />
             <strong>{t("claim.eligibility.cancelled")}</strong>
             <small>{t("claim.eligibility.specialRights")}</small>
           </label>
         </div>
+        {errors.delayDuration ? <small className="claim-field-error">{errors.delayDuration}</small> : null}
       </section>
       <section className="claim-question">
         <h3>{t("claim.eligibility.scheduledDepartureDate")}</h3>
-        <DatePickerField icon={Calendar} name="date" value={data.date} onChange={onChange} />
+        <DatePickerField icon={Calendar} name="date" value={data.date} onChange={onChange} error={errors.date} />
+        {errors.date ? <small className="claim-field-error">{errors.date}</small> : null}
       </section>
       <section className="claim-question">
         <h3>{t("claim.eligibility.directFlight")}</h3>
-        <label className="claim-radio"><input type="radio" name="direct" value="yes" checked={data.direct === "yes"} onChange={onChange} required /> {t("claim.eligibility.directYes")}</label>
-        <label className="claim-radio"><input type="radio" name="direct" value="no" checked={data.direct === "no"} onChange={onChange} required /> {t("claim.eligibility.directNo")}</label>
+        <label className={`claim-radio${errors.direct ? " is-error" : ""}`}><input type="radio" name="direct" value="yes" checked={data.direct === "yes"} onChange={onChange} required /> {t("claim.eligibility.directYes")}</label>
+        <label className={`claim-radio${errors.direct ? " is-error" : ""}`}><input type="radio" name="direct" value="no" checked={data.direct === "no"} onChange={onChange} required /> {t("claim.eligibility.directNo")}</label>
+        {errors.direct ? <small className="claim-field-error">{errors.direct}</small> : null}
         {data.direct === "no" ? (
           <label className="claim-wide-field">
             <span>{t("claim.eligibility.connectionCity")}</span>
@@ -1164,8 +1269,10 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
                 code: option.code,
               })}
               emptyLabel={t("claim.eligibility.noAirportsFound")}
+              error={errors.connectionCity}
             />
             <small className="claim-field-help">{t("claim.eligibility.connectionCityHelp")}</small>
+            {errors.connectionCity ? <small className="claim-field-error">{errors.connectionCity}</small> : null}
           </label>
         ) : null}
       </section>
@@ -1179,7 +1286,7 @@ function EligibilityStep({ data, onChange, onSelect, onNext, airportOptions, air
   );
 }
 
-function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, emailError, phoneError, isSaving }) {
+function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, errors = {}, isSaving }) {
   const { t, i18n } = useTranslation();
 
   return (
@@ -1187,19 +1294,23 @@ function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, emailError
       <section className="claim-question">
         <h3>{t("claim.contact.title")}</h3>
         <div className="claim-two">
-          <label><span>{t("claim.contact.fullName")}</span><Field icon={User} name="fullName" value={data.fullName} onChange={onChange} placeholder={t("claim.contact.fullNamePlaceholder")} required /></label>
+          <label>
+            <span>{t("claim.contact.fullName")}</span>
+            <Field icon={User} name="fullName" value={data.fullName} onChange={onChange} placeholder={t("claim.contact.fullNamePlaceholder")} required error={errors.fullName} />
+            {errors.fullName ? <small className="claim-field-error">{errors.fullName}</small> : null}
+          </label>
           <label>
             <span>{t("claim.contact.email")}</span>
-            <Field icon={Mail} name="email" value={data.email} onChange={onChange} placeholder={t("claim.contact.emailPlaceholder")} required error={emailError} />
-            {emailError ? <small className="claim-field-error">{emailError}</small> : null}
+            <Field icon={Mail} name="email" value={data.email} onChange={onChange} placeholder={t("claim.contact.emailPlaceholder")} required error={errors.email} />
+            {errors.email ? <small className="claim-field-error">{errors.email}</small> : null}
           </label>
         </div>
         <label className="claim-wide-field"><span>{t("claim.contact.address")}</span><Field icon={MapPin} name="city" value={data.city} onChange={onChange} placeholder={t("claim.contact.addressPlaceholder")} /></label>
         <small className="claim-field-help">{t("claim.contact.optional")}</small>
         <label className="claim-wide-field">
           <span>{t("claim.contact.phone")}</span>
-          <PhoneField data={data} onChange={onPhoneChange} error={phoneError} t={t} i18n={i18n} />
-          {phoneError ? <small className="claim-field-error">{phoneError}</small> : null}
+          <PhoneField data={data} onChange={onPhoneChange} error={errors.phone} t={t} i18n={i18n} />
+          {errors.phone ? <small className="claim-field-error">{errors.phone}</small> : null}
         </label>
         <label className="claim-check"><input type="checkbox" name="whatsapp" checked={Boolean(data.whatsapp)} onChange={onChange} /> {t("claim.contact.hasWhatsapp")}</label>
         <small className="claim-field-help">{t("claim.contact.requiredToProceed")}</small>
@@ -1214,7 +1325,7 @@ function ContactStep({ data, onChange, onPhoneChange, onNext, onBack, emailError
   );
 }
 
-function DocumentsStep({ data, files, reusablePassportDocument, onChange, onFile, onRemoveFile, onNext, onBack, isSaving }) {
+function DocumentsStep({ data, files, reusablePassportDocument, onChange, onFile, onRemoveFile, onNext, onBack, isSaving, errors = {} }) {
   const { t } = useTranslation();
 
   return (
@@ -1223,8 +1334,14 @@ function DocumentsStep({ data, files, reusablePassportDocument, onChange, onFile
         <h3>{t("claim.documents.title")}</h3>
         <p>{t("claim.documents.subtitle")}</p>
         <div className="claim-upload-grid">
-          <UploadBox title={t("claim.documents.passport")} documentType="passport" icon={User} file={files.passport} existingDocument={!files.passport ? reusablePassportDocument : null} onFile={onFile} />
-          <UploadBox title={t("claim.documents.boardingPass")} documentType="boarding_pass" icon={FileText} file={files.boarding_pass} onFile={onFile} />
+          <div>
+            <UploadBox title={t("claim.documents.passport")} documentType="passport" icon={User} file={files.passport} existingDocument={!files.passport ? reusablePassportDocument : null} onFile={onFile} error={errors.passport} />
+            {errors.passport ? <small className="claim-field-error">{errors.passport}</small> : null}
+          </div>
+          <div>
+            <UploadBox title={t("claim.documents.boardingPass")} documentType="boarding_pass" icon={FileText} file={files.boarding_pass} onFile={onFile} error={errors.boarding_pass} />
+            {errors.boarding_pass ? <small className="claim-field-error">{errors.boarding_pass}</small> : null}
+          </div>
         </div>
         {files.passport ? <FileRow file={files.passport} done onRemove={() => onRemoveFile("passport")} /> : null}
         {!files.passport && reusablePassportDocument ? (
@@ -1238,7 +1355,8 @@ function DocumentsStep({ data, files, reusablePassportDocument, onChange, onFile
       </section>
       <section className="claim-question">
         <h3>{t("claim.documents.reasonTitle")}</h3>
-        <textarea name="reason" value={data.reason || ""} onChange={onChange} placeholder={t("claim.documents.reasonPlaceholder")} minLength={3} maxLength={200} required />
+        <textarea className={errors.reason ? "is-error" : ""} name="reason" value={data.reason || ""} onChange={onChange} placeholder={t("claim.documents.reasonPlaceholder")} minLength={3} maxLength={200} required aria-invalid={Boolean(errors.reason)} />
+        {errors.reason ? <small className="claim-field-error">{errors.reason}</small> : null}
         <small className="claim-limit">{(data.reason || "").length}/200</small>
       </section>
 
@@ -1250,7 +1368,7 @@ function DocumentsStep({ data, files, reusablePassportDocument, onChange, onFile
   );
 }
 
-function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
+function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving, errors = {} }) {
   const { t } = useTranslation();
   const canvasRef = useRef(null);
   const [hasInk, setHasInk] = useState(Boolean(data.signatureDataUrl));
@@ -1423,19 +1541,23 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
         <p>{t("claim.finish.subtitle")}</p>
         <div className="claim-sign__field">
           <label>{t("claim.finish.digitalSignature")}</label>
-          <div className="claim-signature-pad">
+          <div className={`claim-signature-pad${errors.signatureDataUrl ? " is-error" : ""}`}>
             <canvas
               ref={canvasRef}
+              data-field-name="signatureDataUrl"
+              tabIndex={0}
               onPointerDown={beginSignature}
               onPointerMove={drawSignature}
               onPointerUp={endSignature}
               onPointerLeave={endSignature}
               onPointerCancel={endSignature}
               aria-label={t("claim.finish.digitalSignature")}
+              aria-invalid={Boolean(errors.signatureDataUrl)}
             />
             <button type="button" onClick={clearSignature}>{t("claim.finish.clear")}</button>
           </div>
           <small>{t("claim.finish.signatureHint")}</small>
+          {errors.signatureDataUrl ? <small className="claim-field-error">{errors.signatureDataUrl}</small> : null}
         </div>
 
         <div className="claim-note">
@@ -1443,16 +1565,17 @@ function FinishStep({ data, onSignature, onChange, onNext, onBack, isSaving }) {
           <p>{t("claim.documents.signatureNote")}</p>
         </div>
 
-        <label className="claim-sign__terms">
+        <label className={`claim-sign__terms claim-check${errors.termsAccepted ? " is-error" : ""}`}>
           <input type="checkbox" name="termsAccepted" checked={Boolean(data.termsAccepted)} onChange={onChange} required />
           <span>
             <Trans i18nKey="claim.finish.terms" components={{ termsLink: <LocalizedLink to="/terms" /> }} />
           </span>
         </label>
+        {errors.termsAccepted ? <small className="claim-field-error">{errors.termsAccepted}</small> : null}
       </section>
       <div className="claim-actions">
         <button className="claim-back" type="button" onClick={onBack}>{t("common.back")}</button>
-        <button className="btn btn-primary" type="submit" disabled={isSaving || !hasInk || !data.termsAccepted}>
+        <button className="btn btn-primary" type="submit" disabled={isSaving}>
           {isSaving ? t("common.submitting") : t("common.submitClaim")}
         </button>
       </div>
@@ -1573,8 +1696,7 @@ function ClaimFlow() {
   const [isSaving, setIsSaving] = useState(false);
   const [syncError, setSyncError] = useState("");
   const [syncNotice, setSyncNotice] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [phoneError, setPhoneError] = useState("");
+  const [errors, setErrors] = useState({});
   const activeIndex = Math.max(0, stages.indexOf(stage));
   const currentLanguageCode = getLanguageByCode(lang || i18n.resolvedLanguage || i18n.language).code;
 
@@ -1583,6 +1705,99 @@ function ClaimFlow() {
     language: currentLanguageCode,
     preferredLanguage: currentLanguageCode,
   });
+
+  const clearFieldError = (fieldName) => {
+    setErrors((current) => {
+      if (!current[fieldName]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[fieldName];
+      return next;
+    });
+  };
+
+  const validateCurrentStep = (currentStage, currentData = data, currentFiles = files) => {
+    const nextErrors = {};
+    const selectOptionError = t("claim.validation.selectOption");
+
+    if (currentStage === "eligibility") {
+      if (!currentData.departureAirportId) {
+        nextErrors.departure = selectOptionError;
+      }
+
+      if (!currentData.destinationAirportId) {
+        nextErrors.destination = selectOptionError;
+      }
+
+      if (!currentData.airlineId) {
+        nextErrors.airline = selectOptionError;
+      }
+
+      if (!String(currentData.date || "").trim()) {
+        nextErrors.date = t("claim.validation.flightDateRequired");
+      }
+
+      if (!String(currentData.delayDuration || "").trim()) {
+        nextErrors.delayDuration = t("claim.validation.delayDurationRequired");
+      }
+
+      if (!String(currentData.direct || "").trim()) {
+        nextErrors.direct = t("claim.validation.directRequired");
+      }
+
+      if (currentData.direct === "no" && !currentData.connectionAirportId) {
+        nextErrors.connectionCity = selectOptionError;
+      }
+
+      if (hasSameAirportSelection(currentData)) {
+        nextErrors.destination = t("claim.eligibility.sameAirportError");
+      }
+    }
+
+    if (currentStage === "contact") {
+      if (!String(currentData.fullName || "").trim()) {
+        nextErrors.fullName = t("claim.validation.fullNameRequired");
+      }
+
+      const nextEmailError = getEmailError(currentData.email, t);
+      if (nextEmailError) {
+        nextErrors.email = nextEmailError;
+      }
+
+      const nextPhoneError = getPhoneError(currentData, t);
+      if (nextPhoneError) {
+        nextErrors.phone = nextPhoneError;
+      }
+    }
+
+    if (currentStage === "documents") {
+      if (!currentFiles?.passport && !reusablePassportDocument) {
+        nextErrors.passport = t("claim.validation.passportRequired");
+      }
+
+      if (!currentFiles?.boarding_pass) {
+        nextErrors.boarding_pass = t("claim.validation.boardingPassRequired");
+      }
+
+      if (!String(currentData.reason || "").trim()) {
+        nextErrors.reason = t("claim.validation.reasonRequired");
+      }
+    }
+
+    if (currentStage === "finish") {
+      if (!currentData.signatureDataUrl) {
+        nextErrors.signatureDataUrl = t("claim.validation.signatureRequired");
+      }
+
+      if (!currentData.termsAccepted) {
+        nextErrors.termsAccepted = t("claim.validation.termsRequired");
+      }
+    }
+
+    return nextErrors;
+  };
 
   useEffect(() => {
     const draft = buildStoredClaimDraft(data, stage, currentLanguageCode);
@@ -1608,7 +1823,6 @@ function ClaimFlow() {
           return;
         }
 
-        setReusablePassportDocument(prefill.passportDocument || null);
         const parsedPhone = parseStoredPhone(
           prefill.phone,
           prefill.phoneCountry,
@@ -1624,8 +1838,6 @@ function ClaimFlow() {
           city: current.city || prefill.city || "",
           preferredLanguage: current.preferredLanguage || prefill.preferredLanguage || current.preferredLanguage || "",
           whatsapp: typeof current.whatsapp === "boolean" ? current.whatsapp : Boolean(prefill.whatsapp),
-          signatureDataUrl: current.signatureDataUrl || prefill.signatureDataUrl || "",
-          termsAccepted: typeof current.termsAccepted === "boolean" ? current.termsAccepted : Boolean(prefill.termsAccepted),
         }));
       })
       .catch(() => null);
@@ -1635,17 +1847,23 @@ function ClaimFlow() {
     };
   }, [isAuthenticated]);
 
-  const go = (nextStage, nextData = data, nextFiles = files) => navigate(
-    toLocalizedPath(`/claim/${nextStage}`),
-    {
-      state: {
-        claimFlow: {
-          data: nextData,
-          files: nextFiles,
+  const go = (nextStage, nextData = data, nextFiles = files) => {
+    const isTerminalStage = nextStage === "approved" || nextStage === "denied";
+    const navigationData = isTerminalStage ? buildSafeApprovedClaimData(nextData) : nextData;
+    const navigationFiles = isTerminalStage ? {} : nextFiles;
+
+    navigate(
+      toLocalizedPath(`/claim/${nextStage}`),
+      {
+        state: {
+          claimFlow: {
+            data: navigationData,
+            files: navigationFiles,
+          },
         },
       },
-    },
-  );
+    );
+  };
 
   useEffect(() => {
     if (!["documents", "finish"].includes(stage)) {
@@ -1671,6 +1889,24 @@ function ClaimFlow() {
       clearStoredClaimDraft();
     }
   }, [stage]);
+
+  useEffect(() => {
+    setErrors({});
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== "approved") {
+      return;
+    }
+
+    const trackingKey = data.leadId || data.leadCode || data.email || "";
+    if (!trackingKey || wasClaimSubmissionTracked(trackingKey)) {
+      return;
+    }
+
+    markClaimSubmissionTracked(trackingKey);
+    void trackAnalyticsEvent("claim_submitted");
+  }, [data.email, data.leadCode, data.leadId, stage]);
 
   useEffect(() => {
     if (stage !== "eligibility") {
@@ -1785,15 +2021,21 @@ function ClaimFlow() {
     }
 
     if (hasSameAirportSelection(nextData)) {
-      setSyncError(
-        t("claim.eligibility.sameAirportError", {
-          defaultValue: "Departure and arrival airports must be different.",
-        }),
-      );
+      const message = t("claim.eligibility.sameAirportError", {
+        defaultValue: "Departure and arrival airports must be different.",
+      });
+      setErrors((current) => ({ ...current, destination: message }));
+      setSyncError(t("claim.validation.summary"));
       return;
     }
 
     setSyncError("");
+    if (name === "departure" || name === "destination") {
+      clearFieldError("departure");
+      clearFieldError("destination");
+    } else {
+      clearFieldError(name);
+    }
     setData(nextData);
   };
 
@@ -1826,19 +2068,19 @@ function ClaimFlow() {
       nextData.connectionAirportSource = null;
     }
 
-    if ((name === "departure" || name === "destination") && syncError) {
-      setSyncError("");
+    setSyncError("");
+    if (name === "departure" || name === "destination") {
+      clearFieldError("departure");
+      clearFieldError("destination");
+    } else {
+      clearFieldError(name);
     }
-
     setData(nextData);
   };
 
   const onChange = (eventOrName, maybeValue) => {
     if (typeof eventOrName === "string") {
       onFieldInput(eventOrName, maybeValue);
-      if (eventOrName === "email" && emailError) {
-        setEmailError(getEmailError(maybeValue, t));
-      }
       return;
     }
 
@@ -1871,15 +2113,9 @@ function ClaimFlow() {
       nextData.connectionAirportSource = null;
     }
 
-    if ((name === "departure" || name === "destination") && syncError) {
-      setSyncError("");
-    }
-
+    setSyncError("");
+    clearFieldError(name);
     setData(nextData);
-
-    if (name === "email" && emailError) {
-      setEmailError(getEmailError(value, t));
-    }
   };
 
   const onPhoneChange = (kind, value) => {
@@ -1899,17 +2135,18 @@ function ClaimFlow() {
     };
 
     setData(nextData);
-
-    if (phoneError) {
-      setPhoneError(getPhoneError(nextData, t));
-    }
+    setSyncError("");
+    clearFieldError("phone");
   };
 
   const onFile = (documentType, file) => {
+    setSyncError("");
+    clearFieldError(documentType);
     setFiles((current) => ({ ...current, [documentType]: file }));
   };
 
   const onRemoveFile = (documentType) => {
+    setSyncError("");
     setFiles((current) => {
       const next = { ...current };
       delete next[documentType];
@@ -1918,6 +2155,8 @@ function ClaimFlow() {
   };
 
   const onSignature = (signatureDataUrl) => {
+    setSyncError("");
+    clearFieldError("signatureDataUrl");
     setData((current) => ({ ...current, signatureDataUrl }));
   };
 
@@ -1946,22 +2185,11 @@ function ClaimFlow() {
 
     setSyncError("");
     setSyncNotice("");
-
-    if (stage === "eligibility" && hasSameAirportSelection(data)) {
-      setSyncError(
-        t("claim.eligibility.sameAirportError", {
-          defaultValue: "Departure and arrival airports must be different.",
-        }),
-      );
-      return;
-    }
-
-    if (stage === "eligibility" && data.direct === "no" && !String(data.connectionCity || "").trim()) {
-      setSyncError(
-        t("claim.eligibility.connectionCityRequired", {
-          defaultValue: "Please enter the city where you changed planes.",
-        }),
-      );
+    const nextErrors = validateCurrentStep(stage);
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      setSyncError(t("claim.validation.summary"));
+      focusClaimField(Object.keys(nextErrors)[0]);
       return;
     }
 
@@ -1971,7 +2199,11 @@ function ClaimFlow() {
           const { leadId, nextData } = await ensureLead();
           await submitLead(leadId, withCurrentLanguage(), "not_eligible");
           clearStoredClaimDraft();
-          go("denied", nextData, files);
+          const safeDeniedData = buildSafeApprovedClaimData(nextData);
+          setFiles({});
+          setReusablePassportDocument(null);
+          setData(safeDeniedData);
+          go("denied", safeDeniedData, {});
         } catch (error) {
           setSyncError(error.message || t("claim.status.saveLeadError"));
           return;
@@ -1980,23 +2212,6 @@ function ClaimFlow() {
 
       setSyncNotice(t("claim.status.notEligible"));
       return;
-    }
-
-    if (stage === "contact") {
-      const nextEmailError = getEmailError(data.email, t);
-      if (nextEmailError) {
-        setEmailError(nextEmailError);
-        return;
-      }
-
-      const nextPhoneError = getPhoneError(data, t);
-      if (nextPhoneError) {
-        setPhoneError(nextPhoneError);
-        return;
-      }
-
-      setEmailError("");
-      setPhoneError("");
     }
 
     if (!isSupabaseConfigured) {
@@ -2025,10 +2240,6 @@ function ClaimFlow() {
       }
 
       if (stage === "finish") {
-        if (!data.signatureDataUrl || !data.termsAccepted) {
-          throw new Error(t("claim.status.signatureRequired"));
-        }
-
         const finishNotices = [];
         const result = await submitClaimServerSide(leadId, withCurrentLanguage());
 
@@ -2059,6 +2270,17 @@ function ClaimFlow() {
         }
 
         clearStoredClaimDraft();
+        clearReferralAttribution();
+        const safeApprovedData = buildSafeApprovedClaimData(nextData, {
+          leadId,
+          leadCode: result?.leadCode || nextData.leadCode || "",
+        });
+        setFiles({});
+        setReusablePassportDocument(null);
+        setErrors({});
+        setData(safeApprovedData);
+        go(nextStage, safeApprovedData, {});
+        return;
       }
 
       if (stage !== "finish") {
@@ -2075,8 +2297,8 @@ function ClaimFlow() {
   const renderStage = () => {
     if (stage === "denied") return <DeniedResult data={data} />;
     if (stage === "approved") return <ApprovedResult data={data} />;
-    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onPhoneChange={onPhoneChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} emailError={emailError} phoneError={phoneError} isSaving={isSaving} />;
-    if (stage === "documents") return <DocumentsStep data={data} files={files} reusablePassportDocument={reusablePassportDocument} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} isSaving={isSaving} />;
+    if (stage === "contact") return <ContactStep data={data} onChange={onChange} onPhoneChange={onPhoneChange} onNext={(event) => submit("documents", event)} onBack={() => go("eligibility")} errors={errors} isSaving={isSaving} />;
+    if (stage === "documents") return <DocumentsStep data={data} files={files} reusablePassportDocument={reusablePassportDocument} onChange={onChange} onFile={onFile} onRemoveFile={onRemoveFile} onNext={(event) => submit("finish", event)} onBack={() => go("contact")} errors={errors} isSaving={isSaving} />;
     if (stage === "finish") {
       return (
         <FinishStep
@@ -2085,6 +2307,7 @@ function ClaimFlow() {
           onChange={onChange}
           onNext={(event) => submit("approved", event)}
           onBack={() => go("documents")}
+          errors={errors}
           isSaving={isSaving}
         />
       );
@@ -2106,6 +2329,7 @@ function ClaimFlow() {
           )),
         }}
         airlineOptions={airlineMatches}
+        errors={errors}
         isSaving={isSaving}
       />
     );

@@ -292,7 +292,7 @@ function getDateBucket(value) {
 }
 
 export default function AdminTeam() {
-  const { user, isAdminUser, hasAnyPermission } = useAdminAuth();
+  const { user, isOwnerOrSuperAdmin, hasAnyPermission, hasPermission } = useAdminAuth();
   const [teamModule, setTeamModule] = useState(null);
   const [rolesModule, setRolesModule] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -324,7 +324,8 @@ export default function AdminTeam() {
   });
   const [accessRoleId, setAccessRoleId] = useState("");
 
-  const canManageEmployees = isAdminUser || hasAnyPermission(["team.view", "users.view", "team.manage", "roles.manage", "menu.manage"]);
+  const canManageEmployees = isOwnerOrSuperAdmin || hasAnyPermission(["team.manage", "users.manage"]);
+  const canManageRoles = isOwnerOrSuperAdmin || hasPermission("roles.manage");
 
   const loadModule = async (options = {}) => {
     setIsLoading(true);
@@ -486,6 +487,10 @@ export default function AdminTeam() {
   );
 
   const openEmployeeCreate = () => {
+    if (!canManageEmployees) {
+      return;
+    }
+
     setNotice("");
     setPanel({ type: "employee-create" });
     setEmployeeForm({
@@ -514,12 +519,20 @@ export default function AdminTeam() {
   };
 
   const openRoleCreate = () => {
+    if (!canManageRoles) {
+      return;
+    }
+
     setNotice("");
     setPanel({ type: "role-create" });
     setRoleForm(createRoleForm());
   };
 
   const openRoleEdit = (role) => {
+    if (!canManageRoles) {
+      return;
+    }
+
     const assignedPermissionCodes = (rolesModule?.rolePermissions || [])
       .filter((item) => item.roleCode === role.code)
       .map((item) => item.permissionCode);
@@ -541,6 +554,10 @@ export default function AdminTeam() {
   };
 
   const persistEmployee = async () => {
+    if (!canManageEmployees) {
+      return;
+    }
+
     setIsSaving(true);
     setError("");
     setNotice("");
@@ -583,6 +600,10 @@ export default function AdminTeam() {
   };
 
   const persistRole = async () => {
+    if (!canManageRoles) {
+      return;
+    }
+
     setIsSaving(true);
     setError("");
     setNotice("");
@@ -1592,11 +1613,11 @@ export default function AdminTeam() {
             onClick: () => void loadModule({ force: true }),
             disabled: isLoading,
           },
-          {
+          ...(canManageRoles ? [{
             label: "Create role",
             icon: Plus,
             onClick: openRoleCreate,
-          },
+          }] : []),
         ] : []}
       />
 

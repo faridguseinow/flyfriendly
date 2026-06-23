@@ -40,6 +40,7 @@ import AdminCustomers from "../pages/AdminCustomers/index.jsx";
 import AdminActivity from "../pages/AdminActivity/index.jsx";
 import AdminCommunication from "../pages/AdminCommunication/index.jsx";
 import AdminFinance from "../pages/AdminFinance/index.jsx";
+import AdminMarketing from "../pages/AdminMarketing/index.jsx";
 import AdminPayments from "../pages/AdminPayments/index.jsx";
 import AdminReports from "../pages/AdminReports/index.jsx";
 import AdminCms from "../pages/AdminCms/index.jsx";
@@ -157,7 +158,7 @@ function AnimatedRoutes({ location }) {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={withAdminPermission(<AdminDashboardMain />, "dashboard.view")} />
 
-          <Route path="dashboard/marketing" element={withAdminPermission(adminPlaceholder("Marketing"), "dashboard.view")} />
+          <Route path="dashboard/marketing" element={withAdminPermission(<AdminMarketing />, "reports.view")} />
           <Route
             path="dashboard/revenue"
             element={<AdminRouteGuard anyPermissions={["reports.view", "finance.view"]}><AdminReports /></AdminRouteGuard>}

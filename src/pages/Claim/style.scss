@@ -351,6 +351,16 @@
   border-color: var(--primary);
 }
 
+.claim-choice-card.is-error,
+.claim-radio.is-error,
+.claim-check.is-error,
+.claim-date-picker__trigger.is-error,
+.upload-box.is-error,
+.claim-signature-pad.is-error,
+.claim-question textarea.is-error {
+  border-color: #e35d5d;
+}
+
 .claim-two {
   display: grid;
   grid-template-columns: 1fr 1fr;

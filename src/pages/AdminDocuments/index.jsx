@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, FileImage, FileText, FilterX, FolderOpen, Search, Signature, Ticket, Trash2, UserSquare2 } from "lucide-react";
 import {
+  createClosedDocumentPreviewState,
+  DOCUMENT_ZOOM_STEP,
+  clampDocumentZoom,
+  downloadDocumentFromUrl,
+} from "../../admin/documentPreview.js";
+import AdminDocumentPreviewModal from "../../admin/components/AdminDocumentPreviewModal.jsx";
+import {
   downloadSignaturePng,
   fetchDocumentsCenterData,
   getDocumentDownloadUrl,
@@ -252,6 +259,7 @@ export default function AdminDocuments() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeDownloadId, setActiveDownloadId] = useState("");
   const [activeTrashId, setActiveTrashId] = useState("");
+  const [documentPreview, setDocumentPreview] = useState(createClosedDocumentPreviewState);
 
   const loadDocuments = async () => {
     setError("");
@@ -542,6 +550,45 @@ export default function AdminDocuments() {
     setDrawerMode("");
   };
 
+  const closeDocumentPreview = () => {
+    setDocumentPreview(createClosedDocumentPreviewState());
+  };
+
+  const resolvePreviewUrl = async (item) => {
+    if (!item) return "";
+    if (item.kind === "signature" && item.signature_data_url) return item.signature_data_url;
+    return previewUrls[item.id] || await getDocumentDownloadUrl(item);
+  };
+
+  const openDocumentPreview = async (item) => {
+    if (!item) return;
+    setError("");
+    setDocumentPreview({
+      item,
+      url: "",
+      isLoading: true,
+      error: "",
+      zoom: 1,
+    });
+
+    try {
+      const url = await resolvePreviewUrl(item);
+      setDocumentPreview((current) => (
+        current.item?.id === item.id
+          ? { ...current, url, isLoading: false, error: "" }
+          : current
+      ));
+    } catch (nextError) {
+      const message = nextError.message || "Could not open this document.";
+      setDocumentPreview((current) => (
+        current.item?.id === item.id
+          ? { ...current, isLoading: false, error: message }
+          : current
+      ));
+      setError(message);
+    }
+  };
+
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
@@ -561,14 +608,13 @@ export default function AdminDocuments() {
       if (item.kind === "signature") {
         downloadSignaturePng(item.signature_data_url, `${item.displayName}-${item.reference}.png`);
       } else {
-        const url = await getDocumentDownloadUrl(item);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = item.file_name || "document";
-        link.rel = "noopener";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const url = await resolvePreviewUrl(item);
+        await downloadDocumentFromUrl(url, item.file_name || "document");
+        setDocumentPreview((current) => (
+          current.item?.id === item.id && !current.url
+            ? { ...current, url }
+            : current
+        ));
       }
       void logAdminActivity("download_document", item.kind === "signature" ? "lead_signature" : "document", item.id, {
         module: "documents",
@@ -584,6 +630,23 @@ export default function AdminDocuments() {
     }
   };
 
+  const openDocumentPreviewInNewTab = () => {
+    if (!documentPreview.url) return;
+    window.open(documentPreview.url, "_blank", "noopener,noreferrer");
+  };
+
+  const zoomDocumentIn = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: clampDocumentZoom(current.zoom + DOCUMENT_ZOOM_STEP) }));
+  };
+
+  const zoomDocumentOut = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: clampDocumentZoom(current.zoom - DOCUMENT_ZOOM_STEP) }));
+  };
+
+  const resetDocumentZoom = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: 1 }));
+  };
+
   const handleTrash = async (item) => {
     if (!item || !hasPermission("documents.manage")) return;
     const confirmed = window.confirm(`Move "${item.displayName}" to trash? It will be purged after 30 days unless restored.`);
@@ -595,6 +658,9 @@ export default function AdminDocuments() {
     try {
       await moveDocumentToTrash(item);
       await loadDocuments();
+      if (documentPreview.item?.id === item.id) {
+        setDocumentPreview(createClosedDocumentPreviewState());
+      }
       setSelectedDocumentId("");
       setDrawerMode(selectedFolderKey ? "folder" : "");
     } catch (nextError) {
@@ -792,8 +858,8 @@ export default function AdminDocuments() {
                   <span data-label="Uploaded">{formatDateTime(item.created_at)}</span>
                   <span data-label="Size">{item.kind === "signature" ? "PNG" : formatSize(item.file_size)}</span>
                   <span className="admin-documents-page__row-actions" data-label="Actions" onClick={(event) => event.stopPropagation()}>
-                    <button type="button" className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => handleDownload(item)} disabled={!hasPermission("documents.download") || activeDownloadId === item.id}>
-                      {activeDownloadId === item.id ? "Opening..." : "Open"}
+                    <button type="button" className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => void openDocumentPreview(item)} disabled={!hasPermission("documents.download")}>
+                      Open
                     </button>
                     <button type="button" className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => handleTrash(item)} disabled={!hasPermission("documents.manage") || activeTrashId === item.id}>
                       {activeTrashId === item.id ? "Moving..." : "Trash"}
@@ -944,9 +1010,13 @@ export default function AdminDocuments() {
           overlayClassName="admin-documents-page__overlay"
           overlayLabel="Close drawer"
         >
-          <section className="admin-documents-page__preview-card admin-card-compact">
+          <button
+            type="button"
+            className="admin-documents-page__preview-card admin-card-compact"
+            onClick={() => void openDocumentPreview(activePreviewDocument)}
+          >
             <DocumentPreviewThumb item={activePreviewDocument} previewUrl={getPreviewSource(activePreviewDocument, previewUrls)} large />
-          </section>
+          </button>
 
           <section className="admin-documents-page__summary">
             <article><strong>Type</strong><span>{activePreviewDocument.typeLabel}</span></article>
@@ -972,8 +1042,11 @@ export default function AdminDocuments() {
               <h4>Actions</h4>
             </div>
             <div className="admin-documents-page__drawer-actions">
-              <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleDownload(activePreviewDocument)} disabled={!hasPermission("documents.download") || activeDownloadId === activePreviewDocument.id}>
-                <span>{activeDownloadId === activePreviewDocument.id ? "Opening..." : activePreviewDocument.kind === "signature" ? "Download PNG" : "Open / Download"}</span>
+              <button type="button" className="admin-btn admin-btn-primary" onClick={() => void openDocumentPreview(activePreviewDocument)} disabled={!hasPermission("documents.download")}>
+                <span>Open preview</span>
+              </button>
+              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleDownload(activePreviewDocument)} disabled={!hasPermission("documents.download") || activeDownloadId === activePreviewDocument.id}>
+                <span>{activeDownloadId === activePreviewDocument.id ? "Saving..." : activePreviewDocument.kind === "signature" ? "Download PNG" : "Save file"}</span>
               </button>
               <button type="button" className="admin-btn admin-btn-secondary" disabled title="Document review workflow is not configured in the current backend.">Mark reviewed</button>
               <button type="button" className="admin-btn admin-btn-secondary" disabled title="Replacement request workflow is not configured in the current backend.">Request replacement</button>
@@ -985,6 +1058,24 @@ export default function AdminDocuments() {
           </section>
         </AdminSidePanel>
       ) : null}
+
+      <AdminDocumentPreviewModal
+        document={documentPreview.item}
+        url={documentPreview.url}
+        isLoading={documentPreview.isLoading}
+        error={documentPreview.error}
+        zoom={documentPreview.zoom}
+        isSaving={documentPreview.item ? activeDownloadId === documentPreview.item.id : false}
+        subtitle={documentPreview.item ? `${documentPreview.item.typeLabel || documentPreview.item.document_type || "—"} • ${formatDateTime(documentPreview.item.created_at)}` : ""}
+        saveLabel={documentPreview.item?.kind === "signature" ? "Download PNG" : "Save"}
+        unavailableLabel="Preview is not available."
+        onZoomIn={zoomDocumentIn}
+        onZoomOut={zoomDocumentOut}
+        onZoomReset={resetDocumentZoom}
+        onSave={() => void (documentPreview.item ? handleDownload(documentPreview.item) : Promise.resolve())}
+        onOpenInNewTab={openDocumentPreviewInNewTab}
+        onClose={closeDocumentPreview}
+      />
     </div>
   );
 }

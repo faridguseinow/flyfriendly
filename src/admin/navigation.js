@@ -33,7 +33,7 @@ const adminNavigationSectionsConfig = [
     route: "/admin",
     pages: [
       { key: "dashboard-main", labelKey: "admin.nav.pages.dashboardMain", defaultLabel: "Main", path: "/admin", icon: LayoutDashboard, permission: "dashboard.view" },
-      { key: "dashboard-marketing", labelKey: "admin.nav.pages.dashboardMarketing", defaultLabel: "Marketing", path: "/admin/dashboard/marketing", icon: Megaphone, permission: "dashboard.view" },
+      { key: "dashboard-marketing", labelKey: "admin.nav.pages.dashboardMarketing", defaultLabel: "Marketing", path: "/admin/dashboard/marketing", icon: Megaphone, permission: "reports.view" },
       { key: "dashboard-revenue", labelKey: "admin.nav.pages.dashboardRevenue", defaultLabel: "Revenue", path: "/admin/dashboard/revenue", icon: BarChart3, anyPermissions: ["reports.view", "finance.view"] },
       { key: "dashboard-activity", labelKey: "admin.nav.pages.dashboardActivity", defaultLabel: "Activity Log", path: "/admin/dashboard/activity", icon: Activity, permission: "activity.view" },
     ],

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, Menu, Search } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ import { requireSupabase } from "../lib/supabase.js";
 import { buildAdminNavigationSections, getAdminNavigation, getAdminNavigationSections } from "./navigation.js";
 import { AdminPreferencesProvider, useAdminPreferencesState } from "./AdminPreferencesContext.jsx";
 import { useAdminAuth } from "./AdminAuthContext.jsx";
+import { getVisibleAdminNavigation } from "./accessControl.js";
 import "./admin.scss";
 
 function rankSearchValue(value, query) {
@@ -69,12 +70,12 @@ function findBestMatch(items, pathname) {
     .sort((left, right) => right.path.length - left.path.length)[0] || null;
 }
 
-function SectionLink({ item, onNavigate }) {
+function SectionLink({ item, onNavigate, className = "" }) {
   return (
     <NavLink
       to={item.path}
       end={item.path === "/admin"}
-      className={({ isActive }) => `admin-section-link${isActive ? " is-active" : ""}`}
+      className={({ isActive }) => `admin-section-link${isActive ? " is-active" : ""}${className ? ` ${className}` : ""}`}
       onClick={onNavigate}
     >
       <span>{item.label}</span>
@@ -92,25 +93,26 @@ function RailButton({ section, isActive, onSelect }) {
       onClick={onSelect}
       aria-pressed={isActive}
       aria-label={section.label}
-      title={section.label}
     >
       <Icon size={18} strokeWidth={1.9} />
     </button>
   );
 }
 
-function MobileSectionButton({ section, isActive, onSelect }) {
+function MobileSectionButton({ section, isActive, isExpanded = false, onSelect }) {
   const Icon = section.icon;
 
   return (
     <button
       type="button"
-      className={`admin-mobile-section-button${isActive ? " is-active" : ""}`}
+      className={`admin-mobile-section-button${isActive ? " is-active" : ""}${isExpanded ? " is-expanded" : ""}`}
       onClick={onSelect}
       aria-pressed={isActive}
+      aria-expanded={isExpanded}
     >
       <Icon size={16} strokeWidth={1.9} />
       <span>{section.label}</span>
+      <ChevronDown size={14} strokeWidth={1.9} />
     </button>
   );
 }
@@ -215,7 +217,8 @@ function AdminLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, primaryRoleLabel, roleLabels, roles, hasPermission, isAdminUser } = useAdminAuth();
+  const adminAuth = useAdminAuth();
+  const { profile, primaryRoleLabel, roleLabels, roles, isAdminUser } = adminAuth;
   const preferencesState = useAdminPreferencesState(profile?.email, profile?.preferred_language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -223,23 +226,10 @@ function AdminLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [dynamicMenu, setDynamicMenu] = useState(null);
+  const [openDesktopSectionKey, setOpenDesktopSectionKey] = useState("");
+  const [expandedMobileSectionKey, setExpandedMobileSectionKey] = useState("");
   const adminWorkSessionIdRef = useRef("");
-
-  const isMenuItemAllowed = (item) => {
-    if (item.permission && !hasPermission(item.permission)) {
-      return false;
-    }
-
-    if (Array.isArray(item.anyPermissions) && item.anyPermissions.length) {
-      return item.anyPermissions.some((permission) => hasPermission(permission));
-    }
-
-    if (Array.isArray(item.requiredPermissions) && item.requiredPermissions.length) {
-      return item.requiredPermissions.every((permission) => hasPermission(permission));
-    }
-
-    return true;
-  };
+  const desktopRailRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -264,14 +254,16 @@ function AdminLayout() {
   const translatedNavigation = useMemo(() => getAdminNavigation(t), [t]);
   const translatedNavigationSections = useMemo(() => getAdminNavigationSections(t), [t]);
   const navItems = useMemo(() => {
-    const sourceItems = dedupeNavigationItems(dynamicMenu?.items || translatedNavigation).filter(isMenuItemAllowed);
+    const sourceItems = getVisibleAdminNavigation(adminAuth, translatedNavigation, {
+      menuItems: dynamicMenu?.items || [],
+    });
     const translatedByPath = new Map(translatedNavigation.map((item) => [item.path, item]));
 
     return sourceItems.map((item) => ({
       ...item,
       ...(translatedByPath.get(item.path) || {}),
     }));
-  }, [dynamicMenu?.items, hasPermission, translatedNavigation]);
+  }, [adminAuth, dynamicMenu?.items, translatedNavigation]);
 
   const navSections = useMemo(
     () => buildAdminNavigationSections(navItems, translatedNavigationSections),
@@ -283,10 +275,34 @@ function AdminLayout() {
   const currentLabel = currentItem?.label || activeSection?.label || t("admin.common.admin");
   const currentRoleLabel = primaryRoleLabel || roleLabels[0] || t("admin.common.noRoleAssigned");
   const currentUserEmail = profile?.email || t("admin.common.noEmailAvailable");
+  const mobileSectionsLabel = t("admin.common.sectionsMenu", { defaultValue: "Sections" });
   const breadcrumbs = useMemo(
     () => buildShellBreadcrumbs(activeSection, currentItem, t),
     [activeSection, currentItem, t],
   );
+
+  useEffect(() => {
+    setExpandedMobileSectionKey(activeSection?.key || "");
+  }, [activeSection?.key]);
+
+  useEffect(() => {
+    setOpenDesktopSectionKey("");
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!openDesktopSectionKey) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (!desktopRailRef.current?.contains(event.target)) {
+        setOpenDesktopSectionKey("");
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [openDesktopSectionKey]);
 
   const signOut = async () => {
     const client = requireSupabase();
@@ -525,7 +541,17 @@ function AdminLayout() {
   const goToSection = (section) => {
     const target = section.pages.find((item) => item.path === section.route)?.path || section.pages[0]?.path || section.route || "/admin";
     setIsSidebarOpen(false);
+    setOpenDesktopSectionKey("");
     navigate(target);
+  };
+
+  const toggleDesktopSection = (section) => {
+    if (!section.pages?.length) {
+      goToSection(section);
+      return;
+    }
+
+    setOpenDesktopSectionKey((current) => current === section.key ? "" : section.key);
   };
 
   return (
@@ -546,14 +572,39 @@ function AdminLayout() {
             <Menu size={18} />
           </button>
         </div>
-        <nav className="admin-rail-nav sidebar-scroll compact-nav-group" aria-label="Admin sections">
+        <nav ref={desktopRailRef} className="admin-rail-nav sidebar-scroll compact-nav-group" aria-label="Admin sections">
           {navSections.map((section) => (
-            <RailButton
+            <div
               key={section.key}
-              section={section}
-              isActive={section.key === activeSection?.key}
-              onSelect={() => goToSection(section)}
-            />
+              className={`admin-rail-item${openDesktopSectionKey === section.key ? " is-open" : ""}`}
+            >
+              <RailButton
+                section={section}
+                isActive={section.key === activeSection?.key}
+                onSelect={() => toggleDesktopSection(section)}
+              />
+              {section.pages?.length ? (
+                <div className="admin-rail-flyout" role="menu" aria-label={section.label}>
+                  <div className="admin-rail-flyout__header">
+                    <span>{mobileSectionsLabel}</span>
+                    <strong>{section.label}</strong>
+                  </div>
+                  <nav className="admin-rail-flyout__nav">
+                    {section.pages.map((item) => (
+                      <SectionLink
+                        key={item.path}
+                        item={item}
+                        className="admin-rail-flyout__link"
+                        onNavigate={() => {
+                          setOpenDesktopSectionKey("");
+                          setIsSidebarOpen(false);
+                        }}
+                      />
+                    ))}
+                  </nav>
+                </div>
+              ) : null}
+            </div>
           ))}
         </nav>
       </aside>
@@ -565,12 +616,29 @@ function AdminLayout() {
         </div>
         <div className="admin-mobile-sections" aria-label="Admin sections">
           {navSections.map((section) => (
-            <MobileSectionButton
-              key={section.key}
-              section={section}
-              isActive={section.key === activeSection?.key}
-              onSelect={() => goToSection(section)}
-            />
+            <div key={section.key} className={`admin-mobile-section-group${expandedMobileSectionKey === section.key ? " is-open" : ""}`}>
+              <MobileSectionButton
+                section={section}
+                isActive={section.key === activeSection?.key}
+                isExpanded={expandedMobileSectionKey === section.key}
+                onSelect={() => setExpandedMobileSectionKey((current) => current === section.key ? "" : section.key)}
+              />
+              {expandedMobileSectionKey === section.key ? (
+                <div className="admin-mobile-section-panel">
+                  <span className="admin-mobile-section-panel__label">{mobileSectionsLabel}</span>
+                  <nav className="admin-mobile-section-panel__nav" aria-label={`${section.label} ${mobileSectionsLabel}`}>
+                    {section.pages.map((item) => (
+                      <SectionLink
+                        key={item.path}
+                        item={item}
+                        className="admin-mobile-section-link"
+                        onNavigate={() => setIsSidebarOpen(false)}
+                      />
+                    ))}
+                  </nav>
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
         <nav className="admin-section-nav sidebar-scroll compact-nav-group" aria-label={activeSection?.label || "Admin section pages"}>

@@ -8,6 +8,7 @@ import Footer from "./layout/Footer/index.jsx";
 import AnimatedRoutes from "./routes/index.jsx";
 import i18n from "./i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "./i18n/languages.js";
+import { trackAnalyticsEvent } from "./lib/analyticsTracker.js";
 import { getCurrentLanguageFromPath, getPathWithoutLanguage, replaceLanguageInPath } from "./i18n/path.js";
 import { captureReferralFromQueryString } from "./services/referralService.js";
 import { useAuth } from "./auth/AuthContext.jsx";
@@ -19,6 +20,7 @@ function App() {
   const { loading: authLoading, isAuthenticated, role, profile } = useAuth();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const syncedPreferredLanguageRef = useRef("");
+  const trackedPageRef = useRef("");
   const normalizedPath = getPathWithoutLanguage(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin") || location.pathname.startsWith("/control-dashboard");
   const isPortalPage = normalizedPath.startsWith("/client") || normalizedPath.startsWith("/partner") || normalizedPath.startsWith("/auth");
@@ -30,6 +32,21 @@ function App() {
   useEffect(() => {
     captureReferralFromQueryString(location.search, location.pathname).catch(() => null);
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (isAdminPage || isPortalPage || normalizedPath.startsWith("/r/")) {
+      trackedPageRef.current = "";
+      return;
+    }
+
+    const pageKey = `${location.pathname}${location.search}`;
+    if (trackedPageRef.current === pageKey) {
+      return;
+    }
+
+    trackedPageRef.current = pageKey;
+    void trackAnalyticsEvent("page_view");
+  }, [isAdminPage, isPortalPage, location.pathname, location.search, normalizedPath]);
 
   useEffect(() => {
     if (!isAuthenticated) {

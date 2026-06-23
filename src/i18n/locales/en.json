@@ -499,7 +499,7 @@
       "Documents",
       "Finish"
     ],
-    "emailError": "Введите корректный email адрес",
+    "emailError": "Please enter a valid email address.",
     "eligibility": {
       "whereDidYouFly": "Where did you fly?",
       "departurePlaceholder": "Departure airport",
@@ -522,7 +522,8 @@
       "connectionCity": "Where was your connection airport?",
       "connectionCityPlaceholder": "Connection airport",
       "connectionCityHelp": "Choose the airport where you changed planes.",
-      "connectionCityRequired": "Please choose the airport where you changed planes."
+      "connectionCityRequired": "Please choose the airport where you changed planes.",
+      "sameAirportError": "Departure and arrival airports must be different."
     },
     "contact": {
       "title": "Please, enter your contact information.",
@@ -538,7 +539,8 @@
       "hasWhatsapp": "Yes, this number has Whatsapp.",
       "requiredToProceed": "Required to proceed.",
       "phoneSearchPlaceholder": "Search for countries",
-      "phoneSearchEmpty": "No matching countries found."
+      "phoneSearchEmpty": "No matching countries found.",
+      "phoneInvalid": "Please enter a valid phone number."
     },
     "documents": {
       "title": "Secure Document Upload",
@@ -613,11 +615,25 @@
       "saveLeadError": "Could not save lead data.",
       "saveClaimError": "Could not save claim data.",
       "signatureRequired": "Please sign and accept the terms before submitting.",
+      "restoreContact": "For your privacy, contact details are not stored on this device. Please re-enter them to continue.",
       "emailAlreadySent": "Claim submitted. Confirmation email was already sent to {{email}}.",
       "emailSent": "Claim submitted. Confirmation email was sent to {{email}}.",
       "emailFailed": "Claim submitted, but the confirmation email could not be sent automatically.",
       "customerFallback": "the customer",
       "removeFile": "Remove {{file}}"
+    },
+    "validation": {
+      "summary": "Please fix the highlighted fields.",
+      "selectOption": "Please select one of the available options.",
+      "flightDateRequired": "Select your scheduled departure date.",
+      "delayDurationRequired": "Select whether the delay was less or more than 3 hours.",
+      "directRequired": "Select whether this was a direct flight.",
+      "fullNameRequired": "Enter your full name.",
+      "passportRequired": "Upload your passport or ID document.",
+      "boardingPassRequired": "Upload your boarding pass.",
+      "reasonRequired": "Enter the official reason for the delay or cancellation.",
+      "signatureRequired": "Please provide your signature before submitting.",
+      "termsRequired": "Please accept the terms to continue."
     },
     "datePicker": {
       "placeholder": "Select date",

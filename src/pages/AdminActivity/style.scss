@@ -366,13 +366,13 @@
   }
 }
 
-@media (max-width: 1480px) {
+@media (max-width: 1139px) {
   .admin-activity-page__kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1220px) {
+@media (max-width: 1139px) {
   .admin-activity-page__table-wrap {
     overflow-x: auto;
   }
@@ -383,14 +383,14 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .admin-activity-page__summary-grid,
   .admin-activity-page__change-row {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .admin-activity-page__table-card {
     display: none;
   }

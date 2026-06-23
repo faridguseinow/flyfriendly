@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, FilterX, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import {
   AdminColumnTable,
   AdminFilterBar,
@@ -203,6 +204,8 @@ function buildLocalFinanceCsv(rows = []) {
 }
 
 export default function AdminFinance() {
+  const { hasPermission } = useAdminAuth();
+  const canViewFinance = hasPermission("finance.view") || hasPermission("finance.edit");
   const [rows, setRows] = useState([]);
   const [remoteSummary, setRemoteSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -550,7 +553,7 @@ export default function AdminFinance() {
             label: isExporting ? "Exporting..." : "Export finance CSV",
             icon: Download,
             onClick: handleExport,
-            disabled: isLoading || isExporting,
+            disabled: !canViewFinance || isLoading || isExporting,
           },
         ]}
       />

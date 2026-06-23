@@ -1,7 +1,7 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { buildCaseCode, buildLeadCode } from "../lib/recordCodes.js";
 import { getCurrentProfile, getCurrentUser } from "./authService.js";
-import { attachReferralToLead, getStoredReferralData } from "./referralService.js";
+import { attachReferralToLead, getReferralAttribution } from "./referralService.js";
 
 const LEAD_DOCUMENT_BUCKET = "claim-lead-documents";
 
@@ -25,11 +25,6 @@ function mapEdgeFunctionError(error, functionName) {
   }
 
   return error instanceof Error ? error : new Error(message || `${functionName} failed.`);
-}
-
-function isPassportDocumentType(value = "") {
-  const normalized = String(value || "").trim().toLowerCase();
-  return normalized.includes("passport") || normalized.includes("id");
 }
 
 function isMissingSequenceFunctionError(error) {
@@ -119,7 +114,7 @@ function baseLeadPayload(data = {}) {
 export async function createLead(data = {}, source = "claim_flow") {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
-  const referral = getStoredReferralData();
+  const referral = getReferralAttribution();
   const suffix = await getNextSequentialLeadSuffix(client);
   const id = crypto.randomUUID();
   const lead_code = buildLeadCode(suffix);
@@ -267,40 +262,7 @@ export async function fetchClaimReuseData() {
   }
 
   const leads = leadsResponse.data || [];
-  const leadIds = leads.map((item) => item.id).filter(Boolean);
   const latestLead = leads[0] || null;
-
-  let passportDocument = null;
-  let signature = null;
-
-  if (leadIds.length) {
-    const [leadDocumentsResponse, signaturesResponse] = await Promise.all([
-      client
-        .from("lead_documents")
-        .select("id, lead_id, document_type, file_path, file_name, mime_type, file_size, status, created_at")
-        .in("lead_id", leadIds)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(100),
-      client
-        .from("lead_signatures")
-        .select("id, lead_id, signer_name, signer_email, terms_accepted, signed_at, signature_data_url, created_at")
-        .in("lead_id", leadIds)
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
-
-    if (leadDocumentsResponse.error) {
-      throw leadDocumentsResponse.error;
-    }
-
-    if (signaturesResponse.error && !isMissingTableError(signaturesResponse.error)) {
-      throw signaturesResponse.error;
-    }
-
-    passportDocument = (leadDocumentsResponse.data || []).find((item) => isPassportDocumentType(item.document_type)) || null;
-    signature = (signaturesResponse.data || []).find((item) => item.signature_data_url && item.terms_accepted) || null;
-  }
 
   return {
     fullName: profile?.full_name || latestLead?.full_name || latestLead?.payload?.fullName || user.user_metadata?.full_name || user.user_metadata?.name || "",
@@ -311,15 +273,12 @@ export async function fetchClaimReuseData() {
     whatsapp: typeof latestLead?.has_whatsapp === "boolean"
       ? latestLead.has_whatsapp
       : Boolean(latestLead?.payload?.whatsapp),
-    passportDocument,
-    signatureDataUrl: signature?.signature_data_url || "",
-    termsAccepted: Boolean(signature?.terms_accepted),
   };
 }
 
 export async function submitClaimServerSide(leadId, data = {}) {
   const client = requireSupabase();
-  const referral = getStoredReferralData();
+  const referral = getReferralAttribution();
   const supabaseUrl = client.supabaseUrl;
   const publishableKey = client.supabaseKey;
   const response = await fetch(`${supabaseUrl}/functions/v1/submit-claim`, {
@@ -346,8 +305,10 @@ export async function submitClaimServerSide(leadId, data = {}) {
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const details = [payload?.error, payload?.code, payload?.details].filter(Boolean).join(" | ");
-    throw new Error(details || "submit-claim failed.");
+    const error = new Error(payload?.error || payload?.details || "submit-claim failed.");
+    error.code = payload?.code || "";
+    error.details = payload?.details || "";
+    throw error;
   }
 
   if (payload?.error) {

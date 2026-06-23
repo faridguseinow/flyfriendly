@@ -8,6 +8,7 @@ import {
   normalizeMoneyAmount,
   resolvePartnerRate,
 } from "../lib/financeCalculations.js";
+import { assertCurrentAdminPermission } from "./adminAccessService.js";
 import { getCurrentUser } from "./authService.js";
 
 const DEFAULT_FETCH_LIMIT = 1000;
@@ -32,6 +33,35 @@ const EXISTING_PARTNER_PAYOUT_STATUSES = new Set([
 ]);
 const financeDatasetCache = new Map();
 const financeDatasetPending = new Map();
+const FINANCE_READ_FALLBACK_PERMISSIONS = [
+  "finance.edit",
+  "payments.view",
+  "partner_commissions.view",
+  "partner_commissions.manage",
+  "partner_payouts.view",
+  "partner_payouts.manage",
+  "reports.view",
+  "reports.export",
+];
+const PARTNER_FINANCE_READ_PERMISSIONS = [
+  "partners.view",
+  "partners.edit",
+  "referrals.view",
+  "partner_commissions.view",
+  "partner_commissions.manage",
+  "partner_payouts.view",
+  "partner_payouts.manage",
+  "finance.view",
+  "finance.edit",
+  "reports.view",
+  "reports.export",
+];
+const PARTNER_FINANCE_EDIT_PERMISSIONS = [
+  "finance.edit",
+  "partner_commissions.manage",
+  "partner_payouts.manage",
+  "partners.edit",
+];
 
 function stableSerializeCacheValue(value) {
   if (Array.isArray(value)) {
@@ -70,6 +100,31 @@ async function withFinanceCache(cacheKey, loader, { force = false } = {}) {
 
   financeDatasetPending.set(cacheKey, pending);
   return pending;
+}
+
+async function assertFinanceReadAccess(message = "You do not have access to finance data.") {
+  return assertCurrentAdminPermission("finance.view", {
+    anyPermissions: FINANCE_READ_FALLBACK_PERMISSIONS,
+    message,
+  });
+}
+
+async function assertFinanceEditAccess(message = "You do not have access to update finance data.") {
+  return assertCurrentAdminPermission("finance.edit", { message });
+}
+
+async function assertPartnerFinanceReadAccess(message = "You do not have access to partner finance data.") {
+  return assertCurrentAdminPermission("finance.view", {
+    anyPermissions: PARTNER_FINANCE_READ_PERMISSIONS,
+    message,
+  });
+}
+
+async function assertPartnerFinanceEditAccess(message = "You do not have access to update partner finance data.") {
+  return assertCurrentAdminPermission("finance.edit", {
+    anyPermissions: PARTNER_FINANCE_EDIT_PERMISSIONS,
+    message,
+  });
 }
 
 function isMissingOptionalTable(error) {
@@ -931,6 +986,7 @@ function buildPartnerCommissionRow(commissionRow, caseRow, partner, referralRow)
 }
 
 export async function getFinanceRows(filters = {}, options = {}) {
+  await assertFinanceReadAccess();
   const dataset = await fetchFinanceDataset(filters, options);
   const casesById = mapRowsByKey(dataset.cases, "id");
   const customersById = mapRowsByKey(dataset.customers, "id");
@@ -962,6 +1018,7 @@ export async function getFinanceRows(filters = {}, options = {}) {
 }
 
 export async function getFinanceSummary(filters = {}, options = {}) {
+  await assertFinanceReadAccess();
   const rows = await getFinanceRows({
     ...filters,
     internalCompensationConfirmed: filters.internalCompensationConfirmed ?? true,
@@ -1005,6 +1062,7 @@ export async function getFinanceSummary(filters = {}, options = {}) {
 }
 
 export async function getClientPayments(filters = {}, options = {}) {
+  await assertFinanceReadAccess();
   const dataset = await fetchFinanceDataset(filters, options);
   const casesById = mapRowsByKey(dataset.cases, "id");
   const customersById = mapRowsByKey(dataset.customers, "id");
@@ -1019,6 +1077,7 @@ export async function getClientPayments(filters = {}, options = {}) {
 }
 
 export async function getPartnerPayments(filters = {}, options = {}) {
+  await assertPartnerFinanceReadAccess();
   const dataset = await fetchFinanceDataset(filters, options);
   const casesById = mapRowsByKey(dataset.cases, "id");
   const referralsByCaseId = mapRowsByKey(dataset.referrals.filter((item) => item.case_id), "case_id");
@@ -1048,6 +1107,7 @@ export function preloadAdminFinanceWorkspaceData({ force = false } = {}) {
 }
 
 export async function getPartnerCommissions(filters = {}) {
+  await assertPartnerFinanceReadAccess();
   const dataset = await fetchFinanceDataset(filters);
   const casesById = mapRowsByKey(dataset.cases, "id");
   const referralsByCaseId = mapRowsByKey(dataset.referrals.filter((item) => item.case_id), "case_id");
@@ -1067,11 +1127,13 @@ export async function getPartnerCommissions(filters = {}) {
 }
 
 export async function getClientPaymentByCaseId(caseId) {
+  await assertFinanceReadAccess();
   const rows = await getClientPayments({ caseId, limit: 1 });
   return rows[0] || null;
 }
 
 export async function getPartnerPaymentById(id) {
+  await assertPartnerFinanceReadAccess();
   const client = requireSupabase();
   const payoutResponse = await client
     .from("referral_partner_payouts")
@@ -1119,6 +1181,7 @@ export async function getPartnerPaymentById(id) {
 }
 
 export async function getConfirmedReferralClientsCount(partnerId) {
+  await assertPartnerFinanceReadAccess();
   const client = requireSupabase();
   const [casesResponse, referralsResponse] = await Promise.all([
     client
@@ -1173,11 +1236,13 @@ export async function getConfirmedReferralClientsCount(partnerId) {
 }
 
 export async function getPartnerCommissionRate(partnerId) {
+  await assertPartnerFinanceReadAccess();
   const confirmedReferralClientsCount = await getConfirmedReferralClientsCount(partnerId);
   return resolvePartnerRate(confirmedReferralClientsCount);
 }
 
 export async function markInternalCompensationConfirmed(caseId, confirmed, options = {}) {
+  await assertFinanceEditAccess();
   const client = requireSupabase();
   const userId = options.performedBy || await getCurrentUserId();
   const normalizedConfirmed = Boolean(confirmed);
@@ -1358,6 +1423,7 @@ export async function markInternalCompensationConfirmed(caseId, confirmed, optio
 }
 
 export async function setClientVisibleApproval(caseId, visible, options = {}) {
+  await assertFinanceEditAccess();
   const client = requireSupabase();
   const userId = options.performedBy || await getCurrentUserId();
   const financeRow = await getCaseFinanceRecordByCaseId(client, caseId);
@@ -1430,6 +1496,7 @@ async function resolveCaseFinanceRecord(client, caseFinanceIdOrCaseId) {
 }
 
 export async function updateClientPayment(caseFinanceIdOrCaseId, payload = {}, options = {}) {
+  await assertFinanceEditAccess();
   const client = requireSupabase();
   const userId = options.performedBy || await getCurrentUserId();
   const financeRow = await resolveCaseFinanceRecord(client, caseFinanceIdOrCaseId);
@@ -1554,6 +1621,7 @@ export async function updateClientPayment(caseFinanceIdOrCaseId, payload = {}, o
 }
 
 export async function markClientPaymentPaid(caseId, options = {}) {
+  await assertFinanceEditAccess();
   const client = requireSupabase();
   const userId = options.performedBy || await getCurrentUserId();
   const financeRow = await getCaseFinanceRecordByCaseId(client, caseId);
@@ -1599,6 +1667,7 @@ export async function markClientPaymentPaid(caseId, options = {}) {
 }
 
 export async function markClientPaymentUnpaid(caseId, options = {}) {
+  await assertFinanceEditAccess();
   const client = requireSupabase();
   const userId = options.performedBy || await getCurrentUserId();
   const financeRow = await getCaseFinanceRecordByCaseId(client, caseId);
@@ -1643,6 +1712,7 @@ export async function markClientPaymentUnpaid(caseId, options = {}) {
 }
 
 export async function updatePartnerPayment(payoutId, payload = {}, options = {}) {
+  await assertPartnerFinanceEditAccess();
   const client = requireSupabase();
   const userId = options.performedBy || await getCurrentUserId();
   const payoutResponse = await client
@@ -1760,6 +1830,7 @@ export async function markPartnerPaymentUnpaid(payoutId, options = {}) {
 }
 
 export async function exportFinanceCsv(filters = {}) {
+  await assertFinanceReadAccess("You do not have access to export finance data.");
   const performedBy = filters.performedBy || await getCurrentUserId();
   const rows = await getFinanceRows(filters);
   const csv = buildCsvString([
@@ -1799,6 +1870,7 @@ export async function exportFinanceCsv(filters = {}) {
 }
 
 export async function exportClientPaymentsCsv(filters = {}) {
+  await assertFinanceReadAccess("You do not have access to export finance data.");
   const performedBy = filters.performedBy || await getCurrentUserId();
   const rows = await getClientPayments(filters);
   const csv = buildCsvString([
@@ -1836,6 +1908,7 @@ export async function exportClientPaymentsCsv(filters = {}) {
 }
 
 export async function exportPartnerPaymentsCsv(filters = {}) {
+  await assertPartnerFinanceReadAccess("You do not have access to export partner finance data.");
   const performedBy = filters.performedBy || await getCurrentUserId();
   const rows = await getPartnerPayments(filters);
   const csv = buildCsvString([
@@ -1872,6 +1945,7 @@ export async function exportPartnerPaymentsCsv(filters = {}) {
 }
 
 export async function exportPartnerCommissionsCsv(filters = {}) {
+  await assertPartnerFinanceReadAccess("You do not have access to export partner finance data.");
   const performedBy = filters.performedBy || await getCurrentUserId();
   const rows = await getPartnerCommissions(filters);
   const csv = buildCsvString([

@@ -42,6 +42,13 @@ import {
   AdminSidePanel,
   AdminStatusBadge,
 } from "../../admin/components/AdminUi.jsx";
+import AdminDocumentPreviewModal from "../../admin/components/AdminDocumentPreviewModal.jsx";
+import {
+  DOCUMENT_ZOOM_STEP,
+  clampDocumentZoom,
+  createClosedDocumentPreviewState,
+  downloadDocumentFromUrl,
+} from "../../admin/documentPreview.js";
 import "./style.scss";
 
 const caseStatuses = [
@@ -188,6 +195,21 @@ function formatPaymentFlow(value, t = null) {
   return t ? t("admin.common.enums.through_company") : "Through company";
 }
 
+function getReferralBadgeLabel(item) {
+  const referralLabel = String(
+    item?.referral_partner_label
+    || item?.lead?.source_details?.referral_partner
+    || item?.lead?.source_details?.referral_code
+    || "",
+  ).trim();
+
+  if (!item?.referral_partner_id && !item?.lead?.referral_partner_id && !referralLabel) {
+    return "";
+  }
+
+  return `Referral${referralLabel ? ` · ${referralLabel}` : ""}`;
+}
+
 function deriveNextAction(caseRow, lead, finance, documents = [], t = null) {
   if (!caseRow) return t ? t("admin.cases.nextActions.reviewCase") : "Review case";
   if (caseRow.status === "documents_pending" || documents.some((item) => item.status === "missing" || item.status === "requested")) {
@@ -291,6 +313,7 @@ export default function AdminCases() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [activeDownloadId, setActiveDownloadId] = useState("");
+  const [documentPreview, setDocumentPreview] = useState(createClosedDocumentPreviewState);
   const [selectedCaseFinanceState, setSelectedCaseFinanceState] = useState({
     summaryRow: null,
     clientPayment: null,
@@ -480,12 +503,20 @@ export default function AdminCases() {
       resizable: true,
       reorderable: true,
       wrap: true,
-      renderCell: (item) => (
-        <div className="admin-crm-page__primary" title={item.reference}>
-          <strong className="admin-crm-page__code admin-crm-table__cell-main">{item.reference}</strong>
-          <span className="admin-crm-table__cell-sub">{item.nextAction}</span>
-        </div>
-      ),
+      renderCell: (item) => {
+        const referralBadgeLabel = getReferralBadgeLabel(item);
+
+        return (
+          <div className="admin-crm-page__primary" title={item.reference}>
+            <strong className="admin-crm-page__code admin-crm-table__cell-main">{item.reference}</strong>
+            {referralBadgeLabel ? (
+              <AdminStatusBadge tone="info">{referralBadgeLabel}</AdminStatusBadge>
+            ) : (
+              <span className="admin-crm-table__cell-sub">{item.nextAction}</span>
+            )}
+          </div>
+        );
+      },
       getCellTitle: (item) => item.reference,
     },
     {
@@ -769,6 +800,7 @@ export default function AdminCases() {
   };
 
   const openCase = (caseId) => {
+    setDocumentPreview(createClosedDocumentPreviewState());
     setSelectedCaseId(caseId);
     setPreviewOpen(true);
     const nextParams = new URLSearchParams(searchParams);
@@ -777,6 +809,7 @@ export default function AdminCases() {
   };
 
   const closePreview = () => {
+    setDocumentPreview(createClosedDocumentPreviewState());
     setPreviewOpen(false);
     setTaskModalOpen(false);
     setSelectedCaseId(null);
@@ -794,19 +827,53 @@ export default function AdminCases() {
     setDateRange({ from: "", to: "" });
   };
 
-  const downloadDocument = async (file) => {
+  const closeDocumentPreview = () => {
+    setDocumentPreview(createClosedDocumentPreviewState());
+  };
+
+  const resolveCaseDocumentPreviewUrl = async (file) => getDocumentDownloadUrl({ ...file, bucket: "case-documents" });
+
+  const openDocumentPreview = async (file) => {
+    if (!file?.file_path) return;
+    setError("");
+    setDocumentPreview({
+      item: file,
+      url: "",
+      isLoading: true,
+      error: "",
+      zoom: 1,
+    });
+
+    try {
+      const url = await resolveCaseDocumentPreviewUrl(file);
+      setDocumentPreview((current) => (
+        current.item?.id === file.id
+          ? { ...current, url, isLoading: false, error: "" }
+          : current
+      ));
+    } catch (nextError) {
+      const message = nextError.message || t("admin.leads.documentOpenError");
+      setDocumentPreview((current) => (
+        current.item?.id === file.id
+          ? { ...current, isLoading: false, error: message }
+          : current
+      ));
+      setError(message);
+    }
+  };
+
+  const saveDocument = async (file, sourceUrl = "") => {
     if (!file?.file_path) return;
     setError("");
     setActiveDownloadId(file.id);
     try {
-      const url = await getDocumentDownloadUrl({ ...file, bucket: "case-documents" });
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = file.file_name || "case-document";
-      link.rel = "noopener";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const url = sourceUrl || await resolveCaseDocumentPreviewUrl(file);
+      await downloadDocumentFromUrl(url, file.file_name || "case-document");
+      setDocumentPreview((current) => (
+        current.item?.id === file.id && !current.url
+          ? { ...current, url }
+          : current
+      ));
       void logAdminActivity("download_document", "case_document", file.id, {
         module: "documents",
         owner_type: "case",
@@ -818,6 +885,23 @@ export default function AdminCases() {
     } finally {
       setActiveDownloadId("");
     }
+  };
+
+  const openDocumentPreviewInNewTab = () => {
+    if (!documentPreview.url) return;
+    window.open(documentPreview.url, "_blank", "noopener,noreferrer");
+  };
+
+  const zoomDocumentIn = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: clampDocumentZoom(current.zoom + DOCUMENT_ZOOM_STEP) }));
+  };
+
+  const zoomDocumentOut = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: clampDocumentZoom(current.zoom - DOCUMENT_ZOOM_STEP) }));
+  };
+
+  const resetDocumentZoom = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: 1 }));
   };
 
   const openTaskModal = () => {
@@ -868,7 +952,7 @@ export default function AdminCases() {
   const listCountLabel = t("admin.cases.countLabel", { count: filteredCases.length });
   const selectedFinanceStatus = selectedCase?.finance?.payment_status || selectedCase?.payout_status || "not_started";
   const internalNotes = [selectedCase?.finance?.notes, selectedCase?.legal_basis].filter(Boolean);
-  const canManageCaseStatus = hasPermission("cases.update") || hasPermission("cases.edit");
+  const canManageCaseStatus = hasPermission("cases.edit");
   const canManageFinance = hasPermission("finance.edit");
   const caseCompensationAmount = normalizeMoneyAmount(
     selectedCaseFinanceState.clientPayment?.compensationAmount
@@ -1323,11 +1407,11 @@ export default function AdminCases() {
                           <button
                             type="button"
                             className="admin-link-button"
-                            onClick={() => downloadDocument(item)}
-                            disabled={!item.file_path || activeDownloadId === item.id}
+                            onClick={() => void openDocumentPreview(item)}
+                            disabled={!item.file_path}
                             title={item.file_path ? t("admin.leads.openDocumentTitle") : t("admin.leads.documentPreviewUnavailable")}
                           >
-                            {activeDownloadId === item.id ? t("admin.common.opening") : t("admin.common.open")}
+                            {t("admin.common.open")}
                           </button>
                         </article>
                       ))}
@@ -1430,6 +1514,23 @@ export default function AdminCases() {
           )}
         </AdminSidePanel>
       </section>
+
+      <AdminDocumentPreviewModal
+        document={documentPreview.item}
+        url={documentPreview.url}
+        isLoading={documentPreview.isLoading}
+        error={documentPreview.error}
+        zoom={documentPreview.zoom}
+        isSaving={documentPreview.item ? activeDownloadId === documentPreview.item.id : false}
+        subtitle={documentPreview.item ? `${documentPreview.item.document_type || "—"} • ${formatDateTime(documentPreview.item.created_at)}` : ""}
+        unavailableLabel={t("admin.leads.documentPreviewUnavailable")}
+        onZoomIn={zoomDocumentIn}
+        onZoomOut={zoomDocumentOut}
+        onZoomReset={resetDocumentZoom}
+        onSave={() => void (documentPreview.item ? saveDocument(documentPreview.item, documentPreview.url) : Promise.resolve())}
+        onOpenInNewTab={openDocumentPreviewInNewTab}
+        onClose={closeDocumentPreview}
+      />
 
       {taskModalOpen && selectedCase ? (
         <div className="admin-cases-page__task-modal-layer" role="presentation">

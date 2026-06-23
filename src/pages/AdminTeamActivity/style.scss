@@ -55,7 +55,7 @@
   }
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1139px) {
   .admin-team-activity-page {
     .admin-team-activity-page__summary {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -68,7 +68,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .admin-team-activity-page {
     .admin-team-activity-page__summary,
     .admin-team-activity-page__kpis,

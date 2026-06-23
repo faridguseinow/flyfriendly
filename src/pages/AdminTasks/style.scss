@@ -1024,7 +1024,7 @@
   cursor: pointer;
 }
 
-@media (max-width: 1380px) {
+@media (max-width: 1139px) {
   .admin-tasks-page__workspace {
     grid-template-columns: 1fr;
   }
@@ -1034,13 +1034,13 @@
   }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1139px) {
   .admin-tasks-page__metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1139px) {
   .admin-tasks-page__metrics,
   .admin-tasks-page__summary,
   .admin-tasks-page__meta-grid,
@@ -1054,7 +1054,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .admin-tasks-page__header,
   .admin-tasks-page__toolbar {
     padding: 12px;

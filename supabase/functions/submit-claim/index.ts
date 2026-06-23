@@ -70,6 +70,8 @@ type AirportRow = {
   longitude_deg: number | null;
 };
 
+const DUPLICATE_LOOKBACK_DAYS = 180;
+
 function normalizeRecoveryActionLink(actionLink: string | null | undefined, language: string) {
   const canonicalUrl = buildPublicAuthUrl("/auth/reset-password");
   const rawLink = String(actionLink || "").trim();
@@ -129,6 +131,32 @@ function cleanObject<T extends Record<string, unknown>>(input: T) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) as Partial<T>;
 }
 
+function normalizeComparableText(value: unknown) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function sanitizeClaimPayloadForLead(data: ClaimPayload) {
+  const payload = { ...data } as Record<string, unknown>;
+
+  [
+    "signatureDataUrl",
+    "termsAccepted",
+    "files",
+    "documents",
+    "uploadedFiles",
+    "passport",
+    "passportDocument",
+    "boardingPass",
+    "boarding_pass",
+    "documentBlobs",
+    "rawDocuments",
+  ].forEach((key) => {
+    delete payload[key];
+  });
+
+  return payload;
+}
+
 function parseFlightDate(value: unknown) {
   if (!value) return null;
   const stringValue = String(value);
@@ -160,7 +188,7 @@ function normalizeLeadPayload(data: ClaimPayload) {
     preferred_language: data.preferredLanguage || data.language || null,
     has_whatsapp: Boolean(data.whatsapp),
     reason: data.reason || null,
-    payload: data,
+    payload: sanitizeClaimPayloadForLead(data),
   };
 }
 
@@ -242,6 +270,10 @@ function validateClaimInput(data: ClaimPayload) {
     throw new Error("Email is required.");
   }
 
+  if (!String(data.phone || "").trim()) {
+    throw new Error("Phone is required.");
+  }
+
   if (!String(data.date || "").trim()) {
     throw new Error("Flight date is required.");
   }
@@ -254,9 +286,92 @@ function validateClaimInput(data: ClaimPayload) {
     throw new Error("Departure and destination are required.");
   }
 
+  if (!String(data.delayDuration || "").trim()) {
+    throw new Error("Disruption type is required.");
+  }
+
   if (!data.signatureDataUrl || !data.termsAccepted) {
     throw new Error("Signature and accepted terms are required.");
   }
+}
+
+function getDuplicateClaimMessage(language: string) {
+  if (language === "ru") {
+    return "Похоже, вы уже отправили эту заявку. Проверьте email или клиентский кабинет.";
+  }
+
+  if (language === "az") {
+    return "Görünür, bu müraciəti artıq göndərmisiniz. Emailinizi və ya şəxsi kabinetinizi yoxlayın.";
+  }
+
+  return "It looks like you already submitted this claim. Please check your email or client portal.";
+}
+
+function isDuplicateLeadMatch(lead: Record<string, unknown>, data: ClaimPayload) {
+  const emailMatches = normalizeComparableText(lead.email) === normalizeComparableText(data.email);
+  const fullNameMatches = normalizeComparableText(lead.full_name) === normalizeComparableText(data.fullName);
+  const airlineMatches = normalizeComparableText(lead.airline) === normalizeComparableText(data.airline);
+  const departureMatches = normalizeComparableText(lead.departure_airport) === normalizeComparableText(data.departure);
+  const arrivalMatches = normalizeComparableText(lead.arrival_airport) === normalizeComparableText(data.destination);
+  const dateMatches = String(lead.scheduled_departure_date || "") === String(parseFlightDate(data.date) || "");
+  const disruptionMatches = normalizeComparableText(lead.delay_duration) === normalizeComparableText(data.delayDuration);
+
+  return emailMatches
+    && fullNameMatches
+    && airlineMatches
+    && departureMatches
+    && arrivalMatches
+    && dateMatches
+    && disruptionMatches;
+}
+
+async function findDuplicateLead(
+  supabase: ReturnType<typeof createClient>,
+  leadId: string,
+  data: ClaimPayload,
+) {
+  const flightDate = parseFlightDate(data.date);
+  const normalizedEmail = String(data.email || "").trim().toLowerCase();
+  if (!normalizedEmail || !flightDate) {
+    return null;
+  }
+
+  const lookbackDate = new Date();
+  lookbackDate.setUTCDate(lookbackDate.getUTCDate() - DUPLICATE_LOOKBACK_DAYS);
+
+  const duplicateQuery = await supabase
+    .from("leads")
+    .select("id, lead_code, status, full_name, email, airline, departure_airport, arrival_airport, scheduled_departure_date, delay_duration, submitted_at, created_at")
+    .neq("id", leadId)
+    .gte("created_at", lookbackDate.toISOString())
+    .in("status", ["submitted", "converted"])
+    .ilike("email", normalizedEmail)
+    .eq("scheduled_departure_date", flightDate)
+    .order("created_at", { ascending: false })
+    .limit(25);
+
+  if (duplicateQuery.error) {
+    throw duplicateQuery.error;
+  }
+
+  const duplicateLead = (duplicateQuery.data || []).find((lead) => isDuplicateLeadMatch(lead as Record<string, unknown>, data)) || null;
+  if (!duplicateLead?.id) {
+    return null;
+  }
+
+  const { error: duplicateFlagError } = await supabase
+    .from("leads")
+    .update({
+      duplicate_of_lead_id: duplicateLead.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", leadId);
+
+  if (duplicateFlagError && duplicateFlagError.code !== "PGRST204" && duplicateFlagError.code !== "42703") {
+    throw duplicateFlagError;
+  }
+
+  return duplicateLead;
 }
 
 function randomPassword() {
@@ -649,6 +764,16 @@ Deno.serve(async (request) => {
   const language = String(data.preferredLanguage || data.language || "en").trim().toLowerCase() || "en";
 
   try {
+    const duplicateLead = await findDuplicateLead(supabase, leadId, data);
+    if (duplicateLead?.id) {
+      return json({
+        error: getDuplicateClaimMessage(language),
+        code: "DUPLICATE_CLAIM",
+        duplicateLeadId: duplicateLead.id,
+        duplicateLeadCode: duplicateLead.lead_code || null,
+      }, { status: 409 });
+    }
+
     const account = await createOrRecoverPortalAccount(supabase, siteUrl, language, data);
     await upsertClientProfile(supabase, account, data);
     const estimate = await calculateLeadEstimate(supabase, data);

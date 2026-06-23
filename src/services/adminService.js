@@ -1,5 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser, resetPassword } from "./authService.js";
+import { assertCurrentAdminPermission, assertCurrentOwnerAdmin } from "./adminAccessService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
@@ -873,7 +874,7 @@ async function fetchLeadsWithFallback(client) {
 async function fetchCaseLeadsWithEstimateFallback(client) {
   const extended = await client
     .from("leads")
-    .select("id, lead_code, full_name, email, phone, departure_airport, arrival_airport, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
+    .select("id, lead_code, full_name, email, phone, departure_airport, arrival_airport, disruption_type, referral_partner_id, source_details, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -883,6 +884,20 @@ async function fetchCaseLeadsWithEstimateFallback(client) {
 
   if (!isMissingColumnError(extended.error)) {
     throw extended.error;
+  }
+
+  const partial = await client
+    .from("leads")
+    .select("id, lead_code, full_name, email, phone, departure_airport, arrival_airport, disruption_type, distance_km, distance_band, estimated_compensation_eur, compensation_currency, estimate_status, estimate_explanation")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (!partial.error) {
+    return { data: partial.data || [] };
+  }
+
+  if (!isMissingColumnError(partial.error)) {
+    throw partial.error;
   }
 
   const fallback = await client
@@ -969,7 +984,7 @@ async function fetchCasesWithFallback(client, page, pageSize, filters = {}) {
 
   const baseQuery = client
     .from("cases")
-    .select("id, case_code, lead_id, customer_id, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, company_fee, status, payout_status, priority, assigned_manager_id, submission_date, response_date, deadline_at, referral_partner_label, created_at, updated_at, approved_at, rejected_at, paid_at, closed_at", { count: "exact" })
+    .select("id, case_code, lead_id, customer_id, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, company_fee, status, payout_status, priority, assigned_manager_id, submission_date, response_date, deadline_at, referral_partner_id, referral_partner_label, created_at, updated_at, approved_at, rejected_at, paid_at, closed_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -982,6 +997,21 @@ async function fetchCasesWithFallback(client, page, pageSize, filters = {}) {
 
   if (!isMissingColumnError(response.error) && !isMissingOptionalTable(response.error)) {
     throw response.error;
+  }
+
+  const fallbackQuery = client
+    .from("cases")
+    .select("id, case_code, lead_id, customer_id, airline, route_from, route_to, flight_date, issue_type, legal_basis, estimated_compensation, company_fee, status, payout_status, priority, assigned_manager_id, submission_date, response_date, deadline_at, referral_partner_label, created_at, updated_at, approved_at, rejected_at, paid_at, closed_at", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  const fallbackResponse = await applyCaseFilters(fallbackQuery, filters);
+  if (!fallbackResponse.error) {
+    return { data: fallbackResponse.data || [], count: fallbackResponse.count || 0, supportsCaseModuleV1: true };
+  }
+
+  if (!isMissingColumnError(fallbackResponse.error) && !isMissingOptionalTable(fallbackResponse.error)) {
+    throw fallbackResponse.error;
   }
 
   return { data: [], count: 0, supportsCaseModuleV1: false, missingTable: true };
@@ -3041,6 +3071,10 @@ export async function createReferralPartnerPayout(input) {
 }
 
 export async function fetchActivityLogsData(options = {}) {
+  await assertCurrentAdminPermission("activity.view", {
+    message: "You do not have access to activity logs.",
+  });
+
   return withAdminModuleCache("activity-logs-module", async () => {
     const client = requireSupabase();
 
@@ -3744,6 +3778,8 @@ async function fetchRoleMemberStats(client) {
 }
 
 export async function fetchAdminRolesModuleData(options = {}) {
+  await assertCurrentOwnerAdmin();
+
   return withAdminModuleCache("admin-roles-module", async () => {
     const client = requireSupabase();
 
@@ -3976,6 +4012,8 @@ async function replaceRoleMenuVisibility(client, role, menuVisibility = {}) {
 }
 
 export async function createAdminRole({ role, permissionCodes = [], menuVisibility = {} }) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const payload = buildRolePayload(role);
 
@@ -4005,6 +4043,8 @@ export async function createAdminRole({ role, permissionCodes = [], menuVisibili
 }
 
 export async function updateAdminRoleDefinition(roleId, { role, permissionCodes = [], menuVisibility = {} }) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const existingResponse = await client
     .from("admin_roles")
@@ -4064,6 +4104,8 @@ export async function updateAdminRoleDefinition(roleId, { role, permissionCodes 
 }
 
 export async function duplicateAdminRole(roleId) {
+  await assertCurrentOwnerAdmin();
+
   const moduleData = await fetchAdminRolesModuleData();
   const sourceRole = moduleData.roles.find((role) => role.id === roleId);
   if (!sourceRole) {
@@ -4134,6 +4176,8 @@ export async function deactivateAdminRole(roleId, isActive = false) {
 }
 
 export async function deleteAdminRole(roleId) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const [roleResponse, teamMembersResponse, userRolesResponse] = await Promise.all([
     client
@@ -4329,6 +4373,8 @@ function countAdminActions(rows = [], allowedActions = []) {
 }
 
 export async function fetchAdminTeamMemberActivity(profileId, filters = {}) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const normalizedProfileId = String(profileId || "").trim();
   if (!normalizedProfileId) {
@@ -4490,6 +4536,8 @@ export async function fetchAdminTeamMemberActivity(profileId, filters = {}) {
 }
 
 export async function fetchAdminTeamModuleData(options = {}) {
+  await assertCurrentOwnerAdmin();
+
   return withAdminModuleCache("admin-team-module", async () => {
     const client = requireSupabase();
 
@@ -4778,6 +4826,8 @@ async function assertOwnerTeamAccessCanChange(client, actorId, profileId, teamMe
 }
 
 export async function createAdminTeamMember(input = {}) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const email = String(input.email || "").trim().toLowerCase();
@@ -4927,6 +4977,8 @@ export async function createAdminTeamMember(input = {}) {
 }
 
 export async function updateAdminTeamMemberProfile(profileId, input = {}) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const normalizedProfileId = String(profileId || "").trim();
@@ -4996,6 +5048,8 @@ export async function updateAdminTeamMemberProfile(profileId, input = {}) {
 }
 
 export async function sendAdminEmployeeSetupLink({ email, profileId = null } = {}) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -5041,6 +5095,8 @@ export async function sendAdminEmployeeSetupLink({ email, profileId = null } = {
 }
 
 export async function updateAdminTeamMemberRole(profileId, roleId) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const [teamMember, role] = await Promise.all([
@@ -5088,6 +5144,8 @@ export async function updateAdminTeamMemberRole(profileId, roleId) {
 }
 
 export async function updateAdminTeamMemberStatus(profileId, nextStatus) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const teamMember = await getAdminTeamMemberByProfileId(client, profileId);
@@ -5174,6 +5232,8 @@ export async function updateAdminTeamMemberStatus(profileId, nextStatus) {
 }
 
 export async function removeAdminTeamMember(profileId) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const teamMember = await getAdminTeamMemberByProfileId(client, profileId);
@@ -5223,6 +5283,8 @@ export async function removeAdminTeamMember(profileId) {
 }
 
 export async function updateUserAdminRoles(userId, roleCodes = []) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
 

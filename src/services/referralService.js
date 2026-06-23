@@ -2,9 +2,18 @@ import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser, getPartnerByReferralCode } from "./authService.js";
 
 export const REFERRAL_STORAGE_KEY = "fly-friendly-referral";
+const REFERRAL_ATTRIBUTION_TTL_MS = 60 * 60 * 1000;
 
 function isBrowser() {
   return typeof window !== "undefined";
+}
+
+function getReferralStorage() {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  return window.sessionStorage;
 }
 
 function sanitizeReferralLocation(value) {
@@ -32,46 +41,107 @@ function cleanReferralRecord(record) {
     publicName: record.publicName || "",
     sourceUrl: sanitizeReferralLocation(record.sourceUrl),
     sourcePath: sanitizeReferralLocation(record.sourcePath),
-    storedAt: record.storedAt || new Date().toISOString(),
+    storedAt: record.storedAt || record.capturedAt || new Date().toISOString(),
+    capturedAt: record.capturedAt || record.storedAt || new Date().toISOString(),
   };
 }
 
-function readStoredReferral() {
+function clearLegacyReferralStorage() {
   if (!isBrowser()) {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(REFERRAL_STORAGE_KEY);
+  } catch {
+    // Ignore restrictive storage modes.
+  }
+}
+
+function readStoredReferral() {
+  const storage = getReferralStorage();
+  if (!storage) {
+    clearLegacyReferralStorage();
     return null;
   }
 
   try {
-    const raw = window.localStorage.getItem(REFERRAL_STORAGE_KEY);
-    return cleanReferralRecord(raw ? JSON.parse(raw) : null);
+    clearLegacyReferralStorage();
+    const raw = storage.getItem(REFERRAL_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
 function writeStoredReferral(record) {
-  if (!isBrowser()) {
+  const storage = getReferralStorage();
+  if (!storage) {
     return;
   }
+
+  clearLegacyReferralStorage();
 
   if (!record) {
-    window.localStorage.removeItem(REFERRAL_STORAGE_KEY);
+    storage.removeItem(REFERRAL_STORAGE_KEY);
     return;
   }
 
-  window.localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(record));
+  storage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(record));
+}
+
+export function isReferralAttributionValid(record) {
+  const cleaned = cleanReferralRecord(record);
+  if (!cleaned) {
+    return false;
+  }
+
+  const capturedAt = Date.parse(cleaned.capturedAt || "");
+  if (!capturedAt) {
+    return false;
+  }
+
+  return Date.now() - capturedAt <= REFERRAL_ATTRIBUTION_TTL_MS;
+}
+
+export function getReferralAttribution() {
+  const record = readStoredReferral();
+  if (!isReferralAttributionValid(record)) {
+    writeStoredReferral(null);
+    return null;
+  }
+
+  return cleanReferralRecord(record);
+}
+
+export function saveReferralAttribution(input) {
+  const record = cleanReferralRecord(input);
+  if (!record) {
+    clearReferralAttribution();
+    return;
+  }
+
+  writeStoredReferral({
+    ...record,
+    capturedAt: record.capturedAt || record.storedAt || new Date().toISOString(),
+    storedAt: record.storedAt || record.capturedAt || new Date().toISOString(),
+  });
+}
+
+export function clearReferralAttribution() {
+  writeStoredReferral(null);
 }
 
 export function getStoredReferralCode() {
-  return readStoredReferral()?.referralCode || "";
+  return getReferralAttribution()?.referralCode || "";
 }
 
 export function getStoredReferralData() {
-  return readStoredReferral();
+  return getReferralAttribution();
 }
 
 export function clearReferralCode() {
-  writeStoredReferral(null);
+  clearReferralAttribution();
 }
 
 function isApprovedPartnerRecord(partner) {
@@ -86,12 +156,13 @@ export function storeReferralCode(input) {
           partnerId: "",
           referralCode: input,
           storedAt: new Date().toISOString(),
+          capturedAt: new Date().toISOString(),
         }
       : input,
   );
 
   if (record) {
-    writeStoredReferral(record);
+    saveReferralAttribution(record);
   }
 }
 
@@ -99,27 +170,29 @@ export async function validateReferralCode(referralCode, context = {}) {
   const code = String(referralCode || "").trim();
 
   if (!code) {
-    clearReferralCode();
+    clearReferralAttribution();
     return null;
   }
 
   const partner = await getPartnerByReferralCode(code);
   if (!partner?.id || !isApprovedPartnerRecord(partner)) {
-    clearReferralCode();
+    clearReferralAttribution();
     return null;
   }
 
+  const capturedAt = new Date().toISOString();
   const record = {
     partnerId: partner.id,
     referralCode: partner.referral_code || code,
     publicName: partner.public_name || partner.name || "",
-    // Keep only path-level attribution metadata in localStorage.
+    // Keep only path-level attribution metadata in sessionStorage.
     sourceUrl: sanitizeReferralLocation(context.sourceUrl || (isBrowser() ? window.location.href : "")),
     sourcePath: sanitizeReferralLocation(context.sourcePath || (isBrowser() ? `${window.location.pathname}${window.location.search}${window.location.hash}` : "")),
-    storedAt: new Date().toISOString(),
+    storedAt: capturedAt,
+    capturedAt,
   };
 
-  writeStoredReferral(record);
+  saveReferralAttribution(record);
   return record;
 }
 
@@ -155,7 +228,7 @@ function buildReferralAttributionMeta(referralCode, leadData = {}) {
 }
 
 export async function attachReferralToLead(leadId, leadData = null) {
-  const referral = getStoredReferralData();
+  const referral = getReferralAttribution();
   if (!referral?.referralCode || !leadId) {
     return null;
   }
@@ -166,7 +239,7 @@ export async function attachReferralToLead(leadId, leadData = null) {
   }).catch(() => null);
 
   if (!validatedReferral?.partnerId) {
-    clearReferralCode();
+    clearReferralAttribution();
     return null;
   }
 

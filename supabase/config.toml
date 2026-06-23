@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.submit-partner-application]
 verify_jwt = false
+
+[functions.track-analytics-event]
+verify_jwt = false

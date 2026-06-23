@@ -9,10 +9,19 @@
 
   .admin-filter-bar {
     display: grid;
-    grid-template-columns: minmax(240px, 1.8fr) repeat(4, minmax(120px, 0.72fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: end;
     gap: 10px;
     margin-bottom: 0;
+  }
+
+  .admin-filter-bar > * {
+    min-width: 0;
+  }
+
+  .admin-search,
+  .admin-filter-bar__date-range {
+    grid-column: span 2;
   }
 
   .admin-search,
@@ -479,13 +488,24 @@
   line-height: 1.55;
 }
 
-@media (max-width: 1480px) {
+@media (max-width: 1139px) {
+  .admin-customers-page {
+    .admin-filter-bar {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-search,
+    .admin-filter-bar__date-range {
+      grid-column: 1 / -1;
+    }
+  }
+
   .admin-customers-page__toolbar {
     grid-template-columns: minmax(240px, 1fr) repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1220px) {
+@media (max-width: 1139px) {
   .admin-customers-page__toolbar {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -500,7 +520,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1139px) {
   .admin-customers-page__header {
     flex-direction: column;
   }
@@ -510,9 +530,13 @@
   }
 }
 
-@media (max-width: 780px) {
+@media (max-width: 768px) {
   .admin-customers-page {
     gap: 14px;
+
+    .admin-filter-bar {
+      grid-template-columns: 1fr;
+    }
   }
 
   .admin-customers-page__header {

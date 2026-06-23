@@ -715,7 +715,7 @@ export default function AdminCustomers() {
                   <span>Email customer</span>
                 </a>
               ) : null}
-              {hasPermission("customers.manage") ? (
+              {hasPermission("customers.edit") ? (
                 <button className="admin-btn admin-btn-ghost" type="button" disabled title="Account block/reactivate flow is not configured in the current backend.">
                   <ShieldCheck size={14} />
                   <span>Account actions not configured</span>

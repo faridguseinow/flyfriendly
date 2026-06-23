@@ -106,6 +106,7 @@ function buildDateFilters(dateRange) {
 
 export default function AdminPayments() {
   const { hasPermission } = useAdminAuth();
+  const canViewFinance = hasPermission("finance.view") || hasPermission("finance.edit");
   const canEditFinance = hasPermission("finance.edit");
   const [activeTab, setActiveTab] = useState("client");
   const [search, setSearch] = useState("");
@@ -515,7 +516,7 @@ export default function AdminPayments() {
             label: isExporting ? "Exporting..." : "Export CSV",
             icon: Download,
             onClick: handleExport,
-            disabled: isLoading || isExporting,
+            disabled: !canViewFinance || isLoading || isExporting,
           },
         ]}
       />

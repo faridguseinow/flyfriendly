@@ -520,7 +520,8 @@
       "connectionCity": "Hansı şəhərdə transfer etmisiniz?",
       "connectionCityPlaceholder": "Transfer şəhəri",
       "connectionCityHelp": "Təyyarəni dəyişdiyiniz şəhəri daxil edin.",
-      "connectionCityRequired": "Zəhmət olmasa transfer etdiyiniz şəhəri daxil edin."
+      "connectionCityRequired": "Zəhmət olmasa transfer etdiyiniz şəhəri daxil edin.",
+      "sameAirportError": "Gediş və təyinat hava limanları fərqli olmalıdır."
     },
     "contact": {
       "title": "Zəhmət olmasa əlaqə məlumatlarınızı daxil edin.",
@@ -536,7 +537,8 @@
       "hasWhatsapp": "Bəli, bu nömrədə Whatsapp var.",
       "requiredToProceed": "Sonrakı düyməni basın.",
       "phoneSearchPlaceholder": "Ölkə axtarın",
-      "phoneSearchEmpty": "Uyğun ölkə tapılmadı."
+      "phoneSearchEmpty": "Uyğun ölkə tapılmadı.",
+      "phoneInvalid": "Etibarlı telefon nömrəsi daxil edin."
     },
     "documents": {
       "title": "Təhlükəsiz Sənəd Yükləmə",
@@ -611,11 +613,25 @@
       "saveLeadError": "Potensial məlumatı saxlamaq mümkün olmadı.",
       "saveClaimError": "İddia datasını saxlamaq mümkün olmadı.",
       "signatureRequired": "Təqdim etməzdən əvvəl şərtləri imzalayın və qəbul edin.",
+      "restoreContact": "Məxfiliyiniz üçün əlaqə məlumatları bu cihazda saxlanılmır. Davam etmək üçün onları yenidən daxil edin.",
       "emailAlreadySent": "İddia təqdim edildi. Təsdiq e-məktubu artıq {{email}} nömrəsinə göndərilib.",
       "emailSent": "İddia təqdim edildi. Təsdiq e-məktubu {{email}} nömrəsinə göndərildi.",
       "emailFailed": "İddia təqdim edildi, lakin təsdiq e-poçtu avtomatik göndərilə bilmədi.",
       "customerFallback": "müştəri",
       "removeFile": "{{file}} silin"
+    },
+    "validation": {
+      "summary": "Zəhmət olmasa işarələnmiş xanaları düzəldin.",
+      "selectOption": "Təklif olunan variantlardan birini seçin.",
+      "flightDateRequired": "Planlaşdırılmış uçuş tarixini seçin.",
+      "delayDurationRequired": "Gecikmənin 3 saatdan az və ya çox olduğunu seçin.",
+      "directRequired": "Bunun birbaşa uçuş olub-olmadığını seçin.",
+      "fullNameRequired": "Tam adınızı daxil edin.",
+      "passportRequired": "Pasportunuzu və ya şəxsiyyət vəsiqənizi yükləyin.",
+      "boardingPassRequired": "Minik talonunu yükləyin.",
+      "reasonRequired": "Gecikmə və ya ləğvin rəsmi səbəbini daxil edin.",
+      "signatureRequired": "Göndərmədən əvvəl imzanızı əlavə edin.",
+      "termsRequired": "Davam etmək üçün şərtləri qəbul edin."
     },
     "datePicker": {
       "placeholder": "Tarixi seçin",

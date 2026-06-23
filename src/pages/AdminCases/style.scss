@@ -13,10 +13,19 @@
 
   .admin-filter-bar {
     display: grid;
-    grid-template-columns: minmax(260px, 1.6fr) repeat(5, minmax(130px, 0.8fr)) auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: end;
     gap: 10px;
     margin-bottom: 0;
+  }
+
+  .admin-filter-bar > * {
+    min-width: 0;
+  }
+
+  .admin-search,
+  .admin-filter-bar__date-range {
+    grid-column: span 2;
   }
 
   .admin-search,
@@ -748,7 +757,20 @@
   gap: 10px;
 }
 
-@media (max-width: 1360px) {
+@media (max-width: 1139px) {
+  .admin-cases-page {
+    .admin-filter-bar {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .admin-filter-bar > .admin-search,
+    .admin-filter-bar > .admin-filter-bar__date-range {
+      grid-column: span 2;
+    }
+  }
+}
+
+@media (max-width: 1139px) {
   .admin-cases-page__workspace {
     grid-template-columns: minmax(0, 1fr) 500px;
   }
@@ -763,13 +785,26 @@
   }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1139px) {
   .admin-cases-page__workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-@media (max-width: 820px) {
+@media (max-width: 1139px) {
+  .admin-cases-page {
+    .admin-filter-bar {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .admin-filter-bar > .admin-search,
+    .admin-filter-bar > .admin-filter-bar__date-range {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+@media (max-width: 768px) {
   .admin-cases-page {
     .admin-filter-bar {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -791,7 +826,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .admin-cases-page {
     .admin-filter-bar {
       grid-template-columns: 1fr;

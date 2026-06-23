@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FilterX, RefreshCw, UserRoundPlus } from "lucide-react";
+import { Download, ExternalLink, FileText, FilterX, LoaderCircle, Minus, Plus, RefreshCw, RotateCcw, UserRoundPlus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   assignLeadOwner,
@@ -28,6 +28,13 @@ import {
 import "./style.scss";
 
 const leadStatuses = ["new", "submitted", "not_eligible", "converted", "archived"];
+const MIN_DOCUMENT_ZOOM = 0.5;
+const MAX_DOCUMENT_ZOOM = 3;
+const DOCUMENT_ZOOM_STEP = 0.25;
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
 function formatDateTime(value) {
   return formatFinanceDateTimeLabel(value);
@@ -42,6 +49,26 @@ function formatLeadReference(lead) {
   if (lead?.payload?.claimCode) return lead.payload.claimCode;
   if (lead?.id) return `Lead ${String(lead.id).slice(0, 8)}`;
   return "Lead";
+}
+
+function getFileExtension(name) {
+  const value = String(name || "").toLowerCase();
+  const parts = value.split(".");
+  return parts.length > 1 ? parts.pop() : "";
+}
+
+function isImageDocument(item) {
+  if (!item) return false;
+  const mime = String(item.mime_type || "").toLowerCase();
+  const ext = getFileExtension(item.file_name);
+  return mime.startsWith("image/") || ["png", "jpg", "jpeg", "webp", "gif"].includes(ext);
+}
+
+function isPdfDocument(item) {
+  if (!item) return false;
+  const mime = String(item.mime_type || "").toLowerCase();
+  const ext = getFileExtension(item.file_name);
+  return mime.includes("pdf") || ext === "pdf";
 }
 
 function formatEstimateStatus(status, t = null) {
@@ -118,6 +145,17 @@ function formatDirectLabel(value, t = null) {
   return "—";
 }
 
+function getReferralBadgeLabel(lead) {
+  const referralCode = String(lead?.source_details?.referral_code || "").trim();
+  const partnerLabel = String(lead?.source_details?.referral_partner || "").trim();
+
+  if (!lead?.referral_partner_id && !referralCode && !partnerLabel) {
+    return "";
+  }
+
+  return `Referral${partnerLabel || referralCode ? ` · ${partnerLabel || referralCode}` : ""}`;
+}
+
 function downloadCsv(rows) {
   const headers = [
     "Lead Code",
@@ -163,7 +201,7 @@ function downloadCsv(rows) {
 
 export default function AdminLeads() {
   const { t } = useTranslation();
-  const { hasPermission } = useAdminAuth();
+  const { hasPermission, hasAnyPermission } = useAdminAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [moduleData, setModuleData] = useState(null);
@@ -179,6 +217,13 @@ export default function AdminLeads() {
   const [isSaving, setIsSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activeDownloadId, setActiveDownloadId] = useState("");
+  const [documentPreview, setDocumentPreview] = useState({
+    item: null,
+    url: "",
+    isLoading: false,
+    error: "",
+    zoom: 1,
+  });
   const lastViewedLeadIdRef = useRef("");
 
   const loadLeads = async (options = {}) => {
@@ -205,6 +250,25 @@ export default function AdminLeads() {
       setPreviewOpen(true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!documentPreview.item) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setDocumentPreview({ item: null, url: "", isLoading: false, error: "", zoom: 1 });
+      }
+    };
+
+    const previousOverflow = window.document.body.style.overflow;
+    window.document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [documentPreview.item]);
 
   const disruptionOptions = useMemo(() => {
     const values = Array.from(new Set((moduleData?.leads || []).map((lead) => formatDisruption(lead)).filter(Boolean)));
@@ -270,12 +334,20 @@ export default function AdminLeads() {
       resizable: true,
       reorderable: true,
       wrap: true,
-      renderCell: (lead) => (
-        <div className="admin-crm-page__primary" title={formatLeadReference(lead)}>
-          <strong className="admin-crm-page__code admin-crm-table__cell-main">{formatLeadReference(lead)}</strong>
-          <span className="admin-crm-table__cell-sub">{translateEnum(t, lead.source || "direct")}</span>
-        </div>
-      ),
+      renderCell: (lead) => {
+        const referralBadgeLabel = getReferralBadgeLabel(lead);
+
+        return (
+          <div className="admin-crm-page__primary" title={formatLeadReference(lead)}>
+            <strong className="admin-crm-page__code admin-crm-table__cell-main">{formatLeadReference(lead)}</strong>
+            {referralBadgeLabel ? (
+              <AdminStatusBadge tone="info">{referralBadgeLabel}</AdminStatusBadge>
+            ) : (
+              <span className="admin-crm-table__cell-sub">{translateEnum(t, lead.source || "direct")}</span>
+            )}
+          </div>
+        );
+      },
       getCellTitle: (lead) => formatLeadReference(lead),
     },
     {
@@ -409,6 +481,9 @@ export default function AdminLeads() {
     () => (moduleData?.signatures || []).filter((entry) => entry.lead_id === selectedLead?.id),
     [moduleData?.signatures, selectedLead?.id],
   );
+  const canConvertLeadToCase = hasAnyPermission(["leads.edit", "cases.edit"]);
+  const canManageLeadStatus = hasPermission("leads.edit");
+  const canAssignLeadOwner = hasPermission("leads.assign");
 
   useEffect(() => {
     if (!selectedLead?.id || isLoading || lastViewedLeadIdRef.current === selectedLead.id) return;
@@ -484,34 +559,115 @@ export default function AdminLeads() {
   };
 
   const handleOpenLead = (leadId) => {
+    setDocumentPreview({ item: null, url: "", isLoading: false, error: "", zoom: 1 });
     setSelectedLeadId(leadId);
     setPreviewOpen(true);
   };
 
   const handleClosePreview = () => {
+    setDocumentPreview({ item: null, url: "", isLoading: false, error: "", zoom: 1 });
     setPreviewOpen(false);
     setSelectedLeadId(null);
   };
 
-  const handleDownloadDocument = async (document) => {
-    if (!document?.file_path) return;
+  const handleCloseDocumentPreview = () => {
+    setDocumentPreview({ item: null, url: "", isLoading: false, error: "", zoom: 1 });
+  };
+
+  const downloadDocumentFile = async (item, sourceUrl = "") => {
+    const signedUrl = sourceUrl || await getDocumentDownloadUrl(item);
+    try {
+      const response = await fetch(signedUrl);
+      if (!response.ok) {
+        throw new Error(t("admin.leads.documentOpenError"));
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = window.document.createElement("a");
+      link.href = objectUrl;
+      link.download = item.file_name || "document";
+      link.rel = "noopener";
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      const link = window.document.createElement("a");
+      link.href = signedUrl;
+      link.download = item.file_name || "document";
+      link.rel = "noopener";
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+    }
+
+    return signedUrl;
+  };
+
+  const handleOpenDocumentPreview = async (item) => {
+    if (!item?.file_path) return;
     setError("");
-    setActiveDownloadId(document.id);
+    setDocumentPreview({
+      item,
+      url: "",
+      isLoading: true,
+      error: "",
+      zoom: 1,
+    });
 
     try {
-      const url = await getDocumentDownloadUrl(document);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = document.file_name || "document";
-      link.rel = "noopener";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const url = await getDocumentDownloadUrl(item);
+      setDocumentPreview((current) => (
+        current.item?.id === item.id
+          ? { ...current, url, isLoading: false, error: "" }
+          : current
+      ));
+    } catch (nextError) {
+      const message = nextError.message || t("admin.leads.documentOpenError");
+      setDocumentPreview((current) => (
+        current.item?.id === item.id
+          ? { ...current, isLoading: false, error: message }
+          : current
+      ));
+      setError(message);
+    }
+  };
+
+  const handleSaveDocument = async (item, sourceUrl = "") => {
+    if (!item?.file_path) return;
+    setError("");
+    setActiveDownloadId(item.id);
+
+    try {
+      const resolvedUrl = await downloadDocumentFile(item, sourceUrl);
+      setDocumentPreview((current) => (
+        current.item?.id === item.id && !current.url
+          ? { ...current, url: resolvedUrl }
+          : current
+      ));
     } catch (nextError) {
       setError(nextError.message || t("admin.leads.documentOpenError"));
     } finally {
       setActiveDownloadId("");
     }
+  };
+
+  const handleOpenDocumentInNewTab = () => {
+    if (!documentPreview.url) return;
+    window.open(documentPreview.url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleDocumentZoomIn = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: clamp(current.zoom + DOCUMENT_ZOOM_STEP, MIN_DOCUMENT_ZOOM, MAX_DOCUMENT_ZOOM) }));
+  };
+
+  const handleDocumentZoomOut = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: clamp(current.zoom - DOCUMENT_ZOOM_STEP, MIN_DOCUMENT_ZOOM, MAX_DOCUMENT_ZOOM) }));
+  };
+
+  const handleDocumentZoomReset = () => {
+    setDocumentPreview((current) => ({ ...current, zoom: 1 }));
   };
 
   const clearFilters = () => {
@@ -523,6 +679,10 @@ export default function AdminLeads() {
   };
 
   const countLabel = t("admin.leads.countLabel", { count: filteredLeads.length });
+  const previewedDocument = documentPreview.item;
+  const previewIsImage = isImageDocument(previewedDocument);
+  const previewIsPdf = isPdfDocument(previewedDocument);
+  const previewZoomLabel = `${Math.round(documentPreview.zoom * 100)}%`;
 
   return (
     <div className="admin-page admin-leads-page admin-crm-page">
@@ -626,7 +786,7 @@ export default function AdminLeads() {
                   className="btn btn--primary"
                   type="button"
                   onClick={handleConvertToCase}
-                  disabled={!hasPermission("cases.update") || isSaving}
+                  disabled={!canConvertLeadToCase || isSaving}
                 >
                   <UserRoundPlus size={15} />
                   <span>{selectedLead.status === "converted" ? t("admin.leads.openCase") : t("admin.leads.convertToCase")}</span>
@@ -718,11 +878,11 @@ export default function AdminLeads() {
                           <button
                             type="button"
                             className="admin-link-button"
-                            onClick={() => handleDownloadDocument(document)}
-                            disabled={!document.file_path || activeDownloadId === document.id}
+                            onClick={() => handleOpenDocumentPreview(document)}
+                            disabled={!document.file_path}
                             title={document.file_path ? t("admin.leads.openDocumentTitle") : t("admin.leads.documentPreviewUnavailable")}
                           >
-                            {activeDownloadId === document.id ? t("admin.common.opening") : t("admin.common.open")}
+                            {t("admin.common.open")}
                           </button>
                         </article>
                       ))}
@@ -763,7 +923,7 @@ export default function AdminLeads() {
                       <select
                         value={selectedLead.status || "new"}
                         onChange={(event) => saveStatus(selectedLead.id, event.target.value)}
-                        disabled={!hasPermission("leads.update") || isSaving}
+                        disabled={!canManageLeadStatus || isSaving}
                       >
                         {leadStatuses.map((status) => <option key={status} value={status}>{translateEnum(t, status)}</option>)}
                       </select>
@@ -773,7 +933,7 @@ export default function AdminLeads() {
                       <select
                         value={selectedLead.assigned_user_id || ""}
                         onChange={(event) => saveOwner(selectedLead.id, event.target.value)}
-                        disabled={!hasPermission("leads.update") || !moduleData?.supportsCoreSchemaV1 || isSaving}
+                        disabled={!canAssignLeadOwner || !moduleData?.supportsCoreSchemaV1 || isSaving}
                       >
                         <option value="">{t("admin.common.unassigned")}</option>
                         {(moduleData?.assignableUsers || []).map((user) => (
@@ -848,6 +1008,134 @@ export default function AdminLeads() {
           )}
         </AdminSidePanel>
       </section>
+
+      {previewedDocument ? (
+        <div className="admin-leads-page__document-modal-layer" role="presentation">
+          <button
+            type="button"
+            className="admin-leads-page__document-modal-backdrop"
+            onClick={handleCloseDocumentPreview}
+            aria-label={t("admin.common.close")}
+          />
+          <section
+            className="admin-leads-page__document-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lead-document-modal-title"
+          >
+            <header className="admin-leads-page__document-modal-header">
+              <div className="admin-leads-page__document-modal-title">
+                <h3 id="lead-document-modal-title">{previewedDocument.file_name || previewedDocument.document_type || "Document"}</h3>
+                <p>{previewedDocument.document_type || "—"} • {formatDateTime(previewedDocument.created_at)}</p>
+              </div>
+
+              <div className="admin-leads-page__document-modal-tools">
+                {previewIsImage ? (
+                  <>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-secondary admin-link-button"
+                      onClick={handleDocumentZoomOut}
+                      disabled={documentPreview.isLoading || documentPreview.zoom <= MIN_DOCUMENT_ZOOM}
+                      aria-label="Zoom out"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="admin-leads-page__document-modal-zoom">{previewZoomLabel}</span>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-secondary admin-link-button"
+                      onClick={handleDocumentZoomIn}
+                      disabled={documentPreview.isLoading || documentPreview.zoom >= MAX_DOCUMENT_ZOOM}
+                      aria-label="Zoom in"
+                    >
+                      <Plus size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-secondary admin-link-button"
+                      onClick={handleDocumentZoomReset}
+                      disabled={documentPreview.isLoading || documentPreview.zoom === 1}
+                    >
+                      <RotateCcw size={14} />
+                      <span>{t("common.reset", { defaultValue: "Reset" })}</span>
+                    </button>
+                  </>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary admin-link-button"
+                  onClick={() => void handleSaveDocument(previewedDocument, documentPreview.url)}
+                  disabled={activeDownloadId === previewedDocument.id || documentPreview.isLoading}
+                >
+                  {activeDownloadId === previewedDocument.id ? <LoaderCircle size={14} className="is-spinning" /> : <Download size={14} />}
+                  <span>{activeDownloadId === previewedDocument.id ? t("admin.common.saving") : "Save"}</span>
+                </button>
+
+                {documentPreview.url ? (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary admin-link-button"
+                    onClick={handleOpenDocumentInNewTab}
+                  >
+                    <ExternalLink size={14} />
+                    <span>Open in new tab</span>
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary admin-link-button"
+                  onClick={handleCloseDocumentPreview}
+                  aria-label={t("admin.common.close")}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </header>
+
+            <div className="admin-leads-page__document-modal-body">
+              {documentPreview.isLoading ? (
+                <div className="admin-leads-page__document-modal-placeholder">
+                  <LoaderCircle size={24} className="is-spinning" />
+                  <span>{t("admin.common.loading")}</span>
+                </div>
+              ) : documentPreview.error ? (
+                <div className="admin-leads-page__document-modal-placeholder is-error">
+                  <FileText size={24} />
+                  <span>{documentPreview.error}</span>
+                </div>
+              ) : previewIsImage && documentPreview.url ? (
+                <div className="admin-leads-page__document-modal-image">
+                  <img
+                    src={documentPreview.url}
+                    alt={previewedDocument.file_name || previewedDocument.document_type || "Document preview"}
+                    style={{ transform: `scale(${documentPreview.zoom})` }}
+                  />
+                </div>
+              ) : previewIsPdf && documentPreview.url ? (
+                <iframe
+                  title={previewedDocument.file_name || previewedDocument.document_type || "Document preview"}
+                  src={documentPreview.url}
+                  className="admin-leads-page__document-modal-frame"
+                />
+              ) : documentPreview.url ? (
+                <iframe
+                  title={previewedDocument.file_name || previewedDocument.document_type || "Document preview"}
+                  src={documentPreview.url}
+                  className="admin-leads-page__document-modal-frame"
+                />
+              ) : (
+                <div className="admin-leads-page__document-modal-placeholder">
+                  <FileText size={24} />
+                  <span>{t("admin.leads.documentPreviewUnavailable")}</span>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
