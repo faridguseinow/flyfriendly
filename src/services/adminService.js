@@ -19,6 +19,93 @@ function isMissingColumnError(error) {
   return error?.code === "PGRST204" || error?.message?.includes("column") || error?.message?.includes("schema cache");
 }
 
+const TRASH_MODULE_ACCESS_PERMISSIONS = ["trash.manage", "users.manage"];
+const REFERRAL_MODULE_READ_PERMISSIONS = ["partners.view", "partner_applications.view", "referrals.view"];
+const REPORTS_MODULE_READ_PERMISSIONS = ["reports.view", "reports.export", "finance.view", "finance.edit"];
+
+async function assertAdminAnyPermission(anyPermissions, message) {
+  return assertCurrentAdminPermission(null, {
+    anyPermissions,
+    message,
+  });
+}
+
+async function assertLeadsModuleReadAccess(message = "You do not have access to leads.") {
+  return assertCurrentAdminPermission("leads.view", { message });
+}
+
+async function assertLeadsEditAccess(message = "You do not have access to update leads.") {
+  return assertCurrentAdminPermission("leads.edit", { message });
+}
+
+async function assertCasesModuleReadAccess(message = "You do not have access to cases.") {
+  return assertCurrentAdminPermission("cases.view", { message });
+}
+
+async function assertCasesEditAccess(message = "You do not have access to update cases.") {
+  return assertCurrentAdminPermission("cases.edit", { message });
+}
+
+async function assertCustomersModuleReadAccess(message = "You do not have access to customers.") {
+  return assertCurrentAdminPermission("customers.view", { message });
+}
+
+async function assertCustomersEditAccess(message = "You do not have access to update customers.") {
+  return assertCurrentAdminPermission("customers.edit", { message });
+}
+
+async function assertTasksModuleReadAccess(message = "You do not have access to tasks.") {
+  return assertCurrentAdminPermission("tasks.view", { message });
+}
+
+async function assertTasksEditAccess(message = "You do not have access to update tasks.") {
+  return assertCurrentAdminPermission("tasks.edit", { message });
+}
+
+async function assertCommunicationsModuleReadAccess(message = "You do not have access to communications.") {
+  return assertCurrentAdminPermission("communications.view", { message });
+}
+
+async function assertCommunicationsEditAccess(message = "You do not have access to update communications.") {
+  return assertCurrentAdminPermission("communications.edit", { message });
+}
+
+async function assertDocumentsModuleReadAccess(message = "You do not have access to documents.") {
+  return assertCurrentAdminPermission("documents.view", { message });
+}
+
+async function assertDocumentsManageAccess(message = "You do not have access to manage documents.") {
+  return assertCurrentAdminPermission("documents.manage", { message });
+}
+
+async function assertTrashModuleAccess(message = "You do not have access to the trash module.") {
+  return assertAdminAnyPermission(TRASH_MODULE_ACCESS_PERMISSIONS, message);
+}
+
+async function assertReferralModuleReadAccess(message = "You do not have access to referral admin data.") {
+  return assertAdminAnyPermission(REFERRAL_MODULE_READ_PERMISSIONS, message);
+}
+
+async function assertReportsModuleReadAccess(message = "You do not have access to reports.") {
+  return assertAdminAnyPermission(REPORTS_MODULE_READ_PERMISSIONS, message);
+}
+
+async function assertTrashItemMutationAccess(item, action = "manage") {
+  if (item?.entity_type === "profile") {
+    return assertCurrentAdminPermission("users.manage", {
+      message: action === "restore"
+        ? "You do not have access to restore deleted users."
+        : "You do not have access to manage deleted users.",
+    });
+  }
+
+  return assertDocumentsManageAccess(
+    action === "restore"
+      ? "You do not have access to restore deleted documents."
+      : "You do not have access to manage deleted documents.",
+  );
+}
+
 function getTrashPurgeAfterDate() {
   return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 }
@@ -914,6 +1001,8 @@ async function fetchCaseLeadsWithEstimateFallback(client) {
 }
 
 export async function fetchLeadsModuleData(options = {}) {
+  await assertLeadsModuleReadAccess();
+
   return withAdminModuleCache("leads-module", async () => {
     const client = requireSupabase();
 
@@ -1041,6 +1130,8 @@ function applyCaseFilters(query, filters) {
 }
 
 export async function fetchCasesModuleData({ page = 1, pageSize = 12, filters = {}, force = false } = {}) {
+  await assertCasesModuleReadAccess();
+
   return withAdminModuleCache(buildAdminModuleCacheKey("cases-module", { page, pageSize, filters }), async () => {
     const client = requireSupabase();
 
@@ -1853,6 +1944,8 @@ export async function convertLeadToCase(leadId) {
 }
 
 export async function fetchCustomersModuleData(options = {}) {
+  await assertCustomersModuleReadAccess();
+
   return withAdminModuleCache("customers-module", async () => {
     const client = requireSupabase();
     const activeCustomerCaseStatuses = ["documents_pending", "ready_to_submit", "submitted_to_airline", "awaiting_response", "approved", "payment_processing"];
@@ -2000,6 +2093,8 @@ export async function fetchCustomersModuleData(options = {}) {
 }
 
 export async function updateCustomerProfile(customerId, updates) {
+  await assertCustomersEditAccess();
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("customers").select("*").eq("id", customerId).maybeSingle();
@@ -2027,6 +2122,8 @@ export async function updateCustomerProfile(customerId, updates) {
 }
 
 export async function fetchTasksModuleData() {
+  await assertTasksModuleReadAccess();
+
   const client = requireSupabase();
 
   const [tasks, assignableUsers, leads, cases, customers, documents, finance, partners, activityLogs] = await Promise.all([
@@ -2134,6 +2231,8 @@ export async function fetchTasksModuleData() {
 }
 
 export async function createTask(taskInput) {
+  await assertTasksEditAccess();
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const payload = {
@@ -2186,6 +2285,8 @@ export async function createTask(taskInput) {
 }
 
 export async function updateTask(taskId, updates) {
+  await assertTasksEditAccess();
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("tasks").select("*").eq("id", taskId).maybeSingle();
@@ -2221,6 +2322,8 @@ export async function updateTask(taskId, updates) {
 }
 
 export async function fetchCommunicationsModuleData() {
+  await assertCommunicationsModuleReadAccess();
+
   const client = requireSupabase();
 
   const [communications, profiles, leads, cases, customers] = await Promise.all([
@@ -2291,6 +2394,8 @@ export async function fetchCommunicationsModuleData() {
 }
 
 export async function createCommunication(input) {
+  await assertCommunicationsEditAccess();
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
 
@@ -2364,6 +2469,8 @@ export async function createCommunication(input) {
 }
 
 export async function fetchDocumentsCenterData() {
+  await assertDocumentsModuleReadAccess();
+
   const client = requireSupabase();
 
   const [leadDocuments, caseDocuments, claimDocuments, leadSignatures, leads, cases, claims, customers, tasks] = await Promise.all([
@@ -2526,6 +2633,10 @@ export async function fetchFinanceModuleData(options = {}) {
 }
 
 export async function updateCaseFinance(financeId, updates) {
+  await assertCurrentAdminPermission("finance.edit", {
+    message: "You do not have access to update finance data.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("case_finance").select("*").eq("id", financeId).maybeSingle();
@@ -2590,6 +2701,8 @@ function matchPartnerForRow(row, partners = []) {
 }
 
 export async function fetchReferralPartnersModuleData(options = {}) {
+  await assertReferralModuleReadAccess();
+
   return withAdminModuleCache("referral-partners-module", async () => {
     const client = requireSupabase();
 
@@ -2656,6 +2769,8 @@ export async function fetchReferralPartnersModuleData(options = {}) {
 }
 
 export async function fetchReferralControlCenterData(options = {}) {
+  await assertReferralModuleReadAccess();
+
   return withAdminModuleCache("referral-control-center-module", async () => {
     const client = requireSupabase();
 
@@ -2694,6 +2809,8 @@ export async function fetchReferralControlCenterData(options = {}) {
 }
 
 export async function fetchPartnerApplicationsModuleData(options = {}) {
+  await assertReferralModuleReadAccess();
+
   return withAdminModuleCache("partner-applications-module", async () => {
     const client = requireSupabase();
 
@@ -2746,6 +2863,10 @@ export async function fetchPartnerApplicationsModuleData(options = {}) {
 }
 
 export async function reviewPartnerApplication(applicationId, input = {}) {
+  await assertCurrentAdminPermission("partner_applications.manage", {
+    message: "You do not have access to review partner applications.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const nextStatus = String(input.status || "").trim().toLowerCase();
@@ -2958,6 +3079,10 @@ async function generateUniqueReferralPartnerCode(client) {
 }
 
 export async function createReferralPartner(input) {
+  await assertCurrentAdminPermission("partners.edit", {
+    message: "You do not have access to create referral partners.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const referralCode = await generateUniqueReferralPartnerCode(client);
@@ -3003,6 +3128,10 @@ export async function createReferralPartner(input) {
 }
 
 export async function updateReferralPartner(partnerId, updates) {
+  await assertCurrentAdminPermission("partners.edit", {
+    message: "You do not have access to update referral partners.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("referral_partners").select("*").eq("id", partnerId).maybeSingle();
@@ -3030,6 +3159,11 @@ export async function updateReferralPartner(partnerId, updates) {
 }
 
 export async function createReferralPartnerPayout(input) {
+  await assertCurrentAdminPermission("partners.edit", {
+    anyPermissions: ["partner_payouts.manage", "finance.edit"],
+    message: "You do not have access to create partner payouts.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const payload = {
@@ -3115,6 +3249,8 @@ export async function fetchActivityLogsData(options = {}) {
 }
 
 export async function fetchReportsModuleData() {
+  await assertReportsModuleReadAccess();
+
   const client = requireSupabase();
 
   const [leads, cases, finance, tasks, communications, partners, documents, customers] = await Promise.all([
@@ -5354,6 +5490,8 @@ export async function updateUserAdminRoles(userId, roleCodes = []) {
 }
 
 export async function moveDocumentToTrash(document, note = "") {
+  await assertDocumentsManageAccess("You do not have access to move documents to trash.");
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const entityType = getDocumentEntityType(document);
@@ -5428,36 +5566,13 @@ export async function moveDocumentToTrash(document, note = "") {
   return trashResult.data;
 }
 
-async function isCurrentUserOwnerOrSuperAdmin(client, userId) {
-  if (!userId) {
-    return false;
-  }
-
-  const response = await client
-    .from("user_admin_roles")
-    .select("role_code")
-    .eq("user_id", userId)
-    .in("role_code", ["owner", "super_admin"])
-    .limit(2);
-
-  if (response.error && !isMissingOptionalTable(response.error)) {
-    throw response.error;
-  }
-
-  return Boolean(response.data?.length);
-}
-
 export async function moveUserToTrash(profileId, note = "") {
   const client = requireSupabase();
-  const actor = await getCurrentUser().catch(() => null);
+  const actorState = await assertCurrentOwnerAdmin("Only the owner can delete users.");
+  const actor = actorState?.user || null;
 
   if (!actor?.id) {
     throw new Error("You need to be signed in.");
-  }
-
-  const isOwnerOrSuperAdmin = await isCurrentUserOwnerOrSuperAdmin(client, actor.id);
-  if (!isOwnerOrSuperAdmin) {
-    throw new Error("Only the owner can delete users.");
   }
 
   if (profileId === actor.id) {
@@ -5543,6 +5658,8 @@ export async function moveUserToTrash(profileId, note = "") {
 }
 
 export async function fetchTrashModuleData() {
+  await assertTrashModuleAccess();
+
   const client = requireSupabase();
   const { data, error } = await client
     .from("trash_items")
@@ -5560,6 +5677,8 @@ export async function fetchTrashModuleData() {
 }
 
 export async function restoreTrashItem(item) {
+  await assertTrashItemMutationAccess(item, "restore");
+
   const client = requireSupabase();
   const actor = await getCurrentUser().catch(() => null);
   const source = getTrashSourceConfig(item?.entity_type);
@@ -5625,10 +5744,10 @@ async function removeStorageAsset(client, item) {
 }
 
 export async function permanentlyDeleteTrashItem(item) {
-  const client = requireSupabase();
-  const actor = await getCurrentUser().catch(() => null);
-
   if (item.entity_type === "profile") {
+    const actorState = await assertCurrentOwnerAdmin("Only the owner can permanently delete user accounts.");
+    const client = requireSupabase();
+    const actor = actorState?.user || null;
     const rpcResult = await client.rpc("admin_permanently_delete_user", {
       target_user_id: item.entity_id,
     });
@@ -5650,6 +5769,10 @@ export async function permanentlyDeleteTrashItem(item) {
     return rpcResult.data;
   }
 
+  await assertTrashItemMutationAccess(item, "purge");
+
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
   const source = getTrashSourceConfig(item.entity_type);
   if (!source?.table) {
     throw new Error("Permanent deletion is not supported for this trash item.");
@@ -5688,6 +5811,8 @@ export async function permanentlyDeleteTrashItem(item) {
 }
 
 export async function purgeExpiredTrashItems() {
+  await assertTrashModuleAccess();
+
   const client = requireSupabase();
   const { data, error } = await client
     .from("trash_items")
@@ -5702,8 +5827,16 @@ export async function purgeExpiredTrashItems() {
 
   let purged = 0;
   for (const item of data || []) {
-    await permanentlyDeleteTrashItem(item);
-    purged += 1;
+    try {
+      await permanentlyDeleteTrashItem(item);
+      purged += 1;
+    } catch (nextError) {
+      const message = String(nextError?.message || "");
+      if (message.startsWith("You do not have access") || message.startsWith("Only the owner")) {
+        continue;
+      }
+      throw nextError;
+    }
   }
 
   return { purged };
@@ -6210,6 +6343,8 @@ export function downloadSignaturePng(signatureDataUrl, fileName = "signature.png
 }
 
 export async function updateLeadStatus(leadId, status) {
+  await assertLeadsEditAccess();
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const currentLead = await client
@@ -6257,6 +6392,8 @@ export async function updateLeadStatus(leadId, status) {
 }
 
 export async function updateCaseWorkflow(caseId, updates) {
+  await assertCasesEditAccess();
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("cases").select("*").eq("id", caseId).maybeSingle();
@@ -6329,6 +6466,10 @@ export async function updateCaseWorkflow(caseId, updates) {
 }
 
 export async function assignLeadOwner(leadId, assignedUserId) {
+  await assertCurrentAdminPermission("leads.assign", {
+    message: "You do not have access to assign leads.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("leads").select("assigned_user_id").eq("id", leadId).maybeSingle();
@@ -6366,6 +6507,8 @@ export async function assignLeadOwner(leadId, assignedUserId) {
 }
 
 export async function createLeadNote(leadId, body) {
+  await assertLeadsEditAccess("You do not have access to add lead notes.");
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const { error } = await client
