@@ -659,7 +659,7 @@
 
 .admin-dashboard-main__composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(120px, 150px) minmax(140px, 170px) auto;
   gap: 10px;
 
   .btn {
@@ -714,13 +714,42 @@
     min-width: 0;
     overflow-wrap: anywhere;
   }
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 700;
+  }
+
+  small {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 17px;
+    text-decoration: none;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
 }
 
 .admin-dashboard-main__item.is-completed .admin-dashboard-main__toggle {
   color: #7b8390;
 
-  span:last-child {
+  span:last-child strong {
     text-decoration: line-through;
+  }
+
+  span:last-child small {
+    text-decoration: none;
   }
 }
 
@@ -756,6 +785,11 @@
     background: #fff5f5;
     color: #dc2626;
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.62;
+  }
 }
 
 .admin-dashboard-main__empty {
@@ -770,6 +804,10 @@
     font-size: 14px;
     line-height: 20px;
   }
+}
+
+.admin-dashboard-main .is-spinning {
+  animation: adminDocumentPreviewSpin 0.9s linear infinite;
 }
 
 .admin-preferences-page__grid {

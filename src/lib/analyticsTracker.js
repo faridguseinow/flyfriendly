@@ -3,6 +3,7 @@ import { getReferralAttribution } from "../services/referralService.js";
 
 const ANONYMOUS_ID_STORAGE_KEY = "fly-friendly-analytics-anonymous-id";
 const UTM_STORAGE_KEY = "fly-friendly-analytics-utm";
+const AB_STORAGE_KEY = "fly-friendly-analytics-ab";
 const ALLOWED_EVENTS = new Set([
   "page_view",
   "claim_submitted",
@@ -76,6 +77,22 @@ function readStoredUtmParams() {
   }
 }
 
+function readStoredAbParams() {
+  try {
+    const raw = readStorage(AB_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return {
+      ab_test: sanitizeText(parsed?.ab_test, 160),
+      ab_variant: sanitizeText(parsed?.ab_variant, 160),
+    };
+  } catch {
+    return {
+      ab_test: "",
+      ab_variant: "",
+    };
+  }
+}
+
 export function getAnonymousId() {
   const stored = sanitizeText(readStorage(ANONYMOUS_ID_STORAGE_KEY), 120);
   if (stored) {
@@ -124,12 +141,32 @@ export function getUtmParams() {
   return next;
 }
 
+export function getAbTestParams() {
+  const stored = readStoredAbParams();
+  if (!isBrowser()) {
+    return stored;
+  }
+
+  const params = new URLSearchParams(window.location.search || "");
+  const next = {
+    ab_test: sanitizeText(params.get("ab_test") || params.get("ff_ab_test"), 160) || stored.ab_test,
+    ab_variant: sanitizeText(params.get("ab_variant") || params.get("ff_ab_variant"), 160) || stored.ab_variant,
+  };
+
+  if (next.ab_test && next.ab_variant) {
+    writeStorage(AB_STORAGE_KEY, JSON.stringify(next));
+  }
+
+  return next;
+}
+
 export async function trackAnalyticsEvent(eventName, extra = {}) {
   if (!isBrowser() || !isSupabaseConfigured || !supabase || !ALLOWED_EVENTS.has(eventName)) {
     return null;
   }
 
   const utm = getUtmParams();
+  const ab = getAbTestParams();
   const referralCode = sanitizeText(
     extra.referral_code || getReferralAttribution()?.referralCode || "",
     120,
@@ -149,6 +186,8 @@ export async function trackAnalyticsEvent(eventName, extra = {}) {
         utm_source: utm.utm_source || null,
         utm_medium: utm.utm_medium || null,
         utm_campaign: utm.utm_campaign || null,
+        ab_test: sanitizeText(extra.ab_test, 160) || ab.ab_test || null,
+        ab_variant: sanitizeText(extra.ab_variant, 160) || ab.ab_variant || null,
         device_type: getDeviceType(),
         referral_code: referralCode || null,
       },

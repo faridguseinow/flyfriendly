@@ -1,4 +1,4 @@
-import { Megaphone, MousePointerClick, RefreshCw, Smartphone, Send, Users } from "lucide-react";
+import { BarChart3, FlaskConical, Megaphone, MousePointerClick, RefreshCw, Smartphone, Send, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AdminFilterBar, AdminMetricsStrip, AdminPageHeader } from "../../admin/components/AdminUi.jsx";
 import { getMarketingAnalyticsSummary } from "../../services/adminMarketingService.js";
@@ -19,6 +19,10 @@ function buildDefaultDateRange() {
 
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(value % 1 === 0 ? 0 : 1)}%`;
+}
+
+function formatCount(value) {
+  return Number(value || 0).toLocaleString();
 }
 
 function formatDateTime(value) {
@@ -63,6 +67,119 @@ function AnalyticsBars({ items = [], emptyLabel }) {
           </article>
         );
       })}
+    </div>
+  );
+}
+
+function ConversionFunnel({ items = [] }) {
+  const maxCount = Math.max(...items.map((item) => item.count), 0);
+
+  if (!items.length) {
+    return <div className="admin-marketing__empty">No funnel data yet.</div>;
+  }
+
+  return (
+    <div className="admin-marketing__funnel">
+      {items.map((item, index) => {
+        const width = maxCount ? `${Math.max((item.count / maxCount) * 100, 10)}%` : "10%";
+        const rateLabel = index === 0 ? "Entry point" : `${formatPercent(item.rateFromPrevious)} from previous`;
+
+        return (
+          <article key={item.key} className="admin-marketing__funnel-step">
+            <div className="admin-marketing__funnel-meta">
+              <div>
+                <strong>{item.label}</strong>
+                <span>{rateLabel}</span>
+              </div>
+              <b>{formatCount(item.count)}</b>
+            </div>
+            <div className="admin-marketing__funnel-track">
+              <span style={{ width }} />
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function CampaignPerformanceTable({ rows = [] }) {
+  if (!rows.length) {
+    return <div className="admin-marketing__empty">No campaign conversions yet.</div>;
+  }
+
+  return (
+    <div className="admin-marketing__table-wrap">
+      <table className="admin-marketing__table">
+        <thead>
+          <tr>
+            <th>Campaign / Source</th>
+            <th>Visitors</th>
+            <th>Referral opens</th>
+            <th>Claims</th>
+            <th>Conversion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.label}-${row.source}-${row.medium}`}>
+              <td>
+                <strong>{row.campaign || row.label}</strong>
+                <span>{[row.source, row.medium].filter(Boolean).join(" / ") || "direct"}</span>
+              </td>
+              <td>{formatCount(row.visitors)}</td>
+              <td>{formatCount(row.referralVisits)}</td>
+              <td>{formatCount(row.claims)}</td>
+              <td>{formatPercent(row.conversionRate)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AbTestResults({ tests = [], supportsAbTesting = true }) {
+  if (!supportsAbTesting) {
+    return <div className="admin-marketing__empty">Run migration 046 to start recording A/B variants.</div>;
+  }
+
+  if (!tests.length) {
+    return <div className="admin-marketing__empty">No A/B test traffic yet. Add `ab_test` and `ab_variant` to campaign URLs.</div>;
+  }
+
+  return (
+    <div className="admin-marketing__ab-tests">
+      {tests.map((test) => (
+        <article key={test.testName} className="admin-marketing__ab-test">
+          <header>
+            <strong>{test.testName}</strong>
+            <span>{test.variants.length} variants</span>
+          </header>
+          <div className="admin-marketing__table-wrap">
+            <table className="admin-marketing__table">
+              <thead>
+                <tr>
+                  <th>Variant</th>
+                  <th>Visitors</th>
+                  <th>Claims</th>
+                  <th>Conversion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {test.variants.map((variant) => (
+                  <tr key={variant.variantName}>
+                    <td><strong>{variant.variantName}</strong></td>
+                    <td>{formatCount(variant.visitors)}</td>
+                    <td>{formatCount(variant.claims)}</td>
+                    <td>{formatPercent(variant.conversionRate)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
@@ -176,6 +293,21 @@ export default function AdminMarketing() {
             <article className="admin-card admin-marketing__panel">
               <header className="admin-marketing__panel-head">
                 <div>
+                  <h2>Conversion funnel</h2>
+                  <p>{rangeLabel}</p>
+                </div>
+                <span className="admin-marketing__panel-icon"><BarChart3 size={16} /></span>
+              </header>
+              {isLoading && !summary ? (
+                <div className="admin-marketing__empty">Loading funnel...</div>
+              ) : (
+                <ConversionFunnel items={summary?.funnel || []} />
+              )}
+            </article>
+
+            <article className="admin-card admin-marketing__panel">
+              <header className="admin-marketing__panel-head">
+                <div>
                   <h2>Traffic sources</h2>
                   <p>{rangeLabel}</p>
                 </div>
@@ -200,6 +332,36 @@ export default function AdminMarketing() {
                 <div className="admin-marketing__empty">Loading devices...</div>
               ) : (
                 <AnalyticsBars items={summary?.devices || []} emptyLabel="No device data yet." />
+              )}
+            </article>
+
+            <article className="admin-card admin-marketing__panel admin-marketing__panel-wide">
+              <header className="admin-marketing__panel-head">
+                <div>
+                  <h2>Campaign conversion</h2>
+                  <p>{rangeLabel}</p>
+                </div>
+                <span className="admin-marketing__panel-icon"><MousePointerClick size={16} /></span>
+              </header>
+              {isLoading && !summary ? (
+                <div className="admin-marketing__empty">Loading campaigns...</div>
+              ) : (
+                <CampaignPerformanceTable rows={summary?.campaignPerformance || []} />
+              )}
+            </article>
+
+            <article className="admin-card admin-marketing__panel admin-marketing__panel-wide">
+              <header className="admin-marketing__panel-head">
+                <div>
+                  <h2>A/B test results</h2>
+                  <p>{rangeLabel}</p>
+                </div>
+                <span className="admin-marketing__panel-icon"><FlaskConical size={16} /></span>
+              </header>
+              {isLoading && !summary ? (
+                <div className="admin-marketing__empty">Loading tests...</div>
+              ) : (
+                <AbTestResults tests={summary?.abTests || []} supportsAbTesting={summary?.supportsAbTesting !== false} />
               )}
             </article>
 

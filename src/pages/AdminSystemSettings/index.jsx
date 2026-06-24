@@ -7,8 +7,8 @@ import "../AdminContent/style.scss";
 
 function MetricCard({ icon: Icon, label, value }) {
   return (
-    <article className="admin-metric">
-      <span><Icon size={22} strokeWidth={1.8} /></span>
+    <article className="admin-content-system__metric">
+      <span className="admin-content-system__metric-icon"><Icon size={18} strokeWidth={1.9} /></span>
       <div>
         <strong>{value}</strong>
         <small>{label}</small>
@@ -157,15 +157,15 @@ export default function AdminSystemSettings() {
         <p className="admin-message">{t("admin.systemSettings.loading")}</p>
       ) : (
         <>
-          <section className="admin-metrics">
+          <section className="admin-content-system__metrics">
             <MetricCard icon={Cog} label={t("admin.systemSettings.metrics.settings")} value={metrics.total} />
             <MetricCard icon={Globe2} label={t("admin.systemSettings.metrics.publicKeys")} value={metrics.publicCount} />
             <MetricCard icon={SlidersHorizontal} label={t("admin.systemSettings.metrics.groups")} value={metrics.groups} />
             <MetricCard icon={Save} label={t("admin.systemSettings.metrics.structuredValues")} value={metrics.jsonCount} />
           </section>
 
-          <section className="admin-panel">
-            <div className="admin-panel__head">
+          <section className="admin-panel admin-content-system__panel">
+            <div className="admin-panel__head admin-content-system__panel-head">
               <div><h2>{t("admin.systemSettings.title")}</h2><p>{t("admin.systemSettings.description")}</p></div>
               <button className="admin-link-button" type="button" onClick={startNew}>{t("admin.systemSettings.newSetting")}</button>
             </div>
@@ -201,8 +201,8 @@ export default function AdminSystemSettings() {
                 )) : <div className="admin-content-system__empty">{t("admin.systemSettings.empty")}</div>}
               </div>
 
-              <section className="admin-panel">
-                <div className="admin-panel__head">
+              <section className="admin-content-system__editor">
+                <div className="admin-panel__head admin-content-system__editor-head">
                   <div><h2>{draft.id ? t("admin.systemSettings.editSetting") : t("admin.systemSettings.createSetting")}</h2><p>{t("admin.systemSettings.formDescription")}</p></div>
                 </div>
 

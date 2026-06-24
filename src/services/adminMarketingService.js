@@ -53,6 +53,9 @@ function buildEmptySummary(range) {
     claimsToday: 0,
     referralVisitsToday: 0,
     mobileShare: 0,
+    funnel: [],
+    campaignPerformance: [],
+    abTests: [],
     sources: [],
     devices: [],
     topPartners: [],
@@ -88,6 +91,10 @@ function deriveSourceLabel(event) {
 
 function toPercent(value) {
   return Number((value * 100).toFixed(1));
+}
+
+function safeRate(numerator, denominator) {
+  return denominator ? toPercent(numerator / denominator) : 0;
 }
 
 function sortGroupedItems(map, formatItem) {
@@ -169,6 +176,183 @@ function buildPartnerSummary(events = [], partnerMap = new Map()) {
     .slice(0, 10);
 }
 
+function buildMarketingFunnel(events = []) {
+  const pageViewEvents = events.filter((event) => event.event_name === "page_view");
+  const referralEvents = events.filter((event) => event.event_name === "partner_referral_opened");
+  const claimEvents = events.filter((event) => event.event_name === "claim_submitted");
+  const uniqueVisitors = new Set(
+    pageViewEvents
+      .map((event) => String(event.anonymous_id || "").trim())
+      .filter(Boolean),
+  ).size;
+  const claimSubmitters = new Set(
+    claimEvents
+      .map((event) => String(event.anonymous_id || "").trim())
+      .filter(Boolean),
+  ).size;
+
+  return [
+    {
+      key: "visitors",
+      label: "Unique visitors",
+      count: uniqueVisitors,
+      rateFromPrevious: 100,
+      rateFromStart: 100,
+    },
+    {
+      key: "page_views",
+      label: "Page views",
+      count: pageViewEvents.length,
+      rateFromPrevious: safeRate(pageViewEvents.length, uniqueVisitors),
+      rateFromStart: safeRate(pageViewEvents.length, uniqueVisitors),
+    },
+    {
+      key: "referral_opens",
+      label: "Referral opens",
+      count: referralEvents.length,
+      rateFromPrevious: safeRate(referralEvents.length, pageViewEvents.length),
+      rateFromStart: safeRate(referralEvents.length, uniqueVisitors),
+    },
+    {
+      key: "claim_submissions",
+      label: "Claim submissions",
+      count: claimEvents.length,
+      rateFromPrevious: safeRate(claimEvents.length, pageViewEvents.length),
+      rateFromStart: safeRate(claimSubmitters, uniqueVisitors),
+    },
+  ];
+}
+
+function getCampaignKey(event) {
+  const campaign = String(event?.utm_campaign || "").trim();
+  if (campaign) {
+    return campaign;
+  }
+
+  const source = deriveSourceLabel(event);
+  const medium = String(event?.utm_medium || "").trim();
+  return medium ? `${source} / ${medium}` : source;
+}
+
+function buildCampaignPerformance(events = []) {
+  const buckets = new Map();
+
+  events.forEach((event) => {
+    const key = getCampaignKey(event);
+    const current = buckets.get(key) || {
+      label: key,
+      visitors: new Set(),
+      pageViews: 0,
+      claims: 0,
+      referralVisits: 0,
+      source: deriveSourceLabel(event),
+      medium: String(event?.utm_medium || "").trim(),
+      campaign: String(event?.utm_campaign || "").trim(),
+    };
+
+    const anonymousId = String(event.anonymous_id || "").trim();
+    if (anonymousId) {
+      current.visitors.add(anonymousId);
+    }
+
+    if (event.event_name === "page_view") {
+      current.pageViews += 1;
+    }
+
+    if (event.event_name === "claim_submitted") {
+      current.claims += 1;
+    }
+
+    if (event.event_name === "partner_referral_opened") {
+      current.referralVisits += 1;
+    }
+
+    buckets.set(key, current);
+  });
+
+  return [...buckets.values()]
+    .map((item) => {
+      const visitors = item.visitors.size;
+      return {
+        label: item.label,
+        source: item.source,
+        medium: item.medium,
+        campaign: item.campaign,
+        visitors,
+        pageViews: item.pageViews,
+        referralVisits: item.referralVisits,
+        claims: item.claims,
+        conversionRate: safeRate(item.claims, visitors),
+      };
+    })
+    .filter((item) => item.visitors || item.pageViews || item.claims)
+    .sort((left, right) => right.claims - left.claims || right.conversionRate - left.conversionRate || right.visitors - left.visitors)
+    .slice(0, 8);
+}
+
+function buildAbTestSummary(events = []) {
+  const buckets = new Map();
+
+  events.forEach((event) => {
+    const testName = String(event?.ab_test || "").trim();
+    const variantName = String(event?.ab_variant || "").trim();
+    if (!testName || !variantName) {
+      return;
+    }
+
+    const key = `${testName}::${variantName}`;
+    const current = buckets.get(key) || {
+      testName,
+      variantName,
+      visitors: new Set(),
+      pageViews: 0,
+      claims: 0,
+      referralVisits: 0,
+    };
+
+    const anonymousId = String(event.anonymous_id || "").trim();
+    if (anonymousId) {
+      current.visitors.add(anonymousId);
+    }
+
+    if (event.event_name === "page_view") {
+      current.pageViews += 1;
+    }
+
+    if (event.event_name === "claim_submitted") {
+      current.claims += 1;
+    }
+
+    if (event.event_name === "partner_referral_opened") {
+      current.referralVisits += 1;
+    }
+
+    buckets.set(key, current);
+  });
+
+  const byTest = new Map();
+  [...buckets.values()].forEach((item) => {
+    const variants = byTest.get(item.testName) || [];
+    const visitors = item.visitors.size;
+    variants.push({
+      variantName: item.variantName,
+      visitors,
+      pageViews: item.pageViews,
+      referralVisits: item.referralVisits,
+      claims: item.claims,
+      conversionRate: safeRate(item.claims, visitors),
+    });
+    byTest.set(item.testName, variants);
+  });
+
+  return [...byTest.entries()]
+    .map(([testName, variants]) => ({
+      testName,
+      variants: variants.sort((left, right) => right.conversionRate - left.conversionRate || right.visitors - left.visitors),
+    }))
+    .sort((left, right) => left.testName.localeCompare(right.testName));
+}
+
 async function loadPartnerMap(client, referralCodes = []) {
   if (!referralCodes.length) {
     return new Map();
@@ -205,14 +389,31 @@ export async function getMarketingAnalyticsSummary({ from, to } = {}) {
     to: range.to.getTime() > todayRange.to.getTime() ? range.to : todayRange.to,
   };
 
-  const { data, error } = await client
+  const baseSelect = "anonymous_id, event_name, referrer, utm_source, utm_medium, utm_campaign, device_type, referral_code, created_at";
+  const enhancedSelect = `${baseSelect}, page_path, ab_test, ab_variant`;
+  let supportsAbTesting = true;
+  let response = await client
     .from("analytics_events")
-    .select("anonymous_id, event_name, referrer, utm_source, device_type, referral_code, created_at")
+    .select(enhancedSelect)
     .in("event_name", MARKETING_EVENT_NAMES)
     .gte("created_at", queryRange.from.toISOString())
     .lte("created_at", queryRange.to.toISOString())
     .order("created_at", { ascending: false })
     .range(0, ANALYTICS_ROW_LIMIT - 1);
+
+  if (response.error && (response.error.code === "42703" || response.error.code === "PGRST204" || response.error.message?.includes("ab_test") || response.error.message?.includes("ab_variant"))) {
+    supportsAbTesting = false;
+    response = await client
+      .from("analytics_events")
+      .select(baseSelect)
+      .in("event_name", MARKETING_EVENT_NAMES)
+      .gte("created_at", queryRange.from.toISOString())
+      .lte("created_at", queryRange.to.toISOString())
+      .order("created_at", { ascending: false })
+      .range(0, ANALYTICS_ROW_LIMIT - 1);
+  }
+
+  const { data, error } = response;
 
   if (error) {
     if (isMissingAnalyticsTable(error)) {
@@ -240,6 +441,10 @@ export async function getMarketingAnalyticsSummary({ from, to } = {}) {
     claimsToday: todayEvents.filter((event) => event.event_name === "claim_submitted").length,
     referralVisitsToday: todayEvents.filter((event) => event.event_name === "partner_referral_opened").length,
     mobileShare: rangePageViews.length ? toPercent(mobilePageViews / rangePageViews.length) : 0,
+    funnel: buildMarketingFunnel(rangeEvents),
+    campaignPerformance: buildCampaignPerformance(rangeEvents),
+    abTests: supportsAbTesting ? buildAbTestSummary(rangeEvents) : [],
+    supportsAbTesting,
     sources: groupPageViewsBySource(rangeEvents),
     devices: groupPageViewsByDevice(rangeEvents),
     topPartners: buildPartnerSummary(rangeEvents, partnerMap),

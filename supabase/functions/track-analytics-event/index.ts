@@ -27,6 +27,8 @@ type RequestBody = {
   utm_source?: string | null;
   utm_medium?: string | null;
   utm_campaign?: string | null;
+  ab_test?: string | null;
+  ab_variant?: string | null;
   device_type?: string | null;
   referral_code?: string | null;
 };
@@ -91,7 +93,7 @@ Deno.serve(async (request) => {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const payload = {
+  const basePayload = {
     anonymous_id: anonymousId,
     event_name: eventName,
     page_path: sanitizeText(body?.page_path, 400),
@@ -102,10 +104,22 @@ Deno.serve(async (request) => {
     device_type: deviceType,
     referral_code: sanitizeText(body?.referral_code, 120),
   };
+  const payload = {
+    ...basePayload,
+    ab_test: sanitizeText(body?.ab_test, 160),
+    ab_variant: sanitizeText(body?.ab_variant, 160),
+  };
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from("analytics_events")
     .insert(payload);
+
+  if (error && (error.code === "42703" || error.code === "PGRST204" || error.message?.includes("ab_test") || error.message?.includes("ab_variant"))) {
+    const fallback = await supabase
+      .from("analytics_events")
+      .insert(basePayload);
+    error = fallback.error;
+  }
 
   if (error) {
     console.error("track-analytics-event insert failed", error);
