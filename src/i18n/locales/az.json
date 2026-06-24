@@ -1291,6 +1291,14 @@
         "settings": "Parametrlər"
       }
     },
+    "notifications": {
+      "title": "Bildirişlər",
+      "unreadCount": "{{count}} oxunmamış",
+      "markAllRead": "Hamısını oxunmuş et",
+      "loading": "Bildirişlər yüklənir...",
+      "empty": "Hələ bildiriş yoxdur.",
+      "schemaMissing": "Bildiriş schema-sı hələ aktiv deyil. 047 migration-ı işlədin."
+    },
     "auth": {
       "signInTitle": "Admin giriş",
       "signInDescription": "Fly Friendly admin rolu təyin olunmuş daxili hesabdan istifadə edin.",

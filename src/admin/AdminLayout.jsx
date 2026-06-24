@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, Menu, Search } from "lucide-react";
+import { Bell, CheckCheck, ChevronDown, LogOut, Menu, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -16,6 +16,11 @@ import {
   startAdminWorkSession,
 } from "../services/adminService.js";
 import { preloadAdminFinanceWorkspaceData } from "../services/adminFinanceService.js";
+import {
+  fetchAdminNotifications,
+  markAdminNotificationRead,
+  markAllAdminNotificationsRead,
+} from "../services/adminNotificationService.js";
 import PasswordField from "../components/forms/PasswordField.jsx";
 import { requireSupabase } from "../lib/supabase.js";
 import { buildAdminNavigationSections, getAdminNavigation, getAdminNavigationSections } from "./navigation.js";
@@ -130,6 +135,21 @@ function dedupeNavigationItems(items = []) {
   });
 }
 
+function formatNotificationTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const diff = Date.now() - date.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < minute) return "now";
+  if (diff < hour) return `${Math.floor(diff / minute)}m`;
+  if (diff < day) return `${Math.floor(diff / hour)}h`;
+  return date.toLocaleDateString();
+}
+
 export function AdminLoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -228,8 +248,16 @@ function AdminLayout() {
   const [dynamicMenu, setDynamicMenu] = useState(null);
   const [openDesktopSectionKey, setOpenDesktopSectionKey] = useState("");
   const [expandedMobileSectionKey, setExpandedMobileSectionKey] = useState("");
+  const [notificationsState, setNotificationsState] = useState({
+    notifications: [],
+    unreadCount: 0,
+    supportsNotifications: true,
+  });
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
   const adminWorkSessionIdRef = useRef("");
   const desktopRailRef = useRef(null);
+  const notificationsRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -344,6 +372,56 @@ function AdminLayout() {
       active = false;
     };
   }, [isAdminUser, profile?.id]);
+
+  const loadNotifications = async () => {
+    if (!profile?.id || !isAdminUser) {
+      return;
+    }
+
+    setIsNotificationsLoading(true);
+    try {
+      const next = await fetchAdminNotifications();
+      setNotificationsState(next);
+    } catch {
+      setNotificationsState((current) => ({ ...current, supportsNotifications: false }));
+    } finally {
+      setIsNotificationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!profile?.id || !isAdminUser) {
+      return undefined;
+    }
+
+    let active = true;
+    const run = async () => {
+      if (!active) return;
+      await loadNotifications();
+    };
+
+    void run();
+    const timer = window.setInterval(run, 45 * 1000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [isAdminUser, profile?.id]);
+
+  useEffect(() => {
+    if (!isNotificationsOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (!notificationsRef.current?.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isNotificationsOpen]);
 
   useEffect(() => {
     if (!isSearchOpen || searchIndex || isSearchLoading) {
@@ -545,6 +623,23 @@ function AdminLayout() {
     navigate(target);
   };
 
+  const openNotification = async (notification) => {
+    if (!notification.readAt) {
+      await markAdminNotificationRead(notification.id).catch(() => null);
+      void loadNotifications();
+    }
+
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+      setIsNotificationsOpen(false);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    await markAllAdminNotificationsRead().catch(() => null);
+    await loadNotifications();
+  };
+
   const toggleDesktopSection = (section) => {
     if (!section.pages?.length) {
       goToSection(section);
@@ -735,6 +830,72 @@ function AdminLayout() {
                 ) : null}
               </AnimatePresence>
             </label>
+            <div ref={notificationsRef} className={`admin-notifications${isNotificationsOpen ? " is-open" : ""}`}>
+              <button
+                type="button"
+                className="admin-notifications__button"
+                onClick={() => {
+                  setIsNotificationsOpen((current) => !current);
+                  if (!isNotificationsOpen) {
+                    void loadNotifications();
+                  }
+                }}
+                aria-label={t("admin.notifications.title")}
+                aria-expanded={isNotificationsOpen}
+              >
+                <Bell size={17} />
+                {notificationsState.unreadCount ? (
+                  <span>{notificationsState.unreadCount > 9 ? "9+" : notificationsState.unreadCount}</span>
+                ) : null}
+              </button>
+              <AnimatePresence>
+                {isNotificationsOpen ? (
+                  <motion.div
+                    className="admin-notifications__dropdown"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
+                    <header className="admin-notifications__head">
+                      <div>
+                        <strong>{t("admin.notifications.title")}</strong>
+                        <span>{t("admin.notifications.unreadCount", { count: notificationsState.unreadCount })}</span>
+                      </div>
+                      <button type="button" onClick={markAllNotificationsRead} disabled={!notificationsState.unreadCount}>
+                        <CheckCheck size={15} />
+                        <span>{t("admin.notifications.markAllRead")}</span>
+                      </button>
+                    </header>
+                    <div className="admin-notifications__list">
+                      {isNotificationsLoading && !notificationsState.notifications.length ? (
+                        <div className="admin-notifications__empty">{t("admin.notifications.loading")}</div>
+                      ) : !notificationsState.supportsNotifications ? (
+                        <div className="admin-notifications__empty">{t("admin.notifications.schemaMissing")}</div>
+                      ) : notificationsState.notifications.length ? (
+                        notificationsState.notifications.slice(0, 12).map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={`admin-notifications__item is-${item.severity}${item.readAt ? "" : " is-unread"}`}
+                            onClick={() => void openNotification(item)}
+                          >
+                            <span className="admin-notifications__dot" aria-hidden="true" />
+                            <span className="admin-notifications__copy">
+                              <strong>{item.title}</strong>
+                              {item.body ? <small>{item.body}</small> : null}
+                              <em>{[item.module, formatNotificationTime(item.createdAt)].filter(Boolean).join(" • ")}</em>
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="admin-notifications__empty">{t("admin.notifications.empty")}</div>
+                      )}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
             <div className="admin-user-chip">
               <span>{t("admin.common.email")}</span>
               <strong>{currentUserEmail}</strong>

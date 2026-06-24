@@ -1,6 +1,7 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser, resetPassword } from "./authService.js";
 import { assertCurrentAdminPermission, assertCurrentOwnerAdmin } from "./adminAccessService.js";
+import { createAdminNotification } from "./adminNotificationService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
@@ -10,6 +11,10 @@ import {
   normalizeLeadCode,
 } from "../lib/recordCodes.js";
 import { buildReferralPath, generateRandomReferralCode } from "../../shared/referral-code.js";
+
+function notifyAdmin(input = {}) {
+  void createAdminNotification(input).catch(() => null);
+}
 
 function isMissingOptionalTable(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -1940,6 +1945,18 @@ export async function convertLeadToCase(leadId) {
     meta: { source: "lead_conversion", lead_code: lead.lead_code },
   });
 
+  notifyAdmin({
+    type: "lead_converted",
+    severity: "info",
+    title: "Lead converted to case",
+    body: `${lead.lead_code || "Lead"} became ${caseCode}.`,
+    module: "cases",
+    entityType: "case",
+    entityId: caseId,
+    actionUrl: `/admin/operations/cases?case=${caseId}`,
+    recipientRole: "owner",
+  });
+
   return { caseId, caseCode, customerId, alreadyExists: false };
 }
 
@@ -2281,6 +2298,18 @@ export async function createTask(taskInput) {
     meta: { related_entity_type: taskInput.related_entity_type, related_entity_id: taskInput.related_entity_id },
   });
 
+  notifyAdmin({
+    type: "task_created",
+    severity: payload.priority === "urgent" || payload.priority === "high" ? "warning" : "info",
+    title: payload.assigned_user_id ? "New task assigned" : "New task created",
+    body: payload.title,
+    module: "tasks",
+    entityType: "task",
+    entityId: payload.id,
+    actionUrl: `/admin/operations/tasks?task=${payload.id}`,
+    recipientProfileId: payload.assigned_user_id || null,
+  });
+
   return data;
 }
 
@@ -2319,6 +2348,35 @@ export async function updateTask(taskId, updates) {
     previousValue: current.data || null,
     newValue: payload,
   });
+
+  const previous = current.data || {};
+  if (updates.status && updates.status !== previous.status) {
+    notifyAdmin({
+      type: "task_status_changed",
+      severity: updates.status === "cancelled" ? "warning" : "info",
+      title: "Task status changed",
+      body: `${previous.title || "Task"} moved to ${updates.status}.`,
+      module: "tasks",
+      entityType: "task",
+      entityId: taskId,
+      actionUrl: `/admin/operations/tasks?task=${taskId}`,
+      recipientProfileId: previous.assigned_user_id || updates.assigned_user_id || null,
+    });
+  }
+
+  if (updates.assigned_user_id && updates.assigned_user_id !== previous.assigned_user_id) {
+    notifyAdmin({
+      type: "task_assigned",
+      severity: ["urgent", "high"].includes(updates.priority || previous.priority) ? "warning" : "info",
+      title: "Task assigned to you",
+      body: previous.title || updates.title || "Task assignment updated.",
+      module: "tasks",
+      entityType: "task",
+      entityId: taskId,
+      actionUrl: `/admin/operations/tasks?task=${taskId}`,
+      recipientProfileId: updates.assigned_user_id,
+    });
+  }
 }
 
 export async function fetchCommunicationsModuleData() {
@@ -6384,6 +6442,18 @@ export async function updateLeadStatus(leadId, status) {
     newValue: { status },
   });
 
+  notifyAdmin({
+    type: "lead_status_changed",
+    severity: status === "not_eligible" || status === "archived" ? "warning" : "info",
+    title: "Lead status changed",
+    body: `Lead moved to ${status}.`,
+    module: "leads",
+    entityType: "lead",
+    entityId: leadId,
+    actionUrl: `/admin/operations/leads?lead=${leadId}`,
+    recipientRole: "owner",
+  });
+
   void logAdminActivity("update_lead", "lead", leadId, {
     module: "leads",
     fields: ["status"],
@@ -6463,6 +6533,20 @@ export async function updateCaseWorkflow(caseId, updates) {
     status: payload.status || current.data?.status || null,
     payout_status: payload.payout_status || current.data?.payout_status || null,
   });
+
+  if (updates.status && updates.status !== current.data?.status) {
+    notifyAdmin({
+      type: "case_status_changed",
+      severity: ["rejected", "escalated", "documents_pending"].includes(updates.status) ? "warning" : "info",
+      title: "Case status changed",
+      body: `${updatedCase.data?.case_code || "Case"} moved to ${updates.status}.`,
+      module: "cases",
+      entityType: "case",
+      entityId: caseId,
+      actionUrl: `/admin/operations/cases?case=${caseId}`,
+      recipientProfileId: updatedCase.data?.assigned_manager_id || current.data?.assigned_manager_id || null,
+    });
+  }
 }
 
 export async function assignLeadOwner(leadId, assignedUserId) {

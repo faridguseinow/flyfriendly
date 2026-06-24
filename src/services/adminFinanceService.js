@@ -10,6 +10,15 @@ import {
 } from "../lib/financeCalculations.js";
 import { assertCurrentAdminPermission } from "./adminAccessService.js";
 import { getCurrentUser } from "./authService.js";
+import { createAdminNotification } from "./adminNotificationService.js";
+
+function notifyFinance(input = {}) {
+  void createAdminNotification({
+    recipientRole: "finance_manager",
+    module: "finance",
+    ...input,
+  }).catch(() => null);
+}
 
 const DEFAULT_FETCH_LIMIT = 1000;
 const NEGATIVE_CASE_STATUSES = new Set([
@@ -1464,6 +1473,16 @@ export async function setClientVisibleApproval(caseId, visible, options = {}) {
     comment: options.comment || null,
   }).catch(() => false);
 
+  notifyFinance({
+    type: "client_payment_paid",
+    severity: "info",
+    title: "Client payment marked paid",
+    body: "A client payment was marked as paid.",
+    entityType: "case_finance",
+    entityId: financeRow.id,
+    actionUrl: `/admin/finances/payments`,
+  });
+
   return response.data;
 }
 
@@ -1663,6 +1682,16 @@ export async function markClientPaymentPaid(caseId, options = {}) {
     comment: options.comment || null,
   }).catch(() => false);
 
+  notifyFinance({
+    type: "client_payment_unpaid",
+    severity: "warning",
+    title: "Client payment marked unpaid",
+    body: "A client payment needs finance review.",
+    entityType: "case_finance",
+    entityId: financeRow.id,
+    actionUrl: `/admin/finances/payments`,
+  });
+
   return response.data;
 }
 
@@ -1796,7 +1825,8 @@ export async function updatePartnerPayment(payoutId, payload = {}, options = {})
     }));
   }
 
-  if (updates.status !== undefined && normalizePartnerPaymentStatus(updates.status) !== normalizePartnerPaymentStatus(payoutRow.status)) {
+  const partnerStatusChanged = updates.status !== undefined && normalizePartnerPaymentStatus(updates.status) !== normalizePartnerPaymentStatus(payoutRow.status);
+  if (partnerStatusChanged) {
     auditTasks.push(createFinanceAuditLog({
       entityType: "referral_partner_payout",
       entityId: payoutId,
@@ -1811,6 +1841,19 @@ export async function updatePartnerPayment(payoutId, payload = {}, options = {})
   }
 
   await Promise.allSettled(auditTasks);
+
+  if (partnerStatusChanged) {
+    const normalizedStatus = normalizePartnerPaymentStatus(updates.status);
+    notifyFinance({
+      type: normalizedStatus === "paid" ? "partner_payment_paid" : "partner_payment_unpaid",
+      severity: normalizedStatus === "paid" ? "info" : "warning",
+      title: normalizedStatus === "paid" ? "Partner payout marked paid" : "Partner payout needs review",
+      body: "A partner payout status changed.",
+      entityType: "referral_partner_payout",
+      entityId: payoutId,
+      actionUrl: `/admin/finances/partner-payouts`,
+    });
+  }
 
   return await getPartnerPaymentById(payoutId);
 }

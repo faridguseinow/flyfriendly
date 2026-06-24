@@ -1439,6 +1439,14 @@
         "settings": "Settings"
       }
     },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{{count}} unread",
+      "markAllRead": "Mark all read",
+      "loading": "Loading notifications...",
+      "empty": "No notifications yet.",
+      "schemaMissing": "Notifications schema is not available yet. Run migration 047."
+    },
     "auth": {
       "signInTitle": "Admin sign in",
       "signInDescription": "Use an internal account with an assigned Fly Friendly admin role.",
