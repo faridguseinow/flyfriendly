@@ -4,3 +4,5 @@ dist/
 *.local
 .vercel
 .env*
+scripts/extract-old-django-admin.py
+scripts/import-old-django-export.mjs

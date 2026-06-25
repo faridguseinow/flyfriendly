@@ -659,6 +659,61 @@
   gap: 8px;
 }
 
+.admin-documents-page__review-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: var(--admin-radius-md);
+  background: #f8fbff;
+
+  p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+.admin-documents-page__review-note {
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 78px;
+    resize: vertical;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: var(--admin-radius-md);
+    background: #fff;
+    color: #17212d;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px 12px;
+    outline: none;
+
+    &:focus {
+      border-color: rgba(5, 132, 255, 0.45);
+      box-shadow: 0 0 0 3px rgba(5, 132, 255, 0.08);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.68;
+    }
+  }
+}
+
 .admin-documents-page__missing-list span {
   display: inline-flex;
   align-items: center;

@@ -13,6 +13,7 @@ import {
   getDocumentDownloadUrl,
   logAdminActivity,
   moveDocumentToTrash,
+  updateDocumentReviewStatus,
 } from "../../services/adminService.js";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { AdminSidePanel, AdminStatusBadge } from "../../admin/components/AdminUi.jsx";
@@ -259,6 +260,8 @@ export default function AdminDocuments() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeDownloadId, setActiveDownloadId] = useState("");
   const [activeTrashId, setActiveTrashId] = useState("");
+  const [activeReviewAction, setActiveReviewAction] = useState("");
+  const [reviewNote, setReviewNote] = useState("");
   const [documentPreview, setDocumentPreview] = useState(createClosedDocumentPreviewState);
 
   const loadDocuments = async () => {
@@ -670,6 +673,26 @@ export default function AdminDocuments() {
     }
   };
 
+  const handleReviewStatus = async (item, status) => {
+    if (!item || !hasPermission("documents.manage")) return;
+
+    setError("");
+    setActiveReviewAction(status);
+
+    try {
+      await updateDocumentReviewStatus(item, status, reviewNote.trim());
+      await loadDocuments();
+      setReviewNote("");
+      setSelectedDocumentId(item.id);
+      setDrawerMode("document");
+      setDrawerOpen(true);
+    } catch (nextError) {
+      setError(nextError.message || "Could not update the document review status.");
+    } finally {
+      setActiveReviewAction("");
+    }
+  };
+
   const quickSections = [
     { title: "Recent task folders", rows: recentTaskFolders },
     { title: "Recent case folders", rows: recentCaseFolders },
@@ -678,6 +701,7 @@ export default function AdminDocuments() {
 
   const activeFolder = drawerMode === "folder" ? selectedFolder : selectedDocument ? folderByKey.get(selectedDocument.folderKey) || null : null;
   const activePreviewDocument = drawerMode === "document" ? selectedDocument : null;
+  const canReviewActiveDocument = Boolean(activePreviewDocument && activePreviewDocument.kind === "document");
 
   return (
     <div className="admin-page admin-documents-page">
@@ -1041,6 +1065,47 @@ export default function AdminDocuments() {
             <div className="admin-documents-page__section-title">
               <h4>Actions</h4>
             </div>
+            <div className="admin-documents-page__review-panel">
+              <label className="admin-documents-page__review-note">
+                <span>Review note</span>
+                <textarea
+                  value={reviewNote}
+                  onChange={(event) => setReviewNote(event.target.value)}
+                  placeholder="Optional note for the activity log"
+                  rows={3}
+                  disabled={!hasPermission("documents.manage") || !canReviewActiveDocument || Boolean(activeReviewAction)}
+                />
+              </label>
+              {!canReviewActiveDocument ? (
+                <p>Signature records are read-only. Uploaded customer files can be approved, rejected, or sent back for replacement.</p>
+              ) : null}
+              <div className="admin-documents-page__drawer-actions">
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  onClick={() => void handleReviewStatus(activePreviewDocument, "approved")}
+                  disabled={!hasPermission("documents.manage") || !canReviewActiveDocument || Boolean(activeReviewAction)}
+                >
+                  {activeReviewAction === "approved" ? "Approving..." : "Approve"}
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  onClick={() => void handleReviewStatus(activePreviewDocument, "rejected")}
+                  disabled={!hasPermission("documents.manage") || !canReviewActiveDocument || Boolean(activeReviewAction)}
+                >
+                  {activeReviewAction === "rejected" ? "Rejecting..." : "Reject"}
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  onClick={() => void handleReviewStatus(activePreviewDocument, "replacement_requested")}
+                  disabled={!hasPermission("documents.manage") || !canReviewActiveDocument || Boolean(activeReviewAction)}
+                >
+                  {activeReviewAction === "replacement_requested" ? "Requesting..." : "Request replacement"}
+                </button>
+              </div>
+            </div>
             <div className="admin-documents-page__drawer-actions">
               <button type="button" className="admin-btn admin-btn-primary" onClick={() => void openDocumentPreview(activePreviewDocument)} disabled={!hasPermission("documents.download")}>
                 <span>Open preview</span>
@@ -1048,8 +1113,6 @@ export default function AdminDocuments() {
               <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleDownload(activePreviewDocument)} disabled={!hasPermission("documents.download") || activeDownloadId === activePreviewDocument.id}>
                 <span>{activeDownloadId === activePreviewDocument.id ? "Saving..." : activePreviewDocument.kind === "signature" ? "Download PNG" : "Save file"}</span>
               </button>
-              <button type="button" className="admin-btn admin-btn-secondary" disabled title="Document review workflow is not configured in the current backend.">Mark reviewed</button>
-              <button type="button" className="admin-btn admin-btn-secondary" disabled title="Replacement request workflow is not configured in the current backend.">Request replacement</button>
               <button type="button" className="admin-btn admin-btn-danger" onClick={() => handleTrash(activePreviewDocument)} disabled={!hasPermission("documents.manage") || activeTrashId === activePreviewDocument.id}>
                 <Trash2 size={14} />
                 <span>{activeTrashId === activePreviewDocument.id ? "Moving..." : "Move to trash"}</span>

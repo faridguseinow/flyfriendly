@@ -2626,6 +2626,84 @@ export async function fetchDocumentsCenterData() {
   };
 }
 
+export async function updateDocumentReviewStatus(document, status, note = "") {
+  await assertDocumentsManageAccess("You do not have access to review documents.");
+
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const entityType = getDocumentEntityType(document || {});
+  const source = getTrashSourceConfig(entityType);
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+  const allowedStatuses = new Set(["approved", "rejected", "replacement_requested"]);
+
+  if (!document?.id || !source?.table || !source.statusField || document.kind === "signature") {
+    throw new Error("Review workflow is available only for uploaded documents.");
+  }
+
+  if (!allowedStatuses.has(normalizedStatus)) {
+    throw new Error("A valid document review status is required.");
+  }
+
+  const previousStatus = document.status || null;
+  const updateResult = await client
+    .from(source.table)
+    .update({ [source.statusField]: normalizedStatus })
+    .eq("id", document.id);
+
+  if (updateResult.error) {
+    throw updateResult.error;
+  }
+
+  const label = document.file_name || document.displayName || document.document_type || document.id;
+  const actionLabel = normalizedStatus === "approved"
+    ? "approved"
+    : normalizedStatus === "rejected"
+      ? "rejected"
+      : "marked as replacement requested";
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "review",
+    module: "documents",
+    targetEntityType: entityType,
+    targetEntityId: document.id,
+    previousValue: {
+      status: previousStatus,
+    },
+    newValue: {
+      status: normalizedStatus,
+      note: note || null,
+    },
+    meta: {
+      owner_type: document.owner_type || null,
+      owner_id: document.owner_id || null,
+      document_type: document.document_type || null,
+    },
+  });
+
+  notifyAdmin({
+    type: "document_review",
+    severity: normalizedStatus === "approved" ? "success" : normalizedStatus === "rejected" ? "warning" : "critical",
+    title: `Document ${actionLabel}`,
+    message: `${label} for ${document.reference || document.owner_id || "linked work"} was ${actionLabel}.`,
+    actionUrl: "/admin/documents",
+    entityType,
+    entityId: document.id,
+    metadata: {
+      status: normalizedStatus,
+      previous_status: previousStatus,
+      owner_type: document.owner_type || null,
+      owner_id: document.owner_id || null,
+      note: note || null,
+    },
+  });
+
+  return {
+    id: document.id,
+    status: normalizedStatus,
+  };
+}
+
 export async function fetchFinanceModuleData(options = {}) {
   return withAdminModuleCache("finance-module", async () => {
     const client = requireSupabase();

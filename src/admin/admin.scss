@@ -1356,6 +1356,7 @@
 .admin-shell[data-admin-theme="dark"] .admin-documents-page__search,
 .admin-shell[data-admin-theme="dark"] .admin-documents-page__search input::placeholder,
 .admin-shell[data-admin-theme="dark"] .admin-documents-page__date-field span,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__review-note span,
 .admin-shell[data-admin-theme="dark"] .admin-leads-page__signature-summary,
 .admin-shell[data-admin-theme="dark"] .admin-leads-page__workflow-grid span,
 .admin-shell[data-admin-theme="dark"] .admin-leads-page__empty-copy,
@@ -1378,6 +1379,7 @@
 .admin-shell[data-admin-theme="dark"] .admin-documents-page__checklist-head span,
 .admin-shell[data-admin-theme="dark"] .admin-documents-page__drawer-item p,
 .admin-shell[data-admin-theme="dark"] .admin-documents-page__drawer-item span,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__review-panel p,
 .admin-shell[data-admin-theme="dark"] .admin-tasks-page__header p,
 .admin-shell[data-admin-theme="dark"] .admin-tasks-page__column-header span,
 .admin-shell[data-admin-theme="dark"] .admin-tasks-page__card p,
@@ -1423,8 +1425,19 @@
 }
 
 .admin-shell[data-admin-theme="dark"] .admin-tasks-page__search input,
-.admin-shell[data-admin-theme="dark"] .admin-documents-page__search input {
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__search input,
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__review-note textarea {
   color: #e5edf7;
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__review-panel {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-documents-page__review-note textarea {
+  border-color: rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.92);
 }
 
 .admin-shell[data-admin-theme="dark"] .admin-tasks-page__avatar,
