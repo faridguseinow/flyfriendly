@@ -9,7 +9,7 @@ import { getProfileAvatarUrl, uploadProfileAvatar, validateAvatarFile } from "..
 import ProfileAvatarUploader from "../../components/profile/ProfileAvatarUploader.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { useAdminPreferences } from "../../admin/AdminPreferencesContext.jsx";
-import { updateCurrentProfile, updatePassword } from "../../services/authService.js";
+import { updateCurrentProfile, updateCurrentUserMetadata, updatePassword } from "../../services/authService.js";
 
 const ADMIN_LANGUAGE_CODES = new Set(["en", "ru", "az"]);
 
@@ -38,9 +38,9 @@ export default function AdminSettings() {
   useEffect(() => {
     setProfileDraft({
       fullName: profile?.full_name || "",
-      avatar_url: profile?.avatar_url || "",
+      avatar_url: getProfileAvatarUrl({ profile, user }) || "",
     });
-  }, [profile?.avatar_url, profile?.full_name]);
+  }, [profile?.avatar_url, profile?.full_name, user]);
 
   useEffect(() => () => {
     if (avatarPreviewUrl.startsWith("blob:")) {
@@ -111,6 +111,9 @@ export default function AdminSettings() {
         full_name: profileDraft.fullName,
         avatar_url: nextAvatarUrl,
       });
+      if (avatarFile && nextAvatarUrl) {
+        await updateCurrentUserMetadata({ avatar_url: nextAvatarUrl }).catch(() => null);
+      }
 
       await refreshAuth();
       setProfileDraft((current) => ({ ...current, avatar_url: nextAvatarUrl }));
@@ -123,7 +126,20 @@ export default function AdminSettings() {
       });
       setProfileMessage(t("admin.preferences.profileUpdated"));
     } catch (error) {
-      setProfileError(error.message || t("admin.preferences.profileSaveError"));
+      const errorMessage = String(error?.message || "");
+      const isMissingAvatarColumn = errorMessage.toLowerCase().includes("avatar_url")
+        || errorMessage.toLowerCase().includes("profiles.avatar_url")
+        || errorMessage.toLowerCase().includes("schema cache");
+
+      if (isMissingAvatarColumn) {
+        setProfileError(
+          t("profileAvatar.schemaMissing", {
+            defaultValue: "Profile photo upload needs the latest database update. Add profiles.avatar_url in Supabase and try again.",
+          }),
+        );
+      } else {
+        setProfileError(error.message || t("admin.preferences.profileSaveError"));
+      }
     } finally {
       setIsSavingProfile(false);
     }

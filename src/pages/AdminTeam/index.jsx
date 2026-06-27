@@ -37,6 +37,7 @@ import {
 } from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import { adminNavigationSections } from "../../admin/navigation.js";
+import { ProfileAvatar } from "../../components/profile/ProfileAvatarUploader.jsx";
 import PasswordField from "../../components/forms/PasswordField.jsx";
 import "./style.scss";
 
@@ -142,13 +143,6 @@ function formatPermissionLabel(permissionCode) {
   const [module, action] = String(permissionCode || "").split(".");
   if (!module) return "—";
   return `${formatActionLabel(module)} • ${formatActionLabel(action)}`;
-}
-
-function getInitials(value) {
-  const normalized = String(value || "").trim();
-  if (!normalized) return "EM";
-  const parts = normalized.split(/\s+/).slice(0, 2);
-  return parts.map((part) => part[0]?.toUpperCase() || "").join("") || normalized.slice(0, 2).toUpperCase();
 }
 
 function getEmployeeStatusTone(status) {
@@ -765,7 +759,12 @@ export default function AdminTeam() {
       reorderable: true,
       renderCell: (employee) => (
         <div className="admin-crm-table__identity">
-          <span className="admin-employees-page__avatar">{getInitials(employee.fullName || employee.email)}</span>
+          <ProfileAvatar
+            avatarUrl={employee.avatarUrl}
+            fallbackName={employee.fullName || employee.email}
+            size="sm"
+            className="admin-employees-page__profile-avatar"
+          />
           <div className="admin-crm-table__stack">
             <span className="admin-crm-table__cell-main">{employee.fullName || "Unnamed employee"}</span>
             <span className="admin-crm-table__cell-sub">{employee.email || "—"}</span>
@@ -1285,7 +1284,12 @@ export default function AdminTeam() {
               <small>{selectedEmployee.roleLabel || "No role"}</small>
             </header>
             <div className="admin-employees-page__identity">
-              <span className="admin-employees-page__avatar is-large">{getInitials(selectedEmployee.fullName || selectedEmployee.email)}</span>
+              <ProfileAvatar
+                avatarUrl={selectedEmployee.avatarUrl}
+                fallbackName={selectedEmployee.fullName || selectedEmployee.email}
+                size="md"
+                className="admin-employees-page__profile-avatar admin-employees-page__profile-avatar--large"
+              />
               <div>
                 <strong>{selectedEmployee.fullName || "Unnamed employee"}</strong>
                 <span>{selectedEmployee.email || "—"}</span>

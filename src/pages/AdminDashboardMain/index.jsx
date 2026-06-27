@@ -1,54 +1,55 @@
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Check, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
+import { createTask, fetchTasksModuleData, updateTask } from "../../services/adminService.js";
 
-const STORAGE_KEY_PREFIX = "ff-admin-dashboard-todos";
+const DASHBOARD_TASK_ENTITY_ID = "00000000-0000-4000-8000-000000000001";
 const WEEKDAY_REFERENCE = new Date(Date.UTC(2024, 0, 1));
-
-function buildStorageKey(email) {
-  const normalizedEmail = String(email || "default").trim().toLowerCase();
-  return `${STORAGE_KEY_PREFIX}:${normalizedEmail || "default"}`;
-}
-
-function createTodo(text) {
-  return {
-    id: crypto.randomUUID(),
-    text: text.trim(),
-    completed: false,
-    createdAt: new Date().toISOString(),
-  };
-}
-
-function readTodos(storageKey) {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    const parsed = JSON.parse(raw || "[]");
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter((item) => item && typeof item.text === "string")
-      .map((item) => ({
-        id: String(item.id || crypto.randomUUID()),
-        text: item.text.trim(),
-        completed: item.completed === true,
-        createdAt: item.createdAt || new Date().toISOString(),
-      }))
-      .filter((item) => item.text);
-  } catch {
-    return [];
-  }
-}
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function formatDueDate(value, t) {
+  if (!value) {
+    return t("admin.dashboardMain.noDeadline");
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return t("admin.dashboardMain.noDeadline");
+  }
+
+  const today = startOfDay(new Date()).getTime();
+  const due = startOfDay(date).getTime();
+  if (due < today) {
+    return t("admin.dashboardMain.overdue");
+  }
+  if (due === today) {
+    return t("admin.dashboardMain.dueToday");
+  }
+
+  return date.toLocaleDateString();
+}
+
+function getPriorityRank(priority) {
+  return { urgent: 0, high: 1, medium: 2, low: 3 }[priority] ?? 4;
+}
+
+function sortDashboardTasks(left, right) {
+  const leftDone = left.status === "done" ? 1 : 0;
+  const rightDone = right.status === "done" ? 1 : 0;
+  if (leftDone !== rightDone) return leftDone - rightDone;
+
+  const leftDue = left.due_date ? new Date(left.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+  const rightDue = right.due_date ? new Date(right.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+  if (leftDue !== rightDue) return leftDue - rightDue;
+
+  const priorityDiff = getPriorityRank(left.priority) - getPriorityRank(right.priority);
+  if (priorityDiff) return priorityDiff;
+
+  return new Date(right.updated_at || right.created_at || 0).getTime() - new Date(left.updated_at || left.created_at || 0).getTime();
 }
 
 function buildWeekdayLabels(locale) {
@@ -86,52 +87,32 @@ function buildCalendarDays(date) {
 
 export default function AdminDashboardMain() {
   const { i18n, t } = useTranslation();
-  const { profile } = useAdminAuth();
-  const storageKey = useMemo(() => buildStorageKey(profile?.email), [profile?.email]);
+  const { hasPermission, isOwnerOrSuperAdmin, profile, roles } = useAdminAuth();
   const [draft, setDraft] = useState("");
-  const [todos, setTodos] = useState([]);
+  const [assigneeDraft, setAssigneeDraft] = useState("");
+  const [priorityDraft, setPriorityDraft] = useState("medium");
+  const [dueDateDraft, setDueDateDraft] = useState("");
+  const [tasks, setTasks] = useState([]);
+  const [assignableUsers, setAssignableUsers] = useState([]);
+  const [taskError, setTaskError] = useState("");
+  const [isTaskLoading, setIsTaskLoading] = useState(true);
+  const [activeTaskAction, setActiveTaskAction] = useState("");
   const [now, setNow] = useState(() => new Date());
   const locale = useMemo(() => {
     const language = String(i18n.language || "en").toLowerCase();
-    if (language.startsWith("ru")) {
-      return "ru-RU";
-    }
-    if (language.startsWith("az")) {
-      return "az-AZ";
-    }
-    if (language.startsWith("tr")) {
-      return "tr-TR";
-    }
-    if (language.startsWith("uk")) {
-      return "uk-UA";
-    }
-    if (language.startsWith("de")) {
-      return "de-DE";
-    }
-    if (language.startsWith("fr")) {
-      return "fr-FR";
-    }
-    if (language.startsWith("it")) {
-      return "it-IT";
-    }
-    if (language.startsWith("es")) {
-      return "es-ES";
-    }
-    if (language.startsWith("pt")) {
-      return "pt-PT";
-    }
-    if (language.startsWith("pl")) {
-      return "pl-PL";
-    }
-    if (language.startsWith("ka")) {
-      return "ka-GE";
-    }
+    if (language.startsWith("ru")) return "ru-RU";
+    if (language.startsWith("az")) return "az-AZ";
+    if (language.startsWith("tr")) return "tr-TR";
+    if (language.startsWith("uk")) return "uk-UA";
+    if (language.startsWith("de")) return "de-DE";
+    if (language.startsWith("fr")) return "fr-FR";
+    if (language.startsWith("it")) return "it-IT";
+    if (language.startsWith("es")) return "es-ES";
+    if (language.startsWith("pt")) return "pt-PT";
+    if (language.startsWith("pl")) return "pl-PL";
+    if (language.startsWith("ka")) return "ka-GE";
     return "en-GB";
   }, [i18n.language]);
-
-  useEffect(() => {
-    setTodos(readTodos(storageKey));
-  }, [storageKey]);
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -142,18 +123,76 @@ export default function AdminDashboardMain() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
+    let isMounted = true;
+
+    async function loadTasks() {
+      setTaskError("");
+      setIsTaskLoading(true);
+      try {
+        const data = await fetchTasksModuleData();
+        if (!isMounted) return;
+        setTasks(data.tasks || []);
+        setAssignableUsers(data.assignableUsers || []);
+      } catch (error) {
+        if (!isMounted) return;
+        setTaskError(error.message || t("admin.dashboardMain.taskLoadError"));
+        setTasks([]);
+        setAssignableUsers([]);
+      } finally {
+        if (isMounted) {
+          setIsTaskLoading(false);
+        }
+      }
     }
 
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify(todos));
-    } catch {
-      // Ignore storage quota / private mode issues.
-    }
-  }, [storageKey, todos]);
+    void loadTasks();
 
-  const completedCount = todos.filter((item) => item.completed).length;
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
+
+  const canManageDashboardQueue = useMemo(
+    () => Boolean(
+      hasPermission("tasks.edit")
+      && (
+        isOwnerOrSuperAdmin
+        || hasPermission("team.manage")
+        || (roles || []).some((role) => String(role || "").toLowerCase().includes("manager"))
+      )
+    ),
+    [hasPermission, isOwnerOrSuperAdmin, roles],
+  );
+  const dashboardTasks = useMemo(
+    () => tasks.filter((item) => item.task_type === "dashboard_todo" || (item.related_entity_type === "dashboard" && item.related_entity_id === DASHBOARD_TASK_ENTITY_ID)),
+    [tasks],
+  );
+  const assignableUsersSorted = useMemo(
+    () => [...assignableUsers].sort((left, right) => String(left.full_name || left.email || "").localeCompare(String(right.full_name || right.email || ""))),
+    [assignableUsers],
+  );
+  const assigneeById = useMemo(
+    () => new Map(assignableUsersSorted.map((item) => [item.id, item])),
+    [assignableUsersSorted],
+  );
+  const visibleTasks = useMemo(
+    () => dashboardTasks
+      .filter((item) => {
+        if (item.status === "cancelled") {
+          return false;
+        }
+
+        if (canManageDashboardQueue) {
+          return true;
+        }
+
+        return item.assigned_user_id === profile?.id || item.created_by === profile?.id;
+      })
+      .sort(sortDashboardTasks)
+      .slice(0, 10),
+    [canManageDashboardQueue, dashboardTasks, profile?.id],
+  );
+  const completedCount = visibleTasks.filter((item) => item.status === "done").length;
   const currentTime = useMemo(
     () => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", hour12: false }).format(now),
     [locale, now],
@@ -174,7 +213,13 @@ export default function AdminDashboardMain() {
   const weekdayLabels = useMemo(() => buildWeekdayLabels(locale), [locale]);
   const calendarDays = useMemo(() => buildCalendarDays(now), [now]);
 
-  const addTodo = (event) => {
+  const reloadTasks = async () => {
+    const data = await fetchTasksModuleData();
+    setTasks(data.tasks || []);
+    setAssignableUsers(data.assignableUsers || []);
+  };
+
+  const addTodo = async (event) => {
     event.preventDefault();
 
     const text = draft.trim();
@@ -182,18 +227,83 @@ export default function AdminDashboardMain() {
       return;
     }
 
-    setTodos((current) => [createTodo(text), ...current]);
-    setDraft("");
+    setTaskError("");
+    setActiveTaskAction("create");
+    try {
+      await createTask({
+        title: text,
+        description: null,
+        related_entity_type: "dashboard",
+        related_entity_id: DASHBOARD_TASK_ENTITY_ID,
+        assigned_user_id: assigneeDraft || null,
+        priority: priorityDraft,
+        status: "todo",
+        task_type: "dashboard_todo",
+        due_date: dueDateDraft || null,
+      });
+      setDraft("");
+      setAssigneeDraft("");
+      setPriorityDraft("medium");
+      setDueDateDraft("");
+      await reloadTasks();
+    } catch (error) {
+      setTaskError(error.message || t("admin.dashboardMain.taskCreateError"));
+    } finally {
+      setActiveTaskAction("");
+    }
   };
 
-  const toggleTodo = (todoId) => {
-    setTodos((current) => current.map((item) => (
-      item.id === todoId ? { ...item, completed: !item.completed } : item
-    )));
+  const toggleTodo = async (task) => {
+    setTaskError("");
+    setActiveTaskAction(task.id);
+    try {
+      await updateTask(task.id, { status: task.status === "done" ? "todo" : "done" });
+      await reloadTasks();
+    } catch (error) {
+      setTaskError(error.message || t("admin.dashboardMain.taskUpdateError"));
+    } finally {
+      setActiveTaskAction("");
+    }
   };
 
-  const deleteTodo = (todoId) => {
-    setTodos((current) => current.filter((item) => item.id !== todoId));
+  const deleteTodo = async (task) => {
+    setTaskError("");
+    setActiveTaskAction(task.id);
+    try {
+      await updateTask(task.id, { status: "cancelled" });
+      await reloadTasks();
+    } catch (error) {
+      setTaskError(error.message || t("admin.dashboardMain.taskUpdateError"));
+    } finally {
+      setActiveTaskAction("");
+    }
+  };
+
+  const canUpdateTask = (task) => (
+    hasPermission("tasks.edit")
+    && (
+      canManageDashboardQueue
+      || task.assigned_user_id === profile?.id
+      || task.created_by === profile?.id
+      || !task.assigned_user_id
+    )
+  );
+
+  const canDeleteTask = (task) => (
+    hasPermission("tasks.edit")
+    && (
+      canManageDashboardQueue
+      || task.created_by === profile?.id
+    )
+  );
+
+  const formatAssignee = (task) => {
+    const assignee = assigneeById.get(task.assigned_user_id);
+    if (!task.assigned_user_id) {
+      return t("admin.dashboardMain.unassigned");
+    }
+
+    return assignee?.full_name || assignee?.email || t("admin.dashboardMain.assignedEmployee");
   };
 
   return (
@@ -206,49 +316,104 @@ export default function AdminDashboardMain() {
               <p>{t("admin.dashboardMain.todoDescription")}</p>
             </div>
             <div className="admin-dashboard-main__meta" aria-label={t("admin.dashboardMain.todoSummary")}>
-              <span>{t("admin.dashboardMain.totalCount", { count: todos.length })}</span>
+              <span>{t("admin.dashboardMain.totalCount", { count: visibleTasks.length })}</span>
               <strong>{t("admin.dashboardMain.doneCount", { count: completedCount })}</strong>
             </div>
           </header>
 
-          <form className="admin-dashboard-main__composer" onSubmit={addTodo}>
-            <input
-              type="text"
-              className="admin-input"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder={t("admin.dashboardMain.addTaskPlaceholder")}
-              maxLength={180}
-            />
-            <button type="submit" className="btn btn-primary" disabled={!draft.trim()}>
-              <Plus size={16} />
-              <span>{t("admin.common.add")}</span>
-            </button>
-          </form>
+          {canManageDashboardQueue ? (
+            <form className="admin-dashboard-main__composer" onSubmit={addTodo}>
+              <input
+                type="text"
+                className="admin-input"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder={t("admin.dashboardMain.addTaskPlaceholder")}
+                maxLength={180}
+                disabled={activeTaskAction === "create"}
+              />
+              <select
+                className="admin-select"
+                value={assigneeDraft}
+                onChange={(event) => setAssigneeDraft(event.target.value)}
+                disabled={activeTaskAction === "create"}
+                aria-label={t("admin.dashboardMain.assignTo")}
+              >
+                <option value="">{t("admin.dashboardMain.assignLater")}</option>
+                {assignableUsersSorted.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.full_name || employee.email}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="admin-select"
+                value={priorityDraft}
+                onChange={(event) => setPriorityDraft(event.target.value)}
+                disabled={activeTaskAction === "create"}
+                aria-label={t("admin.dashboardMain.priority")}
+              >
+                <option value="low">{t("admin.dashboardMain.priorityLow")}</option>
+                <option value="medium">{t("admin.dashboardMain.priorityMedium")}</option>
+                <option value="high">{t("admin.dashboardMain.priorityHigh")}</option>
+                <option value="urgent">{t("admin.dashboardMain.priorityUrgent")}</option>
+              </select>
+              <input
+                type="date"
+                className="admin-input"
+                value={dueDateDraft}
+                onChange={(event) => setDueDateDraft(event.target.value)}
+                disabled={activeTaskAction === "create"}
+                aria-label={t("admin.dashboardMain.dueDate")}
+              />
+              <button type="submit" className="btn btn-primary" disabled={!draft.trim() || activeTaskAction === "create"}>
+                {activeTaskAction === "create" ? <LoaderCircle size={16} className="is-spinning" /> : <Plus size={16} />}
+                <span>{t("admin.dashboardMain.sendTask")}</span>
+              </button>
+            </form>
+          ) : null}
 
-          {todos.length ? (
+          {taskError ? <p className="admin-message is-error">{taskError}</p> : null}
+
+          {isTaskLoading ? (
+            <div className="admin-dashboard-main__empty">
+              <LoaderCircle size={18} className="is-spinning" />
+              <p>{t("admin.dashboardMain.loadingTasks")}</p>
+            </div>
+          ) : visibleTasks.length ? (
             <ul className="admin-dashboard-main__list">
-              {todos.map((todo) => (
-                <li key={todo.id} className={`admin-dashboard-main__item${todo.completed ? " is-completed" : ""}`}>
+              {visibleTasks.map((task) => (
+                <li key={task.id} className={`admin-dashboard-main__item${task.status === "done" ? " is-completed" : ""}`}>
                   <button
                     type="button"
                     className="admin-dashboard-main__toggle"
-                    onClick={() => toggleTodo(todo.id)}
-                    aria-pressed={todo.completed}
-                    aria-label={todo.completed ? t("admin.dashboardMain.markTaskActive") : t("admin.dashboardMain.markTaskCompleted")}
+                    onClick={() => toggleTodo(task)}
+                    aria-pressed={task.status === "done"}
+                    aria-label={task.status === "done" ? t("admin.dashboardMain.markTaskActive") : t("admin.dashboardMain.markTaskCompleted")}
+                    disabled={!canUpdateTask(task) || activeTaskAction === task.id}
                   >
                     <span className="admin-dashboard-main__check" aria-hidden="true">
-                      {todo.completed ? <Check size={14} /> : null}
+                      {activeTaskAction === task.id ? <LoaderCircle size={13} className="is-spinning" /> : task.status === "done" ? <Check size={14} /> : null}
                     </span>
-                    <span>{todo.text}</span>
+                    <span>
+                      <strong>{task.title}</strong>
+                      <small>
+                        {t("admin.dashboardMain.taskMeta", {
+                          priority: t(`admin.dashboardMain.priority${String(task.priority || "medium").replace(/^\w/, (letter) => letter.toUpperCase())}`),
+                          due: formatDueDate(task.due_date, t),
+                        })}
+                      </small>
+                      <small>{t("admin.dashboardMain.assignedToLabel", { assignee: formatAssignee(task) })}</small>
+                    </span>
                   </button>
 
                   <button
                     type="button"
                     className="admin-dashboard-main__delete"
-                    onClick={() => deleteTodo(todo.id)}
-                    aria-label={t("admin.dashboardMain.deleteTask", { task: todo.text })}
+                    onClick={() => deleteTodo(task)}
+                    aria-label={t("admin.dashboardMain.deleteTask", { task: task.title })}
                     title={t("admin.common.delete")}
+                    disabled={!canDeleteTask(task) || activeTaskAction === task.id}
                   >
                     <Trash2 size={15} />
                   </button>

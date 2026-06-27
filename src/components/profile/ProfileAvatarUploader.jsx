@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import { getInitials } from "../../lib/profileAvatar.js";
 import "./ProfileAvatarUploader.scss";
@@ -12,11 +12,16 @@ export function ProfileAvatar({
 }) {
   const imageUrl = String(avatarUrl || fallbackImageUrl || "").trim();
   const initials = useMemo(() => getInitials(fallbackName), [fallbackName]);
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [imageUrl]);
 
   return (
     <div className={`profile-avatar profile-avatar--${size}${className ? ` ${className}` : ""}`} aria-hidden="true">
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className="profile-avatar__image" />
+      {imageUrl && !hasImageError ? (
+        <img src={imageUrl} alt="" className="profile-avatar__image" onError={() => setHasImageError(true)} />
       ) : (
         <span className="profile-avatar__initials">{initials}</span>
       )}

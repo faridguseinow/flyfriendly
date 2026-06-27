@@ -1,13 +1,16 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, Menu, Search } from "lucide-react";
+import { Bell, CheckCheck, ChevronDown, LogOut, Menu, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "../assets/icons/logo-image.svg";
 import logoText from "../assets/icons/fly-friendly.svg";
 import { signInCustomer, signOut as signOutUser } from "../services/authService.js";
+import { ProfileAvatar } from "../components/profile/ProfileAvatarUploader.jsx";
+import { getProfileAvatarUrl } from "../lib/profileAvatar.js";
 import {
   endAdminWorkSession,
+  fetchActiveAdminEmployees,
   fetchAdminSearchData,
   fetchAdminSidebarMenu,
   heartbeatAdminWorkSession,
@@ -16,6 +19,12 @@ import {
   startAdminWorkSession,
 } from "../services/adminService.js";
 import { preloadAdminFinanceWorkspaceData } from "../services/adminFinanceService.js";
+import {
+  ADMIN_NOTIFICATIONS_CHANGED_EVENT,
+  fetchAdminNotifications,
+  markAdminNotificationRead,
+  markAllAdminNotificationsRead,
+} from "../services/adminNotificationService.js";
 import PasswordField from "../components/forms/PasswordField.jsx";
 import { requireSupabase } from "../lib/supabase.js";
 import { buildAdminNavigationSections, getAdminNavigation, getAdminNavigationSections } from "./navigation.js";
@@ -62,6 +71,50 @@ function buildShellBreadcrumbs(activeSection, currentItem, t) {
   }
 
   return crumbs;
+}
+
+function formatPresenceLastActive(value, locale, t) {
+  const timestamp = new Date(value || "").getTime();
+
+  if (!Number.isFinite(timestamp)) {
+    return "—";
+  }
+
+  const diffMs = timestamp - Date.now();
+  const absDiffMs = Math.abs(diffMs);
+
+  if (absDiffMs < 60 * 1000) {
+    return t("admin.common.activeNow");
+  }
+
+  const rtf = new Intl.RelativeTimeFormat(locale || "en", { numeric: "auto" });
+
+  if (absDiffMs < 60 * 60 * 1000) {
+    return rtf.format(Math.round(diffMs / (60 * 1000)), "minute");
+  }
+
+  if (absDiffMs < 24 * 60 * 60 * 1000) {
+    return rtf.format(Math.round(diffMs / (60 * 60 * 1000)), "hour");
+  }
+
+  return rtf.format(Math.round(diffMs / (24 * 60 * 60 * 1000)), "day");
+}
+
+function formatNotificationTime(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diff = Date.now() - date.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < minute) return "now";
+  if (diff < hour) return `${Math.floor(diff / minute)}m`;
+  if (diff < day) return `${Math.floor(diff / hour)}h`;
+  return date.toLocaleDateString();
 }
 
 function findBestMatch(items, pathname) {
@@ -214,11 +267,11 @@ export function AdminForbiddenPage() {
 }
 
 function AdminLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const adminAuth = useAdminAuth();
-  const { profile, primaryRoleLabel, roleLabels, roles, isAdminUser } = adminAuth;
+  const { profile, primaryRoleLabel, roleLabels, roles, isAdminUser, user } = adminAuth;
   const preferencesState = useAdminPreferencesState(profile?.email, profile?.preferred_language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -226,10 +279,24 @@ function AdminLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [dynamicMenu, setDynamicMenu] = useState(null);
+  const [notificationsState, setNotificationsState] = useState({
+    notifications: [],
+    unreadCount: 0,
+    supportsNotifications: true,
+  });
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
+  const [activeEmployees, setActiveEmployees] = useState([]);
+  const [isPresenceOpen, setIsPresenceOpen] = useState(false);
   const [openDesktopSectionKey, setOpenDesktopSectionKey] = useState("");
   const [expandedMobileSectionKey, setExpandedMobileSectionKey] = useState("");
   const adminWorkSessionIdRef = useRef("");
   const desktopRailRef = useRef(null);
+  const notificationsRef = useRef(null);
+  const adminPresenceRef = useRef(null);
+  const lastPresenceHeartbeatAtRef = useRef(0);
+  const refreshActiveEmployeePresenceRef = useRef(() => Promise.resolve());
+  const sendAdminPresenceHeartbeatRef = useRef(() => {});
 
   useEffect(() => {
     let active = true;
@@ -275,6 +342,13 @@ function AdminLayout() {
   const currentLabel = currentItem?.label || activeSection?.label || t("admin.common.admin");
   const currentRoleLabel = primaryRoleLabel || roleLabels[0] || t("admin.common.noRoleAssigned");
   const currentUserEmail = profile?.email || t("admin.common.noEmailAvailable");
+  const currentUserName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || currentUserEmail;
+  const canViewPresenceDetails = adminAuth.isOwnerOrSuperAdmin || adminAuth.hasAnyPermission(["team.manage", "activity.view"]);
+  const accountAvatarUrl = getProfileAvatarUrl({
+    profile,
+    user,
+    preferUserMetadata: true,
+  });
   const mobileSectionsLabel = t("admin.common.sectionsMenu", { defaultValue: "Sections" });
   const breadcrumbs = useMemo(
     () => buildShellBreadcrumbs(activeSection, currentItem, t),
@@ -303,6 +377,88 @@ function AdminLayout() {
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [openDesktopSectionKey]);
+
+  useEffect(() => {
+    if (!isNotificationsOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (!notificationsRef.current?.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isNotificationsOpen]);
+
+  useEffect(() => {
+    if (!isPresenceOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (!adminPresenceRef.current?.contains(event.target)) {
+        setIsPresenceOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isPresenceOpen]);
+
+  refreshActiveEmployeePresenceRef.current = async () => {
+    if (!profile?.id || !isAdminUser) {
+      setActiveEmployees([]);
+      return;
+    }
+
+    try {
+      const data = await fetchActiveAdminEmployees({
+        includeAllDetails: canViewPresenceDetails,
+        profileId: profile.id,
+        thresholdMinutes: 3,
+        limit: 12,
+      });
+
+      setActiveEmployees(data.employees || []);
+    } catch {
+      setActiveEmployees([]);
+    }
+  };
+
+  sendAdminPresenceHeartbeatRef.current = (force = false) => {
+    const now = Date.now();
+
+    if (!force && now - lastPresenceHeartbeatAtRef.current < 30 * 1000) {
+      return;
+    }
+
+    lastPresenceHeartbeatAtRef.current = now;
+    void heartbeatAdminWorkSession(adminWorkSessionIdRef.current || null);
+  };
+
+  const loadNotifications = async () => {
+    if (!profile?.id || !isAdminUser) {
+      setNotificationsState({
+        notifications: [],
+        unreadCount: 0,
+        supportsNotifications: false,
+      });
+      return;
+    }
+
+    setIsNotificationsLoading(true);
+    try {
+      const next = await fetchAdminNotifications();
+      setNotificationsState(next);
+    } catch {
+      setNotificationsState((current) => ({ ...current, supportsNotifications: false }));
+    } finally {
+      setIsNotificationsLoading(false);
+    }
+  };
 
   const signOut = async () => {
     const client = requireSupabase();
@@ -343,6 +499,73 @@ function AdminLayout() {
     return () => {
       active = false;
     };
+  }, [isAdminUser, profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.id || !isAdminUser) {
+      setActiveEmployees([]);
+      return undefined;
+    }
+
+    let active = true;
+
+    const loadPresence = async () => {
+      await refreshActiveEmployeePresenceRef.current();
+    };
+
+    void loadPresence();
+    const timer = window.setInterval(() => {
+      if (active) {
+        void loadPresence();
+      }
+    }, 30 * 1000);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [canViewPresenceDetails, isAdminUser, profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.id || !isAdminUser) {
+      setNotificationsState({
+        notifications: [],
+        unreadCount: 0,
+        supportsNotifications: false,
+      });
+      return undefined;
+    }
+
+    let active = true;
+
+    const run = async () => {
+      if (!active) {
+        return;
+      }
+
+      await loadNotifications();
+    };
+
+    void run();
+    const timer = window.setInterval(run, 45 * 1000);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [isAdminUser, profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.id || !isAdminUser) {
+      return undefined;
+    }
+
+    const handleNotificationsChanged = () => {
+      void loadNotifications();
+    };
+
+    window.addEventListener(ADMIN_NOTIFICATIONS_CHANGED_EVENT, handleNotificationsChanged);
+    return () => window.removeEventListener(ADMIN_NOTIFICATIONS_CHANGED_EVENT, handleNotificationsChanged);
   }, [isAdminUser, profile?.id]);
 
   useEffect(() => {
@@ -388,21 +611,32 @@ function AdminLayout() {
         }
 
         adminWorkSessionIdRef.current = sessionId || "";
+        lastPresenceHeartbeatAtRef.current = Date.now();
+        void refreshActiveEmployeePresenceRef.current();
         heartbeatTimer = window.setInterval(() => {
-          void heartbeatAdminWorkSession(adminWorkSessionIdRef.current || null);
-        }, 3 * 60 * 1000);
+          sendAdminPresenceHeartbeatRef.current();
+        }, 60 * 1000);
       })
       .catch(() => null);
 
     const handleVisibilityChange = () => {
-      void heartbeatAdminWorkSession(adminWorkSessionIdRef.current || null);
+      if (document.visibilityState === "visible") {
+        sendAdminPresenceHeartbeatRef.current();
+        void refreshActiveEmployeePresenceRef.current();
+      }
     };
 
     const handlePageHide = () => {
-      void heartbeatAdminWorkSession(adminWorkSessionIdRef.current || null);
+      sendAdminPresenceHeartbeatRef.current(true);
+    };
+
+    const handleUserActivity = () => {
+      sendAdminPresenceHeartbeatRef.current();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("keydown", handleUserActivity);
+    document.addEventListener("pointerdown", handleUserActivity);
     window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("beforeunload", handlePageHide);
 
@@ -412,12 +646,46 @@ function AdminLayout() {
         window.clearInterval(heartbeatTimer);
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("keydown", handleUserActivity);
+      document.removeEventListener("pointerdown", handleUserActivity);
       window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("beforeunload", handlePageHide);
       void endAdminWorkSession(adminWorkSessionIdRef.current || null);
       adminWorkSessionIdRef.current = "";
     };
   }, [isAdminUser, profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.id || !isAdminUser) {
+      return;
+    }
+
+    sendAdminPresenceHeartbeatRef.current();
+    void refreshActiveEmployeePresenceRef.current();
+  }, [isAdminUser, location.pathname, profile?.id]);
+
+  const displayedActiveEmployees = useMemo(() => (
+    activeEmployees.map((employee) => {
+      if (employee.profileId !== profile?.id) {
+        return employee;
+      }
+
+      return {
+        ...employee,
+        fullName: employee.fullName || currentUserName,
+        email: employee.email || currentUserEmail,
+        avatarUrl: employee.avatarUrl || accountAvatarUrl,
+        roleLabel: employee.roleLabel === "No role" ? currentRoleLabel : employee.roleLabel,
+      };
+    })
+  ), [accountAvatarUrl, activeEmployees, currentRoleLabel, currentUserEmail, currentUserName, profile?.id]);
+
+  const visibleActiveEmployees = useMemo(
+    () => displayedActiveEmployees.filter((employee) => employee.profileId !== profile?.id),
+    [displayedActiveEmployees, profile?.id],
+  );
+  const activeEmployeePreview = visibleActiveEmployees.slice(0, 5);
+  const hiddenActiveEmployeeCount = Math.max(0, visibleActiveEmployees.length - activeEmployeePreview.length);
 
   const searchResults = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
@@ -545,6 +813,23 @@ function AdminLayout() {
     navigate(target);
   };
 
+  const openNotification = async (notification) => {
+    if (!notification.readAt) {
+      await markAdminNotificationRead(notification.id).catch(() => null);
+      await loadNotifications();
+    }
+
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+      setIsNotificationsOpen(false);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    await markAllAdminNotificationsRead().catch(() => null);
+    await loadNotifications();
+  };
+
   const toggleDesktopSection = (section) => {
     if (!section.pages?.length) {
       goToSection(section);
@@ -647,24 +932,34 @@ function AdminLayout() {
           ))}
         </nav>
         <div className="admin-mobile-account">
-          <div className="admin-user-chip">
-            <span>{t("admin.common.email")}</span>
-            <strong>{currentUserEmail}</strong>
+          <div className="admin-account-card">
+            <div className="admin-account-card__identity">
+              <ProfileAvatar
+                avatarUrl={accountAvatarUrl}
+                fallbackName={currentUserName}
+                size="xs"
+              />
+              <div className="admin-account-card__meta">
+                <strong>{currentUserEmail}</strong>
+                <span>{currentRoleLabel}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="admin-account-card__logout"
+              onClick={signOut}
+              aria-label={t("admin.common.logOut")}
+              title={t("admin.common.logOut")}
+            >
+              <LogOut size={16} />
+            </button>
           </div>
-          <div className="admin-user-chip">
-            <span>{t("admin.common.role")}</span>
-            <strong>{currentRoleLabel}</strong>
-          </div>
-          <button type="button" className="admin-logout" onClick={signOut}>
-            <LogOut size={16} />
-            <span>{t("admin.common.logOut")}</span>
-          </button>
         </div>
       </aside>
 
       <div className="admin-workspace">
         <header className="admin-topbar">
-          <div className="admin-topbar__left">
+          <div className="admin-topbar__right">
             <button
               type="button"
               className="admin-menu-button"
@@ -673,15 +968,6 @@ function AdminLayout() {
             >
               <Menu size={18} />
             </button>
-            <nav className="admin-topbar__breadcrumbs" aria-label="Breadcrumbs">
-              {breadcrumbs.map((crumb, index) => (
-                <span key={crumb.key} className={`admin-topbar__breadcrumb${index === breadcrumbs.length - 1 ? " is-current" : ""}`}>
-                  {crumb.label}
-                </span>
-              ))}
-            </nav>
-          </div>
-          <div className="admin-topbar__right">
             <label className="admin-search admin-search--topbar">
               <Search size={16} />
               <input
@@ -735,18 +1021,174 @@ function AdminLayout() {
                 ) : null}
               </AnimatePresence>
             </label>
-            <div className="admin-user-chip">
-              <span>{t("admin.common.email")}</span>
-              <strong>{currentUserEmail}</strong>
+            <div ref={notificationsRef} className={`admin-notifications${isNotificationsOpen ? " is-open" : ""}`}>
+              <button
+                type="button"
+                className="admin-notifications__button"
+                onClick={() => {
+                  setIsNotificationsOpen((current) => {
+                    const next = !current;
+                    if (next) {
+                      setIsPresenceOpen(false);
+                      void loadNotifications();
+                    }
+                    return next;
+                  });
+                }}
+                aria-label={t("admin.notifications.title")}
+                aria-expanded={isNotificationsOpen}
+              >
+                <Bell size={17} />
+                {notificationsState.unreadCount ? (
+                  <span>{notificationsState.unreadCount > 9 ? "9+" : notificationsState.unreadCount}</span>
+                ) : null}
+              </button>
+              <AnimatePresence>
+                {isNotificationsOpen ? (
+                  <motion.div
+                    className="admin-notifications__dropdown"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
+                    <header className="admin-notifications__head">
+                      <div>
+                        <strong>{t("admin.notifications.title")}</strong>
+                        <span>{t("admin.notifications.unreadCount", { count: notificationsState.unreadCount })}</span>
+                      </div>
+                      <button type="button" onClick={() => void markAllNotificationsRead()} disabled={!notificationsState.unreadCount}>
+                        <CheckCheck size={15} />
+                        <span>{t("admin.notifications.markAllRead")}</span>
+                      </button>
+                    </header>
+                    <div className="admin-notifications__list">
+                      {isNotificationsLoading && !notificationsState.notifications.length ? (
+                        <div className="admin-notifications__empty">{t("admin.notifications.loading")}</div>
+                      ) : !notificationsState.supportsNotifications ? (
+                        <div className="admin-notifications__empty">{t("admin.notifications.schemaMissing")}</div>
+                      ) : notificationsState.notifications.length ? (
+                        notificationsState.notifications.slice(0, 12).map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={`admin-notifications__item is-${item.severity}${item.readAt ? "" : " is-unread"}`}
+                            onClick={() => void openNotification(item)}
+                          >
+                            <span className="admin-notifications__dot" aria-hidden="true" />
+                            <span className="admin-notifications__copy">
+                              <strong>{item.title}</strong>
+                              {item.body ? <small>{item.body}</small> : null}
+                              <em>{[item.module, formatNotificationTime(item.createdAt)].filter(Boolean).join(" • ")}</em>
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="admin-notifications__empty">{t("admin.notifications.empty")}</div>
+                      )}
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
-            <div className="admin-user-chip">
-              <span>{t("admin.common.role")}</span>
-              <strong>{currentRoleLabel}</strong>
+            {visibleActiveEmployees.length ? (
+              <div className={`admin-presence${isPresenceOpen ? " is-open" : ""}`} ref={adminPresenceRef}>
+                <button
+                  type="button"
+                  className="admin-presence__trigger"
+                  onClick={() => {
+                    setIsPresenceOpen((current) => {
+                      const next = !current;
+                      if (next) {
+                        setIsNotificationsOpen(false);
+                      }
+                      return next;
+                    });
+                  }}
+                  aria-expanded={isPresenceOpen}
+                  aria-label={t("admin.common.activeNow")}
+                >
+                  <div className="admin-presence__stack" aria-hidden="true">
+                    {activeEmployeePreview.map((employee) => (
+                      <ProfileAvatar
+                        key={employee.id}
+                        avatarUrl={employee.avatarUrl}
+                        fallbackName={employee.fullName || employee.email}
+                        size="xs"
+                        className="admin-presence__avatar"
+                      />
+                    ))}
+                    {hiddenActiveEmployeeCount ? <span className="admin-presence__count-badge">+{hiddenActiveEmployeeCount}</span> : null}
+                  </div>
+                </button>
+
+                {isPresenceOpen ? (
+                  <div className="admin-presence__panel">
+                    <div className="admin-presence__panel-head">
+                      <strong>{t("admin.common.activeNow")}</strong>
+                      <span>{visibleActiveEmployees.length}</span>
+                    </div>
+
+                    <div className="admin-presence__list">
+                      {visibleActiveEmployees.map((employee) => {
+                        const displayName = employee.fullName || employee.email || t("admin.common.admin");
+                        const lastActiveLabel = formatPresenceLastActive(employee.lastSeenAt, i18n.resolvedLanguage, t);
+
+                        return (
+                          <div
+                            key={employee.id}
+                            className="admin-presence__item"
+                            title={[
+                              displayName,
+                              employee.email || null,
+                              employee.roleLabel || null,
+                              `${t("admin.common.lastActive")}: ${lastActiveLabel}`,
+                            ].filter(Boolean).join("\n")}
+                          >
+                            <ProfileAvatar
+                              avatarUrl={employee.avatarUrl}
+                              fallbackName={displayName}
+                              size="xs"
+                              className="admin-presence__avatar"
+                            />
+                            <div className="admin-presence__item-meta">
+                              <strong>{displayName}</strong>
+                              <span>{employee.email || "—"}</span>
+                            </div>
+                            <div className="admin-presence__item-side">
+                              <span>{employee.roleLabel || t("admin.common.noRoleAssigned")}</span>
+                              <small>{t("admin.common.lastActive")}: {lastActiveLabel}</small>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="admin-account-card">
+              <div className="admin-account-card__identity">
+                <ProfileAvatar
+                  avatarUrl={accountAvatarUrl}
+                  fallbackName={currentUserName}
+                  size="xs"
+                />
+                <div className="admin-account-card__meta">
+                  <strong>{currentUserEmail}</strong>
+                  <span>{currentRoleLabel}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="admin-account-card__logout"
+                onClick={signOut}
+                aria-label={t("admin.common.logOut")}
+                title={t("admin.common.logOut")}
+              >
+                <LogOut size={16} />
+              </button>
             </div>
-            <button type="button" className="admin-logout" onClick={signOut}>
-              <LogOut size={16} />
-              <span>{t("admin.common.logOut")}</span>
-            </button>
           </div>
         </header>
 

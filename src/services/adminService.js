@@ -1,6 +1,7 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser, resetPassword } from "./authService.js";
 import { assertCurrentAdminPermission, assertCurrentOwnerAdmin } from "./adminAccessService.js";
+import { createAdminNotification } from "./adminNotificationService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
 import { calculatePartnerCommissionFromRevenue, getPartnerCommissionRate } from "../lib/partnerCommission.js";
@@ -10,6 +11,10 @@ import {
   normalizeLeadCode,
 } from "../lib/recordCodes.js";
 import { buildReferralPath, generateRandomReferralCode } from "../../shared/referral-code.js";
+
+function notifyAdmin(input = {}) {
+  void createAdminNotification(input).catch(() => null);
+}
 
 function isMissingOptionalTable(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -174,6 +179,10 @@ const adminModulePending = new Map();
 const ADMIN_MENU_CACHE_PREFIX = "admin-menu:";
 const ADMIN_MENU_CACHE_VERSION = "v6-role-visibility-fix";
 const ADMIN_WORK_SESSION_STORAGE_KEY = "fly-friendly-admin-work-session";
+const ADMIN_TEAM_PROFILE_SELECTS = [
+  "id, full_name, email, phone, role, avatar_url, created_at, deleted_at",
+  "id, full_name, email, phone, role, created_at, deleted_at",
+];
 const ADMIN_ACTIVITY_SENSITIVE_KEYS = [
   "password",
   "secret",
@@ -357,6 +366,39 @@ async function fetchAssignableAdminProfiles(client) {
     })
     .filter((item) => item.id)
     .sort((a, b) => String(a.full_name || a.email || "").localeCompare(String(b.full_name || b.email || ""), undefined, { sensitivity: "base" }));
+}
+
+async function fetchAdminProfilesByIds(client, profileIds = []) {
+  const normalizedIds = Array.from(new Set((profileIds || []).filter(Boolean)));
+
+  if (!normalizedIds.length) {
+    return [];
+  }
+
+  let lastError = null;
+
+  for (const fields of ADMIN_TEAM_PROFILE_SELECTS) {
+    const response = await client
+      .from("profiles")
+      .select(fields)
+      .in("id", normalizedIds);
+
+    if (!response.error) {
+      return response.data || [];
+    }
+
+    if (!isMissingOptionalTable(response.error) && !isMissingColumnError(response.error)) {
+      throw response.error;
+    }
+
+    lastError = response.error;
+  }
+
+  if (lastError && !isMissingOptionalTable(lastError) && !isMissingColumnError(lastError)) {
+    throw lastError;
+  }
+
+  return [];
 }
 
 function toLegacyAdminRoleCodes(roleCodes = []) {
@@ -765,6 +807,171 @@ export async function endAdminWorkSession(sessionId = null) {
     writeAdminWorkSessionState(null);
     return false;
   }
+}
+
+export function isRecentlyActive(lastSeenAt, thresholdMinutes = 3) {
+  const timestamp = parseDateInput(lastSeenAt);
+  if (!timestamp) {
+    return false;
+  }
+
+  const thresholdMs = Math.max(1, Number(thresholdMinutes || 3)) * 60 * 1000;
+  return timestamp >= Date.now() - thresholdMs;
+}
+
+export async function fetchActiveAdminEmployees(options = {}) {
+  const client = requireSupabase();
+  const currentUser = await getCurrentUser().catch(() => null);
+  const currentUserId = String(options.profileId || currentUser?.id || "").trim();
+  const thresholdMinutes = Math.max(1, Number(options.thresholdMinutes || 3));
+  const limit = Math.max(1, Math.min(50, Number(options.limit || 12)));
+  const includeAllDetails = options.includeAllDetails !== false;
+
+  if (!currentUserId) {
+    return {
+      employees: [],
+      activeCount: 0,
+      thresholdMinutes,
+    };
+  }
+
+  let sessionsQuery = client
+    .from("admin_work_sessions")
+    .select("id, admin_profile_id, started_at, ended_at, last_seen_at, created_at")
+    .not("admin_profile_id", "is", null)
+    .order("last_seen_at", { ascending: false })
+    .limit(500);
+
+  if (!includeAllDetails) {
+    sessionsQuery = sessionsQuery.eq("admin_profile_id", currentUserId);
+  }
+
+  const sessionsResponse = await sessionsQuery;
+
+  if (sessionsResponse.error) {
+    if (isMissingOptionalTable(sessionsResponse.error) || isMissingColumnError(sessionsResponse.error)) {
+      return {
+        employees: [],
+        activeCount: 0,
+        thresholdMinutes,
+      };
+    }
+
+    throw sessionsResponse.error;
+  }
+
+  const latestSessionByProfileId = new Map();
+
+  (sessionsResponse.data || []).forEach((session) => {
+    const profileId = String(session?.admin_profile_id || "").trim();
+
+    if (!profileId || latestSessionByProfileId.has(profileId)) {
+      return;
+    }
+
+    if (session?.ended_at || !isRecentlyActive(session?.last_seen_at || session?.started_at, thresholdMinutes)) {
+      return;
+    }
+
+    latestSessionByProfileId.set(profileId, session);
+  });
+
+  const activeProfileIds = Array.from(latestSessionByProfileId.keys());
+
+  if (!activeProfileIds.length) {
+    return {
+      employees: [],
+      activeCount: 0,
+      thresholdMinutes,
+    };
+  }
+
+  const [profiles, teamMembersResponse, legacyRolesResponse, allRolesResponse] = await Promise.all([
+    fetchAdminProfilesByIds(client, activeProfileIds),
+    client
+      .from("admin_team_members")
+      .select("profile_id, email, full_name, role_id, status")
+      .in("profile_id", activeProfileIds),
+    client
+      .from("user_admin_roles")
+      .select("user_id, role_code")
+      .in("user_id", activeProfileIds),
+    client
+      .from("admin_roles")
+      .select("id, code, label, name, rank, is_system_role, is_owner_role, is_active"),
+  ]);
+
+  if (teamMembersResponse.error && !isMissingOptionalTable(teamMembersResponse.error) && !isMissingColumnError(teamMembersResponse.error)) {
+    throw teamMembersResponse.error;
+  }
+
+  if (legacyRolesResponse.error && !isMissingOptionalTable(legacyRolesResponse.error)) {
+    throw legacyRolesResponse.error;
+  }
+
+  if (allRolesResponse.error && !isMissingOptionalTable(allRolesResponse.error) && !isMissingColumnError(allRolesResponse.error)) {
+    throw allRolesResponse.error;
+  }
+
+  const profilesById = new Map((profiles || []).map((item) => [item.id, item]));
+  const teamMembersByProfileId = new Map(((teamMembersResponse.error ? [] : teamMembersResponse.data) || []).map((item) => [item.profile_id, item]));
+  const allRoles = (allRolesResponse.error ? [] : (allRolesResponse.data || [])).map(normalizeRoleRecord);
+  const rolesById = new Map(allRoles.map((item) => [item.id, item]));
+  const rolesByCode = new Map(allRoles.map((item) => [item.code, item]));
+  const legacyRolesByUserId = ((legacyRolesResponse.error ? [] : legacyRolesResponse.data) || []).reduce((acc, item) => {
+    const userId = String(item?.user_id || "").trim();
+    const roleCode = normalizeRoleCode(item?.role_code);
+
+    if (!userId || !roleCode) {
+      return acc;
+    }
+
+    acc[userId] ||= [];
+    acc[userId].push(roleCode);
+    return acc;
+  }, {});
+
+  const employees = activeProfileIds
+    .map((profileId) => {
+      const profile = profilesById.get(profileId) || null;
+      const teamMember = teamMembersByProfileId.get(profileId) || null;
+      const session = latestSessionByProfileId.get(profileId) || null;
+      const legacyRoleCodes = Array.from(new Set((legacyRolesByUserId[profileId] || []).filter(Boolean)));
+      const role =
+        (teamMember?.role_id ? rolesById.get(teamMember.role_id) : null)
+        || sortRolesByRank(legacyRoleCodes.map((code) => rolesByCode.get(code)).filter(Boolean))[0]
+        || null;
+      const hasAdminRole = Boolean(teamMember?.role_id || legacyRoleCodes.length || String(profile?.role || "").toLowerCase() === "admin");
+      const status = teamMember
+        ? normalizeTeamStatus(teamMember.status)
+        : profile?.deleted_at ? "archived" : hasAdminRole ? "active" : "inactive";
+
+      if (status !== "active" || (role && role.isActive === false) || !session) {
+        return null;
+      }
+
+      return {
+        id: profileId,
+        profileId,
+        fullName: teamMember?.full_name || profile?.full_name || "",
+        email: teamMember?.email || profile?.email || "",
+        avatarUrl: profile?.avatar_url || "",
+        roleLabel: role?.name || role?.label || "No role",
+        roleCode: role?.code || legacyRoleCodes[0] || null,
+        status,
+        lastSeenAt: session.last_seen_at || session.started_at || null,
+        startedAt: session.started_at || session.created_at || null,
+        isSelf: profileId === currentUserId,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => new Date(right.lastSeenAt || 0).getTime() - new Date(left.lastSeenAt || 0).getTime());
+
+  return {
+    employees: employees.slice(0, limit),
+    activeCount: employees.length,
+    thresholdMinutes,
+  };
 }
 
 export async function fetchAdminOverview() {
@@ -2281,6 +2488,37 @@ export async function createTask(taskInput) {
     meta: { related_entity_type: taskInput.related_entity_type, related_entity_id: taskInput.related_entity_id },
   });
 
+  const isDashboardTask = payload.task_type === "dashboard_todo" || payload.related_entity_type === "dashboard";
+  const notificationSeverity = payload.priority === "urgent" || payload.priority === "high" ? "warning" : "info";
+  const actionUrl = `/admin/operations/tasks?task=${payload.id}`;
+
+  if (payload.assigned_user_id && payload.assigned_user_id !== user?.id) {
+    notifyAdmin({
+      type: "task_assigned",
+      severity: notificationSeverity,
+      title: isDashboardTask ? "New dashboard task assigned" : "Task assigned to you",
+      body: payload.title,
+      module: "tasks",
+      entityType: "task",
+      entityId: payload.id,
+      actionUrl,
+      recipientProfileId: payload.assigned_user_id,
+    });
+  }
+
+  notifyAdmin({
+    type: payload.assigned_user_id ? "task_assignment_recorded" : "task_created",
+    severity: notificationSeverity,
+    title: payload.assigned_user_id
+      ? (isDashboardTask ? "Dashboard task sent" : "Task assigned")
+      : (isDashboardTask ? "Dashboard task created" : "New task created"),
+    body: payload.title,
+    module: "tasks",
+    entityType: "task",
+    entityId: payload.id,
+    actionUrl,
+  });
+
   return data;
 }
 
@@ -2319,6 +2557,81 @@ export async function updateTask(taskId, updates) {
     previousValue: current.data || null,
     newValue: payload,
   });
+
+  const previous = current.data || {};
+  if (updates.status && updates.status !== previous.status) {
+    const taskTitle = previous.title || updates.title || "Task";
+    const actionUrl = `/admin/operations/tasks?task=${taskId}`;
+    const nextAssigneeId = updates.assigned_user_id ?? previous.assigned_user_id ?? null;
+
+    if (updates.status === "done") {
+      notifyAdmin({
+        type: "task_completed",
+        severity: "info",
+        title: "Task completed",
+        body: `${taskTitle} was marked as done.`,
+        module: "tasks",
+        entityType: "task",
+        entityId: taskId,
+        actionUrl,
+      });
+
+      if (previous.created_by && previous.created_by !== user?.id) {
+        notifyAdmin({
+          type: "task_completed_for_creator",
+          severity: "info",
+          title: "Assigned task completed",
+          body: taskTitle,
+          module: "tasks",
+          entityType: "task",
+          entityId: taskId,
+          actionUrl,
+          recipientProfileId: previous.created_by,
+        });
+      }
+    } else {
+      notifyAdmin({
+        type: "task_status_changed",
+        severity: updates.status === "cancelled" ? "warning" : "info",
+        title: "Task status changed",
+        body: `${taskTitle} moved to ${updates.status}.`,
+        module: "tasks",
+        entityType: "task",
+        entityId: taskId,
+        actionUrl,
+        recipientProfileId: nextAssigneeId,
+      });
+    }
+  }
+
+  if (updates.assigned_user_id && updates.assigned_user_id !== previous.assigned_user_id) {
+    const taskTitle = previous.title || updates.title || "Task";
+    const actionUrl = `/admin/operations/tasks?task=${taskId}`;
+    const notificationSeverity = ["urgent", "high"].includes(updates.priority || previous.priority) ? "warning" : "info";
+
+    notifyAdmin({
+      type: "task_assigned",
+      severity: notificationSeverity,
+      title: "Task assigned to you",
+      body: taskTitle,
+      module: "tasks",
+      entityType: "task",
+      entityId: taskId,
+      actionUrl,
+      recipientProfileId: updates.assigned_user_id,
+    });
+
+    notifyAdmin({
+      type: "task_assignment_recorded",
+      severity: notificationSeverity,
+      title: "Task reassigned",
+      body: taskTitle,
+      module: "tasks",
+      entityType: "task",
+      entityId: taskId,
+      actionUrl,
+    });
+  }
 }
 
 export async function fetchCommunicationsModuleData() {
@@ -4760,18 +5073,11 @@ export async function fetchAdminTeamModuleData(options = {}) {
     ...legacyRoles.map((item) => item.user_id).filter(Boolean),
   ]);
 
-  const profilesResponse = profileIds.size
-    ? await client
-      .from("profiles")
-      .select("id, full_name, email, phone, role, created_at, deleted_at")
-      .in("id", Array.from(profileIds))
-    : { data: [], error: null };
+  const profiles = profileIds.size
+    ? await fetchAdminProfilesByIds(client, Array.from(profileIds))
+    : [];
 
-  if (profilesResponse.error) {
-    throw profilesResponse.error;
-  }
-
-  const profilesById = new Map((profilesResponse.data || []).map((item) => [item.id, item]));
+  const profilesById = new Map((profiles || []).map((item) => [item.id, item]));
   const rolesById = new Map(rolesModule.roles.map((item) => [item.id, item]));
   const rolesByCode = new Map(rolesModule.roles.map((item) => [item.code, item]));
   const legacyRolesByUserId = legacyRoles.reduce((acc, item) => {
@@ -4820,6 +5126,7 @@ export async function fetchAdminTeamModuleData(options = {}) {
       email: teamMember?.email || profile?.email || "",
       phone: profile?.phone || "",
       fullName: teamMember?.full_name || profile?.full_name || "",
+      avatarUrl: profile?.avatar_url || "",
       roleId: teamMember?.role_id || role?.id || null,
       roleCode: role?.code || legacyRoleCodes[0] || null,
       roleLabel: role?.name || role?.label || "No role",

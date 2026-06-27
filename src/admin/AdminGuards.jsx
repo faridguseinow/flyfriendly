@@ -7,7 +7,7 @@ export function AdminRouteGuard({ permission = null, anyPermissions = [], allPer
   const adminAuth = useAdminAuth();
   const { isLoading, user, isAdminUser, hasPermission, hasAnyPermission, hasAllPermissions } = adminAuth;
 
-  if (isLoading) {
+  if (isLoading && !user && !isAdminUser) {
     return <div className="admin-route-state">Loading admin access...</div>;
   }
 

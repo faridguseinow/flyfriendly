@@ -34,6 +34,7 @@ export function getProfileAvatarUrl({
   partnerProfile = null,
   profile = null,
   user = null,
+  preferUserMetadata = false,
 } = {}) {
   const metadata = user?.user_metadata || {};
   const identityData = Array.isArray(user?.identities)
@@ -42,10 +43,7 @@ export function getProfileAvatarUrl({
       .find((identity) => identity?.avatar_url || identity?.picture || identity?.photo_url || identity?.photoURL)
     : null;
 
-  return avatarUrl
-    || partnerProfile?.avatar_url
-    || profile?.avatar_url
-    || metadata.avatar_url
+  const automaticAvatarUrl = metadata.avatar_url
     || metadata.picture
     || metadata.photo_url
     || metadata.photoURL
@@ -53,6 +51,20 @@ export function getProfileAvatarUrl({
     || identityData?.picture
     || identityData?.photo_url
     || identityData?.photoURL
+    || "";
+
+  if (preferUserMetadata) {
+    return avatarUrl
+      || automaticAvatarUrl
+      || profile?.avatar_url
+      || partnerProfile?.avatar_url
+      || "";
+  }
+
+  return avatarUrl
+    || partnerProfile?.avatar_url
+    || profile?.avatar_url
+    || automaticAvatarUrl
     || "";
 }
 

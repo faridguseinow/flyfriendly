@@ -271,8 +271,10 @@ export function AdminAuthProvider({ children }) {
 
     const client = requireSupabase();
 
-    const loadSession = async () => {
-      setState((current) => ({ ...current, isLoading: true }));
+    const loadSession = async ({ silent = false } = {}) => {
+      if (!silent) {
+        setState((current) => ({ ...current, isLoading: true }));
+      }
 
       const { data: sessionData, error: sessionError } = await client.auth.getSession();
       if (sessionError) {
@@ -339,7 +341,7 @@ export function AdminAuthProvider({ children }) {
     loadSession();
 
     const { data: authListener } = client.auth.onAuthStateChange(() => {
-      loadSession();
+      loadSession({ silent: true });
     });
 
     return () => {
