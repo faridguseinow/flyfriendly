@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LayoutPanelTop,
   Megaphone,
+  MessageSquareText,
   MonitorPlay,
   NotebookText,
   ReceiptText,
@@ -49,6 +50,7 @@ const adminNavigationSectionsConfig = [
       { key: "operations-cases", labelKey: "admin.nav.pages.operationsCases", defaultLabel: "Cases", path: "/admin/operations/cases", icon: Briefcase, permission: "cases.view" },
       { key: "operations-tasks", labelKey: "admin.nav.pages.operationsTasks", defaultLabel: "Tasks", path: "/admin/operations/tasks", icon: SquareCheckBig, permission: "tasks.view" },
       { key: "operations-documents", labelKey: "admin.nav.pages.operationsDocuments", defaultLabel: "Documents", path: "/admin/operations/documents", icon: FolderOpen, permission: "documents.view" },
+      { key: "operations-inbox", labelKey: "admin.nav.pages.operationsInbox", defaultLabel: "Inbox", path: "/admin/communication", icon: MessageSquareText, permission: "communications.view" },
     ],
   },
   {
