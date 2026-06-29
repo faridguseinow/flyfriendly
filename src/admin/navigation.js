@@ -14,6 +14,7 @@ import {
   NotebookText,
   ReceiptText,
   Settings,
+  MessageSquareText,
   SquareCheckBig,
   Users,
   UserSquare2,
@@ -49,6 +50,7 @@ const adminNavigationSectionsConfig = [
       { key: "operations-cases", labelKey: "admin.nav.pages.operationsCases", defaultLabel: "Cases", path: "/admin/operations/cases", icon: Briefcase, permission: "cases.view" },
       { key: "operations-tasks", labelKey: "admin.nav.pages.operationsTasks", defaultLabel: "Tasks", path: "/admin/operations/tasks", icon: SquareCheckBig, permission: "tasks.view" },
       { key: "operations-documents", labelKey: "admin.nav.pages.operationsDocuments", defaultLabel: "Documents", path: "/admin/operations/documents", icon: FolderOpen, permission: "documents.view" },
+      { key: "operations-inbox", labelKey: "admin.nav.pages.operationsInbox", defaultLabel: "Inbox", path: "/admin/communication", icon: MessageSquareText, permission: "communications.view" },
     ],
   },
   {
@@ -86,7 +88,7 @@ const adminNavigationSectionsConfig = [
       { key: "content-pages", labelKey: "admin.nav.pages.contentPages", defaultLabel: "Pages", path: "/admin/content/pages", icon: NotebookText, anyPermissions: ["blog.view", "faq.view", "cms.view"] },
       { key: "content-media", labelKey: "admin.nav.pages.contentMedia", defaultLabel: "Media", path: "/admin/content/media", icon: FileText, anyPermissions: ["blog.view", "faq.view", "cms.view"] },
       { key: "content-website", labelKey: "admin.nav.pages.contentWebsite", defaultLabel: "Website", path: "/admin/content/website", icon: MonitorPlay, anyPermissions: ["blog.view", "faq.view", "cms.view"] },
-      { key: "content-cms", labelKey: "admin.nav.pages.contentCms", defaultLabel: "CMS", path: "/admin/content/cms", icon: LayoutPanelTop, permission: "cms.view" },
+      { key: "content-cms", labelKey: "admin.nav.pages.contentCms", defaultLabel: "Blog CMS", path: "/admin/content/cms", icon: LayoutPanelTop, anyPermissions: ["blog.view", "blog.edit", "cms.view"] },
     ],
   },
   {

@@ -39,7 +39,7 @@
       padding: 12px 14px;
       border: 1px solid var(--line-strong);
       border-radius: 12px;
-      color: #20242e;
+      color: var(--admin-text-primary);
       background: #fff;
       outline: 0;
     }
@@ -76,7 +76,7 @@
     }
 
     strong {
-      color: #20242e;
+      color: var(--admin-text-primary);
       font-size: 14px;
       line-height: 20px;
       font-weight: 600;
@@ -103,7 +103,7 @@
     > strong {
       display: block;
       margin-bottom: 12px;
-      color: #20242e;
+      color: var(--admin-text-primary);
       font-size: 14px;
       line-height: 20px;
       font-weight: 700;
@@ -143,7 +143,7 @@
     }
 
     strong {
-      color: #20242e;
+      color: var(--admin-text-primary);
       font-size: 13px;
       line-height: 18px;
       font-weight: 600;

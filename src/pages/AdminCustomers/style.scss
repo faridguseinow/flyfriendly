@@ -67,7 +67,7 @@
 
   h2 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 30px;
     line-height: 1.08;
     font-weight: 700;
@@ -76,7 +76,7 @@
 
   p {
     margin: 8px 0 0;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 14px;
     line-height: 1.55;
   }
@@ -139,7 +139,7 @@
 
   h3 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 22px;
     line-height: 1.15;
     font-weight: 700;
@@ -188,7 +188,7 @@
   cursor: pointer;
 
   small {
-    color: #94a3b8;
+    color: var(--admin-text-secondary);
     font-size: 10px;
     line-height: 1;
   }
@@ -252,7 +252,7 @@
   }
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
@@ -363,7 +363,7 @@
 
   strong {
     display: block;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 20px;
     line-height: 1.2;
     font-weight: 700;
@@ -371,7 +371,7 @@
 
   p {
     margin: 6px 0 0;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 13px;
     line-height: 1.5;
   }
@@ -408,13 +408,13 @@
   padding: 12px 14px;
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
 
   span {
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 1.5;
     word-break: break-word;
@@ -438,7 +438,7 @@
 
   h4 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 14px;
     line-height: 1.3;
     font-weight: 700;
@@ -455,7 +455,7 @@
 
   strong {
     display: block;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     line-height: 1.4;
     font-weight: 700;
@@ -463,7 +463,7 @@
 
   p {
     margin: 4px 0 0;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 1.5;
   }

@@ -1335,6 +1335,7 @@
         "operationsCases": "Case-lər",
         "operationsTasks": "Tapşırıqlar",
         "operationsDocuments": "Sənədlər",
+        "operationsInbox": "Inbox",
         "peopleCustomers": "Müştərilər",
         "peopleEmployees": "İşçilər",
         "peopleReferral": "Referral",
@@ -1460,6 +1461,133 @@
         "structuredValues": "Struktur dəyərlər"
       }
     },
+    "cms": {
+      "loading": "Blog CMS yüklənir...",
+      "loadError": "Blog CMS yüklənmədi.",
+      "newPost": "Yeni bloq postu",
+      "searchPlaceholder": "Başlıq və ya slug üzrə axtar",
+      "tableTitle": "Bloq postları",
+      "emptyTitle": "Bloq postu tapılmadı",
+      "emptyDetail": "Filtrləri dəyişin və ya yeni post yaradın.",
+      "countLabel_one": "{{count}} post",
+      "countLabel_other": "{{count}} post",
+      "metrics": {
+        "total": "Cəmi post",
+        "published": "Yayımlanıb",
+        "drafts": "Qaralamalar",
+        "languages": "Dillər",
+        "missingTranslations": "Çatışmayan tərcümələr"
+      },
+      "filters": {
+        "allStatuses": "Bütün statuslar",
+        "allLanguages": "Bütün dillər",
+        "allSeoStates": "Bütün SEO vəziyyətləri",
+        "allTranslationStates": "Bütün tərcümə vəziyyətləri",
+        "seoComplete": "SEO tamamdır",
+        "seoMissing": "SEO çatışmır",
+        "hasTranslations": "Tərcümələr var",
+        "missingTranslations": "Tərcümələr çatışmır"
+      },
+      "columns": {
+        "post": "Bloq postu",
+        "language": "Dil",
+        "published": "Yayımlanıb",
+        "translations": "Tərcümələr",
+        "preview": "Ön baxış"
+      },
+      "editor": {
+        "eyebrow": "Bloq postu redaktoru",
+        "close": "Bloq postu redaktorunu bağla",
+        "newTitle": "Yeni bloq postu",
+        "newSubtitle": "Yeni post qaralaması yaradın",
+        "editFallbackTitle": "Postu redaktə et",
+        "publishedAt": "Yayımlanma tarixi",
+        "notPublishedYet": "Hələ yayımlanmayıb",
+        "seoReady": "SEO hazırdır",
+        "seoMissing": "SEO çatışmır",
+        "translationCount_one": "{{count}} tərcümə",
+        "translationCount_other": "{{count}} tərcümə",
+        "save": "Yadda saxla",
+        "unpublish": "Yayımdan çıxar",
+        "notLinked": "Bağlanmayıb",
+        "translationGroupAuto": "Avtomatik təyin olunacaq",
+        "noLinkedTranslations": "Hələ bağlı tərcümə yoxdur",
+        "translateToLocale": "{{locale}} qaralamasına tərcümə et",
+        "translatingToLocale": "{{locale}} dilinə tərcümə olunur...",
+        "duplicateToLocale": "{{locale}} qaralaması kimi dublikat et",
+        "allSeoTranslationsExist": "Bütün SEO tərcümələri artıq mövcuddur",
+        "uploading": "Yüklənir...",
+        "uploadHint": "{{size}} MB-a qədər JPG, PNG, WEBP",
+        "untitledArticle": "Adsız məqalə",
+        "seoLooksComplete": "SEO tamdır",
+        "missingTranslations": "Çatışmayan tərcümələr: {{locales}}.",
+        "publishedSeoWarning": "SEO title/description olmayan və ya slug təkrarı olan yayımlanmış postlar zəif indekslənə bilər.",
+        "warnings": {
+          "missingSeoTitle": "SEO title çatışmır.",
+          "missingSeoDescription": "SEO description çatışmır.",
+          "missingExcerpt": "Qısa mətn çatışmır.",
+          "missingCoverAlt": "Qapaq şəkli üçün alt mətni çatışmır.",
+          "duplicateSlug": "Bu dildə slug artıq istifadə olunur."
+        },
+        "placeholders": {
+          "seoKeywords": "uçuş gecikməsi, kompensasiya, hüquqlar"
+        },
+        "sections": {
+          "basic": {
+            "title": "Əsas",
+            "description": "Admin və açıq bloq üçün əsas məqalə sahələri."
+          },
+          "translations": {
+            "title": "Tərcümələr",
+            "description": "Postları bağlayın və avtomatik yayımlamadan tərcümə qaralamaları yaradın."
+          },
+          "cover": {
+            "title": "Qapaq şəkli",
+            "description": "`blog-images` sahəsinə yükləyin və ya birbaşa şəkil URL-i daxil edin."
+          },
+          "content": {
+            "title": "Məzmun",
+            "description": "Sadə rich text. Təhlükəli HTML saxlanmadan əvvəl təmizlənir."
+          },
+          "seo": {
+            "title": "SEO",
+            "description": "İndeksləmə və axtarış üçün metadata və ön baxışlar."
+          }
+        },
+        "fields": {
+          "language": "Dil",
+          "title": "Başlıq",
+          "slug": "Slug",
+          "author": "Müəllif",
+          "publishedDate": "Yayımlanma tarixi",
+          "excerpt": "Qısa mətn",
+          "translationSource": "Mənbə məqalə",
+          "translationGroup": "Tərcümə qrupu",
+          "currentTranslations": "Cari tərcümələr",
+          "coverImageUrl": "Qapaq şəkli URL-i",
+          "coverImageAlt": "Qapaq şəkli alt mətni",
+          "uploadImage": "Şəkil yüklə",
+          "seoTitle": "SEO title",
+          "seoDescription": "SEO description",
+          "seoKeywords": "SEO keywords",
+          "canonicalOverride": "Canonical override"
+        },
+        "preview": {
+          "publicUrl": "İctimai URL",
+          "publicUrlEmpty": "URL-i görmək üçün title və slug daxil edin",
+          "canonical": "Canonical",
+          "canonicalEmpty": "Canonical ictimai URL ilə eyni olacaq",
+          "robots": "Robots",
+          "sitemap": "Sitemap",
+          "sitemapIncluded": "build/deploy sonrası əlavə olunacaq",
+          "sitemapExcluded": "Əlavə olunmayacaq",
+          "google": "Google ön baxışı",
+          "googleEmpty": "Axtarış snippet-ini yaxşılaşdırmaq üçün SEO description əlavə edin.",
+          "hreflang": "Hreflang ön baxışı",
+          "noAlternates": "Hələ yayımlanmış alternativ yoxdur."
+        }
+      }
+    },
     "leads": {
       "loadError": "Lead modulu yüklənmədi.",
       "statusSaveError": "Lead statusunu yeniləmək mümkün olmadı.",
@@ -1576,6 +1704,140 @@
         "collectPayment": "Ödənişi al",
         "preparePayout": "Ödənişi hazırla",
         "completed": "Tamamlandı"
+      }
+    },
+    "inbox": {
+      "title": "Inbox",
+      "searchPlaceholder": "Inbox-da axtar",
+      "filtersAria": "Inbox filtrləri",
+      "messagesTitle": "Mesajlar",
+      "conversationsCount": "{{count}} söhbət",
+      "loading": "Inbox yüklənir...",
+      "loadError": "Inbox yüklənmədi.",
+      "messagesLoading": "Mesajlar yüklənir...",
+      "messageLoadError": "Söhbət mesajlarını yükləmək mümkün olmadı.",
+      "sendError": "Cavabı göndərmək mümkün olmadı.",
+      "schemaMissing": "Inbox schema-sı hələ mövcud deyil. Social inbox-u aktiv etmək üçün Supabase-də `048_social_inbox.sql` faylını işə salın.",
+      "demoSendError": "Bu demo inbox məlumatıdır. Real cavab göndərmək üçün social inbox migration-ı işlədin və ya Supabase communications məlumatlarını qoşun.",
+      "noMessageBody": "Mesaj mətni yoxdur.",
+      "unknownCustomer": "Naməlum müştəri",
+      "conversationFallback": "Söhbət",
+      "replyPlaceholder": "{{name}} üçün cavab yazın",
+      "emptyTitle": "Söhbət tapılmadı",
+      "emptyDetail": "Başqa axtarış və ya kanal filtri sınayın.",
+      "today": "Bu gün",
+      "yesterday": "Dünən",
+      "messagesDivider": "Mesajlar",
+      "now": "indi",
+      "sent": "Göndərildi",
+      "newInboxItem": "Yeni inbox elementi",
+      "formatting": "Formatlama",
+      "attachFile": "Fayl əlavə et",
+      "addEmoji": "Emoji əlavə et",
+      "sendReply": "Cavabı göndər",
+      "call": "Zəng et",
+      "videoCall": "Video zəng",
+      "archive": "Arxivlə",
+      "moreOptions": "Daha çox seçim",
+      "conversationActions": "Söhbət əməliyyatları",
+      "notify": "Bildiriş",
+      "assign": "Təyin et",
+      "task": "Tapşırıq",
+      "rules": "Qaydalar",
+      "customer": "Müştəri",
+      "emailLabel": "Email",
+      "phoneLabel": "Telefon",
+      "entityLabel": "Obyekt",
+      "sharedMedia": "Paylaşılan media",
+      "viewAll": "Hamısına bax",
+      "files": "Fayllar",
+      "linkedRecord": "Bağlı qeyd",
+      "export": "İxrac",
+      "csvFile": "conversation.csv",
+      "messagesCount": "{{count}} mesaj",
+      "channels": {
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+        "messenger": "Messenger",
+        "phone": "Telefon",
+        "airline": "Aviaşirkət",
+        "internal_note": "Daxili",
+        "manual": "Manual"
+      },
+      "tabLabels": {
+        "all": "Inbox",
+        "instagram": "Instagram",
+        "whatsapp": "WhatsApp"
+      },
+      "entityTypes": {
+        "customer": "Müştəri",
+        "lead": "Lead",
+        "case": "Case"
+      },
+      "csv": {
+        "time": "Vaxt",
+        "channel": "Kanal",
+        "direction": "İstiqamət",
+        "author": "Müəllif",
+        "subject": "Mövzu",
+        "body": "Mətn"
+      },
+      "conversationType": "{{channel}} söhbəti"
+    },
+    "marketing": {
+      "title": "Marketinq",
+      "subtitle": "First-party cəlbetmənin qısa görünüşü.",
+      "last30Days": "Son 30 gün",
+      "loadError": "Marketinq analitikasını yükləmək mümkün olmadı.",
+      "loadErrorTitle": "Marketinq məlumatlarını yükləmək mümkün olmadı.",
+      "metrics": {
+        "visitorsToday": "Bu gün ziyarətçilər",
+        "claimsToday": "Bu gün müraciətlər",
+        "referralVisits": "Referral ziyarətləri",
+        "referralVisitsToday": "Bu gün referral ziyarətləri",
+        "mobileShare": "Mobil pay"
+      },
+      "panels": {
+        "trafficSources": "Trafik mənbələri",
+        "devices": "Cihazlar",
+        "conversionFunnel": "Konversiya funnel-i",
+        "campaignPerformance": "Kampaniya performansı",
+        "topPartners": "Top partnyorlar",
+        "abTesting": "A/B testləri"
+      },
+      "states": {
+        "loadingSources": "Mənbələr yüklənir...",
+        "loadingDevices": "Cihazlar yüklənir...",
+        "loadingFunnel": "Funnel yüklənir...",
+        "loadingCampaigns": "Kampaniyalar yüklənir...",
+        "loadingPartners": "Partnyorlar yüklənir...",
+        "loadingTests": "Test variantları yüklənir...",
+        "noSourceData": "Hələ mənbə məlumatı yoxdur.",
+        "noDeviceData": "Hələ cihaz məlumatı yoxdur.",
+        "noFunnelData": "Hələ funnel məlumatı yoxdur.",
+        "noCampaignData": "Hələ kampaniya konversiyası yoxdur.",
+        "noPartnerData": "Hələ partnyor trafiki yoxdur.",
+        "migrationHint": "A/B variantlarını qeyd etməyə başlamaq üçün 046 migration-ı işə salın.",
+        "noAbTestData": "Hələ A/B test trafiki yoxdur. Kampaniya URL-lərinə `ab_test` və `ab_variant` əlavə edin."
+      },
+      "funnel": {
+        "entryPoint": "Giriş nöqtəsi",
+        "fromPrevious": "Əvvəlki addımdan {{rate}}"
+      },
+      "table": {
+        "campaignSource": "Kampaniya / Mənbə",
+        "visitors": "Ziyarətçilər",
+        "referralOpens": "Referral açılışları",
+        "claims": "Müraciətlər",
+        "conversion": "Konversiya",
+        "variant": "Variant",
+        "partnerCode": "Partnyor / Kod",
+        "visits": "Ziyarətlər",
+        "lastVisit": "Son ziyarət",
+        "direct": "direct",
+        "variantsCount": "{{count}} variant"
       }
     },
     "revenue": {

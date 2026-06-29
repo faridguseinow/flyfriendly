@@ -2,18 +2,37 @@ import SectionLabel from "../../components/SectionLabel/index.jsx";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import { BadgeCheck, ClipboardCheck, FileText, HeartHandshake, Route, ShieldCheck, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useParams } from "react-router-dom";
+import SeoHead from "../../components/SeoHead.jsx";
+import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
+import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
 import "./style.scss";
 
 const featureIcons = [ClipboardCheck, FileText, Route];
 
 function About() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const { lang } = useParams();
+  const locale = lang || DEFAULT_LANGUAGE;
   const values = t("about.values", { returnObjects: true });
   const steps = t("about.processSteps", { returnObjects: true });
   const whatWeDoItems = t("about.whatWeDoItems", { returnObjects: true });
+  const isAliasRoute = location.pathname.endsWith("/aboutUs");
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${t("about.heroTitle")} | ${BRAND_NAME}`,
+    description: t("about.heroText"),
+    pathname: location.pathname,
+    canonicalPath: localizePath("/about", locale),
+    alternatesPath: "/about",
+    indexable: !isAliasRoute,
+  });
 
   return (
     <>
+      <SeoHead {...seo} />
       <section className="about-hero section">
         <SectionLabel icon={HeartHandshake}>{t("about.heroLabel")}</SectionLabel>
         <h1>{t("about.heroTitle")}</h1>

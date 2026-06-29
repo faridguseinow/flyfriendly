@@ -1483,6 +1483,7 @@
         "operationsCases": "Кейсы",
         "operationsTasks": "Задачи",
         "operationsDocuments": "Документы",
+        "operationsInbox": "Инбокс",
         "peopleCustomers": "Клиенты",
         "peopleEmployees": "Сотрудники",
         "peopleReferral": "Рефералы",
@@ -1608,6 +1609,137 @@
         "structuredValues": "Структурированные значения"
       }
     },
+    "cms": {
+      "loading": "Загрузка Blog CMS...",
+      "loadError": "Не удалось загрузить Blog CMS.",
+      "newPost": "Новый пост",
+      "searchPlaceholder": "Поиск по заголовку или slug",
+      "tableTitle": "Посты блога",
+      "emptyTitle": "Посты блога не найдены",
+      "emptyDetail": "Измените фильтры или создайте новый пост.",
+      "countLabel_one": "{{count}} пост",
+      "countLabel_few": "{{count}} поста",
+      "countLabel_many": "{{count}} постов",
+      "countLabel_other": "{{count}} постов",
+      "metrics": {
+        "total": "Всего постов",
+        "published": "Опубликовано",
+        "drafts": "Черновики",
+        "languages": "Языки",
+        "missingTranslations": "Нет переводов"
+      },
+      "filters": {
+        "allStatuses": "Все статусы",
+        "allLanguages": "Все языки",
+        "allSeoStates": "Все SEO состояния",
+        "allTranslationStates": "Все состояния переводов",
+        "seoComplete": "SEO заполнено",
+        "seoMissing": "SEO отсутствует",
+        "hasTranslations": "Есть переводы",
+        "missingTranslations": "Нет переводов"
+      },
+      "columns": {
+        "post": "Пост блога",
+        "language": "Язык",
+        "published": "Опубликовано",
+        "translations": "Переводы",
+        "preview": "Превью"
+      },
+      "editor": {
+        "eyebrow": "Редактор поста блога",
+        "close": "Закрыть редактор поста",
+        "newTitle": "Новый пост блога",
+        "newSubtitle": "Создайте новый черновик поста",
+        "editFallbackTitle": "Редактирование поста",
+        "publishedAt": "Дата публикации",
+        "notPublishedYet": "Ещё не опубликовано",
+        "seoReady": "SEO готово",
+        "seoMissing": "SEO не заполнено",
+        "translationCount_one": "{{count}} перевод",
+        "translationCount_few": "{{count}} перевода",
+        "translationCount_many": "{{count}} переводов",
+        "translationCount_other": "{{count}} переводов",
+        "save": "Сохранить",
+        "unpublish": "Снять с публикации",
+        "notLinked": "Не связано",
+        "translationGroupAuto": "Будет назначено автоматически",
+        "noLinkedTranslations": "Связанных переводов пока нет",
+        "translateToLocale": "Перевести в черновик {{locale}}",
+        "translatingToLocale": "Перевод в {{locale}}...",
+        "duplicateToLocale": "Дублировать как черновик {{locale}}",
+        "allSeoTranslationsExist": "Все SEO-переводы уже существуют",
+        "uploading": "Загрузка...",
+        "uploadHint": "JPG, PNG, WEBP до {{size}} МБ",
+        "untitledArticle": "Статья без названия",
+        "seoLooksComplete": "SEO заполнено",
+        "missingTranslations": "Не хватает переводов: {{locales}}.",
+        "publishedSeoWarning": "Опубликованные посты без SEO title/description или с дублирующимся slug хуже индексируются.",
+        "warnings": {
+          "missingSeoTitle": "Не заполнен SEO title.",
+          "missingSeoDescription": "Не заполнен SEO description.",
+          "missingExcerpt": "Не заполнено краткое описание.",
+          "missingCoverAlt": "Не заполнен alt для обложки.",
+          "duplicateSlug": "Slug уже занят в этом языке."
+        },
+        "placeholders": {
+          "seoKeywords": "задержка рейса, компенсация, права"
+        },
+        "sections": {
+          "basic": {
+            "title": "Основное",
+            "description": "Ключевые поля статьи для админки и публичного блога."
+          },
+          "translations": {
+            "title": "Переводы",
+            "description": "Связывайте статьи и создавайте черновики переводов без автопубликации."
+          },
+          "cover": {
+            "title": "Обложка",
+            "description": "Загрузите изображение в `blog-images` или вставьте прямую ссылку."
+          },
+          "content": {
+            "title": "Контент",
+            "description": "Простой rich text. Небезопасный HTML очищается перед сохранением."
+          },
+          "seo": {
+            "title": "SEO",
+            "description": "Метаданные и превью для индексации и поиска."
+          }
+        },
+        "fields": {
+          "language": "Язык",
+          "title": "Заголовок",
+          "slug": "Slug",
+          "author": "Автор",
+          "publishedDate": "Дата публикации",
+          "excerpt": "Краткое описание",
+          "translationSource": "Исходная статья",
+          "translationGroup": "Группа перевода",
+          "currentTranslations": "Текущие переводы",
+          "coverImageUrl": "URL обложки",
+          "coverImageAlt": "Alt обложки",
+          "uploadImage": "Загрузить изображение",
+          "seoTitle": "SEO title",
+          "seoDescription": "SEO description",
+          "seoKeywords": "SEO keywords",
+          "canonicalOverride": "Canonical override"
+        },
+        "preview": {
+          "publicUrl": "Публичный URL",
+          "publicUrlEmpty": "Укажите title и slug, чтобы увидеть URL",
+          "canonical": "Canonical",
+          "canonicalEmpty": "Canonical будет совпадать с публичным URL",
+          "robots": "Robots",
+          "sitemap": "Sitemap",
+          "sitemapIncluded": "Будет добавлено после build/deploy",
+          "sitemapExcluded": "Не будет добавлено",
+          "google": "Превью в Google",
+          "googleEmpty": "Добавьте SEO description, чтобы улучшить сниппет в поиске.",
+          "hreflang": "Hreflang превью",
+          "noAlternates": "Опубликованных альтернатив пока нет."
+        }
+      }
+    },
     "leads": {
       "loadError": "Не удалось загрузить модуль лидов.",
       "statusSaveError": "Не удалось обновить статус лида.",
@@ -1728,6 +1860,140 @@
         "collectPayment": "Получить оплату",
         "preparePayout": "Подготовить выплату",
         "completed": "Завершено"
+      }
+    },
+    "inbox": {
+      "title": "Инбокс",
+      "searchPlaceholder": "Поиск по инбоксу",
+      "filtersAria": "Фильтры инбокса",
+      "messagesTitle": "Сообщения",
+      "conversationsCount": "{{count}} диалогов",
+      "loading": "Загрузка инбокса...",
+      "loadError": "Не удалось загрузить инбокс.",
+      "messagesLoading": "Загрузка сообщений...",
+      "messageLoadError": "Не удалось загрузить сообщения диалога.",
+      "sendError": "Не удалось отправить ответ.",
+      "schemaMissing": "Схема инбокса пока недоступна. Запустите `048_social_inbox.sql` в Supabase, чтобы включить social inbox.",
+      "demoSendError": "Это демо-данные инбокса. Запустите миграцию social inbox или подключите данные communications из Supabase, чтобы отправлять реальные ответы.",
+      "noMessageBody": "Текст сообщения отсутствует.",
+      "unknownCustomer": "Неизвестный клиент",
+      "conversationFallback": "Диалог",
+      "replyPlaceholder": "Ответить {{name}}",
+      "emptyTitle": "Диалоги не найдены",
+      "emptyDetail": "Попробуйте другой поиск или фильтр канала.",
+      "today": "Сегодня",
+      "yesterday": "Вчера",
+      "messagesDivider": "Сообщения",
+      "now": "сейчас",
+      "sent": "Отправлено",
+      "newInboxItem": "Новый элемент инбокса",
+      "formatting": "Форматирование",
+      "attachFile": "Прикрепить файл",
+      "addEmoji": "Добавить эмодзи",
+      "sendReply": "Отправить ответ",
+      "call": "Позвонить",
+      "videoCall": "Видеозвонок",
+      "archive": "Архивировать",
+      "moreOptions": "Другие действия",
+      "conversationActions": "Действия по диалогу",
+      "notify": "Уведомить",
+      "assign": "Назначить",
+      "task": "Задача",
+      "rules": "Правила",
+      "customer": "Клиент",
+      "emailLabel": "Email",
+      "phoneLabel": "Телефон",
+      "entityLabel": "Сущность",
+      "sharedMedia": "Общие медиа",
+      "viewAll": "Смотреть всё",
+      "files": "Файлы",
+      "linkedRecord": "Связанная запись",
+      "export": "Экспорт",
+      "csvFile": "conversation.csv",
+      "messagesCount": "{{count}} сообщений",
+      "channels": {
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+        "messenger": "Messenger",
+        "phone": "Телефон",
+        "airline": "Авиалиния",
+        "internal_note": "Внутреннее",
+        "manual": "Вручную"
+      },
+      "tabLabels": {
+        "all": "Инбокс",
+        "instagram": "Instagram",
+        "whatsapp": "WhatsApp"
+      },
+      "entityTypes": {
+        "customer": "Клиент",
+        "lead": "Лид",
+        "case": "Кейс"
+      },
+      "csv": {
+        "time": "Время",
+        "channel": "Канал",
+        "direction": "Направление",
+        "author": "Автор",
+        "subject": "Тема",
+        "body": "Текст"
+      },
+      "conversationType": "Диалог в {{channel}}"
+    },
+    "marketing": {
+      "title": "Маркетинг",
+      "subtitle": "Снимок first-party привлечения.",
+      "last30Days": "Последние 30 дней",
+      "loadError": "Не удалось загрузить маркетинговую аналитику.",
+      "loadErrorTitle": "Не удалось загрузить маркетинговые данные.",
+      "metrics": {
+        "visitorsToday": "Посетители сегодня",
+        "claimsToday": "Заявки сегодня",
+        "referralVisits": "Реферальные визиты",
+        "referralVisitsToday": "Реферальные визиты сегодня",
+        "mobileShare": "Доля mobile"
+      },
+      "panels": {
+        "trafficSources": "Источники трафика",
+        "devices": "Устройства",
+        "conversionFunnel": "Воронка конверсии",
+        "campaignPerformance": "Эффективность кампаний",
+        "topPartners": "Топ партнёров",
+        "abTesting": "A/B тестирование"
+      },
+      "states": {
+        "loadingSources": "Загрузка источников...",
+        "loadingDevices": "Загрузка устройств...",
+        "loadingFunnel": "Загрузка воронки...",
+        "loadingCampaigns": "Загрузка кампаний...",
+        "loadingPartners": "Загрузка партнёров...",
+        "loadingTests": "Загрузка вариантов тестов...",
+        "noSourceData": "Данных по источникам пока нет.",
+        "noDeviceData": "Данных по устройствам пока нет.",
+        "noFunnelData": "Данных по воронке пока нет.",
+        "noCampaignData": "Конверсий по кампаниям пока нет.",
+        "noPartnerData": "Трафика по партнёрам пока нет.",
+        "migrationHint": "Запустите migration 046, чтобы начать записывать A/B варианты.",
+        "noAbTestData": "Трафика по A/B тестам пока нет. Добавьте `ab_test` и `ab_variant` в URL кампаний."
+      },
+      "funnel": {
+        "entryPoint": "Точка входа",
+        "fromPrevious": "{{rate}} от предыдущего шага"
+      },
+      "table": {
+        "campaignSource": "Кампания / Источник",
+        "visitors": "Посетители",
+        "referralOpens": "Открытия реферала",
+        "claims": "Заявки",
+        "conversion": "Конверсия",
+        "variant": "Вариант",
+        "partnerCode": "Партнёр / Код",
+        "visits": "Визиты",
+        "lastVisit": "Последний визит",
+        "direct": "direct",
+        "variantsCount": "{{count}} вариантов"
       }
     },
     "revenue": {

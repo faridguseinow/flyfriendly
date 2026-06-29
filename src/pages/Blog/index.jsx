@@ -1,9 +1,12 @@
 import { ArrowRight, CalendarDays, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import SeoHead from "../../components/SeoHead.jsx";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
+import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
 import { getArticles, localizeArticles } from "./articles.js";
 import "./style.scss";
@@ -11,6 +14,7 @@ import "./style.scss";
 function Blog() {
   const { t } = useTranslation();
   const { lang } = useParams();
+  const location = useLocation();
   const locale = lang || DEFAULT_LANGUAGE;
   const [query, setQuery] = useState("");
   const [cmsArticles, setCmsArticles] = useState([]);
@@ -66,9 +70,18 @@ function Blog() {
       `${article.title} ${article.text} ${article.date}`.toLowerCase().includes(normalizedQuery)
     ));
   }, [articles, query]);
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${t("home.resourcesTitle")} | ${BRAND_NAME}`,
+    description: t("home.resourcesText"),
+    pathname: location.pathname,
+    canonicalPath: localizePath("/blog", locale),
+    alternatesPath: "/blog",
+  });
 
   return (
     <>
+      <SeoHead {...seo} />
       <section className="blog-hero section">
         <h1>{t("home.resourcesTitle")}</h1>
         <p>{t("home.resourcesText")}</p>

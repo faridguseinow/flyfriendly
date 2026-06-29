@@ -3778,34 +3778,138 @@ export async function updateFaqItem(faqId, updates) {
   });
 }
 
-export async function fetchBlogModuleData() {
-  const client = requireSupabase();
-  const response = await client
-    .from("blog_posts")
-    .select("id, title, slug, excerpt, content, content_sections, cover_image, categories, tags, author_name, status, published_at, locale, read_time, seo_title, seo_description, created_at, updated_at, created_by, updated_by")
-    .order("updated_at", { ascending: false })
-    .limit(500);
+const BLOG_ADMIN_SELECT_VARIANTS = [
+  "id, title, slug, excerpt, content, content_sections, cover_image, cover_image_alt, categories, tags, author_name, status, published_at, locale, read_time, seo_title, seo_description, seo_keywords, canonical_override, translation_group_id, translated_from_id, created_at, updated_at, created_by, updated_by",
+  "id, title, slug, excerpt, content, content_sections, cover_image, categories, tags, author_name, status, published_at, locale, read_time, seo_title, seo_description, created_at, updated_at, created_by, updated_by",
+];
 
-  if (response.error) {
-    if (isMissingOptionalTable(response.error) || isMissingColumnError(response.error)) {
-      return { posts: [], supportsBlogModuleV1: false };
+async function runBlogAdminSelectWithFallback(client) {
+  let lastError = null;
+
+  for (let index = 0; index < BLOG_ADMIN_SELECT_VARIANTS.length; index += 1) {
+    const response = await client
+      .from("blog_posts")
+      .select(BLOG_ADMIN_SELECT_VARIANTS[index])
+      .order("updated_at", { ascending: false })
+      .limit(500);
+
+    if (!response.error) {
+      return {
+        data: response.data || [],
+        supportsBlogModuleV1: true,
+        supportsBlogSeoCmsV2: index === 0,
+      };
     }
-    throw response.error;
+
+    if (!isMissingOptionalTable(response.error) && !isMissingColumnError(response.error)) {
+      throw response.error;
+    }
+
+    lastError = response.error;
   }
 
-  return { posts: response.data || [], supportsBlogModuleV1: true };
+  if (lastError) {
+    return { posts: [], supportsBlogModuleV1: false, supportsBlogSeoCmsV2: false };
+  }
+
+  return { posts: [], supportsBlogModuleV1: false, supportsBlogSeoCmsV2: false };
 }
 
-export async function createBlogPost(input) {
-  const client = requireSupabase();
-  const user = await getCurrentUser().catch(() => null);
+async function ensureUniqueBlogSlug(client, slug, locale, excludeId = null) {
+  const baseSlug = slugifyText(slug) || `post-${Date.now().toString(36)}`;
+  let candidate = baseSlug;
+  let suffix = 2;
+
+  while (suffix < 100) {
+    let query = client
+      .from("blog_posts")
+      .select("id")
+      .eq("locale", locale || "en")
+      .eq("slug", candidate)
+      .limit(1)
+      .maybeSingle();
+
+    if (excludeId) {
+      query = query.neq("id", excludeId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.id) {
+      return candidate;
+    }
+
+    candidate = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return `${baseSlug}-${Date.now().toString(36)}`;
+}
+
+async function ensureBlogTranslationGroup(client, sourcePost, user) {
+  if (sourcePost?.translation_group_id) {
+    return sourcePost.translation_group_id;
+  }
+
+  const translationGroupId = crypto.randomUUID();
+  const { error } = await client
+    .from("blog_posts")
+    .update({
+      translation_group_id: translationGroupId,
+      updated_at: new Date().toISOString(),
+      updated_by: user?.id || null,
+    })
+    .eq("id", sourcePost.id);
+
+  if (error) {
+    throw error;
+  }
+
+  return translationGroupId;
+}
+
+async function resolveBlogTranslationData(client, user, input) {
+  const fallback = {
+    translation_group_id: input.translation_group_id || null,
+    translated_from_id: input.translated_from_id || null,
+  };
+  const sourcePostId = String(input.translation_source_post_id || "").trim();
+
+  if (!sourcePostId) {
+    return fallback;
+  }
+
+  const { data: sourcePost, error } = await client
+    .from("blog_posts")
+    .select("id, locale, translation_group_id")
+    .eq("id", sourcePostId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!sourcePost?.id) {
+    return fallback;
+  }
+
+  return {
+    translation_group_id: await ensureBlogTranslationGroup(client, sourcePost, user),
+    translated_from_id: sourcePost.id,
+  };
+}
+
+function buildBlogPostPayload(input, user, translationMeta = {}, { includeCreateMeta = false } = {}) {
   const payload = {
-    id: crypto.randomUUID(),
     title: input.title,
     slug: slugifyText(input.slug || input.title) || `post-${Date.now().toString(36)}`,
     excerpt: input.excerpt || null,
     content: input.content || "",
     cover_image: input.cover_image || null,
+    cover_image_alt: input.cover_image_alt || null,
     content_sections: input.content_sections || [],
     categories: input.categories || [],
     tags: input.tags || [],
@@ -3816,9 +3920,39 @@ export async function createBlogPost(input) {
     read_time: input.read_time || null,
     seo_title: input.seo_title || null,
     seo_description: input.seo_description || null,
-    created_by: user?.id || null,
+    seo_keywords: input.seo_keywords || [],
+    canonical_override: input.canonical_override || null,
+    translation_group_id: translationMeta.translation_group_id || input.translation_group_id || null,
+    translated_from_id: translationMeta.translated_from_id || input.translated_from_id || null,
+    updated_at: new Date().toISOString(),
     updated_by: user?.id || null,
   };
+
+  if (includeCreateMeta) {
+    payload.id = crypto.randomUUID();
+    payload.created_by = user?.id || null;
+  }
+
+  return payload;
+}
+
+export async function fetchBlogModuleData() {
+  const client = requireSupabase();
+  const result = await runBlogAdminSelectWithFallback(client);
+
+  return {
+    posts: result.data || [],
+    supportsBlogModuleV1: result.supportsBlogModuleV1,
+    supportsBlogSeoCmsV2: result.supportsBlogSeoCmsV2,
+  };
+}
+
+export async function createBlogPost(input) {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+  const translationMeta = await resolveBlogTranslationData(client, user, input);
+  const payload = buildBlogPostPayload(input, user, translationMeta, { includeCreateMeta: true });
+  payload.slug = await ensureUniqueBlogSlug(client, payload.slug, payload.locale);
 
   const { data, error } = await client.from("blog_posts").insert(payload).select("id").single();
   if (error) throw error;
@@ -3839,12 +3973,9 @@ export async function updateBlogPost(postId, updates) {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("blog_posts").select("*").eq("id", postId).maybeSingle();
-  const payload = {
-    ...updates,
-    slug: updates.slug ? slugifyText(updates.slug) : undefined,
-    updated_at: new Date().toISOString(),
-    updated_by: user?.id || null,
-  };
+  const translationMeta = await resolveBlogTranslationData(client, user, updates);
+  const payload = buildBlogPostPayload(updates, user, translationMeta);
+  payload.slug = await ensureUniqueBlogSlug(client, payload.slug, payload.locale, postId);
 
   const { error } = await client.from("blog_posts").update(payload).eq("id", postId);
   if (error) throw error;
@@ -3857,6 +3988,153 @@ export async function updateBlogPost(postId, updates) {
     targetEntityId: postId,
     previousValue: current.data || null,
     newValue: payload,
+  });
+}
+
+export async function deleteBlogPost(postId) {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+  const current = await client.from("blog_posts").select("*").eq("id", postId).maybeSingle();
+
+  if (current.error) {
+    throw current.error;
+  }
+
+  const existingPost = current.data || null;
+  if (!existingPost?.id) {
+    throw new Error("Blog post was not found.");
+  }
+
+  const { error } = await client.from("blog_posts").delete().eq("id", postId);
+  if (error) {
+    throw error;
+  }
+
+  await recordActivity(client, {
+    userId: user?.id,
+    action: "delete",
+    module: "blog",
+    targetEntityType: "blog_post",
+    targetEntityId: postId,
+    previousValue: existingPost,
+    newValue: null,
+  });
+}
+
+export async function createBlogTranslationDraft(sourcePostId, targetLocale) {
+  const client = requireSupabase();
+  const user = await getCurrentUser().catch(() => null);
+  const { data: sourcePost, error: sourceError } = await client
+    .from("blog_posts")
+    .select("*")
+    .eq("id", sourcePostId)
+    .maybeSingle();
+
+  if (sourceError) {
+    throw sourceError;
+  }
+
+  if (!sourcePost?.id) {
+    throw new Error("Source article was not found.");
+  }
+
+  if (String(sourcePost.locale || "") === String(targetLocale || "")) {
+    throw new Error("Select a different language for the translation draft.");
+  }
+
+  const translationGroupId = await ensureBlogTranslationGroup(client, sourcePost, user);
+  const { data: existingTranslation, error: existingError } = await client
+    .from("blog_posts")
+    .select("id")
+    .eq("translation_group_id", translationGroupId)
+    .eq("locale", targetLocale)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existingTranslation?.id) {
+    throw new Error("A translation draft for this language already exists.");
+  }
+
+  const payload = buildBlogPostPayload({
+    ...sourcePost,
+    locale: targetLocale,
+    status: "draft",
+    published_at: null,
+    translation_group_id: translationGroupId,
+    translated_from_id: sourcePost.id,
+  }, user, {
+    translation_group_id: translationGroupId,
+    translated_from_id: sourcePost.id,
+  }, { includeCreateMeta: true });
+
+  payload.slug = await ensureUniqueBlogSlug(client, sourcePost.slug || sourcePost.title, targetLocale);
+
+  const { data, error } = await client.from("blog_posts").insert(payload).select("id").single();
+  if (error) {
+    throw error;
+  }
+
+  await recordActivity(client, {
+    userId: user?.id,
+    action: "create",
+    module: "blog",
+    targetEntityType: "blog_post",
+    targetEntityId: payload.id,
+    newValue: payload,
+  });
+
+  return data;
+}
+
+async function invokeBlogTranslationFunction(body) {
+  await assertCurrentAdminPermission(null, {
+    anyPermissions: ["blog.edit", "cms.edit"],
+    message: "You do not have access to translate blog posts.",
+  });
+
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke("translate-blog-post", {
+    body,
+  });
+
+  if (error) {
+    const context = error.context;
+    if (context && typeof context.json === "function") {
+      let message = "";
+      try {
+        const payload = await context.json();
+        message = payload?.error?.message || payload?.message || "";
+      } catch {}
+      if (message) {
+        throw new Error(message);
+      }
+    }
+    throw error;
+  }
+
+  if (data?.error?.message) {
+    throw new Error(data.error.message);
+  }
+
+  return data;
+}
+
+export async function translateBlogPostWithSeo(input) {
+  return invokeBlogTranslationFunction({
+    source_locale: input?.source_locale,
+    target_locale: input?.target_locale,
+    fields: {
+      title: input?.fields?.title || "",
+      excerpt: input?.fields?.excerpt || "",
+      content: input?.fields?.content || "",
+      seo_title: input?.fields?.seo_title || "",
+      seo_description: input?.fields?.seo_description || "",
+      seo_keywords: Array.isArray(input?.fields?.seo_keywords) ? input.fields.seo_keywords : [],
+      cover_image_alt: input?.fields?.cover_image_alt || "",
+    },
   });
 }
 

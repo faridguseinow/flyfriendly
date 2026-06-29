@@ -3,6 +3,7 @@ import { ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
+import SeoHead from "./components/SeoHead.jsx";
 import Navbar from "./layout/Navbar/index.jsx";
 import Footer from "./layout/Footer/index.jsx";
 import AnimatedRoutes from "./routes/index.jsx";
@@ -12,6 +13,7 @@ import { trackAnalyticsEvent } from "./lib/analyticsTracker.js";
 import { getCurrentLanguageFromPath, getPathWithoutLanguage, replaceLanguageInPath } from "./i18n/path.js";
 import { captureReferralFromQueryString } from "./services/referralService.js";
 import { useAuth } from "./auth/AuthContext.jsx";
+import { buildSeoPayload, resolveNoindexRouteMeta } from "./lib/seo.js";
 
 function App() {
   const location = useLocation();
@@ -24,10 +26,26 @@ function App() {
   const normalizedPath = getPathWithoutLanguage(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin") || location.pathname.startsWith("/control-dashboard");
   const isPortalPage = normalizedPath.startsWith("/client") || normalizedPath.startsWith("/partner") || normalizedPath.startsWith("/auth");
+  const currentLanguage = getCurrentLanguageFromPath(location.pathname) || i18n.language || DEFAULT_LANGUAGE;
+  const noindexMeta = resolveNoindexRouteMeta(location.pathname, currentLanguage);
+  const routeSeo = noindexMeta
+    ? buildSeoPayload({
+        lang: noindexMeta.lang,
+        title: noindexMeta.title,
+        description: noindexMeta.description,
+        pathname: location.pathname,
+        canonicalPath: noindexMeta.canonicalPath,
+        indexable: false,
+      })
+    : null;
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    document.documentElement.lang = currentLanguage;
+  }, [currentLanguage]);
 
   useEffect(() => {
     captureReferralFromQueryString(location.search, location.pathname).catch(() => null);
@@ -114,11 +132,17 @@ function App() {
   };
 
   if (isAdminPage) {
-    return <AnimatedRoutes location={location} />;
+    return (
+      <>
+        {routeSeo ? <SeoHead {...routeSeo} /> : null}
+        <AnimatedRoutes location={location} />
+      </>
+    );
   }
 
   return (
     <>
+      {routeSeo ? <SeoHead {...routeSeo} /> : null}
       <Navbar />
       <AnimatePresence mode="wait">
         <motion.main

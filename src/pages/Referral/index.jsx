@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
 import { useMemo, useState } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import {
   BadgeCheck,
   BookOpen,
@@ -19,7 +20,11 @@ import {
   Camera,
 } from "lucide-react";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import SeoHead from "../../components/SeoHead.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
+import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
+import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
 import "./style.scss";
 
 const partnerImage = "https://images.unsplash.com/photo-1713946598491-4f85decbeaaf?q=80&w=2064&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
@@ -85,6 +90,9 @@ function FaqItem({ item, isOpen, onToggle }) {
 
 function Referral() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const { lang } = useParams();
+  const locale = lang || DEFAULT_LANGUAGE;
   const { isAuthenticated, partnerProfile } = useAuth();
   const [openFaq, setOpenFaq] = useState("");
   const accessItems = t("referral.accessItems", { returnObjects: true });
@@ -105,9 +113,20 @@ function Referral() {
   const loginTarget = isAuthenticated
     ? partnerTarget
     : "/auth/login?returnTo=%2Fpartner%2Fapply";
+  const isAliasRoute = location.pathname.endsWith("/referralProgram") || location.pathname.endsWith("/partner-program");
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${t("referral.heroTitle")} | ${BRAND_NAME}`,
+    description: t("referral.heroText"),
+    pathname: location.pathname,
+    canonicalPath: localizePath("/referral", locale),
+    alternatesPath: "/referral",
+    indexable: !isAliasRoute,
+  });
 
   return (
     <>
+      <SeoHead {...seo} />
       <section className="ref-hero section">
         <div className="ref-hero__inner">
           <AvatarStack />

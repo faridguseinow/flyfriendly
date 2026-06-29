@@ -10,7 +10,7 @@
     border: 1px solid var(--line-strong);
     border-radius: 10px;
     background: #fff;
-    color: #20242e;
+    color: var(--admin-text-primary);
     font: inherit;
   }
 }
@@ -69,14 +69,14 @@
   }
 
   strong {
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 14px;
     line-height: 20px;
     font-weight: 600;
   }
 
   span {
-    color: #7c8491;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 18px;
   }
@@ -97,7 +97,7 @@
   }
 
   strong {
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 14px;
     line-height: 20px;
     font-weight: 600;
@@ -119,7 +119,7 @@
   border-radius: 999px;
   border: 1px solid var(--line-strong);
   background: #fff;
-  color: #8d98aa;
+  color: var(--admin-text-secondary);
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;

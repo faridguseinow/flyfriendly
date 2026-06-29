@@ -5,9 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run sitemap:generate",
+    "build:seo": "npm run build && npm run playwright:install && npm run seo:prerender",
     "preview": "vite preview",
-    "catalog:build": "node scripts/build-aviation-fallback.mjs"
+    "admin:i18n:audit": "node scripts/check-admin-i18n.mjs",
+    "catalog:build": "node scripts/build-aviation-fallback.mjs",
+    "playwright:install": "node scripts/install-playwright-chromium.mjs",
+    "sitemap:generate": "node scripts/generate-sitemap.mjs",
+    "seo:prerender": "node scripts/prerender-public.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.3",
@@ -21,5 +26,8 @@
     "react-router-dom": "^7.14.1",
     "sass": "^1.99.0",
     "vite": "^7.1.7"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.1"
   }
 }

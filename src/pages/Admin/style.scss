@@ -49,7 +49,7 @@ padding: 16px;  background: #f7fbff;
 .admin-empty {
   display: grid;
   gap: 12px;
-  color: #20242e;
+  color: var(--admin-text-primary);
   background: #fff;
 
   h2 {
@@ -79,7 +79,7 @@ padding: 16px;  background: #f7fbff;
     padding: 0 14px;
     border: 1px solid var(--line-strong);
     border-radius: 8px;
-    color: #20242e;
+    color: var(--admin-text-primary);
     background: #fff;
     font: inherit;
   }
@@ -118,7 +118,7 @@ padding: 16px;  background: #f7fbff;
   }
 
   strong {
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 30px;
     line-height: 36px;
     font-weight: 500;
@@ -168,7 +168,7 @@ padding: 16px;  background: #f7fbff;
   padding: 15px 20px;
   border-bottom: 1px solid var(--line-strong);
   text-align: left;
-  color: #20242e;
+  color: var(--admin-text-primary);
   font-size: 15px;
   line-height: 22px;
   white-space: nowrap;
@@ -199,7 +199,7 @@ padding: 16px;  background: #f7fbff;
   padding: 0 10px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  color: #20242e;
+  color: var(--admin-text-primary);
   background: #fff;
 }
 
@@ -268,7 +268,7 @@ padding: 16px;  background: #f7fbff;
   }
 
   small {
-    color: #7b8390;
+    color: var(--admin-text-secondary);
     font-size: 13px;
     line-height: 18px;
     font-weight: 600;
@@ -278,7 +278,7 @@ padding: 16px;  background: #f7fbff;
 
   strong {
     margin-top: 10px;
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 30px;
     line-height: 36px;
     font-weight: 600;
@@ -286,7 +286,7 @@ padding: 16px;  background: #f7fbff;
 
   span {
     margin-top: 8px;
-    color: #7b8390;
+    color: var(--admin-text-secondary);
     font-size: 13px;
     line-height: 20px;
   }
@@ -346,7 +346,7 @@ padding: 16px;  background: #f7fbff;
   gap: 6px;
 
   strong {
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 24px;
     line-height: 30px;
     font-weight: 600;
@@ -387,7 +387,7 @@ padding: 16px;  background: #f7fbff;
   }
 
   strong {
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 15px;
     line-height: 22px;
     font-weight: 600;
@@ -462,7 +462,7 @@ padding: 16px;  background: #f7fbff;
   gap: 8px;
 
   strong {
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 18px;
     line-height: 24px;
   }
@@ -476,7 +476,7 @@ padding: 16px;  background: #f7fbff;
 }
 
 .admin-dashboard__health-value {
-  color: #20242e;
+  color: var(--admin-text-primary);
   font-size: 32px;
   line-height: 38px;
   font-weight: 600;
@@ -496,7 +496,7 @@ padding: 16px;  background: #f7fbff;
 
 .admin-dashboard__empty {
   padding: 22px 20px;
-  color: #7b8390;
+  color: var(--admin-text-secondary);
   font-size: 14px;
   line-height: 22px;
 }

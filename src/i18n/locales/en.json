@@ -1483,6 +1483,7 @@
         "operationsCases": "Cases",
         "operationsTasks": "Tasks",
         "operationsDocuments": "Documents",
+        "operationsInbox": "Inbox",
         "peopleCustomers": "Customers",
         "peopleEmployees": "Employees",
         "peopleReferral": "Referral",
@@ -1608,6 +1609,133 @@
         "structuredValues": "Structured values"
       }
     },
+    "cms": {
+      "loading": "Loading blog CMS...",
+      "loadError": "Could not load blog CMS.",
+      "newPost": "New blog post",
+      "searchPlaceholder": "Search title or slug",
+      "tableTitle": "Blog posts",
+      "emptyTitle": "No blog posts found",
+      "emptyDetail": "Try a different filter or create a new post.",
+      "countLabel_one": "{{count}} post",
+      "countLabel_other": "{{count}} posts",
+      "metrics": {
+        "total": "Total posts",
+        "published": "Published",
+        "drafts": "Drafts",
+        "languages": "Languages",
+        "missingTranslations": "Missing translations"
+      },
+      "filters": {
+        "allStatuses": "All statuses",
+        "allLanguages": "All languages",
+        "allSeoStates": "All SEO states",
+        "allTranslationStates": "All translation states",
+        "seoComplete": "SEO complete",
+        "seoMissing": "SEO missing",
+        "hasTranslations": "Has translations",
+        "missingTranslations": "Missing translations"
+      },
+      "columns": {
+        "post": "Blog post",
+        "language": "Language",
+        "published": "Published",
+        "translations": "Translations",
+        "preview": "Preview"
+      },
+      "editor": {
+        "eyebrow": "Blog post editor",
+        "close": "Close blog post editor",
+        "newTitle": "New blog post",
+        "newSubtitle": "Create a new post draft",
+        "editFallbackTitle": "Edit post",
+        "publishedAt": "Published at",
+        "notPublishedYet": "Not published yet",
+        "seoReady": "SEO ready",
+        "seoMissing": "SEO missing",
+        "translationCount_one": "{{count}} translation",
+        "translationCount_other": "{{count}} translations",
+        "save": "Save",
+        "unpublish": "Unpublish",
+        "notLinked": "Not linked",
+        "translationGroupAuto": "Will be assigned automatically",
+        "noLinkedTranslations": "No linked translations yet",
+        "translateToLocale": "Translate to {{locale}} draft",
+        "translatingToLocale": "Translating to {{locale}}...",
+        "duplicateToLocale": "Duplicate as {{locale}} draft",
+        "allSeoTranslationsExist": "All SEO translations already exist",
+        "uploading": "Uploading...",
+        "uploadHint": "JPG, PNG, WEBP up to {{size}} MB",
+        "untitledArticle": "Untitled article",
+        "seoLooksComplete": "SEO looks complete",
+        "missingTranslations": "Missing translations: {{locales}}.",
+        "publishedSeoWarning": "Published posts without SEO title/description or with a duplicate slug may be indexed poorly.",
+        "warnings": {
+          "missingSeoTitle": "SEO title is missing.",
+          "missingSeoDescription": "SEO description is missing.",
+          "missingExcerpt": "Excerpt is missing.",
+          "missingCoverAlt": "Cover image alt text is missing.",
+          "duplicateSlug": "Slug is already used in this locale."
+        },
+        "placeholders": {
+          "seoKeywords": "flight delay, compensation, rights"
+        },
+        "sections": {
+          "basic": {
+            "title": "Basic",
+            "description": "Core article fields used by both admin and public blog."
+          },
+          "translations": {
+            "title": "Translations",
+            "description": "Link related posts and create translation drafts without auto-publishing."
+          },
+          "cover": {
+            "title": "Cover image",
+            "description": "Upload to `blog-images` or paste a direct image URL."
+          },
+          "content": {
+            "title": "Content",
+            "description": "Simple rich text only. Unsafe HTML is sanitized before saving."
+          },
+          "seo": {
+            "title": "SEO",
+            "description": "Metadata and previews used for indexing and search."
+          }
+        },
+        "fields": {
+          "language": "Language",
+          "title": "Title",
+          "slug": "Slug",
+          "author": "Author",
+          "publishedDate": "Published date",
+          "excerpt": "Excerpt",
+          "translationSource": "Source article",
+          "translationGroup": "Translation group",
+          "currentTranslations": "Current translations",
+          "coverImageUrl": "Cover image URL",
+          "coverImageAlt": "Cover image alt",
+          "uploadImage": "Upload image",
+          "seoTitle": "SEO title",
+          "seoDescription": "SEO description",
+          "seoKeywords": "SEO keywords",
+          "canonicalOverride": "Canonical override"
+        },
+        "preview": {
+          "publicUrl": "Public URL",
+          "publicUrlEmpty": "Set title and slug to preview the URL",
+          "canonical": "Canonical",
+          "canonicalEmpty": "Canonical will match the public URL",
+          "robots": "Robots",
+          "sitemap": "Sitemap",
+          "sitemapIncluded": "Included after build/deploy",
+          "sitemapExcluded": "Not included",
+          "google": "Google preview",
+          "googleEmpty": "Add an SEO description to improve the search snippet.",
+          "hreflang": "Hreflang preview",
+          "noAlternates": "No published alternates yet."
+        }
+      }
+    },
     "leads": {
       "loadError": "Could not load leads module.",
       "statusSaveError": "Could not update lead status.",
@@ -1724,6 +1852,140 @@
         "collectPayment": "Collect payment",
         "preparePayout": "Prepare payout",
         "completed": "Completed"
+      }
+    },
+    "inbox": {
+      "title": "Inbox",
+      "searchPlaceholder": "Search inbox",
+      "filtersAria": "Inbox filters",
+      "messagesTitle": "Messages",
+      "conversationsCount": "{{count}} conversations",
+      "loading": "Loading inbox...",
+      "loadError": "Could not load inbox.",
+      "messagesLoading": "Loading messages...",
+      "messageLoadError": "Could not load conversation messages.",
+      "sendError": "Could not send reply.",
+      "schemaMissing": "Inbox schema is not available yet. Run `048_social_inbox.sql` in Supabase to unlock the social inbox.",
+      "demoSendError": "This is demo inbox data. Run the social inbox migration or connect Supabase communications data to send real replies.",
+      "noMessageBody": "No message body.",
+      "unknownCustomer": "Unknown customer",
+      "conversationFallback": "Conversation",
+      "replyPlaceholder": "Reply to {{name}}",
+      "emptyTitle": "No conversations found",
+      "emptyDetail": "Try another search or channel filter.",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "messagesDivider": "Messages",
+      "now": "now",
+      "sent": "Sent",
+      "newInboxItem": "New inbox item",
+      "formatting": "Formatting",
+      "attachFile": "Attach file",
+      "addEmoji": "Add emoji",
+      "sendReply": "Send reply",
+      "call": "Call",
+      "videoCall": "Video call",
+      "archive": "Archive",
+      "moreOptions": "More options",
+      "conversationActions": "Conversation actions",
+      "notify": "Notify",
+      "assign": "Assign",
+      "task": "Task",
+      "rules": "Rules",
+      "customer": "Customer",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "entityLabel": "Entity",
+      "sharedMedia": "Shared media",
+      "viewAll": "View all",
+      "files": "Files",
+      "linkedRecord": "Linked record",
+      "export": "Export",
+      "csvFile": "conversation.csv",
+      "messagesCount": "{{count}} messages",
+      "channels": {
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+        "messenger": "Messenger",
+        "phone": "Phone",
+        "airline": "Airline",
+        "internal_note": "Internal",
+        "manual": "Manual"
+      },
+      "tabLabels": {
+        "all": "Inbox",
+        "instagram": "Instagram",
+        "whatsapp": "WhatsApp"
+      },
+      "entityTypes": {
+        "customer": "Customer",
+        "lead": "Lead",
+        "case": "Case"
+      },
+      "csv": {
+        "time": "Time",
+        "channel": "Channel",
+        "direction": "Direction",
+        "author": "Author",
+        "subject": "Subject",
+        "body": "Body"
+      },
+      "conversationType": "{{channel}} conversation"
+    },
+    "marketing": {
+      "title": "Marketing",
+      "subtitle": "First-party acquisition snapshot.",
+      "last30Days": "Last 30 days",
+      "loadError": "Could not load marketing analytics.",
+      "loadErrorTitle": "Could not load marketing data.",
+      "metrics": {
+        "visitorsToday": "Visitors today",
+        "claimsToday": "Claims today",
+        "referralVisits": "Referral visits",
+        "referralVisitsToday": "Referral visits today",
+        "mobileShare": "Mobile share"
+      },
+      "panels": {
+        "trafficSources": "Traffic sources",
+        "devices": "Devices",
+        "conversionFunnel": "Conversion funnel",
+        "campaignPerformance": "Campaign performance",
+        "topPartners": "Top partners",
+        "abTesting": "A/B testing"
+      },
+      "states": {
+        "loadingSources": "Loading sources...",
+        "loadingDevices": "Loading devices...",
+        "loadingFunnel": "Loading funnel...",
+        "loadingCampaigns": "Loading campaigns...",
+        "loadingPartners": "Loading partners...",
+        "loadingTests": "Loading test variants...",
+        "noSourceData": "No source data yet.",
+        "noDeviceData": "No device data yet.",
+        "noFunnelData": "No funnel data yet.",
+        "noCampaignData": "No campaign conversions yet.",
+        "noPartnerData": "No partner traffic yet.",
+        "migrationHint": "Run migration 046 to start recording A/B variants.",
+        "noAbTestData": "No A/B test traffic yet. Add `ab_test` and `ab_variant` to campaign URLs."
+      },
+      "funnel": {
+        "entryPoint": "Entry point",
+        "fromPrevious": "{{rate}} from previous"
+      },
+      "table": {
+        "campaignSource": "Campaign / Source",
+        "visitors": "Visitors",
+        "referralOpens": "Referral opens",
+        "claims": "Claims",
+        "conversion": "Conversion",
+        "variant": "Variant",
+        "partnerCode": "Partner / Code",
+        "visits": "Visits",
+        "lastVisit": "Last visit",
+        "direct": "direct",
+        "variantsCount": "{{count}} variants"
       }
     },
     "revenue": {

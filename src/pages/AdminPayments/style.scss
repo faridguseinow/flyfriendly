@@ -30,7 +30,7 @@
 
   h1 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 24px;
     line-height: 30px;
     font-weight: 650;
@@ -39,7 +39,7 @@
 
   p {
     margin: 4px 0 0;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 13px;
     line-height: 19px;
   }
@@ -168,7 +168,7 @@
 
   h2 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 16px;
     line-height: 22px;
     font-weight: 650;
@@ -176,7 +176,7 @@
 
   p {
     margin: 2px 0 0;
-    color: #7b8390;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 18px;
   }
@@ -196,7 +196,7 @@
   thead th {
     padding: 11px 16px;
     border-bottom: 1px solid rgba(226, 232, 240, 0.95);
-    color: #7b8390;
+    color: var(--admin-text-secondary);
     font-size: 11px;
     line-height: 16px;
     font-weight: 700;
@@ -209,7 +209,7 @@
   tbody td {
     padding: 13px 16px;
     border-bottom: 1px solid rgba(241, 245, 249, 1);
-    color: #334155;
+    color: var(--admin-text-primary);
     font-size: 13px;
     line-height: 18px;
     vertical-align: middle;
@@ -245,7 +245,7 @@
 }
 
 .admin-payments__case strong {
-  color: #17212d;
+  color: var(--admin-text-primary);
   font-size: 12px;
   line-height: 17px;
   font-weight: 700;
@@ -258,7 +258,7 @@
 
 .admin-payments__primary-cell strong,
 .admin-payments__route strong {
-  color: #17212d;
+  color: var(--admin-text-primary);
   font-size: 13px;
   line-height: 18px;
   font-weight: 600;
@@ -277,14 +277,14 @@
   white-space: nowrap;
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 12px;
     line-height: 17px;
     font-weight: 600;
   }
 
   span {
-    color: #7b8390;
+    color: var(--admin-text-secondary);
     font-size: 11px;
     line-height: 15px;
   }
@@ -299,14 +299,14 @@
   text-align: center;
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 15px;
     line-height: 21px;
     font-weight: 600;
   }
 
   span {
-    color: #7b8390;
+    color: var(--admin-text-secondary);
     font-size: 13px;
     line-height: 20px;
   }
@@ -333,7 +333,7 @@
 
   h3 {
     margin: 0;
-    color: #20242e;
+    color: var(--admin-text-primary);
     font-size: 16px;
     line-height: 22px;
     font-weight: 650;
@@ -360,7 +360,7 @@
 
   span {
     margin-bottom: 6px;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 11px;
     line-height: 15px;
     font-weight: 700;
@@ -369,7 +369,7 @@
   }
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 14px;
     line-height: 20px;
     font-weight: 600;
@@ -417,13 +417,13 @@
 
 .admin-payments__button-subtle {
   border-color: rgba(148, 163, 184, 0.18);
-  color: #7b8390;
+  color: var(--admin-text-secondary);
 }
 
 .admin-payments__audit-placeholder,
 .admin-payments__drawer-state {
   margin: 0;
-  color: #64748b;
+  color: var(--admin-text-secondary);
   font-size: 13px;
   line-height: 20px;
 }

@@ -15,17 +15,23 @@ import {
   Video,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import SeoHead from "../../components/SeoHead.jsx";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
-import { languages } from "../../i18n/languages.js";
+import { DEFAULT_LANGUAGE, languages } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
+import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
 import { applyForPartner, getPartnerApplicationState } from "../../services/partnerService.js";
 import "./style.scss";
 
 export default function PartnerApplyPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { lang } = useParams();
+  const locale = lang || DEFAULT_LANGUAGE;
   const toLocalizedPath = useLocalizedPath();
   const [state, setState] = useState({
     isLoading: true,
@@ -139,6 +145,15 @@ export default function PartnerApplyPage() {
 
   const showReceivedState = Boolean(state.application?.id && ["pending", "approved"].includes(state.application.status));
   const canResubmit = ["rejected", "cancelled"].includes(state.application?.status);
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${t(showReceivedState ? "partnerApply.receivedTitle" : "partnerApply.title")} | ${BRAND_NAME}`,
+    description: t(showReceivedState ? "partnerApply.receivedText" : "partnerApply.text"),
+    pathname: location.pathname,
+    canonicalPath: localizePath("/partner/apply", locale),
+    alternatesPath: "/partner/apply",
+    indexable: !showReceivedState,
+  });
 
   const submit = async (event) => {
     event.preventDefault();
@@ -162,50 +177,64 @@ export default function PartnerApplyPage() {
   };
 
   if (state.isLoading) {
-    return <div className="placeholder-page"><p>{t("partnerApply.loading")}</p></div>;
+    return (
+      <>
+        <SeoHead {...seo} />
+        <div className="placeholder-page"><p>{t("partnerApply.loading")}</p></div>
+      </>
+    );
   }
 
   if (state.error) {
-    return <div className="placeholder-page"><p>{state.error}</p></div>;
+    return (
+      <>
+        <SeoHead {...seo} />
+        <div className="placeholder-page"><p>{state.error}</p></div>
+      </>
+    );
   }
 
   if (showReceivedState) {
     return (
-      <main className="partner-apply-page section">
-        <div className="partner-apply-card partner-apply-card--success">
-          <div className="partner-apply-success-icon">
-            <CheckCircle2 size={34} />
-          </div>
-          <h1>{t("partnerApply.receivedTitle")}</h1>
-          <p>{t("partnerApply.receivedText")}</p>
-          <div className="partner-apply-summary">
-            <article><strong>{t("partnerApply.fullName")}</strong><span>{state.application.full_name}</span></article>
-            <article><strong>{t("partnerApply.email")}</strong><span>{state.application.email}</span></article>
-            <article><strong>{t("partnerApply.publicName")}</strong><span>{state.application.public_name || "-"}</span></article>
-            <article><strong>{t("partnerApply.status")}</strong><span>{state.application.status}</span></article>
-          </div>
-          <p className="partner-apply-note">{t("partnerApply.receivedNote")}</p>
-          <div className="partner-apply-actions">
-            <LocalizedLink className="btn btn-primary" to="/partner-program">
-              {t("partnerApply.backToProgram")}
-            </LocalizedLink>
-            {state.profile?.id ? (
-              <LocalizedLink className="btn btn-secondary" to="/client/dashboard">
-                {t("partnerApply.backToDashboard")}
+      <>
+        <SeoHead {...seo} />
+        <main className="partner-apply-page section">
+          <div className="partner-apply-card partner-apply-card--success">
+            <div className="partner-apply-success-icon">
+              <CheckCircle2 size={34} />
+            </div>
+            <h1>{t("partnerApply.receivedTitle")}</h1>
+            <p>{t("partnerApply.receivedText")}</p>
+            <div className="partner-apply-summary">
+              <article><strong>{t("partnerApply.fullName")}</strong><span>{state.application.full_name}</span></article>
+              <article><strong>{t("partnerApply.email")}</strong><span>{state.application.email}</span></article>
+              <article><strong>{t("partnerApply.publicName")}</strong><span>{state.application.public_name || "-"}</span></article>
+              <article><strong>{t("partnerApply.status")}</strong><span>{state.application.status}</span></article>
+            </div>
+            <p className="partner-apply-note">{t("partnerApply.receivedNote")}</p>
+            <div className="partner-apply-actions">
+              <LocalizedLink className="btn btn-primary" to="/partner-program">
+                {t("partnerApply.backToProgram")}
               </LocalizedLink>
-            ) : (
-              <LocalizedLink className="btn btn-secondary" to="/auth/login">
-                {t("partnerApply.backToLogin")}
-              </LocalizedLink>
-            )}
+              {state.profile?.id ? (
+                <LocalizedLink className="btn btn-secondary" to="/client/dashboard">
+                  {t("partnerApply.backToDashboard")}
+                </LocalizedLink>
+              ) : (
+                <LocalizedLink className="btn btn-secondary" to="/auth/login">
+                  {t("partnerApply.backToLogin")}
+                </LocalizedLink>
+              )}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </>
     );
   }
 
   return (
     <main className="partner-apply-page section">
+      <SeoHead {...seo} />
       <div className="partner-apply-card">
         <h1>{t("partnerApply.title")}</h1>
         <p>{t("partnerApply.text")}</p>

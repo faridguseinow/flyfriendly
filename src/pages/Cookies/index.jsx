@@ -1,12 +1,29 @@
 import { Trans, useTranslation } from "react-i18next";
+import { useLocation, useParams } from "react-router-dom";
+import SeoHead from "../../components/SeoHead.jsx";
+import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
+import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
 import "../Legal/style.scss";
 
 function Cookies() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const { lang } = useParams();
+  const locale = lang || DEFAULT_LANGUAGE;
   const sections = t("legal.cookies.sections", { returnObjects: true });
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${t("legal.cookies.title")} | ${BRAND_NAME}`,
+    description: t("legal.cookies.intro"),
+    pathname: location.pathname,
+    canonicalPath: localizePath("/cookies", locale),
+    alternatesPath: "/cookies",
+  });
 
   return (
     <main className="legal-page">
+      <SeoHead {...seo} />
       <header className="legal-hero">
         <h1>{t("legal.cookies.title")}</h1>
         <p>{t("legal.cookies.intro")}</p>

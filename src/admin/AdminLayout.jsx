@@ -763,7 +763,7 @@ function AdminLayout() {
         id: `post:${row.id}`,
         label: row.title || "Post",
         meta: [row.slug, row.status].filter(Boolean).join(" • "),
-        path: `/admin/content/pages?post=${row.id}`,
+        path: `/admin/content/cms?post=${row.id}`,
         score: rankSearchValue(row.title, query) + rankSearchValue(row.slug, query),
       }));
       addMatches(t("admin.search.groups.faq"), searchIndex.faqItems || [], (row) => ({
@@ -850,7 +850,7 @@ function AdminLayout() {
       {isSidebarOpen ? <button type="button" className="admin-sidebar__overlay" aria-label={t("admin.common.closeMenu")} onClick={() => setIsSidebarOpen(false)} /> : null}
       <aside className="admin-icon-rail">
         <div className="admin-rail-logo-wrap">
-          <NavLink to="/admin" className="admin-rail-logo" onClick={() => setIsSidebarOpen(false)} aria-label={t("admin.common.adminHomeLabel")}>
+          <NavLink to="/" className="admin-rail-logo" onClick={() => setIsSidebarOpen(false)} aria-label={t("admin.common.adminHomeLabel")}>
             <img src={logoImage} alt="" />
           </NavLink>
           <button type="button" className="admin-sidebar__close" onClick={() => setIsSidebarOpen(false)} aria-label={t("admin.common.closeMenu")}>

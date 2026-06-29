@@ -83,7 +83,7 @@
 
   h3 {
     margin: 4px 0 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 21px;
     line-height: 1.15;
     font-weight: 700;
@@ -170,7 +170,7 @@
   }
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
@@ -277,7 +277,7 @@
   }
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 15px;
     line-height: 1.35;
     font-weight: 700;
@@ -295,7 +295,7 @@
 
   h3 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 17px;
     line-height: 1.25;
     font-weight: 700;
@@ -328,7 +328,7 @@
 
   strong {
     margin-bottom: 5px;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 12px;
     line-height: 1.35;
     font-weight: 700;
@@ -349,7 +349,7 @@
 
   strong {
     display: block;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 20px;
     line-height: 1.2;
     font-weight: 700;
@@ -357,7 +357,7 @@
 
   p {
     margin: 6px 0 0;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 13px;
     line-height: 1.5;
   }
@@ -413,7 +413,7 @@
   }
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     line-height: 1.45;
     font-weight: 700;

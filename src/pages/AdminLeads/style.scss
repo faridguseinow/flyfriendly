@@ -62,7 +62,7 @@
   justify-items: start;
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     line-height: 18px;
     font-weight: 700;
@@ -86,7 +86,7 @@
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 10px;
     background: #fff;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font: inherit;
   }
 
@@ -172,7 +172,7 @@
   }
 
   h2 {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 18px;
     line-height: 24px;
   }
@@ -257,7 +257,7 @@
 
 .admin-leads-page__lead-topline {
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 14px;
     line-height: 20px;
     font-weight: 700;
@@ -289,7 +289,7 @@
 
 .admin-leads-page__lead-route {
   span {
-    color: #475569;
+    color: var(--admin-text-primary);
     font-size: 13px;
     line-height: 18px;
   }
@@ -342,7 +342,7 @@
   gap: 8px;
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 18px;
     line-height: 24px;
   }
@@ -381,7 +381,7 @@
   }
 
   h3 {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 18px;
     line-height: 24px;
   }
@@ -426,7 +426,7 @@
   }
 
   h4 {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 17px;
     line-height: 22px;
   }
@@ -445,7 +445,7 @@
 
   h4 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 15px;
     line-height: 20px;
   }
@@ -456,7 +456,7 @@
     padding: 12px 14px;
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 12px;
-    color: #17212d;
+    color: var(--admin-text-primary);
     background: #fff;
     font: inherit;
     resize: vertical;
@@ -504,7 +504,7 @@
   }
 
   span {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 14px;
     line-height: 20px;
   }
@@ -529,7 +529,7 @@
   strong {
     display: block;
     margin-bottom: 4px;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     line-height: 18px;
     font-weight: 600;
@@ -576,7 +576,7 @@
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 10px;
     background: #fff;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font: inherit;
   }
 }
@@ -686,7 +686,7 @@
   }
 
   h3 {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 18px;
     line-height: 24px;
     font-weight: 700;

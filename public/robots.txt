@@ -1,4 +1,19 @@
 User-agent: *
 Allow: /
+Allow: /az/partner/apply
+Allow: /ru/partner/apply
+Allow: /en/partner/apply
+Disallow: /admin/
+Disallow: /control-dashboard/
+Disallow: /client/
+Disallow: /partner/
+Disallow: /auth/
+Disallow: /r/
+Disallow: /*/client/
+Disallow: /*/partner/
+Disallow: /*/auth/
+Disallow: /*/claim/approved
+Disallow: /*/claim/denied
+Disallow: /*/r/
 
 Sitemap: https://fly-friendly.com/sitemap.xml

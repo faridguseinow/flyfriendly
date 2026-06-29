@@ -1,5 +1,6 @@
 import { BarChart3, FlaskConical, Megaphone, MousePointerClick, RefreshCw, Smartphone, Send, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AdminFilterBar, AdminMetricsStrip, AdminPageHeader } from "../../admin/components/AdminUi.jsx";
 import { getMarketingAnalyticsSummary } from "../../services/adminMarketingService.js";
 import "./style.scss";
@@ -25,7 +26,7 @@ function formatCount(value) {
   return Number(value || 0).toLocaleString();
 }
 
-function formatDateTime(value) {
+function formatDateTime(value, locale) {
   if (!value) {
     return "—";
   }
@@ -35,7 +36,7 @@ function formatDateTime(value) {
     return "—";
   }
 
-  return parsed.toLocaleString(undefined, {
+  return parsed.toLocaleString(locale, {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -71,18 +72,20 @@ function AnalyticsBars({ items = [], emptyLabel }) {
   );
 }
 
-function ConversionFunnel({ items = [] }) {
+function ConversionFunnel({ items = [], t }) {
   const maxCount = Math.max(...items.map((item) => item.count), 0);
 
   if (!items.length) {
-    return <div className="admin-marketing__empty">No funnel data yet.</div>;
+    return <div className="admin-marketing__empty">{t("admin.marketing.states.noFunnelData")}</div>;
   }
 
   return (
     <div className="admin-marketing__funnel">
       {items.map((item, index) => {
         const width = maxCount ? `${Math.max((item.count / maxCount) * 100, 10)}%` : "10%";
-        const rateLabel = index === 0 ? "Entry point" : `${formatPercent(item.rateFromPrevious)} from previous`;
+        const rateLabel = index === 0
+          ? t("admin.marketing.funnel.entryPoint")
+          : t("admin.marketing.funnel.fromPrevious", { rate: formatPercent(item.rateFromPrevious) });
 
         return (
           <article key={item.key} className="admin-marketing__funnel-step">
@@ -103,9 +106,9 @@ function ConversionFunnel({ items = [] }) {
   );
 }
 
-function CampaignPerformanceTable({ rows = [] }) {
+function CampaignPerformanceTable({ rows = [], t }) {
   if (!rows.length) {
-    return <div className="admin-marketing__empty">No campaign conversions yet.</div>;
+    return <div className="admin-marketing__empty">{t("admin.marketing.states.noCampaignData")}</div>;
   }
 
   return (
@@ -113,11 +116,11 @@ function CampaignPerformanceTable({ rows = [] }) {
       <table className="admin-marketing__table">
         <thead>
           <tr>
-            <th>Campaign / Source</th>
-            <th>Visitors</th>
-            <th>Referral opens</th>
-            <th>Claims</th>
-            <th>Conversion</th>
+            <th>{t("admin.marketing.table.campaignSource")}</th>
+            <th>{t("admin.marketing.table.visitors")}</th>
+            <th>{t("admin.marketing.table.referralOpens")}</th>
+            <th>{t("admin.marketing.table.claims")}</th>
+            <th>{t("admin.marketing.table.conversion")}</th>
           </tr>
         </thead>
         <tbody>
@@ -125,7 +128,7 @@ function CampaignPerformanceTable({ rows = [] }) {
             <tr key={`${row.label}-${row.source}-${row.medium}`}>
               <td>
                 <strong>{row.campaign || row.label}</strong>
-                <span>{[row.source, row.medium].filter(Boolean).join(" / ") || "direct"}</span>
+                <span>{[row.source, row.medium].filter(Boolean).join(" / ") || t("admin.marketing.table.direct")}</span>
               </td>
               <td>{formatCount(row.visitors)}</td>
               <td>{formatCount(row.referralVisits)}</td>
@@ -139,13 +142,13 @@ function CampaignPerformanceTable({ rows = [] }) {
   );
 }
 
-function AbTestResults({ tests = [], supportsAbTesting = true }) {
+function AbTestResults({ tests = [], supportsAbTesting = true, t }) {
   if (!supportsAbTesting) {
-    return <div className="admin-marketing__empty">Run migration 046 to start recording A/B variants.</div>;
+    return <div className="admin-marketing__empty">{t("admin.marketing.states.migrationHint")}</div>;
   }
 
   if (!tests.length) {
-    return <div className="admin-marketing__empty">No A/B test traffic yet. Add `ab_test` and `ab_variant` to campaign URLs.</div>;
+    return <div className="admin-marketing__empty">{t("admin.marketing.states.noAbTestData")}</div>;
   }
 
   return (
@@ -154,16 +157,16 @@ function AbTestResults({ tests = [], supportsAbTesting = true }) {
         <article key={test.testName} className="admin-marketing__ab-test">
           <header>
             <strong>{test.testName}</strong>
-            <span>{test.variants.length} variants</span>
+            <span>{t("admin.marketing.table.variantsCount", { count: test.variants.length })}</span>
           </header>
           <div className="admin-marketing__table-wrap">
             <table className="admin-marketing__table">
               <thead>
                 <tr>
-                  <th>Variant</th>
-                  <th>Visitors</th>
-                  <th>Claims</th>
-                  <th>Conversion</th>
+                  <th>{t("admin.marketing.table.variant")}</th>
+                  <th>{t("admin.marketing.table.visitors")}</th>
+                  <th>{t("admin.marketing.table.claims")}</th>
+                  <th>{t("admin.marketing.table.conversion")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,6 +188,7 @@ function AbTestResults({ tests = [], supportsAbTesting = true }) {
 }
 
 export default function AdminMarketing() {
+  const { t, i18n } = useTranslation();
   const [dateRange, setDateRange] = useState(() => buildDefaultDateRange());
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -192,13 +196,13 @@ export default function AdminMarketing() {
 
   const rangeLabel = useMemo(() => {
     if (!summary?.range?.from || !summary?.range?.to) {
-      return "Last 30 days";
+      return t("admin.marketing.last30Days");
     }
 
     const from = new Date(summary.range.from);
     const to = new Date(summary.range.to);
-    return `${from.toLocaleDateString()} - ${to.toLocaleDateString()}`;
-  }, [summary?.range?.from, summary?.range?.to]);
+    return `${from.toLocaleDateString(i18n.language)} - ${to.toLocaleDateString(i18n.language)}`;
+  }, [i18n.language, summary?.range?.from, summary?.range?.to, t]);
 
   const loadSummary = async () => {
     setIsLoading(true);
@@ -208,7 +212,7 @@ export default function AdminMarketing() {
       const nextSummary = await getMarketingAnalyticsSummary(dateRange);
       setSummary(nextSummary);
     } catch (nextError) {
-      setError(nextError?.message || "Could not load marketing analytics.");
+      setError(nextError?.message || t("admin.marketing.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -219,21 +223,21 @@ export default function AdminMarketing() {
   }, [dateRange.from, dateRange.to]);
 
   const metrics = summary ? [
-    { label: "Visitors today", value: summary.visitorsToday },
-    { label: "Claims today", value: summary.claimsToday },
-    { label: "Referral visits", value: summary.referralVisitsToday },
-    { label: "Mobile share", value: formatPercent(summary.mobileShare) },
+    { label: t("admin.marketing.metrics.visitorsToday"), value: summary.visitorsToday },
+    { label: t("admin.marketing.metrics.claimsToday"), value: summary.claimsToday },
+    { label: t("admin.marketing.metrics.referralVisits"), value: summary.referralVisitsToday },
+    { label: t("admin.marketing.metrics.mobileShare"), value: formatPercent(summary.mobileShare) },
   ] : [];
 
   return (
     <section className="admin-marketing-page">
       <div className="admin-marketing__workspace">
         <AdminPageHeader
-          title="Marketing"
-          subtitle="First-party acquisition snapshot."
+          title={t("admin.marketing.title")}
+          subtitle={t("admin.marketing.subtitle")}
           secondaryActions={[
             {
-              label: "Refresh",
+              label: t("admin.common.refresh"),
               icon: RefreshCw,
               onClick: loadSummary,
               disabled: isLoading,
@@ -250,7 +254,7 @@ export default function AdminMarketing() {
 
         {error ? (
           <div className="admin-marketing__state admin-card">
-            <strong>Could not load marketing data.</strong>
+            <strong>{t("admin.marketing.loadErrorTitle")}</strong>
             <span>{error}</span>
           </div>
         ) : null}
@@ -260,28 +264,28 @@ export default function AdminMarketing() {
             <article className="admin-card admin-marketing__kpi-card">
               <span className="admin-marketing__kpi-icon is-blue"><Users size={18} /></span>
               <div>
-                <small>Visitors today</small>
+                <small>{t("admin.marketing.metrics.visitorsToday")}</small>
                 <strong>{summary?.visitorsToday ?? (isLoading ? "…" : 0)}</strong>
               </div>
             </article>
             <article className="admin-card admin-marketing__kpi-card">
               <span className="admin-marketing__kpi-icon is-green"><Send size={18} /></span>
               <div>
-                <small>Claims today</small>
+                <small>{t("admin.marketing.metrics.claimsToday")}</small>
                 <strong>{summary?.claimsToday ?? (isLoading ? "…" : 0)}</strong>
               </div>
             </article>
             <article className="admin-card admin-marketing__kpi-card">
               <span className="admin-marketing__kpi-icon is-orange"><MousePointerClick size={18} /></span>
               <div>
-                <small>Referral visits today</small>
+                <small>{t("admin.marketing.metrics.referralVisitsToday")}</small>
                 <strong>{summary?.referralVisitsToday ?? (isLoading ? "…" : 0)}</strong>
               </div>
             </article>
             <article className="admin-card admin-marketing__kpi-card">
               <span className="admin-marketing__kpi-icon is-violet"><Smartphone size={18} /></span>
               <div>
-                <small>Mobile share</small>
+                <small>{t("admin.marketing.metrics.mobileShare")}</small>
                 <strong>{summary ? formatPercent(summary.mobileShare) : (isLoading ? "…" : "0%")}</strong>
               </div>
             </article>
@@ -293,82 +297,82 @@ export default function AdminMarketing() {
             <article className="admin-card admin-marketing__panel">
               <header className="admin-marketing__panel-head">
                 <div>
-                  <h2>Traffic sources</h2>
+                  <h2>{t("admin.marketing.panels.trafficSources")}</h2>
                   <p>{rangeLabel}</p>
                 </div>
                 <span className="admin-marketing__panel-icon"><Megaphone size={16} /></span>
               </header>
               {isLoading && !summary ? (
-                <div className="admin-marketing__empty">Loading sources...</div>
+                <div className="admin-marketing__empty">{t("admin.marketing.states.loadingSources")}</div>
               ) : (
-                <AnalyticsBars items={summary?.sources || []} emptyLabel="No source data yet." />
+                <AnalyticsBars items={summary?.sources || []} emptyLabel={t("admin.marketing.states.noSourceData")} />
               )}
             </article>
 
             <article className="admin-card admin-marketing__panel">
               <header className="admin-marketing__panel-head">
                 <div>
-                  <h2>Devices</h2>
+                  <h2>{t("admin.marketing.panels.devices")}</h2>
                   <p>{rangeLabel}</p>
                 </div>
                 <span className="admin-marketing__panel-icon"><Smartphone size={16} /></span>
               </header>
               {isLoading && !summary ? (
-                <div className="admin-marketing__empty">Loading devices...</div>
+                <div className="admin-marketing__empty">{t("admin.marketing.states.loadingDevices")}</div>
               ) : (
-                <AnalyticsBars items={summary?.devices || []} emptyLabel="No device data yet." />
+                <AnalyticsBars items={summary?.devices || []} emptyLabel={t("admin.marketing.states.noDeviceData")} />
               )}
             </article>
 
             <article className="admin-card admin-marketing__panel">
               <header className="admin-marketing__panel-head">
                 <div>
-                  <h2>Conversion funnel</h2>
+                  <h2>{t("admin.marketing.panels.conversionFunnel")}</h2>
                   <p>{rangeLabel}</p>
                 </div>
                 <span className="admin-marketing__panel-icon"><BarChart3 size={16} /></span>
               </header>
               {isLoading && !summary ? (
-                <div className="admin-marketing__empty">Loading funnel...</div>
+                <div className="admin-marketing__empty">{t("admin.marketing.states.loadingFunnel")}</div>
               ) : (
-                <ConversionFunnel items={summary?.funnel || []} />
+                <ConversionFunnel items={summary?.funnel || []} t={t} />
               )}
             </article>
 
             <article className="admin-card admin-marketing__panel admin-marketing__panel-wide">
               <header className="admin-marketing__panel-head">
                 <div>
-                  <h2>Campaign performance</h2>
+                  <h2>{t("admin.marketing.panels.campaignPerformance")}</h2>
                   <p>{rangeLabel}</p>
                 </div>
                 <span className="admin-marketing__panel-icon"><MousePointerClick size={16} /></span>
               </header>
               {isLoading && !summary ? (
-                <div className="admin-marketing__empty">Loading campaigns...</div>
+                <div className="admin-marketing__empty">{t("admin.marketing.states.loadingCampaigns")}</div>
               ) : (
-                <CampaignPerformanceTable rows={summary?.campaignPerformance || []} />
+                <CampaignPerformanceTable rows={summary?.campaignPerformance || []} t={t} />
               )}
             </article>
 
             <article className="admin-card admin-marketing__panel admin-marketing__panel-wide">
               <header className="admin-marketing__panel-head">
                 <div>
-                  <h2>Top partners</h2>
+                  <h2>{t("admin.marketing.panels.topPartners")}</h2>
                   <p>{rangeLabel}</p>
                 </div>
                 <span className="admin-marketing__panel-icon"><Users size={16} /></span>
               </header>
               {isLoading && !summary ? (
-                <div className="admin-marketing__empty">Loading partners...</div>
+                <div className="admin-marketing__empty">{t("admin.marketing.states.loadingPartners")}</div>
               ) : summary?.topPartners?.length ? (
                 <div className="admin-marketing__table-wrap">
                   <table className="admin-marketing__table">
                     <thead>
                       <tr>
-                        <th>Partner / Code</th>
-                        <th>Visits</th>
-                        <th>Claims</th>
-                        <th>Last visit</th>
+                        <th>{t("admin.marketing.table.partnerCode")}</th>
+                        <th>{t("admin.marketing.table.visits")}</th>
+                        <th>{t("admin.marketing.table.claims")}</th>
+                        <th>{t("admin.marketing.table.lastVisit")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -380,29 +384,29 @@ export default function AdminMarketing() {
                           </td>
                           <td>{partner.visits}</td>
                           <td>{partner.claims}</td>
-                          <td>{formatDateTime(partner.lastVisit)}</td>
+                          <td>{formatDateTime(partner.lastVisit, i18n.language)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               ) : (
-                <div className="admin-marketing__empty">No partner traffic yet.</div>
+                <div className="admin-marketing__empty">{t("admin.marketing.states.noPartnerData")}</div>
               )}
             </article>
 
             <article className="admin-card admin-marketing__panel admin-marketing__panel-wide">
               <header className="admin-marketing__panel-head">
                 <div>
-                  <h2>A/B testing</h2>
+                  <h2>{t("admin.marketing.panels.abTesting")}</h2>
                   <p>{rangeLabel}</p>
                 </div>
                 <span className="admin-marketing__panel-icon"><FlaskConical size={16} /></span>
               </header>
               {isLoading && !summary ? (
-                <div className="admin-marketing__empty">Loading test variants...</div>
+                <div className="admin-marketing__empty">{t("admin.marketing.states.loadingTests")}</div>
               ) : (
-                <AbTestResults tests={summary?.abTests || []} supportsAbTesting={summary?.supportsAbTesting !== false} />
+                <AbTestResults tests={summary?.abTests || []} supportsAbTesting={summary?.supportsAbTesting !== false} t={t} />
               )}
             </article>
           </div>

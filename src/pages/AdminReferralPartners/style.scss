@@ -46,7 +46,7 @@
 
     strong {
       margin-top: 8px;
-      color: #20242e;
+      color: var(--admin-text-primary);
       font-size: 15px;
       line-height: 22px;
       font-weight: 600;
@@ -68,7 +68,7 @@
   .admin-partner-program__section {
     h3 {
       margin: 0 0 12px;
-      color: #20242e;
+      color: var(--admin-text-primary);
       font-size: 18px;
       line-height: 24px;
     }
@@ -89,7 +89,7 @@
       padding: 12px 14px;
       border: 1px solid var(--line-strong);
       border-radius: 12px;
-      color: #20242e;
+      color: var(--admin-text-primary);
       background: #fff;
       font: inherit;
     }
@@ -119,7 +119,7 @@
 
     strong {
       margin-bottom: 4px;
-      color: #20242e;
+      color: var(--admin-text-primary);
       font-size: 13px;
       line-height: 18px;
       font-weight: 600;
@@ -166,7 +166,7 @@
     strong {
       display: block;
       margin-bottom: 4px;
-      color: #20242e;
+      color: var(--admin-text-primary);
       font-size: 13px;
       line-height: 18px;
       font-weight: 600;

@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import ClaimBox from "../../components/ClaimBox/index.jsx";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import SeoHead from "../../components/SeoHead.jsx";
 import CompensationSlider from "../../components/CompensationSlider/index.jsx";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
 import {
@@ -39,6 +40,8 @@ import {
 import { useState } from "react";
 import { useEffect } from "react";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
+import { BRAND_NAME, buildOrganizationSchema, buildSeoPayload, buildWebsiteSchema, isSeoLanguage } from "../../lib/seo.js";
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
 import { getArticles, localizeArticles } from "../Blog/articles.js";
 import { openMailClient } from "../../utils/mailto.js";
@@ -107,6 +110,7 @@ function FaqItem({ item, isOpen, onToggle }) {
 function Home() {
   const { t } = useTranslation();
   const { lang } = useParams();
+  const location = useLocation();
   const locale = lang || DEFAULT_LANGUAGE;
   const [openFaq, setOpenFaq] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -134,6 +138,15 @@ function Home() {
   const membershipItems = t("home.membershipItems", { returnObjects: true });
   const disruptionCards = t("home.disruptionCards", { returnObjects: true });
   const stepCards = t("home.stepsCards", { returnObjects: true });
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${t("home.heroTitle")} ${t("home.heroTitleStrong")} | ${BRAND_NAME}`,
+    description: t("home.heroText"),
+    pathname: location.pathname,
+    canonicalPath: localizePath("/", locale),
+    alternatesPath: "/",
+    structuredData: isSeoLanguage(locale) ? [buildOrganizationSchema(), buildWebsiteSchema(locale)] : [],
+  });
 
   useEffect(() => {
     let isActive = true;
@@ -191,6 +204,7 @@ function Home() {
 
   return (
     <>
+      <SeoHead {...seo} />
       <div className={`home-scroll-banner${showScrollBanner && !hideScrollBanner ? " is-visible" : ""}`} aria-hidden={!showScrollBanner || hideScrollBanner}>
         <button
           type="button"

@@ -28,9 +28,12 @@ import logoText from "../../assets/icons/fly-friendly.svg";
 import claimImage from "../../assets/media/Image-4.png";
 import CountryFlag from "../../components/CountryFlag/index.jsx";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
+import SeoHead from "../../components/SeoHead.jsx";
 import { useAuth } from "../../auth/AuthContext.jsx";
-import { getLanguageByCode } from "../../i18n/languages.js";
+import { DEFAULT_LANGUAGE, getLanguageByCode } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
 import { getLocalizedCountryName, PHONE_COUNTRY_OPTIONS } from "../../lib/phoneCountries.js";
+import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
 import { useLocalizedPath } from "../../i18n/useLocalizedPath.js";
 import { trackAnalyticsEvent } from "../../lib/analyticsTracker.js";
 import { isSupabaseConfigured } from "../../lib/supabase.js";
@@ -1671,6 +1674,7 @@ function ClaimFlow() {
   const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { stage = "eligibility", lang } = useParams();
+  const locale = lang || DEFAULT_LANGUAGE;
   const [searchParams] = useSearchParams();
   const storedClaim = readStoredClaimDraft();
   const navigationClaimState = location.state?.claimFlow || null;
@@ -1699,6 +1703,27 @@ function ClaimFlow() {
   const [errors, setErrors] = useState({});
   const activeIndex = Math.max(0, stages.indexOf(stage));
   const currentLanguageCode = getLanguageByCode(lang || i18n.resolvedLanguage || i18n.language).code;
+  const normalizedClaimPath = location.pathname.replace(/\/+$/, "");
+  const isBaseClaimPage = normalizedClaimPath === localizePath("/claim", locale);
+  const claimTitle = stage === "approved"
+    ? t("claim.approved.title")
+    : stage === "denied"
+      ? t("claim.denied.title")
+      : t("claim.heroTitle");
+  const claimDescription = stage === "approved"
+    ? t("claim.approved.text")
+    : stage === "denied"
+      ? t("claim.denied.text")
+      : t("claim.promoText");
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${claimTitle} | ${BRAND_NAME}`,
+    description: claimDescription,
+    pathname: location.pathname,
+    canonicalPath: isBaseClaimPage ? localizePath("/claim", locale) : localizePath(`/claim/${stage}`, locale),
+    alternatesPath: "/claim",
+    indexable: isBaseClaimPage,
+  });
 
   const withCurrentLanguage = (payload = data) => ({
     ...payload,
@@ -2336,24 +2361,27 @@ function ClaimFlow() {
   };
 
   return (
-    <div className="claim-page">
-      <div className="claim-frame">
-        <ClaimHeader />
-        <main className="claim-shell">
-          <section className="claim-main">
-            <h1>{t("claim.heroTitle")}</h1>
-            <p>{t("common.globalReachCopy")}</p>
-            {syncError && <p className="claim-sync is-error">{syncError}</p>}
-            {syncNotice && <p className="claim-sync is-notice">{syncNotice}</p>}
-            {stage !== "approved" && stage !== "denied" && <Stepper activeIndex={activeIndex} />}
-            {stage === "approved" && <Stepper activeIndex={3} completed />}
-            {renderStage()}
-          </section>
-          <PromoCard />
-        </main>
-        <ClaimFooter />
+    <>
+      <SeoHead {...seo} />
+      <div className="claim-page">
+        <div className="claim-frame">
+          <ClaimHeader />
+          <main className="claim-shell">
+            <section className="claim-main">
+              <h1>{t("claim.heroTitle")}</h1>
+              <p>{t("common.globalReachCopy")}</p>
+              {syncError && <p className="claim-sync is-error">{syncError}</p>}
+              {syncNotice && <p className="claim-sync is-notice">{syncNotice}</p>}
+              {stage !== "approved" && stage !== "denied" && <Stepper activeIndex={activeIndex} />}
+              {stage === "approved" && <Stepper activeIndex={3} completed />}
+              {renderStage()}
+            </section>
+            <PromoCard />
+          </main>
+          <ClaimFooter />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

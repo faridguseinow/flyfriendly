@@ -2,7 +2,7 @@
   display: grid;
   gap: 16px;
   min-height: 100%;
-  color: var(--ink, #20242e);
+  color: var(--ink, var(--admin-text-primary));
 }
 
 .admin-documents-page__eyebrow {
@@ -23,7 +23,7 @@
 
   h2 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 30px;
     line-height: 1.08;
     font-weight: 700;
@@ -33,7 +33,7 @@
   p {
     margin: 8px 0 0;
     max-width: 580px;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 14px;
     line-height: 1.55;
   }
@@ -163,7 +163,7 @@
 
   p {
     margin: 0;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 1.45;
   }
@@ -277,7 +277,7 @@
 
   h3 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 22px;
     line-height: 1.15;
     font-weight: 700;
@@ -389,7 +389,7 @@
   }
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
@@ -455,13 +455,13 @@
   padding: 12px 14px;
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
 
   span {
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 1.5;
     word-break: break-word;
@@ -499,7 +499,7 @@
   }
 
   strong {
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
@@ -551,7 +551,7 @@
 
   h4 {
     margin: 0;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 14px;
     line-height: 1.3;
     font-weight: 700;
@@ -579,7 +579,7 @@
 
   strong {
     display: block;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
@@ -587,7 +587,7 @@
   span {
     display: block;
     margin-top: 3px;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 1.45;
   }
@@ -595,7 +595,7 @@
 
 .admin-documents-page__checklist-meta {
   span:last-child {
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 12px;
   }
 }
@@ -639,14 +639,14 @@
 
   strong {
     display: block;
-    color: #17212d;
+    color: var(--admin-text-primary);
     font-size: 13px;
     font-weight: 700;
   }
 
   p {
     margin: 4px 0 0;
-    color: #64748b;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 1.45;
   }

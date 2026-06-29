@@ -1,18 +1,34 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useParams } from "react-router-dom";
+import SeoHead from "../../components/SeoHead.jsx";
 import SectionLabel from "../../components/SectionLabel/index.jsx";
 import { Headphones, Mail, MessageSquare } from "lucide-react";
 import { contactEmail } from "../../constants/site.js";
+import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
+import { localizePath } from "../../i18n/path.js";
+import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
 import { openMailClient } from "../../utils/mailto.js";
 import "./style.scss";
 
 function Contact() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const { lang } = useParams();
+  const locale = lang || DEFAULT_LANGUAGE;
   const [form, setForm] = useState({
     name: "",
     email: "",
     reference: "",
     message: "",
+  });
+  const seo = buildSeoPayload({
+    lang: locale,
+    title: `${t("contactPage.heroTitle")} | ${BRAND_NAME}`,
+    description: t("contactPage.heroText"),
+    pathname: location.pathname,
+    canonicalPath: localizePath("/contact", locale),
+    alternatesPath: "/contact",
   });
 
   const updateField = (event) => {
@@ -40,6 +56,7 @@ function Contact() {
 
   return (
     <>
+      <SeoHead {...seo} />
       <section className="contact-hero section">
         <SectionLabel icon={Mail}>{t("contactPage.heroLabel")}</SectionLabel>
         <h1>{t("contactPage.heroTitle")}</h1>

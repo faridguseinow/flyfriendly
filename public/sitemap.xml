@@ -1,6 +1,183 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://fly-friendly.com/</loc>
+    <loc>https://fly-friendly.com/az</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/blog</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/blog</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/blog</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/about</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/about" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/about" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/about" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/about" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/about</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/about" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/about" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/about" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/about" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/about</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/about" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/about" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/about" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/about" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/contact</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/contact" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/contact" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/contact" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/contact" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/contact</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/contact" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/contact" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/contact" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/contact" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/contact</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/contact" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/contact" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/contact" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/contact" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/referral</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/referral" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/referral" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/referral" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/referral" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/referral</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/referral" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/referral" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/referral" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/referral" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/referral</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/referral" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/referral" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/referral" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/referral" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/partner/apply</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/partner/apply" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/partner/apply" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/partner/apply" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/partner/apply" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/partner/apply</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/partner/apply" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/partner/apply" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/partner/apply" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/partner/apply" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/partner/apply</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/partner/apply" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/partner/apply" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/partner/apply" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/partner/apply" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/privacyPolicy</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/privacyPolicy" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/privacyPolicy" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/privacyPolicy" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/privacyPolicy" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/privacyPolicy</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/privacyPolicy" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/privacyPolicy" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/privacyPolicy" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/privacyPolicy" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/privacyPolicy</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/privacyPolicy" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/privacyPolicy" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/privacyPolicy" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/privacyPolicy" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/terms</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/terms" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/terms" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/terms" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/terms" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/terms</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/terms" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/terms" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/terms" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/terms" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/terms</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/terms" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/terms" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/terms" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/terms" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/cookies</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/cookies" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/cookies" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/cookies" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/cookies" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/cookies</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/cookies" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/cookies" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/cookies" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/cookies" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/cookies</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/cookies" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/cookies" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/cookies" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/cookies" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/claim</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/claim" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/claim" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/claim" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/claim" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/claim</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/claim" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/claim" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/claim" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/claim" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/claim</loc>
+    <xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/claim" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/claim" /><xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/claim" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/claim" />
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/blog/why-airlines-delay-payments</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/why-airlines-delay-payments" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D0%BF%D0%BE%D1%87%D0%B5%D0%BC%D1%83-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BA%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D0%B8-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D1%8E%D1%82-%D0%BF%D0%BB%D0%B0%D1%82%D0%B5%D0%B6%D0%B8" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/niy%C9%99-avia%C5%9Firk%C9%99tl%C9%99r-%C3%B6d%C9%99ni%C5%9Fl%C9%99ri-gecikdirir" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/why-airlines-delay-payments" />
+    <lastmod>2026-06-29T14:44:29.218+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/blog/%D0%BF%D0%BE%D1%87%D0%B5%D0%BC%D1%83-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BA%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D0%B8-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D1%8E%D1%82-%D0%BF%D0%BB%D0%B0%D1%82%D0%B5%D0%B6%D0%B8</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/why-airlines-delay-payments" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D0%BF%D0%BE%D1%87%D0%B5%D0%BC%D1%83-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BA%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D0%B8-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D1%8E%D1%82-%D0%BF%D0%BB%D0%B0%D1%82%D0%B5%D0%B6%D0%B8" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/niy%C9%99-avia%C5%9Firk%C9%99tl%C9%99r-%C3%B6d%C9%99ni%C5%9Fl%C9%99ri-gecikdirir" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/why-airlines-delay-payments" />
+    <lastmod>2026-06-29T15:02:24.38+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/blog/niy%C9%99-avia%C5%9Firk%C9%99tl%C9%99r-%C3%B6d%C9%99ni%C5%9Fl%C9%99ri-gecikdirir</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/why-airlines-delay-payments" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D0%BF%D0%BE%D1%87%D0%B5%D0%BC%D1%83-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BA%D0%BE%D0%BC%D0%BF%D0%B0%D0%BD%D0%B8%D0%B8-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D1%8E%D1%82-%D0%BF%D0%BB%D0%B0%D1%82%D0%B5%D0%B6%D0%B8" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/niy%C9%99-avia%C5%9Firk%C9%99tl%C9%99r-%C3%B6d%C9%99ni%C5%9Fl%C9%99ri-gecikdirir" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/why-airlines-delay-payments" />
+    <lastmod>2026-06-29T15:01:48.789+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/blog/stress-free-travel-tips</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/stress-free-travel-tips" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/stresssiz-s%C9%99yah%C9%99t-%C3%BC%C3%A7%C3%BCn-%C9%99n-yax%C5%9F%C4%B1-m%C9%99sl%C9%99h%C9%99tl%C9%99r" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D1%8B%D0%B5-%D1%81%D0%BE%D0%B2%D0%B5%D1%82%D1%8B-%D0%B4%D0%BB%D1%8F-%D0%BF%D1%83%D1%82%D0%B5%D1%88%D0%B5%D1%81%D1%82%D0%B2%D0%B8%D1%8F-%D0%B1%D0%B5%D0%B7-%D1%81%D1%82%D1%80%D0%B5%D1%81%D1%81%D0%B0" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/stress-free-travel-tips" />
+    <lastmod>2026-06-29T14:45:03.288+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/blog/stresssiz-s%C9%99yah%C9%99t-%C3%BC%C3%A7%C3%BCn-%C9%99n-yax%C5%9F%C4%B1-m%C9%99sl%C9%99h%C9%99tl%C9%99r</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/stress-free-travel-tips" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/stresssiz-s%C9%99yah%C9%99t-%C3%BC%C3%A7%C3%BCn-%C9%99n-yax%C5%9F%C4%B1-m%C9%99sl%C9%99h%C9%99tl%C9%99r" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D1%8B%D0%B5-%D1%81%D0%BE%D0%B2%D0%B5%D1%82%D1%8B-%D0%B4%D0%BB%D1%8F-%D0%BF%D1%83%D1%82%D0%B5%D1%88%D0%B5%D1%81%D1%82%D0%B2%D0%B8%D1%8F-%D0%B1%D0%B5%D0%B7-%D1%81%D1%82%D1%80%D0%B5%D1%81%D1%81%D0%B0" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/stress-free-travel-tips" />
+    <lastmod>2026-06-29T15:02:02.206+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/blog/%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D1%8B%D0%B5-%D1%81%D0%BE%D0%B2%D0%B5%D1%82%D1%8B-%D0%B4%D0%BB%D1%8F-%D0%BF%D1%83%D1%82%D0%B5%D1%88%D0%B5%D1%81%D1%82%D0%B2%D0%B8%D1%8F-%D0%B1%D0%B5%D0%B7-%D1%81%D1%82%D1%80%D0%B5%D1%81%D1%81%D0%B0</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/stress-free-travel-tips" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/stresssiz-s%C9%99yah%C9%99t-%C3%BC%C3%A7%C3%BCn-%C9%99n-yax%C5%9F%C4%B1-m%C9%99sl%C9%99h%C9%99tl%C9%99r" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D1%8B%D0%B5-%D1%81%D0%BE%D0%B2%D0%B5%D1%82%D1%8B-%D0%B4%D0%BB%D1%8F-%D0%BF%D1%83%D1%82%D0%B5%D1%88%D0%B5%D1%81%D1%82%D0%B2%D0%B8%D1%8F-%D0%B1%D0%B5%D0%B7-%D1%81%D1%82%D1%80%D0%B5%D1%81%D1%81%D0%B0" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/stress-free-travel-tips" />
+    <lastmod>2026-06-29T15:02:29.899+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/blog/air-passenger-rights</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/air-passenger-rights" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/hava-s%C9%99rni%C5%9Fini-h%C3%BCquqlar%C4%B1n%C4%B1z%C4%B1-bilin" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D1%83%D0%B7%D0%BD%D0%B0%D0%B9%D1%82%D0%B5-%D0%BE-%D1%81%D0%B2%D0%BE%D0%B8%D1%85-%D0%BF%D1%80%D0%B0%D0%B2%D0%B0%D1%85-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BF%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D0%BE%D0%B2" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/air-passenger-rights" />
+    <lastmod>2026-06-29T14:41:55.02+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/blog/hava-s%C9%99rni%C5%9Fini-h%C3%BCquqlar%C4%B1n%C4%B1z%C4%B1-bilin</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/air-passenger-rights" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/hava-s%C9%99rni%C5%9Fini-h%C3%BCquqlar%C4%B1n%C4%B1z%C4%B1-bilin" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D1%83%D0%B7%D0%BD%D0%B0%D0%B9%D1%82%D0%B5-%D0%BE-%D1%81%D0%B2%D0%BE%D0%B8%D1%85-%D0%BF%D1%80%D0%B0%D0%B2%D0%B0%D1%85-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BF%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D0%BE%D0%B2" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/air-passenger-rights" />
+    <lastmod>2026-06-29T15:02:19.343+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/blog/%D1%83%D0%B7%D0%BD%D0%B0%D0%B9%D1%82%D0%B5-%D0%BE-%D1%81%D0%B2%D0%BE%D0%B8%D1%85-%D0%BF%D1%80%D0%B0%D0%B2%D0%B0%D1%85-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BF%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D0%BE%D0%B2</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/air-passenger-rights" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/hava-s%C9%99rni%C5%9Fini-h%C3%BCquqlar%C4%B1n%C4%B1z%C4%B1-bilin" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D1%83%D0%B7%D0%BD%D0%B0%D0%B9%D1%82%D0%B5-%D0%BE-%D1%81%D0%B2%D0%BE%D0%B8%D1%85-%D0%BF%D1%80%D0%B0%D0%B2%D0%B0%D1%85-%D0%B0%D0%B2%D0%B8%D0%B0%D0%BF%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D0%BE%D0%B2" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/air-passenger-rights" />
+    <lastmod>2026-06-29T15:01:42.563+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/en/blog/what-to-do-when-your-flight-is-delayed</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/what-to-do-when-your-flight-is-delayed" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/u%C3%A7u%C5%9Funuz-gecikdikd%C9%99-n%C9%99-etm%C9%99li" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D1%87%D1%82%D0%BE-%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C-%D0%B5%D1%81%D0%BB%D0%B8-%D0%B2%D0%B0%D1%88-%D1%80%D0%B5%D0%B9%D1%81-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D1%82%D1%81%D1%8F" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/what-to-do-when-your-flight-is-delayed" />
+    <lastmod>2026-06-29T10:30:08.122+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/az/blog/u%C3%A7u%C5%9Funuz-gecikdikd%C9%99-n%C9%99-etm%C9%99li</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/what-to-do-when-your-flight-is-delayed" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/u%C3%A7u%C5%9Funuz-gecikdikd%C9%99-n%C9%99-etm%C9%99li" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D1%87%D1%82%D0%BE-%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C-%D0%B5%D1%81%D0%BB%D0%B8-%D0%B2%D0%B0%D1%88-%D1%80%D0%B5%D0%B9%D1%81-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D1%82%D1%81%D1%8F" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/what-to-do-when-your-flight-is-delayed" />
+    <lastmod>2026-06-29T15:02:07.156+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://fly-friendly.com/ru/blog/%D1%87%D1%82%D0%BE-%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C-%D0%B5%D1%81%D0%BB%D0%B8-%D0%B2%D0%B0%D1%88-%D1%80%D0%B5%D0%B9%D1%81-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D1%82%D1%81%D1%8F</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://fly-friendly.com/en/blog/what-to-do-when-your-flight-is-delayed" /><xhtml:link rel="alternate" hreflang="az" href="https://fly-friendly.com/az/blog/u%C3%A7u%C5%9Funuz-gecikdikd%C9%99-n%C9%99-etm%C9%99li" /><xhtml:link rel="alternate" hreflang="ru" href="https://fly-friendly.com/ru/blog/%D1%87%D1%82%D0%BE-%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C-%D0%B5%D1%81%D0%BB%D0%B8-%D0%B2%D0%B0%D1%88-%D1%80%D0%B5%D0%B9%D1%81-%D0%B7%D0%B0%D0%B4%D0%B5%D1%80%D0%B6%D0%B8%D0%B2%D0%B0%D0%B5%D1%82%D1%81%D1%8F" /><xhtml:link rel="alternate" hreflang="x-default" href="https://fly-friendly.com/en/blog/what-to-do-when-your-flight-is-delayed" />
+    <lastmod>2026-06-29T15:02:12.829+00:00</lastmod>
   </url>
 </urlset>

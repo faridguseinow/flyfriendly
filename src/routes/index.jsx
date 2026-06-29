@@ -193,7 +193,10 @@ function AnimatedRoutes({ location }) {
           />
           <Route path="content/media" element={withAdminPermission(adminPlaceholder("Media"), "cms.view")} />
           <Route path="content/website" element={withAdminPermission(adminPlaceholder("Website"), "cms.view")} />
-          <Route path="content/cms" element={withAdminPermission(<AdminCms />, "cms.view")} />
+          <Route
+            path="content/cms"
+            element={<AdminRouteGuard anyPermissions={["blog.view", "blog.edit", "cms.view"]}><AdminCms /></AdminRouteGuard>}
+          />
 
           <Route path="settings" element={withAdminPermission(<AdminSettings />, "settings.view")} />
           <Route path="settings/system" element={withAdminPermission(<AdminSystemSettings />, "settings.view")} />
@@ -213,7 +216,7 @@ function AnimatedRoutes({ location }) {
           <Route path="payments" element={<Navigate to="/admin/finances/payments" replace />} />
           <Route path="revenue" element={<Navigate to="/admin/dashboard/revenue" replace />} />
           <Route path="reports" element={<Navigate to="/admin/dashboard/revenue" replace />} />
-          <Route path="blog" element={<Navigate to="/admin/content/pages" replace />} />
+          <Route path="blog" element={<Navigate to="/admin/content/cms" replace />} />
           <Route path="faq" element={<Navigate to="/admin/content/pages" replace />} />
           <Route path="pages" element={<Navigate to="/admin/content/pages" replace />} />
           <Route path="cms" element={<Navigate to="/admin/content/cms" replace />} />

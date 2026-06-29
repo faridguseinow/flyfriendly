@@ -58,10 +58,10 @@ export function AdminStatusBadge({ children, tone = "neutral" }) {
   return <span className={`admin-badge admin-badge-${tone} admin-status-badge is-${tone}`}>{children}</span>;
 }
 
-export function AdminMetricsStrip({ items = [] }) {
+export function AdminMetricsStrip({ items = [], actions = null }) {
   const visibleItems = items.filter((item) => item && item.label);
 
-  if (!visibleItems.length) {
+  if (!visibleItems.length && !actions) {
     return null;
   }
 
@@ -73,6 +73,7 @@ export function AdminMetricsStrip({ items = [] }) {
           <strong>{item.value ?? 0}</strong>
         </article>
       ))}
+      {actions ? <div className="admin-metrics-strip__actions">{actions}</div> : null}
     </section>
   );
 }

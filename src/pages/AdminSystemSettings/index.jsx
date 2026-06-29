@@ -7,7 +7,7 @@ import "../AdminContent/style.scss";
 
 function MetricCard({ icon: Icon, label, value }) {
   return (
-    <article className="admin-content-system__metric">
+    <article className="admin-content-system__metric admin-panel-card">
       <span className="admin-content-system__metric-icon"><Icon size={18} strokeWidth={1.9} /></span>
       <div>
         <strong>{value}</strong>
@@ -147,7 +147,7 @@ export default function AdminSystemSettings() {
   };
 
   return (
-    <div className="admin-page admin-content-system-page">
+    <div className="admin-page admin-content-system-page admin-system-settings-page">
       {error && <p className="admin-message is-error">{error}</p>}
       {moduleData && !moduleData.supportsSettingsModuleV1 && (
         <p className="admin-message">{t("admin.systemSettings.enableHint")}</p>
@@ -156,37 +156,52 @@ export default function AdminSystemSettings() {
       {isLoading ? (
         <p className="admin-message">{t("admin.systemSettings.loading")}</p>
       ) : (
-        <>
-          <section className="admin-content-system__metrics">
+        <section className="admin-panel admin-system-settings__shell">
+          <div className="admin-system-settings__hero">
+            <div className="admin-system-settings__hero-copy">
+              <h1>{t("admin.systemSettings.title")}</h1>
+              <p>{t("admin.systemSettings.description")}</p>
+            </div>
+            <div className="admin-system-settings__hero-actions">
+              <button className="admin-link-button" type="button" onClick={startNew}>
+                {t("admin.systemSettings.newSetting")}
+              </button>
+            </div>
+          </div>
+
+          <section className="admin-content-system__metrics admin-system-settings__metrics">
             <MetricCard icon={Cog} label={t("admin.systemSettings.metrics.settings")} value={metrics.total} />
             <MetricCard icon={Globe2} label={t("admin.systemSettings.metrics.publicKeys")} value={metrics.publicCount} />
             <MetricCard icon={SlidersHorizontal} label={t("admin.systemSettings.metrics.groups")} value={metrics.groups} />
             <MetricCard icon={Save} label={t("admin.systemSettings.metrics.structuredValues")} value={metrics.jsonCount} />
           </section>
 
-          <section className="admin-panel admin-content-system__panel">
-            <div className="admin-panel__head admin-content-system__panel-head">
-              <div><h2>{t("admin.systemSettings.title")}</h2><p>{t("admin.systemSettings.description")}</p></div>
-              <button className="admin-link-button" type="button" onClick={startNew}>{t("admin.systemSettings.newSetting")}</button>
-            </div>
+          <div className="admin-content-system__layout admin-system-settings__workspace">
+            <aside className="admin-panel-card admin-system-settings__sidebar">
+              <div className="admin-system-settings__sidebar-head">
+                <div>
+                  <h2>{t("admin.systemSettings.metrics.settings")}</h2>
+                  <p>{filtered.length} / {metrics.total}</p>
+                </div>
+              </div>
 
-            <div className="admin-content-system__filters">
-              <label className="admin-search">
-                <Search size={16} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder={t("admin.systemSettings.searchPlaceholder")} />
-              </label>
-              <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}>
-                <option value="all">{t("admin.systemSettings.allGroups")}</option>
-                {groups.map((group) => <option key={group} value={group}>{group}</option>)}
-              </select>
-            </div>
+              <div className="admin-content-system__filters admin-system-settings__filters">
+                <label className="admin-search">
+                  <Search size={16} />
+                  <input value={search} onChange={(event) => setSearch(event.target.value)} type="search" placeholder={t("admin.systemSettings.searchPlaceholder")} />
+                </label>
+                <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)}>
+                  <option value="all">{t("admin.systemSettings.allGroups")}</option>
+                  {groups.map((group) => <option key={group} value={group}>{group}</option>)}
+                </select>
+              </div>
 
-            <div className="admin-content-system__layout">
-              <div className="admin-content-system__list">
+              <div className="admin-content-system__list admin-system-settings__list">
                 {filtered.length ? filtered.map((item) => (
-                  <article
+                  <button
                     key={item.id}
-                    className={`admin-content-system__row ${selectedId === item.id ? " is-active" : ""}`}
+                    type="button"
+                    className={`admin-content-system__row admin-system-settings__row ${selectedId === item.id ? " is-active" : ""}`}
                     onClick={() => setSelectedId(item.id)}
                   >
                     <strong>{item.label}</strong>
@@ -197,16 +212,29 @@ export default function AdminSystemSettings() {
                     </div>
                     <p>{item.setting_key}</p>
                     <small>{item.description || t("admin.systemSettings.noDescription")}</small>
-                  </article>
+                  </button>
                 )) : <div className="admin-content-system__empty">{t("admin.systemSettings.empty")}</div>}
               </div>
+            </aside>
 
-              <section className="admin-content-system__editor">
-                <div className="admin-panel__head admin-content-system__editor-head">
-                  <div><h2>{draft.id ? t("admin.systemSettings.editSetting") : t("admin.systemSettings.createSetting")}</h2><p>{t("admin.systemSettings.formDescription")}</p></div>
+            <section className="admin-panel-card admin-system-settings__editor">
+              <div className="admin-system-settings__editor-head">
+                <div>
+                  <h2>{draft.id ? t("admin.systemSettings.editSetting") : t("admin.systemSettings.createSetting")}</h2>
+                  <p>{t("admin.systemSettings.formDescription")}</p>
                 </div>
+                {(draft.group_key || draft.value_type || draft.setting_key || draft.is_public) ? (
+                  <div className="admin-system-settings__editor-meta">
+                    {draft.group_key ? <span className="admin-content-system__badge">{draft.group_key}</span> : null}
+                    {draft.value_type ? <span className="admin-content-system__badge">{draft.value_type}</span> : null}
+                    {draft.is_public ? <span className="admin-content-system__badge">{t("admin.systemSettings.publicBadge")}</span> : null}
+                    {draft.setting_key ? <span className="admin-content-system__badge">{draft.setting_key}</span> : null}
+                  </div>
+                ) : null}
+              </div>
 
-                <div className="admin-content-system__form">
+              <div className="admin-content-system__form admin-system-settings__form">
+                <div className="admin-panel-card admin-system-settings__section">
                   <div className="admin-content-system__form-grid">
                     <div className="admin-content-system__field">
                       <label>{t("admin.systemSettings.group")}</label>
@@ -230,16 +258,26 @@ export default function AdminSystemSettings() {
                         <option value="array">array</option>
                       </select>
                     </div>
-                    <div className="admin-content-system__field is-wide">
+                  </div>
+                </div>
+
+                <div className="admin-panel-card admin-system-settings__section">
+                  <div className="admin-content-system__form-grid">
+                    <div className="admin-content-system__field is-wide admin-system-settings__field-value">
                       <label>{t("admin.systemSettings.value")}</label>
                       <textarea value={draft.value_input} onChange={(event) => setDraft((state) => ({ ...state, value_input: event.target.value }))} />
                     </div>
-                    <div className="admin-content-system__field is-wide">
+                  </div>
+                </div>
+
+                <div className="admin-panel-card admin-system-settings__section">
+                  <div className="admin-content-system__form-grid">
+                    <div className="admin-content-system__field is-wide admin-system-settings__field-description">
                       <label>{t("admin.systemSettings.descriptionLabel")}</label>
                       <textarea value={draft.description} onChange={(event) => setDraft((state) => ({ ...state, description: event.target.value }))} />
                     </div>
                   </div>
-                  <label className="admin-checkbox">
+                  <label className="admin-checkbox admin-system-settings__checkbox">
                     <input
                       type="checkbox"
                       checked={draft.is_public}
@@ -247,15 +285,16 @@ export default function AdminSystemSettings() {
                     />
                     <span>{t("admin.systemSettings.exposePublic")}</span>
                   </label>
-                  <div className="admin-content-system__actions">
-                    <button className="btn btn--ghost" type="button" onClick={startNew}>{t("admin.common.reset")}</button>
-                    <button className="btn btn--primary" type="button" disabled={isSaving} onClick={saveSetting}>{t("admin.systemSettings.saveSetting")}</button>
-                  </div>
                 </div>
-              </section>
-            </div>
-          </section>
-        </>
+
+                <div className="admin-content-system__actions admin-system-settings__actions">
+                  <button className="btn btn--ghost" type="button" onClick={startNew}>{t("admin.common.reset")}</button>
+                  <button className="btn btn--primary" type="button" disabled={isSaving} onClick={saveSetting}>{t("admin.systemSettings.saveSetting")}</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
       )}
     </div>
   );
