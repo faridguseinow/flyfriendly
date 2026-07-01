@@ -44,6 +44,8 @@ type InstagramProfileLookupResult = {
   status: number | null;
 };
 
+const SOCIAL_AVATAR_BUCKET = "social-profile-avatars";
+
 function json(body: unknown, init: ResponseInit = {}) {
   return Response.json(body, {
     ...init,
@@ -68,7 +70,7 @@ function getEnv(name: string) {
 }
 
 function graphApiVersion() {
-  return getEnv("META_GRAPH_API_VERSION") || "v21.0";
+  return getEnv("META_GRAPH_API_VERSION") || "v25.0";
 }
 
 function normalizePlatform(objectValue: unknown) {
@@ -92,7 +94,13 @@ function eventExternalId(event: MessagingEvent) {
 }
 
 function instagramAccessToken() {
-  return getEnv("META_INSTAGRAM_ACCESS_TOKEN") || getEnv("META_PAGE_ACCESS_TOKEN");
+  return (getEnv("META_INSTAGRAM_ACCESS_TOKEN") || getEnv("META_PAGE_ACCESS_TOKEN")).trim();
+}
+
+function instagramGraphBaseUrl(accessToken: string) {
+  return accessToken.startsWith("IGAA")
+    ? "https://graph.instagram.com"
+    : "https://graph.facebook.com";
 }
 
 async function fetchInstagramUserProfile(igsid: string): Promise<InstagramProfileLookupResult> {
@@ -104,14 +112,17 @@ async function fetchInstagramUserProfile(igsid: string): Promise<InstagramProfil
     return { profile: null, error: "Missing META_INSTAGRAM_ACCESS_TOKEN secret.", status: null };
   }
 
-  const url = new URL(`https://graph.facebook.com/${graphApiVersion()}/${igsid}`);
+  const url = new URL(`${instagramGraphBaseUrl(accessToken)}/${graphApiVersion()}/${igsid}`);
   url.searchParams.set(
     "fields",
     "name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user",
   );
-  url.searchParams.set("access_token", accessToken);
 
-  const response = await fetch(url).catch((error) => {
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  }).catch((error) => {
     throw new Error(`Instagram profile lookup network error: ${errorMessage(error)}`);
   });
   const body = await response.json().catch(() => null);
@@ -128,6 +139,50 @@ async function fetchInstagramUserProfile(igsid: string): Promise<InstagramProfil
   }
 
   return { profile: body as InstagramUserProfile, error: null, status: response.status };
+}
+
+async function cacheInstagramAvatar(
+  supabase: SupabaseClient,
+  participantId: string,
+  sourceUrl: string | null | undefined,
+) {
+  if (!sourceUrl) return null;
+
+  const imageResponse = await fetch(sourceUrl, {
+    headers: { "User-Agent": "Mozilla/5.0" },
+  }).catch(() => null);
+  if (!imageResponse?.ok) return sourceUrl;
+
+  const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+  const extension = contentType.includes("png")
+    ? "png"
+    : contentType.includes("webp")
+    ? "webp"
+    : "jpg";
+  const bucketResponse = await supabase.storage.createBucket(SOCIAL_AVATAR_BUCKET, {
+    public: true,
+    fileSizeLimit: 5 * 1024 * 1024,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+  });
+  if (bucketResponse.error && !bucketResponse.error.message.toLowerCase().includes("already exists")) {
+    console.warn("Could not create social avatar bucket", bucketResponse.error.message);
+    return sourceUrl;
+  }
+
+  const path = `${participantId}.${extension}`;
+  const upload = await supabase.storage
+    .from(SOCIAL_AVATAR_BUCKET)
+    .upload(path, await imageResponse.arrayBuffer(), {
+      contentType,
+      cacheControl: "3600",
+      upsert: true,
+    });
+  if (upload.error) {
+    console.warn("Could not cache Instagram avatar", upload.error.message);
+    return sourceUrl;
+  }
+
+  return supabase.storage.from(SOCIAL_AVATAR_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 function displayNameFromProfile(participantId: string, profile: InstagramUserProfile | null) {
@@ -216,7 +271,7 @@ async function findOrCreateSocialConversation(
 ) {
   const existing = await supabase
     .from("social_conversations")
-    .select("id")
+    .select("id, participant_name, participant_handle, avatar_url, meta")
     .eq("account_id", accountId)
     .eq("external_conversation_id", conversationExternalId)
     .maybeSingle();
@@ -225,14 +280,22 @@ async function findOrCreateSocialConversation(
     throw existing.error;
   }
 
+  const existingMeta = existing.data?.meta && typeof existing.data.meta === "object"
+    ? existing.data.meta as Record<string, unknown>
+    : {};
   const payload = {
-    participant_name: displayNameFromProfile(participantId, profile),
-    participant_handle: handleFromProfile(participantId, profile),
-    avatar_url: profile?.profile_pic || null,
+    participant_name: profile
+      ? displayNameFromProfile(participantId, profile)
+      : existing.data?.participant_name || displayNameFromProfile(participantId, null),
+    participant_handle: profile
+      ? handleFromProfile(participantId, profile)
+      : existing.data?.participant_handle || handleFromProfile(participantId, null),
+    avatar_url: profile?.profile_pic || existing.data?.avatar_url || null,
     subject: platform === "instagram" ? "Instagram conversation" : "Meta conversation",
     status: "open",
     priority: "normal",
     meta: {
+      ...existingMeta,
       participant_id: participantId,
       source: "meta_webhook",
       webhook_code_version: WEBHOOK_CODE_VERSION,
@@ -245,7 +308,7 @@ async function findOrCreateSocialConversation(
           is_business_follow_user: profile.is_business_follow_user ?? null,
           synced_at: new Date().toISOString(),
         }
-        : null,
+        : existingMeta.profile_lookup || null,
       profile_lookup_error: profileLookupError,
     },
   };
@@ -374,6 +437,13 @@ Deno.serve(async (request) => {
           ? await fetchInstagramUserProfile(participantId)
           : { profile: null, error: null, status: null };
         const profile = profileLookup.profile;
+        if (profile?.profile_pic) {
+          profile.profile_pic = await cacheInstagramAvatar(
+            supabase,
+            participantId,
+            profile.profile_pic,
+          );
+        }
         const conversationId = await findOrCreateSocialConversation(supabase, {
           accountId,
           platform,

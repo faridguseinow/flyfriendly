@@ -218,6 +218,7 @@ function buildConversations(moduleData, socialMessagesByConversation = {}) {
           phone: conversation.participant_phone,
         },
         displayName,
+        avatarUrl: conversation.avatar_url || null,
         entityLabel,
         entityType,
         entityId,
@@ -287,9 +288,19 @@ function buildConversations(moduleData, socialMessagesByConversation = {}) {
     .sort((left, right) => new Date(right.latestAt) - new Date(left.latestAt));
 }
 
-function Avatar({ label, tone = "blue", status = true }) {
+function Avatar({ label, imageUrl, tone = "blue", status = true }) {
   return (
     <span className={`admin-inbox-avatar is-${tone}`}>
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={(event) => {
+            event.currentTarget.hidden = true;
+          }}
+        />
+      ) : null}
       <span>{getInitials(label)}</span>
       {status ? <i /> : null}
     </span>
@@ -570,7 +581,7 @@ function AdminCommunication() {
                   className={`admin-inbox-thread${selectedConversation?.id === conversation.id ? " is-active" : ""}`}
                   onClick={() => setSelectedConversationId(conversation.id)}
                 >
-                  <Avatar label={conversation.displayName} tone={index % 3 === 0 ? "green" : index % 3 === 1 ? "orange" : "blue"} />
+                  <Avatar label={conversation.displayName} imageUrl={conversation.avatarUrl} tone={index % 3 === 0 ? "green" : index % 3 === 1 ? "orange" : "blue"} />
                   <span className="admin-inbox-thread__body">
                     <span className="admin-inbox-thread__top">
                       <strong>{conversation.displayName}</strong>
@@ -593,7 +604,7 @@ function AdminCommunication() {
               <>
                 <header className="admin-inbox-chat__header">
                   <div className="admin-inbox-chat__title">
-                    <Avatar label={selectedConversation.displayName} tone="orange" />
+                    <Avatar label={selectedConversation.displayName} imageUrl={selectedConversation.avatarUrl} tone="orange" />
                     <div>
                       <h1>{selectedConversation.displayName}</h1>
                       <p><Circle size={8} fill="currentColor" /> {channelLabels[selectedConversation.channel]} conversation</p>
@@ -614,7 +625,7 @@ function AdminCommunication() {
                   ) : null}
                   {selectedConversation.messages.map((message) => (
                     <article key={message.id} className={`admin-inbox-message is-${message.direction}`}>
-                      {message.direction === "inbound" ? <Avatar label={message.authorLabel} tone="green" /> : null}
+                      {message.direction === "inbound" ? <Avatar label={message.authorLabel} imageUrl={selectedConversation.avatarUrl} tone="green" /> : null}
                       <div className="admin-inbox-message__content">
                         <div className="admin-inbox-message__meta">
                           <strong>{message.authorLabel}</strong>
@@ -656,7 +667,7 @@ function AdminCommunication() {
             {selectedConversation ? (
               <>
                 <section className="admin-inbox-profile">
-                  <Avatar label={selectedConversation.displayName} tone="orange" status={false} />
+                  <Avatar label={selectedConversation.displayName} imageUrl={selectedConversation.avatarUrl} tone="orange" status={false} />
                   <h2>{selectedConversation.displayName}</h2>
                   <ChannelPill channel={selectedConversation.channel} />
                 </section>

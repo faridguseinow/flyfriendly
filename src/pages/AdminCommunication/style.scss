@@ -264,6 +264,7 @@
 
 .admin-inbox-avatar {
   position: relative;
+  overflow: visible;
   flex: 0 0 auto;
   width: 42px;
   height: 42px;
@@ -275,6 +276,21 @@
   font-size: 13px;
   font-weight: 800;
 
+  > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    z-index: 1;
+  }
+
+  > span {
+    position: relative;
+    z-index: 0;
+  }
+
   i {
     position: absolute;
     right: 0;
@@ -284,6 +300,7 @@
     border: 2px solid #fff;
     border-radius: 50%;
     background: #22c55e;
+    z-index: 2;
   }
 
   &.is-green {
