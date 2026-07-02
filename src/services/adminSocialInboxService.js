@@ -23,9 +23,13 @@ const ADMIN_INBOX_MEDIA_MAX_FILE_SIZE = 25 * 1024 * 1024;
 const ADMIN_INBOX_ATTACHMENT_URL_TTL_SECONDS = 60 * 60;
 const ADMIN_INBOX_ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
+  "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
   "application/pdf",
   "text/plain",
   "application/msword",
@@ -40,9 +44,13 @@ const ADMIN_INBOX_ALLOWED_MIME_TYPES = new Set([
 ]);
 const MIME_EXTENSION_MAP = {
   "image/jpeg": "jpg",
+  "image/jpg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
   "application/pdf": "pdf",
   "text/plain": "txt",
   "application/msword": "doc",
@@ -181,9 +189,9 @@ function validateSocialInboxAttachmentFile(file) {
     throw new Error("Please choose a file to upload.");
   }
 
-  const mimeType = String(file.type || "").toLowerCase();
+  const mimeType = String(file.type || "").toLowerCase().split(";")[0].trim();
   if (!ADMIN_INBOX_ALLOWED_MIME_TYPES.has(mimeType)) {
-    throw new Error("Only images, PDF/DOC/TXT documents, and audio files are supported in the admin inbox.");
+    throw new Error("Only images, videos, PDF/DOC/TXT documents, and audio files are supported in the admin inbox.");
   }
 
   if (Number(file.size || 0) > ADMIN_INBOX_MEDIA_MAX_FILE_SIZE) {
@@ -337,7 +345,7 @@ export async function uploadSocialInboxAttachment({ conversationId, file }) {
 
   const client = requireSupabase();
   const path = buildSocialInboxAttachmentPath(conversationId, file);
-  const mimeType = String(file.type || "").toLowerCase() || "application/octet-stream";
+  const mimeType = String(file.type || "").toLowerCase().split(";")[0].trim() || "application/octet-stream";
   const fileName = String(file.name || "").trim() || path.split("/").pop() || "attachment";
 
   const { error: uploadError } = await client.storage
@@ -384,6 +392,51 @@ export async function uploadSocialInboxAttachment({ conversationId, file }) {
     signed_url: data?.signedUrl || "",
     signedUrl: data?.signedUrl || "",
     url: data?.signedUrl || "",
+  };
+}
+
+export async function sendSocialInboxMessage(input) {
+  await assertSocialInboxEditAccess();
+  return invokeSocialInboxFunction("social-inbox-send-message", input);
+}
+
+export function subscribeSocialInboxRealtime({
+  onConversationChange,
+  onMessageChange,
+  onStatusChange,
+} = {}) {
+  const client = requireSupabase();
+  const channel = client
+    .channel(`admin-social-inbox-${crypto.randomUUID()}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "social_conversations",
+      },
+      (payload) => {
+        onConversationChange?.(payload);
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "social_messages",
+      },
+      (payload) => {
+        onMessageChange?.(payload);
+      },
+    );
+
+  channel.subscribe((status) => {
+    onStatusChange?.(status);
+  });
+
+  return () => {
+    client.removeChannel(channel);
   };
 }
 

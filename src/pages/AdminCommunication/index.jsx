@@ -31,12 +31,13 @@ import {
 import { createCommunication, createTask, fetchCommunicationsModuleData } from "../../services/adminService.js";
 import { createAdminNotification } from "../../services/adminNotificationService.js";
 import {
-  createSocialInboxMessage,
   backfillInstagramInboxProfiles,
   fetchSocialConversationMessages,
   fetchSocialInboxModuleData,
   markSocialConversationUnread,
   markSocialConversationRead,
+  sendSocialInboxMessage,
+  subscribeSocialInboxRealtime,
   updateSocialConversation,
   uploadSocialInboxAttachment,
 } from "../../services/adminSocialInboxService.js";
@@ -133,6 +134,7 @@ const conversationStatuses = ["open", "pending", "replied", "blocked", "archived
 const conversationPriorities = ["low", "normal", "high", "urgent"];
 const composerEmojiOptions = ["🙂", "👍", "🙏", "✈️", "📎", "✅", "🔥", "❤️"];
 const composerFileAccept = "image/*,.pdf,.doc,.docx,.txt,audio/*";
+const voiceWaveformBarsCount = 24;
 
 function getChannelLabels(t) {
   return Object.fromEntries(
@@ -298,6 +300,31 @@ function getAttachmentLabel(attachment, index) {
   ).trim();
 }
 
+function isTechnicalAttachmentLabel(label, kind) {
+  const normalized = String(label || "").trim().toLowerCase();
+  if (!normalized) return true;
+
+  if (/^attachment(?:\s+\d+)?(?:\.[a-z0-9]+)?$/i.test(normalized)) {
+    return true;
+  }
+
+  if (/^default\.[a-z0-9]+$/i.test(normalized)) {
+    return true;
+  }
+
+  if ((kind === "image" || kind === "video") && /^(image|photo|img)[._-]?\d*(\.[a-z0-9]+)?$/i.test(normalized)) {
+    return true;
+  }
+
+  return false;
+}
+
+function getAttachmentDisplayLabel(attachment, index) {
+  const kind = getAttachmentKind(attachment);
+  const label = getAttachmentLabel(attachment, index);
+  return isTechnicalAttachmentLabel(label, kind) ? "" : label;
+}
+
 function formatAttachmentSize(value) {
   const size = Number(value || 0);
   if (!Number.isFinite(size) || size <= 0) return "";
@@ -316,13 +343,42 @@ function getAudioExtension(mimeType) {
   return "webm";
 }
 
+function getAttachmentPreviewText(attachments = [], labels = {}) {
+  const firstAttachment = Array.isArray(attachments) ? attachments[0] : null;
+  const kind = getAttachmentKind(firstAttachment);
+  if (kind === "image") return labels.image || "Image";
+  if (kind === "video") return labels.video || "Video";
+  if (kind === "audio") return labels.audio || "Audio";
+  return labels.file || "File";
+}
+
+function buildVoiceWaveform(history = [], segments = voiceWaveformBarsCount) {
+  const safeSegments = Math.max(1, Number(segments) || voiceWaveformBarsCount);
+  if (!history.length) {
+    return Array.from({ length: safeSegments }, () => 0.12);
+  }
+
+  const chunkSize = Math.max(1, Math.ceil(history.length / safeSegments));
+  const levels = [];
+
+  for (let index = 0; index < safeSegments; index += 1) {
+    const slice = history.slice(index * chunkSize, (index + 1) * chunkSize);
+    const average = slice.length
+      ? slice.reduce((sum, value) => sum + Number(value || 0), 0) / slice.length
+      : 0;
+    levels.push(Math.min(1, Math.max(0.12, average)));
+  }
+
+  return levels;
+}
+
 function buildConversationMediaItems(conversation) {
   return (conversation?.messages || [])
     .flatMap((message) => (Array.isArray(message.attachments) ? message.attachments : []).map((attachment, index) => ({
       id: `${message.id || "message"}:${attachment?.id || index}`,
       url: getAttachmentUrl(attachment),
       kind: getAttachmentKind(attachment),
-      label: getAttachmentLabel(attachment, index),
+      label: getAttachmentDisplayLabel(attachment, index),
       createdAt: message.created_at,
     })))
     .filter((item) => item.kind === "image" || item.kind === "video");
@@ -436,6 +492,7 @@ function buildConversations(moduleData, socialMessagesByConversation = {}, optio
     unknownCustomer = "Unknown customer",
     conversationFallback = "Conversation",
     noMessageBody = "No message body.",
+    attachmentPreviewLabels = {},
   } = options;
 
   if (moduleData?.supportsSocialInbox) {
@@ -486,7 +543,11 @@ function buildConversations(moduleData, socialMessagesByConversation = {}, optio
         archivedAt: conversation.archived_at || null,
         meta: conversation.meta || {},
         latestAt: conversation.last_message_at || conversation.updated_at || conversation.created_at,
-        latestBody: conversation.last_message_preview || sortedMessages.at(-1)?.body || conversation.subject || noMessageBody,
+        latestBody: conversation.last_message_preview
+          || sortedMessages.at(-1)?.body
+          || (sortedMessages.at(-1)?.attachments?.length ? getAttachmentPreviewText(sortedMessages.at(-1)?.attachments, attachmentPreviewLabels) : "")
+          || conversation.subject
+          || noMessageBody,
         unreadCount: conversation.unread_count || 0,
         status: conversation.status,
         priority: conversation.priority || "normal",
@@ -544,7 +605,10 @@ function buildConversations(moduleData, socialMessagesByConversation = {}, optio
         archivedAt: null,
         meta: latest.meta || {},
         latestAt: latest.created_at,
-        latestBody: latest.body || latest.subject || noMessageBody,
+        latestBody: latest.body
+          || (latest.attachments?.length ? getAttachmentPreviewText(latest.attachments, attachmentPreviewLabels) : "")
+          || latest.subject
+          || noMessageBody,
         unreadCount: Math.max(0, inboundCount - outboundCount),
         status: "open",
         priority: "normal",
@@ -627,6 +691,13 @@ function AdminCommunication() {
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const mediaStreamRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const audioSourceRef = useRef(null);
+  const voiceVisualizerFrameRef = useRef(0);
+  const voiceFrequencyDataRef = useRef(null);
+  const voiceLevelHistoryRef = useRef([]);
+  const realtimeRefreshTimeoutRef = useRef(0);
   const voiceChunksRef = useRef([]);
   const voiceStartRef = useRef(0);
   const voiceMimeTypeRef = useRef("");
@@ -653,6 +724,9 @@ function AdminCommunication() {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [voiceRecordingSeconds, setVoiceRecordingSeconds] = useState(0);
+  const [voiceWaveform, setVoiceWaveform] = useState(() => buildVoiceWaveform());
+  const [pendingVoiceDraft, setPendingVoiceDraft] = useState(null);
+  const [mediaViewer, setMediaViewer] = useState(null);
   const [assignmentDraft, setAssignmentDraft] = useState({ assigned_user_id: "", status: "open", priority: "normal" });
   const [taskDraft, setTaskDraft] = useState({ title: "", description: "", assigned_user_id: "", priority: "medium", due_date: "" });
   const [rulesDraft, setRulesDraft] = useState({ status: "open", priority: "normal" });
@@ -663,9 +737,11 @@ function AdminCommunication() {
     setNoticeTone(tone);
   };
 
-  const loadCommunications = async () => {
-    setError("");
-    setIsLoading(true);
+  const loadCommunications = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setError("");
+      setIsLoading(true);
+    }
 
     try {
       let socialInbox = await fetchSocialInboxModuleData();
@@ -700,7 +776,9 @@ function AdminCommunication() {
     } catch (nextError) {
       setError(nextError.message || t("admin.inbox.loadError"));
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -716,6 +794,12 @@ function AdminCommunication() {
       unknownCustomer: t("admin.inbox.unknownCustomer"),
       conversationFallback: t("admin.inbox.conversationFallback"),
       noMessageBody: t("admin.inbox.noMessageBody"),
+      attachmentPreviewLabels: {
+        image: t("admin.inbox.imageAttachment"),
+        video: t("admin.inbox.videoAttachment"),
+        audio: t("admin.inbox.voiceMessageLabel"),
+        file: t("admin.inbox.documentAttachment"),
+      },
     }),
     [channelLabels, moduleData, socialMessagesByConversation, t],
   );
@@ -774,7 +858,39 @@ function AdminCommunication() {
   const canSendReply = hasPermission("communications.edit")
     && !isSaving
     && !isUploadingAttachment
+    && !isRecordingVoice
+    && !pendingVoiceDraft
     && (reply.trim() || composerAttachments.length);
+
+  const releasePendingVoiceDraft = (draft = pendingVoiceDraft) => {
+    if (draft?.url) {
+      window.URL.revokeObjectURL(draft.url);
+    }
+  };
+
+  const resetVoiceVisualizer = () => {
+    if (voiceVisualizerFrameRef.current) {
+      window.cancelAnimationFrame(voiceVisualizerFrameRef.current);
+      voiceVisualizerFrameRef.current = 0;
+    }
+
+    if (audioSourceRef.current) {
+      try {
+        audioSourceRef.current.disconnect();
+      } catch {}
+      audioSourceRef.current = null;
+    }
+
+    analyserRef.current = null;
+    voiceFrequencyDataRef.current = null;
+    voiceLevelHistoryRef.current = [];
+    setVoiceWaveform(buildVoiceWaveform());
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => null);
+      audioContextRef.current = null;
+    }
+  };
 
   const cleanupVoiceRecorder = () => {
     if (mediaStreamRef.current) {
@@ -788,8 +904,62 @@ function AdminCommunication() {
     voiceShouldUploadRef.current = false;
     voiceConversationIdRef.current = "";
     voiceStartRef.current = 0;
+    resetVoiceVisualizer();
     setIsRecordingVoice(false);
     setVoiceRecordingSeconds(0);
+  };
+
+  const discardPendingVoiceDraft = () => {
+    releasePendingVoiceDraft();
+    setPendingVoiceDraft(null);
+  };
+
+  const startVoiceVisualizer = async (stream) => {
+    if (typeof window.AudioContext === "undefined" && typeof window.webkitAudioContext === "undefined") {
+      return;
+    }
+
+    resetVoiceVisualizer();
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const context = new AudioContextClass();
+    if (context.state === "suspended") {
+      await context.resume().catch(() => null);
+    }
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 128;
+    analyser.smoothingTimeConstant = 0.82;
+
+    const source = context.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    audioContextRef.current = context;
+    analyserRef.current = analyser;
+    audioSourceRef.current = source;
+    voiceFrequencyDataRef.current = new Uint8Array(analyser.frequencyBinCount);
+    voiceLevelHistoryRef.current = [];
+
+    const updateWaveform = () => {
+      const data = voiceFrequencyDataRef.current;
+      if (!analyserRef.current || !data) {
+        return;
+      }
+
+      analyserRef.current.getByteFrequencyData(data);
+      const average = data.length
+        ? data.reduce((sum, value) => sum + value, 0) / (data.length * 255)
+        : 0;
+
+      voiceLevelHistoryRef.current.push(average);
+      if (voiceLevelHistoryRef.current.length > 240) {
+        voiceLevelHistoryRef.current.shift();
+      }
+
+      setVoiceWaveform(buildVoiceWaveform(voiceLevelHistoryRef.current));
+      voiceVisualizerFrameRef.current = window.requestAnimationFrame(updateWaveform);
+    };
+
+    updateWaveform();
   };
 
   const queueUploadedAttachments = async (files = []) => {
@@ -853,6 +1023,7 @@ function AdminCommunication() {
 
     setError("");
     setNotice("");
+    discardPendingVoiceDraft();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -872,6 +1043,7 @@ function AdminCommunication() {
         : new MediaRecorder(stream);
 
       mediaStreamRef.current = stream;
+      await startVoiceVisualizer(stream).catch(() => null);
       mediaRecorderRef.current = recorder;
       voiceChunksRef.current = [];
       voiceMimeTypeRef.current = recorder.mimeType || preferredMimeType || "audio/webm";
@@ -888,14 +1060,15 @@ function AdminCommunication() {
       };
 
       recorder.onstop = async () => {
-        const shouldUpload = voiceShouldUploadRef.current;
-        const conversationId = voiceConversationIdRef.current;
         const mimeType = voiceMimeTypeRef.current || recorder.mimeType || "audio/webm";
         const chunks = [...voiceChunksRef.current];
+        const waveform = buildVoiceWaveform(voiceLevelHistoryRef.current);
+        const shouldKeepDraft = voiceShouldUploadRef.current;
+        const startedAt = voiceStartRef.current;
 
         cleanupVoiceRecorder();
 
-        if (!shouldUpload || !chunks.length || !conversationId) {
+        if (!shouldKeepDraft || !chunks.length) {
           return;
         }
 
@@ -905,24 +1078,17 @@ function AdminCommunication() {
           `voice-note-${Date.now()}.${getAudioExtension(mimeType)}`,
           { type: mimeType },
         );
+        const url = window.URL.createObjectURL(blob);
 
-        setIsUploadingAttachment(true);
-        try {
-          const uploaded = await uploadSocialInboxAttachment({ conversationId, file });
-          setComposerAttachments((current) => [
-            ...current,
-            {
-              ...uploaded,
-              title: t("admin.inbox.voiceMessageLabel"),
-              file_name: uploaded.file_name || t("admin.inbox.voiceMessageLabel"),
-            },
-          ]);
-          pushNotice(t("admin.inbox.voiceReady"), "success");
-        } catch (nextError) {
-          setError(nextError.message || t("admin.inbox.voiceUploadError"));
-        } finally {
-          setIsUploadingAttachment(false);
-        }
+        setPendingVoiceDraft({
+          file,
+          url,
+          mimeType,
+          durationSeconds: Math.max(1, Math.round((Date.now() - startedAt) / 1000)),
+          waveform,
+          fileSize: file.size,
+        });
+        pushNotice(t("admin.inbox.voicePreviewReady"), "success");
       };
 
       recorder.start(250);
@@ -956,6 +1122,108 @@ function AdminCommunication() {
     setIsEmojiPickerOpen(false);
   };
 
+  const scheduleRealtimeRefresh = (delay = 200) => {
+    if (realtimeRefreshTimeoutRef.current) {
+      window.clearTimeout(realtimeRefreshTimeoutRef.current);
+    }
+
+    realtimeRefreshTimeoutRef.current = window.setTimeout(() => {
+      realtimeRefreshTimeoutRef.current = 0;
+      void loadCommunications({ silent: true });
+    }, delay);
+  };
+
+  const refreshConversationMessages = async (conversationId) => {
+    if (!conversationId) return;
+
+    try {
+      const messages = await fetchSocialConversationMessages(conversationId, { limit: 50 });
+      setSocialMessagesByConversation((current) => ({
+        ...current,
+        [conversationId]: messages,
+      }));
+    } catch (nextError) {
+      setError(nextError.message || t("admin.inbox.messageLoadError"));
+    }
+  };
+
+  const submitReplyDraft = async ({ body, attachments = [] }) => {
+    if (!selectedConversation) return;
+
+    const trimmedReply = String(body || "").trim();
+    if (!trimmedReply && !attachments.length) return;
+
+    if (String(selectedConversation.entityId).startsWith("demo-")) {
+      throw new Error(t("admin.inbox.demoSendError"));
+    }
+
+    if (attachments.length && selectedConversation.source !== "social") {
+      throw new Error(t("admin.inbox.attachmentsOnlyForSocial"));
+    }
+
+    if (selectedConversation.source === "social") {
+      await sendSocialInboxMessage({
+        conversation_id: selectedConversation.id,
+        body: trimmedReply || null,
+        attachments,
+      });
+      await markSocialConversationRead(selectedConversation.id).catch(() => null);
+      await refreshConversationMessages(selectedConversation.id);
+      scheduleRealtimeRefresh(50);
+      return;
+    }
+
+    await createCommunication({
+      entity_type: selectedConversation.entityType,
+      entity_id: selectedConversation.entityId,
+      customer_id: selectedConversation.customerId,
+      channel: selectedConversation.channel,
+      direction: "outbound",
+      subject: selectedConversation.subject,
+      body: trimmedReply,
+      meta: { source: "admin_inbox" },
+    });
+  };
+
+  const sendPendingVoiceDraft = async () => {
+    if (!pendingVoiceDraft || !selectedConversation || selectedConversation.source !== "social") {
+      return;
+    }
+
+    setError("");
+    setIsSaving(true);
+
+    try {
+      const uploaded = await uploadSocialInboxAttachment({
+        conversationId: selectedConversation.id,
+        file: pendingVoiceDraft.file,
+      });
+
+      await submitReplyDraft({
+        body: reply,
+        attachments: [
+          ...composerAttachments,
+          {
+            ...uploaded,
+            title: t("admin.inbox.voiceMessageLabel"),
+            file_name: uploaded.file_name || t("admin.inbox.voiceMessageLabel"),
+          },
+        ],
+      });
+
+      setReply("");
+      setComposerAttachments([]);
+      setIsEmojiPickerOpen(false);
+      discardPendingVoiceDraft();
+      await loadCommunications();
+      pushNotice(t("admin.inbox.voiceSent"), "success");
+    } catch (nextError) {
+      setError(nextError.message || t("admin.inbox.voiceUploadError"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!selectedConversation) return;
 
@@ -966,6 +1234,7 @@ function AdminCommunication() {
     setComposerAttachments([]);
     setIsEmojiPickerOpen(false);
     stopVoiceRecording(false);
+    discardPendingVoiceDraft();
     setAssignmentDraft({
       assigned_user_id: selectedConversation.assignedUserId || "",
       status: selectedConversation.status || "open",
@@ -1032,6 +1301,39 @@ function AdminCommunication() {
   }, [selectedConversation, socialMessagesByConversation]);
 
   useEffect(() => {
+    if (!moduleData?.supportsSocialInbox || !hasPermission("communications.view")) {
+      return undefined;
+    }
+
+    const unsubscribe = subscribeSocialInboxRealtime({
+      onConversationChange: () => {
+        scheduleRealtimeRefresh(120);
+      },
+      onMessageChange: (payload) => {
+        const conversationId = payload?.new?.conversation_id || payload?.old?.conversation_id || "";
+        scheduleRealtimeRefresh(120);
+
+        if (conversationId && conversationId === selectedConversation?.id) {
+          void refreshConversationMessages(conversationId);
+        }
+      },
+      onStatusChange: (status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setError(t("admin.inbox.realtimeError"));
+        }
+      },
+    });
+
+    return () => {
+      unsubscribe?.();
+      if (realtimeRefreshTimeoutRef.current) {
+        window.clearTimeout(realtimeRefreshTimeoutRef.current);
+        realtimeRefreshTimeoutRef.current = 0;
+      }
+    };
+  }, [moduleData?.supportsSocialInbox, hasPermission, selectedConversation?.id, t]);
+
+  useEffect(() => {
     const container = messagesScrollRef.current;
     if (!container || !selectedConversation) return;
 
@@ -1060,6 +1362,23 @@ function AdminCommunication() {
     };
   }, [isRecordingVoice]);
 
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setNotice("");
+      setNoticeTone("info");
+    }, 3500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [notice]);
+
+  useEffect(() => () => {
+    releasePendingVoiceDraft(pendingVoiceDraft);
+  }, [pendingVoiceDraft]);
+
   useEffect(() => () => {
     const recorder = mediaRecorderRef.current;
     if (recorder) {
@@ -1074,6 +1393,12 @@ function AdminCommunication() {
 
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+    }
+
+    resetVoiceVisualizer();
+    if (realtimeRefreshTimeoutRef.current) {
+      window.clearTimeout(realtimeRefreshTimeoutRef.current);
+      realtimeRefreshTimeoutRef.current = 0;
     }
   }, []);
 
@@ -1372,60 +1697,11 @@ function AdminCommunication() {
     if (!selectedConversation) return;
     if (!reply.trim() && !composerAttachments.length) return;
 
-    if (String(selectedConversation.entityId).startsWith("demo-")) {
-      setError(t("admin.inbox.demoSendError"));
-      return;
-    }
-
-    if (composerAttachments.length && selectedConversation.source !== "social") {
-      setError(t("admin.inbox.attachmentsOnlyForSocial"));
-      return;
-    }
-
     setError("");
     setIsSaving(true);
 
     try {
-      if (selectedConversation.source === "social") {
-        const trimmedReply = reply.trim();
-        const created = await createSocialInboxMessage({
-          conversation_id: selectedConversation.id,
-          direction: "outbound",
-          sender_type: "admin",
-          body: trimmedReply || null,
-          attachments: composerAttachments,
-          meta: { source: "admin_inbox" },
-        });
-        await markSocialConversationRead(selectedConversation.id).catch(() => null);
-        const nextMessages = await fetchSocialConversationMessages(selectedConversation.id, { limit: 50 });
-        setSocialMessagesByConversation((current) => ({
-          ...current,
-          [selectedConversation.id]: nextMessages.length ? nextMessages : [
-            ...(current[selectedConversation.id] || []),
-            {
-              id: created?.id || crypto.randomUUID(),
-              conversation_id: selectedConversation.id,
-              direction: "outbound",
-              sender_type: "admin",
-              body: trimmedReply || null,
-              attachments: composerAttachments,
-              sent_at: new Date().toISOString(),
-              created_at: new Date().toISOString(),
-            },
-          ],
-        }));
-      } else {
-        await createCommunication({
-          entity_type: selectedConversation.entityType,
-          entity_id: selectedConversation.entityId,
-          customer_id: selectedConversation.customerId,
-          channel: selectedConversation.channel,
-          direction: "outbound",
-          subject: selectedConversation.subject,
-          body: reply.trim(),
-          meta: { source: "admin_inbox" },
-        });
-      }
+      await submitReplyDraft({ body: reply, attachments: composerAttachments });
       setReply("");
       setComposerAttachments([]);
       setIsEmojiPickerOpen(false);
@@ -1438,10 +1714,28 @@ function AdminCommunication() {
   };
 
   const getEntityTypeLabel = (value) => t(`admin.inbox.entityTypes.${value}`, { defaultValue: value });
+  const openImageViewer = (url, label = "") => {
+    if (!url) {
+      pushNotice(t("admin.inbox.mediaUnavailable"), "error");
+      return;
+    }
+
+    setMediaViewer({
+      url,
+      label,
+    });
+  };
+
   const openAttachment = (attachment) => {
     const url = getAttachmentUrl(attachment);
     if (!url) {
       pushNotice(t("admin.inbox.mediaUnavailable"), "error");
+      return;
+    }
+
+    const kind = getAttachmentKind(attachment);
+    if (kind === "image") {
+      openImageViewer(url, getAttachmentDisplayLabel(attachment, 0) || t("admin.inbox.imageAttachment"));
       return;
     }
 
@@ -1452,6 +1746,7 @@ function AdminCommunication() {
     const url = getAttachmentUrl(attachment);
     const kind = getAttachmentKind(attachment);
     const label = getAttachmentLabel(attachment, index);
+    const displayLabel = getAttachmentDisplayLabel(attachment, index);
     const sizeLabel = formatAttachmentSize(attachment?.file_size || attachment?.size);
     const previewUrl = getAttachmentUrl({
       preview_url: attachment?.preview_url,
@@ -1470,8 +1765,8 @@ function AdminCommunication() {
           className={`admin-inbox-attachment admin-inbox-attachment--image${isOutbound ? " is-outbound" : ""}`}
           onClick={() => openAttachment(attachment)}
         >
-          {previewUrl ? <img src={previewUrl} alt={label} loading="lazy" /> : <Image size={18} />}
-          <span>{label}</span>
+          {previewUrl ? <img src={previewUrl} alt={displayLabel || t("admin.inbox.imageAttachment")} loading="lazy" /> : <Image size={18} />}
+          {displayLabel ? <span>{displayLabel}</span> : null}
         </button>
       );
     }
@@ -1485,7 +1780,7 @@ function AdminCommunication() {
           <div className="admin-inbox-attachment__file">
             <FileText size={16} />
             <div>
-              <strong>{label}</strong>
+              <strong>{displayLabel || t("admin.inbox.voiceMessageLabel")}</strong>
               <span>{sizeLabel || t("admin.inbox.voiceMessageLabel")}</span>
             </div>
           </div>
@@ -1510,7 +1805,7 @@ function AdminCommunication() {
         <div className="admin-inbox-attachment__file">
           <FileText size={16} />
           <div>
-            <strong>{label}</strong>
+            <strong>{displayLabel || t("admin.inbox.documentAttachment")}</strong>
             <span>{sizeLabel || t("admin.inbox.documentAttachment")}</span>
           </div>
         </div>
@@ -1522,6 +1817,18 @@ function AdminCommunication() {
     <div className="admin-page admin-communication-page">
       {error ? <p className="admin-message is-error">{error}</p> : null}
       {notice ? <p className={`admin-message${noticeTone === "success" ? " is-success" : ""}`}>{notice}</p> : null}
+      {mediaViewer ? (
+        <div className="admin-inbox-media-viewer" role="dialog" aria-modal="true" aria-label={mediaViewer.label || t("admin.inbox.imageAttachment")}>
+          <button type="button" className="admin-inbox-media-viewer__backdrop" onClick={() => setMediaViewer(null)} aria-label={t("admin.inbox.closeViewer")} />
+          <div className="admin-inbox-media-viewer__dialog">
+            <button type="button" className="admin-inbox-media-viewer__close" onClick={() => setMediaViewer(null)} aria-label={t("admin.inbox.closeViewer")}>
+              <X size={18} />
+            </button>
+            <img src={mediaViewer.url} alt={mediaViewer.label || t("admin.inbox.imageAttachment")} />
+            {mediaViewer.label ? <p>{mediaViewer.label}</p> : null}
+          </div>
+        </div>
+      ) : null}
       {moduleData && !moduleData.supportsSocialInbox && !moduleData.supportsCommunicationsModuleV1 ? (
         <p className="admin-message">
           {t("admin.inbox.schemaMissing")}
@@ -1644,8 +1951,8 @@ function AdminCommunication() {
                           <strong>{message.authorLabel}</strong>
                           <time>{formatTime(message.created_at, { locale: i18n.language, t })}</time>
                         </div>
-                        {message.body || message.subject ? (
-                          <p>{message.body || message.subject}</p>
+                        {message.body ? (
+                          <p>{message.body}</p>
                         ) : !message.attachments?.length ? (
                           <p>{t("admin.inbox.noMessageBody")}</p>
                         ) : null}
@@ -1671,11 +1978,44 @@ function AdminCommunication() {
                     hidden
                     onChange={(event) => { void handleComposerFileChange(event); }}
                   />
+                  {pendingVoiceDraft ? (
+                    <div className="admin-inbox-voice-draft">
+                      <div className="admin-inbox-voice-draft__head">
+                        <strong>{t("admin.inbox.voicePreviewTitle")}</strong>
+                        <span>
+                          {t("admin.inbox.voiceDuration", { seconds: pendingVoiceDraft.durationSeconds })}
+                          {" · "}
+                          {formatAttachmentSize(pendingVoiceDraft.fileSize) || t("admin.inbox.voiceMessageLabel")}
+                        </span>
+                      </div>
+                      <div className="admin-inbox-voice-waveform is-preview">
+                        {(pendingVoiceDraft.waveform || buildVoiceWaveform()).map((level, index) => (
+                          <span key={`preview-wave-${index}`} style={{ "--voice-wave-height": `${Math.max(14, Math.round(level * 44))}px` }} />
+                        ))}
+                      </div>
+                      <audio controls preload="metadata" src={pendingVoiceDraft.url}>
+                        {t("admin.inbox.audioUnavailable")}
+                      </audio>
+                      <div className="admin-inbox-voice-draft__actions">
+                        <button
+                          type="button"
+                          className="is-primary"
+                          disabled={isSaving || isUploadingAttachment}
+                          onClick={() => { void sendPendingVoiceDraft(); }}
+                        >
+                          {t("admin.inbox.voiceSendNow")}
+                        </button>
+                        <button type="button" onClick={discardPendingVoiceDraft}>
+                          {t("admin.inbox.voiceDeleteDraft")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                   {composerAttachments.length ? (
                     <div className="admin-inbox-composer__attachments">
                       {composerAttachments.map((attachment, index) => (
                         <span key={attachment.id || `${attachment.file_name || attachment.title}-${index}`} className="admin-inbox-composer__attachment-chip">
-                          <span>{getAttachmentLabel(attachment, index)}</span>
+                          <span>{getAttachmentDisplayLabel(attachment, index) || t(`admin.inbox.${getAttachmentKind(attachment)}Attachment`, { defaultValue: t("admin.inbox.documentAttachment") })}</span>
                           <button
                             type="button"
                             aria-label={t("admin.inbox.removeAttachment")}
@@ -1725,7 +2065,7 @@ function AdminCommunication() {
                         type="button"
                         aria-label={isRecordingVoice ? t("admin.inbox.voiceStop") : t("admin.inbox.voiceRecord")}
                         className={isRecordingVoice ? "is-recording" : ""}
-                        disabled={!isSocialComposer || isUploadingAttachment}
+                        disabled={!isSocialComposer || isUploadingAttachment || Boolean(pendingVoiceDraft)}
                         onClick={() => { void handleVoiceToggle(); }}
                       >
                         {isRecordingVoice ? <Square size={15} /> : <Mic size={17} />}
@@ -1740,6 +2080,19 @@ function AdminCommunication() {
                       {isRecordingVoice
                         ? t("admin.inbox.recordingNow", { seconds: voiceRecordingSeconds })
                         : t("admin.inbox.uploadingAttachment")}
+                    </div>
+                  ) : null}
+                  {isRecordingVoice ? (
+                    <div className="admin-inbox-voice-recorder">
+                      <div className="admin-inbox-voice-recorder__meta">
+                        <strong>{t("admin.inbox.voiceRecordingTitle")}</strong>
+                        <span>{t("admin.inbox.voiceDuration", { seconds: voiceRecordingSeconds })}</span>
+                      </div>
+                      <div className="admin-inbox-voice-waveform">
+                        {voiceWaveform.map((level, index) => (
+                          <span key={`live-wave-${index}`} style={{ "--voice-wave-height": `${Math.max(12, Math.round(level * 38))}px` }} />
+                        ))}
+                      </div>
                     </div>
                   ) : null}
                 </form>
@@ -2004,10 +2357,16 @@ function AdminCommunication() {
                           key={item.id}
                           type="button"
                           className={`is-${item.kind}`}
-                          onClick={() => item.url ? window.open(item.url, "_blank", "noopener,noreferrer") : pushNotice(t("admin.inbox.mediaUnavailable"), "error")}
+                          onClick={() => (
+                            item.url
+                              ? item.kind === "image"
+                                ? openImageViewer(item.url, item.label || t("admin.inbox.imageAttachment"))
+                                : window.open(item.url, "_blank", "noopener,noreferrer")
+                              : pushNotice(t("admin.inbox.mediaUnavailable"), "error")
+                          )}
                         >
                           <Image size={18} />
-                          <span>{item.label}</span>
+                          <span>{item.label || t(`admin.inbox.${item.kind}Attachment`, { defaultValue: t("admin.inbox.documentAttachment") })}</span>
                         </button>
                       ))}
                     </div>
