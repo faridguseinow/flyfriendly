@@ -675,8 +675,7 @@
 
 .admin-dashboard-main__composer {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(170px, 220px) minmax(120px, 150px) minmax(140px, 170px) auto;
-  gap: 10px;
+  gap: 12px;
   align-items: stretch;
 
   > * {
@@ -692,19 +691,36 @@
   }
 }
 
+.admin-dashboard-main__composer-title {
+  width: 100%;
+}
+
+.admin-dashboard-main__composer-actions {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.9fr) minmax(138px, 0.95fr) auto;
+  gap: 12px;
+  align-items: stretch;
+
+  > * {
+    min-width: 0;
+  }
+}
+
+.admin-dashboard-main__composer-submit {
+  min-width: 148px;
+}
+
 .admin-dashboard-main__list {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   list-style: none;
 }
 
 .admin-dashboard-main__item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: start;
+  position: relative;
+  display: block;
 }
 
 .admin-dashboard-main__toggle,
@@ -716,26 +732,24 @@
 
 .admin-dashboard-main__toggle {
   min-width: 0;
-  padding: 14px 16px;
+  width: 100%;
+  padding: 16px 72px 16px 18px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 16px;
+  border-radius: 18px;
   background: #fff;
   color: var(--admin-text-primary);
   text-align: left;
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
 
   &:hover {
     border-color: rgba(59, 130, 246, 0.26);
     background: #f8fbff;
-  }
-
-  span:last-child {
-    min-width: 0;
-    overflow-wrap: anywhere;
+    box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
   }
 
   strong,
@@ -768,14 +782,43 @@
   }
 }
 
+.admin-dashboard-main__task-content {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-dashboard-main__task-title {
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.admin-dashboard-main__task-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  small {
+    margin-top: 0;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f8fbff;
+    border: 1px solid rgba(191, 219, 254, 0.52);
+    line-height: 16px;
+  }
+}
+
 .admin-dashboard-main__item.is-completed .admin-dashboard-main__toggle {
   color: var(--admin-text-secondary);
 
-  span:last-child strong {
+  .admin-dashboard-main__task-title {
     text-decoration: line-through;
   }
 
-  span:last-child small {
+  .admin-dashboard-main__task-meta small {
     text-decoration: none;
   }
 }
@@ -794,9 +837,12 @@
 }
 
 .admin-dashboard-main__delete {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
   width: 40px;
   height: 40px;
-  margin-top: 2px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -1012,6 +1058,11 @@
 .admin-shell[data-admin-theme="dark"] .admin-preferences-card__icon,
 .admin-shell[data-admin-theme="dark"] .admin-kpi-card {
   background: var(--admin-surface);
+}
+
+.admin-shell[data-admin-theme="dark"] .admin-dashboard-main__task-meta small {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(71, 85, 105, 0.42);
 }
 
 .admin-shell[data-admin-theme="dark"] .admin-icon-rail,
@@ -1871,22 +1922,18 @@
  */
 
 @media (max-width: 1480px) {
-  .admin-dashboard-main__composer {
-    grid-template-columns: minmax(220px, 1fr) minmax(170px, 1fr) minmax(120px, 0.8fr) minmax(150px, 0.9fr);
-  }
-
-  .admin-dashboard-main__composer > .btn {
-    grid-column: 1 / -1;
+  .admin-dashboard-main__composer-actions {
+    grid-template-columns: minmax(148px, 1.05fr) minmax(112px, 0.82fr) minmax(132px, 0.88fr) auto;
   }
 }
 
 @media (max-width: 1360px) {
   .admin-dashboard-main__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.9fr);
   }
 
   .admin-dashboard-main__widgets {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1901,6 +1948,10 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-dashboard-main__widgets {
+    display: none;
+  }
+
   .admin-dashboard-main__head {
     flex-direction: column;
     align-items: stretch;
@@ -1911,11 +1962,30 @@
   }
 
   .admin-dashboard-main__composer {
+    gap: 10px;
+  }
+
+  .admin-dashboard-main__composer-actions {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .admin-dashboard-main__composer-submit {
+    width: 100%;
   }
 
   .admin-dashboard-main__widget {
     min-height: auto;
+  }
+
+  .admin-dashboard-main__item {
+    display: block;
+  }
+
+  .admin-dashboard-main__delete {
+    top: 18px;
+    right: 18px;
+    transform: none;
   }
 }
 

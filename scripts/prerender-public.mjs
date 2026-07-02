@@ -279,6 +279,15 @@ async function renderRoute({ browser, origin, route }) {
           && root?.textContent?.trim()?.length,
       );
     }, { timeout: 30000 });
+    await page.waitForFunction(() => {
+      const main = document.querySelector("main");
+      if (!main) {
+        return true;
+      }
+
+      const style = window.getComputedStyle(main);
+      return Number(style.opacity || "1") >= 0.99;
+    }, { timeout: 5000 }).catch(() => null);
 
     return `<!doctype html>\n${await page.content()}\n`;
   } finally {

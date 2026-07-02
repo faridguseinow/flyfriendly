@@ -292,6 +292,14 @@
   background: linear-gradient(135deg, #0f67ff, #47b0ff);
   font-size: 13px;
   font-weight: 800;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
 
   i {
     position: absolute;
@@ -399,14 +407,52 @@
   }
 }
 
+.admin-inbox-more {
+  position: relative;
+}
+
+.admin-inbox-more__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 200px;
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--admin-inbox-border-strong);
+  border-radius: 12px;
+  background: var(--admin-inbox-control-bg);
+  box-shadow: var(--admin-card-shadow-strong);
+  z-index: 4;
+
+  button {
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 10px;
+    color: var(--admin-text-primary);
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    line-height: 18px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--admin-inbox-hover-bg);
+    }
+  }
+}
+
 .admin-inbox-chat__messages {
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
   background: var(--admin-inbox-chat-bg);
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
 }
 
 .admin-inbox-divider {
@@ -488,6 +534,103 @@
   justify-content: flex-end;
 }
 
+.admin-inbox-attachments {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-inbox-attachment {
+  width: 100%;
+  padding: 10px 12px;
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--admin-inbox-border);
+  border-radius: 14px;
+  color: var(--admin-text-primary);
+  background: var(--admin-inbox-control-bg);
+  text-align: left;
+  cursor: pointer;
+
+  &.is-outbound {
+    border-color: rgba(15, 103, 255, 0.2);
+    background: rgba(15, 103, 255, 0.08);
+  }
+}
+
+.admin-inbox-attachment--image {
+  padding: 8px;
+
+  img {
+    width: 100%;
+    max-height: 220px;
+    display: block;
+    border-radius: 12px;
+    object-fit: cover;
+  }
+
+  span {
+    color: var(--admin-text-secondary);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+}
+
+.admin-inbox-attachment--audio {
+  cursor: default;
+
+  audio {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.admin-inbox-attachment__file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  svg {
+    flex: 0 0 auto;
+    color: var(--admin-inbox-file-icon-color);
+  }
+
+  div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  strong,
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--admin-text-primary);
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  span {
+    color: var(--admin-text-secondary);
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+}
+
+.admin-inbox-attachment__fallback {
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
 .admin-inbox-message__status {
   margin-top: 6px;
   display: flex;
@@ -502,8 +645,7 @@
 .admin-inbox-composer {
   min-height: 58px;
   padding: 8px 12px;
-  display: flex;
-  align-items: center;
+  display: grid;
   gap: 8px;
   border-top: 1px solid var(--admin-inbox-border);
   background: var(--admin-inbox-chat-bg);
@@ -517,7 +659,7 @@
     border: 1px solid var(--admin-inbox-border-strong);
     border-radius: 12px;
     outline: 0;
-    resize: vertical;
+    resize: none;
     color: var(--admin-text-primary);
     background: var(--admin-inbox-control-soft-bg);
     font: inherit;
@@ -555,9 +697,195 @@
   }
 }
 
+.admin-inbox-composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.admin-inbox-composer__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-inbox-composer__emoji {
+  position: relative;
+}
+
+.admin-inbox-composer__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-inbox-composer__attachment-chip {
+  min-height: 30px;
+  padding: 0 8px 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  color: var(--admin-text-primary);
+  background: var(--admin-inbox-chip-bg);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+
+  span {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  button {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: rgba(15, 103, 255, 0.1);
+  }
+}
+
+.admin-inbox-composer__status {
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.admin-inbox-emoji-picker {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  min-width: 188px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  border: 1px solid var(--admin-inbox-border-strong);
+  border-radius: 12px;
+  background: var(--admin-inbox-control-bg);
+  box-shadow: var(--admin-card-shadow-strong);
+  z-index: 4;
+
+  button {
+    width: 100%;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 18px;
+
+    &:hover {
+      background: var(--admin-inbox-hover-bg);
+    }
+  }
+}
+
+.admin-inbox-composer__actions .is-recording {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
 .admin-inbox-info {
   overflow: auto;
   padding: 16px;
+}
+
+.admin-inbox-action-panel {
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid var(--admin-inbox-border);
+  border-radius: 14px;
+  background: var(--admin-inbox-control-bg);
+}
+
+.admin-inbox-action-panel__head {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    color: var(--admin-text-primary);
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  button {
+    border: 0;
+    color: var(--admin-text-secondary);
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
+
+.admin-inbox-action-panel__body {
+  display: grid;
+  gap: 10px;
+
+  label {
+    display: grid;
+    gap: 6px;
+  }
+
+  span {
+    color: var(--admin-text-secondary);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--admin-inbox-border-strong);
+    border-radius: 12px;
+    outline: 0;
+    color: var(--admin-text-primary);
+    background: var(--admin-inbox-control-soft-bg);
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+}
+
+.admin-inbox-action-panel__actions {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+
+  button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--admin-inbox-border-strong);
+    border-radius: 10px;
+    color: var(--admin-text-primary);
+    background: var(--admin-inbox-control-bg);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button.is-primary {
+    border-color: transparent;
+    color: #fff;
+    background: #0f67ff;
+  }
 }
 
 .admin-inbox-profile {
@@ -677,14 +1005,31 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 
+  button,
   span {
     min-height: 76px;
     aspect-ratio: 1.12;
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     place-items: center;
+    padding: 10px;
+    border: 0;
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.82);
     background: #0f67ff;
+    cursor: pointer;
+
+    span {
+      max-width: 100%;
+      overflow: hidden;
+      font-size: 11px;
+      line-height: 14px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .is-red {
@@ -710,19 +1055,32 @@
   .is-ink {
     background: linear-gradient(135deg, #1e293b, #64748b);
   }
+
+  .is-image {
+    background: linear-gradient(135deg, #0f67ff, #38bdf8);
+  }
+
+  .is-video {
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+  }
 }
 
 .admin-inbox-file-list {
   display: grid;
   gap: 10px;
 
-  article {
+  button {
     min-width: 0;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 10px;
+    padding: 0;
+    border: 0;
     color: var(--admin-text-secondary);
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
 
     > svg:first-child {
       width: 34px;

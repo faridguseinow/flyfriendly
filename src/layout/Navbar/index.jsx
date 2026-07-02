@@ -236,7 +236,12 @@ function Navbar() {
   const accountTitle = t("nav.account", { defaultValue: "My account" });
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || accountTitle;
   const accountEmail = profile?.email || user?.email || "";
-  const profilePhotoUrl = getProfileAvatarUrl({ profile, partnerProfile, user });
+  const profilePhotoUrl = getProfileAvatarUrl({
+    profile,
+    partnerProfile,
+    user,
+    preferUserMetadata: Boolean(adminAccess?.isAdminUser),
+  });
   const avatarImageUrl = profilePhotoUrl && !hasAvatarLoadError ? profilePhotoUrl : "";
   const avatarInitials = getInitials(displayName);
   const profilePath = resolveProfilePath(profile, partnerProfile, adminAccess);

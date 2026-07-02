@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.track-analytics-event]
 verify_jwt = false
+
+[functions.social-inbox-webhook]
+verify_jwt = false

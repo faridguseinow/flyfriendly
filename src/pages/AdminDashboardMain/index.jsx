@@ -90,8 +90,9 @@ export default function AdminDashboardMain() {
   const { hasPermission, isOwnerOrSuperAdmin, profile, roles } = useAdminAuth();
   const [draft, setDraft] = useState("");
   const [assigneeDraft, setAssigneeDraft] = useState("");
-  const [priorityDraft, setPriorityDraft] = useState("medium");
+  const [priorityDraft, setPriorityDraft] = useState("");
   const [dueDateDraft, setDueDateDraft] = useState("");
+  const [isDueDateFieldActive, setIsDueDateFieldActive] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [assignableUsers, setAssignableUsers] = useState([]);
   const [taskError, setTaskError] = useState("");
@@ -236,15 +237,16 @@ export default function AdminDashboardMain() {
         related_entity_type: "dashboard",
         related_entity_id: DASHBOARD_TASK_ENTITY_ID,
         assigned_user_id: assigneeDraft || null,
-        priority: priorityDraft,
+        priority: priorityDraft || "medium",
         status: "todo",
         task_type: "dashboard_todo",
         due_date: dueDateDraft || null,
       });
       setDraft("");
       setAssigneeDraft("");
-      setPriorityDraft("medium");
+      setPriorityDraft("");
       setDueDateDraft("");
+      setIsDueDateFieldActive(false);
       await reloadTasks();
     } catch (error) {
       setTaskError(error.message || t("admin.dashboardMain.taskCreateError"));
@@ -325,51 +327,61 @@ export default function AdminDashboardMain() {
             <form className="admin-dashboard-main__composer" onSubmit={addTodo}>
               <input
                 type="text"
-                className="admin-input"
+                className="admin-input admin-dashboard-main__composer-title"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder={t("admin.dashboardMain.addTaskPlaceholder")}
                 maxLength={180}
                 disabled={activeTaskAction === "create"}
               />
-              <select
-                className="admin-select"
-                value={assigneeDraft}
-                onChange={(event) => setAssigneeDraft(event.target.value)}
+              <div className="admin-dashboard-main__composer-actions">
+                <select
+                  className="admin-select"
+                  value={assigneeDraft}
+                  onChange={(event) => setAssigneeDraft(event.target.value)}
                 disabled={activeTaskAction === "create"}
                 aria-label={t("admin.dashboardMain.assignTo")}
               >
-                <option value="">{t("admin.dashboardMain.assignLater")}</option>
+                <option value="">{t("admin.dashboardMain.assigneeField")}</option>
                 {assignableUsersSorted.map((employee) => (
                   <option key={employee.id} value={employee.id}>
                     {employee.full_name || employee.email}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="admin-select"
-                value={priorityDraft}
-                onChange={(event) => setPriorityDraft(event.target.value)}
-                disabled={activeTaskAction === "create"}
-                aria-label={t("admin.dashboardMain.priority")}
-              >
-                <option value="low">{t("admin.dashboardMain.priorityLow")}</option>
-                <option value="medium">{t("admin.dashboardMain.priorityMedium")}</option>
-                <option value="high">{t("admin.dashboardMain.priorityHigh")}</option>
-                <option value="urgent">{t("admin.dashboardMain.priorityUrgent")}</option>
-              </select>
-              <input
-                type="date"
-                className="admin-input"
-                value={dueDateDraft}
-                onChange={(event) => setDueDateDraft(event.target.value)}
-                disabled={activeTaskAction === "create"}
-                aria-label={t("admin.dashboardMain.dueDate")}
-              />
-              <button type="submit" className="btn btn-primary" disabled={!draft.trim() || activeTaskAction === "create"}>
-                {activeTaskAction === "create" ? <LoaderCircle size={16} className="is-spinning" /> : <Plus size={16} />}
-                <span>{t("admin.dashboardMain.sendTask")}</span>
-              </button>
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="admin-select"
+                  value={priorityDraft}
+                  onChange={(event) => setPriorityDraft(event.target.value)}
+                  disabled={activeTaskAction === "create"}
+                  aria-label={t("admin.dashboardMain.priority")}
+                >
+                  <option value="">{t("admin.dashboardMain.urgencyField")}</option>
+                  <option value="low">{t("admin.dashboardMain.priorityLow")}</option>
+                  <option value="medium">{t("admin.dashboardMain.priorityMedium")}</option>
+                  <option value="high">{t("admin.dashboardMain.priorityHigh")}</option>
+                  <option value="urgent">{t("admin.dashboardMain.priorityUrgent")}</option>
+                </select>
+                <input
+                  type={isDueDateFieldActive || dueDateDraft ? "date" : "text"}
+                  className="admin-input"
+                  value={dueDateDraft}
+                  onChange={(event) => setDueDateDraft(event.target.value)}
+                  onFocus={() => setIsDueDateFieldActive(true)}
+                  onBlur={() => setIsDueDateFieldActive(false)}
+                  disabled={activeTaskAction === "create"}
+                  placeholder={t("admin.dashboardMain.deadlineField")}
+                  aria-label={t("admin.dashboardMain.dueDate")}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-primary admin-dashboard-main__composer-submit"
+                  disabled={!draft.trim() || activeTaskAction === "create"}
+                >
+                  {activeTaskAction === "create" ? <LoaderCircle size={16} className="is-spinning" /> : <Plus size={16} />}
+                  <span>{t("admin.dashboardMain.createField")}</span>
+                </button>
+              </div>
             </form>
           ) : null}
 
@@ -395,15 +407,17 @@ export default function AdminDashboardMain() {
                     <span className="admin-dashboard-main__check" aria-hidden="true">
                       {activeTaskAction === task.id ? <LoaderCircle size={13} className="is-spinning" /> : task.status === "done" ? <Check size={14} /> : null}
                     </span>
-                    <span>
-                      <strong>{task.title}</strong>
-                      <small>
-                        {t("admin.dashboardMain.taskMeta", {
-                          priority: t(`admin.dashboardMain.priority${String(task.priority || "medium").replace(/^\w/, (letter) => letter.toUpperCase())}`),
-                          due: formatDueDate(task.due_date, t),
-                        })}
-                      </small>
-                      <small>{t("admin.dashboardMain.assignedToLabel", { assignee: formatAssignee(task) })}</small>
+                    <span className="admin-dashboard-main__task-content">
+                      <strong className="admin-dashboard-main__task-title" title={task.title}>{task.title}</strong>
+                      <span className="admin-dashboard-main__task-meta">
+                        <small>
+                          {t("admin.dashboardMain.taskMeta", {
+                            priority: t(`admin.dashboardMain.priority${String(task.priority || "medium").replace(/^\w/, (letter) => letter.toUpperCase())}`),
+                            due: formatDueDate(task.due_date, t),
+                          })}
+                        </small>
+                        <small>{t("admin.dashboardMain.assignedToLabel", { assignee: formatAssignee(task) })}</small>
+                      </span>
                     </span>
                   </button>
 

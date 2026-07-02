@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import SeoHead from "./components/SeoHead.jsx";
@@ -15,6 +15,18 @@ import { captureReferralFromQueryString } from "./services/referralService.js";
 import { useAuth } from "./auth/AuthContext.jsx";
 import { buildSeoPayload, resolveNoindexRouteMeta } from "./lib/seo.js";
 
+const PUBLIC_LANGUAGE_REDIRECT_PATHS = new Set([
+  "/",
+  "/referral",
+  "/referralProgram",
+  "/partner-program",
+  "/claim",
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+]);
+
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,6 +39,10 @@ function App() {
   const isAdminPage = location.pathname.startsWith("/admin") || location.pathname.startsWith("/control-dashboard");
   const isPortalPage = normalizedPath.startsWith("/client") || normalizedPath.startsWith("/partner") || normalizedPath.startsWith("/auth");
   const currentLanguage = getCurrentLanguageFromPath(location.pathname) || i18n.language || DEFAULT_LANGUAGE;
+  const hasLanguagePrefix = Boolean(getCurrentLanguageFromPath(location.pathname));
+  const isPublicLanguageRedirectRoute = !hasLanguagePrefix && (
+    PUBLIC_LANGUAGE_REDIRECT_PATHS.has(normalizedPath) || normalizedPath.startsWith("/claim/")
+  );
   const noindexMeta = resolveNoindexRouteMeta(location.pathname, currentLanguage);
   const routeSeo = noindexMeta
     ? buildSeoPayload({
@@ -40,7 +56,20 @@ function App() {
     : null;
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (!("scrollRestoration" in window.history)) {
+      return undefined;
+    }
+
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -131,7 +160,7 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (isAdminPage) {
+  if (isAdminPage || isPublicLanguageRedirectRoute) {
     return (
       <>
         {routeSeo ? <SeoHead {...routeSeo} /> : null}
@@ -144,7 +173,7 @@ function App() {
     <>
       {routeSeo ? <SeoHead {...routeSeo} /> : null}
       <Navbar />
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         <motion.main
           key={location.pathname}
           initial={{ opacity: 0, y: 12 }}

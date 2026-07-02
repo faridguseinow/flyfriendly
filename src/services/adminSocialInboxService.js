@@ -18,6 +18,44 @@ async function assertSocialInboxEditAccess(message = "You do not have access to 
   return assertCurrentAdminPermission("communications.edit", { message });
 }
 
+const ADMIN_INBOX_MEDIA_BUCKET = "admin-inbox-media";
+const ADMIN_INBOX_MEDIA_MAX_FILE_SIZE = 25 * 1024 * 1024;
+const ADMIN_INBOX_ATTACHMENT_URL_TTL_SECONDS = 60 * 60;
+const ADMIN_INBOX_ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+  "text/plain",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "audio/webm",
+  "audio/mp4",
+  "audio/mpeg",
+  "audio/ogg",
+  "audio/wav",
+  "audio/x-m4a",
+  "audio/aac",
+]);
+const MIME_EXTENSION_MAP = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "application/pdf": "pdf",
+  "text/plain": "txt",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "audio/webm": "webm",
+  "audio/mp4": "m4a",
+  "audio/mpeg": "mp3",
+  "audio/ogg": "ogg",
+  "audio/wav": "wav",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "aac",
+};
+
 function missingInboxSchemaResponse() {
   return {
     accounts: [],
@@ -56,6 +94,119 @@ async function invokeSocialInboxFunction(functionName, body) {
   }
 
   return data;
+}
+
+function normalizeAttachmentStorageLocation(attachment) {
+  if (!attachment || typeof attachment !== "object") {
+    return null;
+  }
+
+  const bucket = [
+    attachment.bucket,
+    attachment.bucket_id,
+    attachment.storage_bucket,
+    attachment.storageBucket,
+  ].find((value) => typeof value === "string" && value.trim());
+  const path = [
+    attachment.path,
+    attachment.file_path,
+    attachment.storage_path,
+    attachment.storagePath,
+  ].find((value) => typeof value === "string" && value.trim());
+
+  if (!bucket || !path) {
+    return null;
+  }
+
+  return { bucket, path };
+}
+
+function hasDirectAttachmentUrl(attachment) {
+  if (!attachment || typeof attachment !== "object") {
+    return false;
+  }
+
+  return Boolean([
+    attachment.url,
+    attachment.href,
+    attachment.file_url,
+    attachment.publicUrl,
+    attachment.public_url,
+    attachment.signedUrl,
+    attachment.signed_url,
+    attachment.downloadUrl,
+    attachment.download_url,
+  ].find((value) => typeof value === "string" && value.trim()));
+}
+
+async function hydrateSocialInboxAttachment(client, attachment) {
+  if (!attachment || typeof attachment !== "object" || hasDirectAttachmentUrl(attachment)) {
+    return attachment;
+  }
+
+  const location = normalizeAttachmentStorageLocation(attachment);
+  if (!location) {
+    return attachment;
+  }
+
+  const { data, error } = await client.storage
+    .from(location.bucket)
+    .createSignedUrl(location.path, ADMIN_INBOX_ATTACHMENT_URL_TTL_SECONDS);
+
+  if (error || !data?.signedUrl) {
+    return attachment;
+  }
+
+  return {
+    ...attachment,
+    signed_url: data.signedUrl,
+    signedUrl: data.signedUrl,
+    url: data.signedUrl,
+  };
+}
+
+async function hydrateSocialInboxMessages(client, messages = []) {
+  return Promise.all(
+    (messages || []).map(async (message) => ({
+      ...message,
+      attachments: Array.isArray(message.attachments)
+        ? await Promise.all(message.attachments.map((attachment) => hydrateSocialInboxAttachment(client, attachment)))
+        : [],
+    })),
+  );
+}
+
+function validateSocialInboxAttachmentFile(file) {
+  if (!file) {
+    throw new Error("Please choose a file to upload.");
+  }
+
+  const mimeType = String(file.type || "").toLowerCase();
+  if (!ADMIN_INBOX_ALLOWED_MIME_TYPES.has(mimeType)) {
+    throw new Error("Only images, PDF/DOC/TXT documents, and audio files are supported in the admin inbox.");
+  }
+
+  if (Number(file.size || 0) > ADMIN_INBOX_MEDIA_MAX_FILE_SIZE) {
+    throw new Error("Inbox uploads must be 25MB or smaller.");
+  }
+
+  return file;
+}
+
+function buildSocialInboxAttachmentPath(conversationId, file) {
+  const safeConversationId = String(conversationId || "").trim();
+  if (!safeConversationId) {
+    throw new Error("Conversation id is required.");
+  }
+
+  const extension = MIME_EXTENSION_MAP[String(file?.type || "").toLowerCase()]
+    || String(file?.name || "").split(".").pop()
+    || "bin";
+  const safeName = String(file?.name || `attachment.${extension}`)
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]/g, "-");
+
+  return `conversations/${safeConversationId}/${crypto.randomUUID()}-${safeName}`;
 }
 
 export async function fetchSocialInboxModuleData() {
@@ -145,7 +296,7 @@ export async function fetchSocialConversationMessages(conversationId, { limit = 
     throw error;
   }
 
-  return [...(data || [])].reverse();
+  return hydrateSocialInboxMessages(client, [...(data || [])].reverse());
 }
 
 export async function createSocialInboxMessage(input) {
@@ -179,6 +330,63 @@ export async function createSocialInboxMessage(input) {
   return data;
 }
 
+export async function uploadSocialInboxAttachment({ conversationId, file }) {
+  await assertSocialInboxEditAccess();
+
+  validateSocialInboxAttachmentFile(file);
+
+  const client = requireSupabase();
+  const path = buildSocialInboxAttachmentPath(conversationId, file);
+  const mimeType = String(file.type || "").toLowerCase() || "application/octet-stream";
+  const fileName = String(file.name || "").trim() || path.split("/").pop() || "attachment";
+
+  const { error: uploadError } = await client.storage
+    .from(ADMIN_INBOX_MEDIA_BUCKET)
+    .upload(path, file, {
+      upsert: false,
+      contentType: mimeType,
+      cacheControl: "3600",
+    });
+
+  if (uploadError) {
+    const message = String(uploadError.message || "").toLowerCase();
+
+    if (
+      message.includes("bucket")
+      || message.includes("not found")
+      || message.includes("policy")
+      || message.includes("permission")
+      || message.includes("unauthorized")
+      || message.includes("row-level security")
+    ) {
+      throw new Error("Inbox media upload is not configured yet. Apply the latest inbox storage migration and policies.");
+    }
+
+    throw uploadError;
+  }
+
+  const { data } = await client.storage
+    .from(ADMIN_INBOX_MEDIA_BUCKET)
+    .createSignedUrl(path, ADMIN_INBOX_ATTACHMENT_URL_TTL_SECONDS);
+
+  return {
+    id: crypto.randomUUID(),
+    bucket: ADMIN_INBOX_MEDIA_BUCKET,
+    path,
+    file_path: path,
+    file_name: fileName,
+    filename: fileName,
+    mime_type: mimeType,
+    mimeType,
+    type: mimeType,
+    file_size: Number(file.size || 0) || null,
+    title: fileName,
+    signed_url: data?.signedUrl || "",
+    signedUrl: data?.signedUrl || "",
+    url: data?.signedUrl || "",
+  };
+}
+
 export async function markSocialConversationRead(conversationId) {
   await assertSocialInboxEditAccess();
 
@@ -191,6 +399,63 @@ export async function markSocialConversationRead(conversationId) {
   if (error) {
     throw error;
   }
+}
+
+export async function markSocialConversationUnread(conversationId, unreadCount = 1) {
+  await assertSocialInboxEditAccess();
+
+  const client = requireSupabase();
+  const { error } = await client
+    .from("social_conversations")
+    .update({
+      unread_count: Math.max(1, Number(unreadCount) || 1),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", conversationId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateSocialConversation(conversationId, updates = {}) {
+  await assertSocialInboxEditAccess();
+
+  if (!conversationId) {
+    throw new Error("Conversation id is required.");
+  }
+
+  const payload = {
+    updated_at: new Date().toISOString(),
+  };
+
+  const allowedKeys = [
+    "assigned_user_id",
+    "status",
+    "priority",
+    "archived_at",
+    "subject",
+    "meta",
+    "unread_count",
+  ];
+
+  allowedKeys.forEach((key) => {
+    if (key in updates) {
+      payload[key] = updates[key];
+    }
+  });
+
+  const client = requireSupabase();
+  const { error } = await client
+    .from("social_conversations")
+    .update(payload)
+    .eq("id", conversationId);
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
 }
 
 export async function backfillInstagramInboxProfiles(input = {}) {

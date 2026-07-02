@@ -23,6 +23,38 @@ import {
 import { getArticles, localizeArticles } from "./articles.js";
 import "./style.scss";
 
+function slugifyHeadingId(value = "") {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function enhanceRichContent(html) {
+  if (!html || typeof document === "undefined") {
+    return { html: html || "", headings: [] };
+  }
+
+  const root = document.createElement("div");
+  root.innerHTML = html;
+  const headings = [];
+
+  root.querySelectorAll("h2, h3").forEach((node, index) => {
+    const title = String(node.textContent || "").trim();
+    if (!title) {
+      return;
+    }
+
+    const level = Number(String(node.tagName || "H2").replace("H", "")) || 2;
+    const id = node.id || `${slugifyHeadingId(title) || "section"}-${index + 1}`;
+    node.id = id;
+    headings.push({ id, title, level });
+  });
+
+  return { html: root.innerHTML, headings };
+}
+
 function BlogArticle() {
   const { t } = useTranslation();
   const { lang, slug } = useParams();
@@ -66,10 +98,42 @@ function BlogArticle() {
     () => sanitizeRichTextHtml(article?.content || ""),
     [article?.content],
   );
+  const richContent = useMemo(
+    () => enhanceRichContent(contentHtml),
+    [contentHtml],
+  );
   const hasRichContent = useMemo(
     () => hasRichTextMarkup(article?.content || ""),
     [article?.content],
   );
+  const tocItems = useMemo(() => {
+    const items = [];
+
+    if (article?.text || article?.excerpt) {
+      items.push({
+        id: "article-introduction",
+        title: t("blog.introduction", { defaultValue: "Introduction" }),
+        level: 2,
+      });
+    }
+
+    if (hasRichContent) {
+      return [...items, ...richContent.headings];
+    }
+
+    if (Array.isArray(article?.sections) && article.sections.length) {
+      return [
+        ...items,
+        ...article.sections.map((section, index) => ({
+          id: `${slugifyHeadingId(section.title) || "section"}-${index + 1}`,
+          title: section.title,
+          level: 2,
+        })),
+      ];
+    }
+
+    return items;
+  }, [article?.excerpt, article?.sections, article?.text, hasRichContent, richContent.headings, t]);
 
   useEffect(() => {
     let isActive = true;
@@ -187,27 +251,59 @@ function BlogArticle() {
     <>
       <SeoHead {...seo} />
       <article className="article-page">
-        <LocalizedLink to="/blog" className="article-back"><ArrowLeft size={18} strokeWidth={2} aria-hidden="true" /> {t("blog.backToBlog", { defaultValue: "Back to blog" })}</LocalizedLink>
-        <h1>{article.title}</h1>
-        <div className="article-meta">
-          <span><CalendarDays size={18} strokeWidth={2} aria-hidden="true" /> {article.date}</span>
-          <span><Clock3 size={18} strokeWidth={2} aria-hidden="true" /> {article.readTime}</span>
-        </div>
-        <img className="article-cover" src={article.image} alt={article.cover_image_alt || article.title || ""} />
-        <p className="article-lead">{article.text}</p>
-        <div className="article-body">
-          {hasRichContent ? (
-            <section className="article-body__rich" dangerouslySetInnerHTML={{ __html: contentHtml }} />
-          ) : article.sections?.length ? article.sections.map((section) => (
-            <section key={section.title}>
-              <h2>{section.title}</h2>
-              <p>{section.body}</p>
-            </section>
-          )) : (
-            <section>
-              {contentParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-            </section>
-          )}
+        <div className="article-page__shell">
+          <LocalizedLink to="/blog" className="article-back"><ArrowLeft size={18} strokeWidth={2} aria-hidden="true" /> {t("blog.backToBlog", { defaultValue: "Back to blog" })}</LocalizedLink>
+
+          <div className="article-layout">
+            <div className="article-main">
+              <header className="article-hero-card">
+                <h1>{article.title}</h1>
+                <div className="article-meta">
+                  <span><CalendarDays size={18} strokeWidth={2} aria-hidden="true" /> {article.date}</span>
+                  <span><Clock3 size={18} strokeWidth={2} aria-hidden="true" /> {article.readTime}</span>
+                </div>
+                <img className="article-cover" src={article.image} alt={article.cover_image_alt || article.title || ""} />
+              </header>
+
+              <div className="article-body article-body--editorial">
+                {article.text || article.excerpt ? (
+                  <section className="article-introduction" id="article-introduction">
+                    <p className="article-lead">{article.text || article.excerpt}</p>
+                  </section>
+                ) : null}
+
+                {hasRichContent ? (
+                  <section className="article-body__rich" dangerouslySetInnerHTML={{ __html: richContent.html }} />
+                ) : article.sections?.length ? article.sections.map((section, index) => (
+                  <section key={section.title} id={`${slugifyHeadingId(section.title) || "section"}-${index + 1}`}>
+                    <h2>{section.title}</h2>
+                    <p>{section.body}</p>
+                  </section>
+                )) : (
+                  <section>
+                    {contentParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                  </section>
+                )}
+              </div>
+            </div>
+
+            {tocItems.length ? (
+              <aside className="article-sidebar">
+                <div className="article-toc">
+                  <strong>{t("blog.tableOfContents", { defaultValue: "Contents" })}</strong>
+                  <nav aria-label={t("blog.tableOfContents", { defaultValue: "Contents" })}>
+                    <ul>
+                      {tocItems.map((item) => (
+                        <li key={item.id} className={item.level > 2 ? "is-subsection" : ""}>
+                          <a href={`#${item.id}`}>{item.title}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                </div>
+              </aside>
+            ) : null}
+          </div>
         </div>
       </article>
 
