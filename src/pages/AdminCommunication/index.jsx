@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
-  Archive,
-  Bell,
   CheckCheck,
   Circle,
   Download,
@@ -15,21 +13,21 @@ import {
   MessageSquareText,
   Mic,
   MoreHorizontal,
+  Pause,
   Paperclip,
   Phone,
+  Pin,
+  Play,
   Plus,
   Search,
   Send,
-  Settings,
   Smile,
   Square,
   Tag,
   Users,
-  Video,
   X,
 } from "lucide-react";
 import { createCommunication, createTask, fetchCommunicationsModuleData } from "../../services/adminService.js";
-import { createAdminNotification } from "../../services/adminNotificationService.js";
 import {
   backfillInstagramInboxProfiles,
   fetchSocialConversationMessages,
@@ -135,6 +133,7 @@ const conversationPriorities = ["low", "normal", "high", "urgent"];
 const composerEmojiOptions = ["🙂", "👍", "🙏", "✈️", "📎", "✅", "🔥", "❤️"];
 const composerFileAccept = "image/*,.pdf,.doc,.docx,.txt,audio/*";
 const voiceWaveformBarsCount = 24;
+const pinnedConversationsStorageKey = "admin-communication:pinned-conversations:v1";
 
 function getChannelLabels(t) {
   return Object.fromEntries(
@@ -214,6 +213,11 @@ function normalizeSocialHandle(value) {
 function getSocialProfileUsername(meta) {
   const username = meta?.profile_lookup?.username;
   return username ? normalizeSocialHandle(username) : "";
+}
+
+function getSocialProfileName(meta) {
+  const name = meta?.profile_lookup?.name;
+  return typeof name === "string" && name.trim() ? name.trim() : "";
 }
 
 function getSocialProfileAvatarUrl(meta) {
@@ -300,6 +304,49 @@ function getAttachmentLabel(attachment, index) {
   ).trim();
 }
 
+function isAttachmentPlaceholderBody(value, attachments = []) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized || !Array.isArray(attachments) || !attachments.length) {
+    return false;
+  }
+
+  return [
+    "[attachment]",
+    "[image]",
+    "[video]",
+    "[audio]",
+    "[file]",
+    "attachment",
+    "image",
+    "video",
+    "audio",
+    "file",
+  ].includes(normalized);
+}
+
+function getRenderableMessageBody(body, attachments = []) {
+  const normalized = String(body || "").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  return isAttachmentPlaceholderBody(normalized, attachments) ? "" : normalized;
+}
+
+function getAttachmentPreviewUrl(attachment) {
+  return getAttachmentUrl({
+    preview_url: attachment?.preview_url,
+    previewUrl: attachment?.previewUrl,
+    thumbnail_url: attachment?.thumbnail_url,
+    thumbnailUrl: attachment?.thumbnailUrl,
+    image_url: attachment?.image_url,
+    imageUrl: attachment?.imageUrl,
+    video_url: attachment?.video_url,
+    videoUrl: attachment?.videoUrl,
+    url: getAttachmentUrl(attachment),
+  });
+}
+
 function isTechnicalAttachmentLabel(label, kind) {
   const normalized = String(label || "").trim().toLowerCase();
   if (!normalized) return true;
@@ -352,6 +399,57 @@ function getAttachmentPreviewText(attachments = [], labels = {}) {
   return labels.file || "File";
 }
 
+function isMetaAuthErrorMessage(message) {
+  const normalized = String(message || "").trim().toLowerCase();
+  return normalized.includes("invalid oauth access token")
+    || normalized.includes("cannot parse access token")
+    || normalized.includes("error validating access token")
+    || normalized.includes("access token has expired")
+    || normalized.includes("session has expired");
+}
+
+function normalizeInboxErrorMessage(error, t, fallbackKey = "admin.inbox.sendError") {
+  const message = String(error?.message || "").trim();
+  const code = String(error?.code || "").trim().toUpperCase();
+
+  if (code === "META_AUTH_INVALID" || isMetaAuthErrorMessage(message)) {
+    return t("admin.inbox.metaAuthInvalid");
+  }
+
+  if (message.includes("Missing META_PAGE_ACCESS_TOKEN") || message.includes("Missing META_INSTAGRAM_ACCESS_TOKEN")) {
+    return t("admin.inbox.metaSecretMissing");
+  }
+
+  return message || t(fallbackKey);
+}
+
+function formatAudioPlaybackTime(value) {
+  const totalSeconds = Math.max(0, Math.round(Number(value || 0)));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function buildAttachmentWaveform(attachment, segments = 28) {
+  const seedSource = [
+    attachment?.id,
+    attachment?.file_name,
+    attachment?.title,
+    attachment?.url,
+    attachment?.signed_url,
+  ].filter(Boolean).join(":") || "voice";
+
+  let seed = 0;
+  for (let index = 0; index < seedSource.length; index += 1) {
+    seed = (seed + seedSource.charCodeAt(index) * (index + 3)) % 9973;
+  }
+
+  return Array.from({ length: segments }, (_, index) => {
+    const nextSeed = (seed + index * 37 + index * index * 11) % 97;
+    return 0.28 + (nextSeed / 97) * 0.62;
+  });
+}
+
 function buildVoiceWaveform(history = [], segments = voiceWaveformBarsCount) {
   const safeSegments = Math.max(1, Number(segments) || voiceWaveformBarsCount);
   if (!history.length) {
@@ -377,6 +475,7 @@ function buildConversationMediaItems(conversation) {
     .flatMap((message) => (Array.isArray(message.attachments) ? message.attachments : []).map((attachment, index) => ({
       id: `${message.id || "message"}:${attachment?.id || index}`,
       url: getAttachmentUrl(attachment),
+      previewUrl: getAttachmentPreviewUrl(attachment),
       kind: getAttachmentKind(attachment),
       label: getAttachmentDisplayLabel(attachment, index),
       createdAt: message.created_at,
@@ -409,9 +508,14 @@ function getConversationEntityRoute(conversation) {
 function getConversationDisplayName({ channel, customer, conversation, unknownCustomer }) {
   const participantName = String(conversation?.participant_name || "").trim();
   const participantHandle = normalizeSocialHandle(conversation?.participant_handle);
+  const profileName = getSocialProfileName(conversation?.meta);
   const profileUsername = getSocialProfileUsername(conversation?.meta);
   const genericParticipantName = isGenericSocialParticipantName(participantName);
   const isSocialDirectChannel = ["instagram", "facebook", "messenger"].includes(channel);
+
+  if (isSocialDirectChannel && profileName) {
+    return profileName;
+  }
 
   if (customer?.full_name) {
     return customer.full_name;
@@ -446,6 +550,19 @@ function getConversationDisplayName({ channel, customer, conversation, unknownCu
   return customer?.email || participantName || unknownCustomer;
 }
 
+function getConversationSecondaryName(conversation) {
+  const profileUsername = getSocialProfileUsername(conversation?.meta);
+  const participantHandle = normalizeSocialHandle(conversation?.participant_handle);
+  const fallbackHandle = profileUsername || participantHandle;
+  const displayName = String(conversation?.displayName || "").trim();
+
+  if (!fallbackHandle) {
+    return "";
+  }
+
+  return fallbackHandle !== displayName ? fallbackHandle : "";
+}
+
 function isConversationMissingReadableName(conversation, channel) {
   if (!["instagram", "facebook", "messenger"].includes(channel)) {
     return false;
@@ -471,18 +588,23 @@ function isConversationMissingReadableName(conversation, channel) {
 
 function normalizeSocialMessage(message, { channel, subject, displayName, profiles }) {
   const inboundUsername = getSocialProfileUsername(message?.meta);
+  const inboundProfileName = getSocialProfileName(message?.meta);
   const inboundAvatarUrl = getSocialProfileAvatarUrl(message?.meta);
   const inboundSenderName = String(message?.sender_name || "").trim();
+  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+  const body = getRenderableMessageBody(message.body, attachments);
+
   return {
     ...message,
     channel,
     subject,
     created_at: message.sent_at || message.created_at,
     authorLabel: message.direction === "inbound"
-      ? inboundUsername || (isGenericSocialParticipantName(inboundSenderName) ? displayName : inboundSenderName) || displayName
+      ? inboundProfileName || inboundUsername || (isGenericSocialParticipantName(inboundSenderName) ? displayName : inboundSenderName) || displayName
       : message.sender_name || profiles.get(message.created_by)?.full_name || profiles.get(message.created_by)?.email || "Fly Friendly",
     avatarUrl: message.direction === "inbound" ? inboundAvatarUrl : "",
-    attachments: Array.isArray(message.attachments) ? message.attachments : [],
+    body,
+    attachments,
   };
 }
 
@@ -537,14 +659,20 @@ function buildConversations(moduleData, socialMessagesByConversation = {}, optio
         customerId: conversation.customer_id,
         avatarUrl,
         socialUsername,
+        secondaryName: getConversationSecondaryName({
+          ...conversation,
+          displayName,
+        }),
         participantHandle: conversation.participant_handle || "",
         participantName: conversation.participant_name || "",
         assignedUserId: conversation.assigned_user_id || "",
         archivedAt: conversation.archived_at || null,
+        accountStatus: String(account?.status || "active").trim().toLowerCase() || "active",
+        accountMeta: (account?.meta && typeof account.meta === "object") ? account.meta : {},
         meta: conversation.meta || {},
         latestAt: conversation.last_message_at || conversation.updated_at || conversation.created_at,
-        latestBody: conversation.last_message_preview
-          || sortedMessages.at(-1)?.body
+        latestBody: getRenderableMessageBody(conversation.last_message_preview, sortedMessages.at(-1)?.attachments)
+          || getRenderableMessageBody(sortedMessages.at(-1)?.body, sortedMessages.at(-1)?.attachments)
           || (sortedMessages.at(-1)?.attachments?.length ? getAttachmentPreviewText(sortedMessages.at(-1)?.attachments, attachmentPreviewLabels) : "")
           || conversation.subject
           || noMessageBody,
@@ -599,13 +727,16 @@ function buildConversations(moduleData, socialMessagesByConversation = {}, optio
         customerId: latest.customer_id,
         avatarUrl: "",
         socialUsername: "",
+        secondaryName: "",
         participantHandle: "",
         participantName: displayName,
         assignedUserId: "",
         archivedAt: null,
+        accountStatus: "active",
+        accountMeta: {},
         meta: latest.meta || {},
         latestAt: latest.created_at,
-        latestBody: latest.body
+        latestBody: getRenderableMessageBody(latest.body, latest.attachments)
           || (latest.attachments?.length ? getAttachmentPreviewText(latest.attachments, attachmentPreviewLabels) : "")
           || latest.subject
           || noMessageBody,
@@ -625,7 +756,7 @@ function buildConversations(moduleData, socialMessagesByConversation = {}, optio
     .sort((left, right) => new Date(right.latestAt) - new Date(left.latestAt));
 }
 
-function Avatar({ label, tone = "blue", status = true, imageUrl = "" }) {
+function Avatar({ label, tone = "blue", status = false, imageUrl = "" }) {
   return (
     <span className={`admin-inbox-avatar is-${tone}`}>
       {imageUrl ? (
@@ -635,6 +766,121 @@ function Avatar({ label, tone = "blue", status = true, imageUrl = "" }) {
       )}
       {status ? <i /> : null}
     </span>
+  );
+}
+
+function VoiceMessageAttachment({ attachment, direction = "inbound", t }) {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const url = getAttachmentUrl(attachment);
+  const displayLabel = getAttachmentDisplayLabel(attachment, 0) || t("admin.inbox.voiceMessageLabel");
+  const sizeLabel = formatAttachmentSize(attachment?.file_size || attachment?.size);
+  const waveform = buildAttachmentWaveform(attachment);
+  const isOutbound = direction === "outbound";
+  const progress = duration > 0 ? Math.min(1, currentTime / duration) : 0;
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    const syncDuration = () => {
+      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    };
+    const syncTime = () => {
+      setCurrentTime(audio.currentTime || 0);
+    };
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+    const handlePause = () => {
+      if (audio.ended) return;
+      setIsPlaying(false);
+    };
+    const handlePlay = () => {
+      setIsPlaying(true);
+    };
+
+    audio.addEventListener("loadedmetadata", syncDuration);
+    audio.addEventListener("durationchange", syncDuration);
+    audio.addEventListener("timeupdate", syncTime);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("play", handlePlay);
+
+    return () => {
+      audio.pause();
+      audio.removeEventListener("loadedmetadata", syncDuration);
+      audio.removeEventListener("durationchange", syncDuration);
+      audio.removeEventListener("timeupdate", syncTime);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("play", handlePlay);
+    };
+  }, [url]);
+
+  const togglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio || !url) return;
+
+    if (isPlaying) {
+      audio.pause();
+      return;
+    }
+
+    try {
+      await audio.play();
+    } catch {
+      setIsPlaying(false);
+    }
+  };
+
+  return (
+    <div className={`admin-inbox-voice-message${isOutbound ? " is-outbound" : ""}`}>
+      <audio ref={audioRef} preload="metadata" src={url || undefined}>
+        {t("admin.inbox.audioUnavailable")}
+      </audio>
+      <button
+        type="button"
+        className="admin-inbox-voice-message__play"
+        aria-label={isPlaying ? t("admin.inbox.voicePause") : t("admin.inbox.voicePlay")}
+        onClick={() => { void togglePlayback(); }}
+        disabled={!url}
+      >
+        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+      </button>
+      <div className="admin-inbox-voice-message__body">
+        <div className="admin-inbox-voice-message__head">
+          <strong>{displayLabel}</strong>
+          <span>{duration > 0 ? formatAudioPlaybackTime(duration) : sizeLabel || t("admin.inbox.voiceMessageLabel")}</span>
+        </div>
+        <div className="admin-inbox-voice-message__waveform" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
+          {waveform.map((level, index) => (
+            <span
+              key={`voice-bar-${index}`}
+              className={progress > 0 && index / waveform.length < progress ? "is-played" : ""}
+              style={{ "--voice-bar-height": `${Math.max(8, Math.round(level * 30))}px` }}
+            />
+          ))}
+        </div>
+        <div className="admin-inbox-voice-message__meta">
+          <span>{formatAudioPlaybackTime(currentTime)}</span>
+          {sizeLabel ? <span>{sizeLabel}</span> : null}
+        </div>
+      </div>
+      {url ? (
+        <button
+          type="button"
+          className="admin-inbox-voice-message__download"
+          aria-label={t("admin.inbox.voiceDownload")}
+          onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+        >
+          <Download size={15} />
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -710,6 +956,7 @@ function AdminCommunication() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [noticeTone, setNoticeTone] = useState("info");
+  const [composerError, setComposerError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
   const [socialMessagesByConversation, setSocialMessagesByConversation] = useState({});
@@ -731,6 +978,17 @@ function AdminCommunication() {
   const [taskDraft, setTaskDraft] = useState({ title: "", description: "", assigned_user_id: "", priority: "medium", due_date: "" });
   const [rulesDraft, setRulesDraft] = useState({ status: "open", priority: "normal" });
   const [newDraft, setNewDraft] = useState({ entity_type: "lead", entity_id: "", channel: "manual", subject: "", body: "" });
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
+  const [pinnedConversationIds, setPinnedConversationIds] = useState(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem(pinnedConversationsStorageKey);
+      const parsed = JSON.parse(raw || "[]");
+      return Array.isArray(parsed) ? parsed.filter((value) => typeof value === "string").slice(0, 5) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const pushNotice = (message, tone = "info") => {
     setNotice(message || "");
@@ -762,7 +1020,7 @@ function AdminCommunication() {
           await backfillInstagramInboxProfiles({ limit: Math.min(200, Math.max(40, missingConversationCount)) });
           socialInbox = await fetchSocialInboxModuleData();
         } catch (backfillError) {
-          setError(backfillError?.message || t("admin.inbox.profileRefreshError"));
+          setError(normalizeInboxErrorMessage(backfillError, t, "admin.inbox.profileRefreshError"));
         }
       }
 
@@ -774,7 +1032,7 @@ function AdminCommunication() {
       const legacyCommunications = await fetchCommunicationsModuleData();
       setModuleData({ ...legacyCommunications, supportsSocialInbox: false });
     } catch (nextError) {
-      setError(nextError.message || t("admin.inbox.loadError"));
+      setError(normalizeInboxErrorMessage(nextError, t, "admin.inbox.loadError"));
     } finally {
       if (!silent) {
         setIsLoading(false);
@@ -803,9 +1061,13 @@ function AdminCommunication() {
     }),
     [channelLabels, moduleData, socialMessagesByConversation, t],
   );
+  const pinnedConversationIdSet = useMemo(
+    () => new Set(pinnedConversationIds),
+    [pinnedConversationIds],
+  );
   const filteredConversations = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return conversations.filter((item) => {
+    const matchingConversations = conversations.filter((item) => {
       const matchesChannel = channelFilter === "all" || item.channel === channelFilter;
       const matchesSearch = !query || [
         item.displayName,
@@ -818,7 +1080,15 @@ function AdminCommunication() {
 
       return matchesChannel && matchesSearch;
     });
-  }, [conversations, search, channelFilter]);
+    return matchingConversations.sort((left, right) => {
+      const leftPinned = pinnedConversationIdSet.has(left.id);
+      const rightPinned = pinnedConversationIdSet.has(right.id);
+      if (leftPinned !== rightPinned) {
+        return leftPinned ? -1 : 1;
+      }
+      return new Date(right.latestAt) - new Date(left.latestAt);
+    });
+  }, [channelFilter, conversations, pinnedConversationIdSet, search]);
 
   useEffect(() => {
     if (!filteredConversations.length) {
@@ -831,30 +1101,42 @@ function AdminCommunication() {
     }
   }, [filteredConversations, selectedConversationId]);
 
+  useEffect(() => {
+    const validConversationIds = new Set(conversations.map((item) => item.id));
+    setPinnedConversationIds((current) => {
+      const next = current.filter((conversationId) => validConversationIds.has(conversationId)).slice(0, 5);
+      return next.length === current.length && next.every((value, index) => value === current[index]) ? current : next;
+    });
+  }, [conversations]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(pinnedConversationsStorageKey, JSON.stringify(pinnedConversationIds));
+  }, [pinnedConversationIds]);
+
   const selectedConversation = useMemo(
     () => filteredConversations.find((item) => item.id === selectedConversationId) || filteredConversations[0] || null,
     [filteredConversations, selectedConversationId],
   );
 
   const assignableUsers = moduleData?.assignableUsers || [];
-  const assignableUsersById = useMemo(
-    () => new Map(assignableUsers.map((item) => [item.id, item])),
-    [assignableUsers],
-  );
   const entityOptions = useMemo(() => ({
     lead: moduleData?.leads || [],
     case: moduleData?.cases || [],
     customer: moduleData?.customers || [],
   }), [moduleData]);
-  const selectedAssignee = selectedConversation?.assignedUserId
-    ? assignableUsersById.get(selectedConversation.assignedUserId)
-    : null;
   const conversationMediaItems = useMemo(
     () => buildConversationMediaItems(selectedConversation),
     [selectedConversation],
   );
   const visibleMediaItems = isMediaExpanded ? conversationMediaItems : conversationMediaItems.slice(0, 6);
   const isSocialComposer = selectedConversation?.source === "social";
+  const composerConnectionWarning = (
+    selectedConversation?.accountStatus === "needs_reauth"
+    || String(selectedConversation?.accountMeta?.last_send_error_code || "").toUpperCase() === "META_AUTH_INVALID"
+  )
+    ? t("admin.inbox.metaAuthInvalid")
+    : "";
   const canSendReply = hasPermission("communications.edit")
     && !isSaving
     && !isUploadingAttachment
@@ -964,7 +1246,7 @@ function AdminCommunication() {
 
   const queueUploadedAttachments = async (files = []) => {
     if (!selectedConversation || selectedConversation.source !== "social") {
-      setError(t("admin.inbox.attachmentsOnlyForSocial"));
+      setComposerError(t("admin.inbox.attachmentsOnlyForSocial"));
       return;
     }
 
@@ -974,6 +1256,7 @@ function AdminCommunication() {
 
     setError("");
     setNotice("");
+    setComposerError("");
     setIsUploadingAttachment(true);
 
     try {
@@ -987,7 +1270,7 @@ function AdminCommunication() {
       setComposerAttachments((current) => [...current, ...uploaded]);
       pushNotice(t("admin.inbox.attachmentsReady", { count: uploaded.length }), "success");
     } catch (nextError) {
-      setError(nextError.message || t("admin.inbox.attachmentUploadError"));
+      setComposerError(normalizeInboxErrorMessage(nextError, t, "admin.inbox.attachmentUploadError"));
     } finally {
       setIsUploadingAttachment(false);
     }
@@ -1012,17 +1295,18 @@ function AdminCommunication() {
 
   const startVoiceRecording = async () => {
     if (!selectedConversation || selectedConversation.source !== "social") {
-      setError(t("admin.inbox.attachmentsOnlyForSocial"));
+      setComposerError(t("admin.inbox.attachmentsOnlyForSocial"));
       return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia || typeof window.MediaRecorder === "undefined") {
-      setError(t("admin.inbox.voiceNotSupported"));
+      setComposerError(t("admin.inbox.voiceNotSupported"));
       return;
     }
 
     setError("");
     setNotice("");
+    setComposerError("");
     discardPendingVoiceDraft();
 
     try {
@@ -1094,7 +1378,7 @@ function AdminCommunication() {
       recorder.start(250);
     } catch (nextError) {
       cleanupVoiceRecorder();
-      setError(nextError.message || t("admin.inbox.voiceMicrophoneError"));
+      setComposerError(normalizeInboxErrorMessage(nextError, t, "admin.inbox.voiceMicrophoneError"));
     }
   };
 
@@ -1191,6 +1475,7 @@ function AdminCommunication() {
     }
 
     setError("");
+    setComposerError("");
     setIsSaving(true);
 
     try {
@@ -1218,7 +1503,10 @@ function AdminCommunication() {
       await loadCommunications();
       pushNotice(t("admin.inbox.voiceSent"), "success");
     } catch (nextError) {
-      setError(nextError.message || t("admin.inbox.voiceUploadError"));
+      if (String(nextError?.code || "").toUpperCase() === "META_AUTH_INVALID" || isMetaAuthErrorMessage(nextError?.message)) {
+        await loadCommunications({ silent: true }).catch(() => null);
+      }
+      setComposerError(normalizeInboxErrorMessage(nextError, t, "admin.inbox.voiceUploadError"));
     } finally {
       setIsSaving(false);
     }
@@ -1232,6 +1520,7 @@ function AdminCommunication() {
     setIsMediaExpanded(false);
     setReply("");
     setComposerAttachments([]);
+    setComposerError("");
     setIsEmojiPickerOpen(false);
     stopVoiceRecording(false);
     discardPendingVoiceDraft();
@@ -1472,61 +1761,6 @@ function AdminCommunication() {
     }
   };
 
-  const handleCallAction = () => {
-    const phone = String(selectedConversation?.customer?.phone || "").trim();
-    const email = String(selectedConversation?.customer?.email || "").trim();
-
-    if (phone) {
-      window.location.href = `tel:${phone}`;
-      return;
-    }
-
-    if (email) {
-      window.location.href = `mailto:${email}`;
-      return;
-    }
-
-    pushNotice(t("admin.inbox.noDirectContact"), "error");
-  };
-
-  const handleVideoAction = () => {
-    const profileUrl = getConversationProfileUrl(selectedConversation);
-    if (profileUrl) {
-      window.open(profileUrl, "_blank", "noopener,noreferrer");
-      pushNotice(t("admin.inbox.profileOpened"), "success");
-      return;
-    }
-
-    pushNotice(t("admin.inbox.videoUnavailable"), "error");
-  };
-
-  const handleNotifyAction = async () => {
-    if (!selectedConversation) return;
-
-    setError("");
-    setIsActionSaving(true);
-
-    try {
-      await createAdminNotification({
-        type: "inbox_follow_up",
-        severity: selectedConversation.unreadCount > 0 ? "warning" : "info",
-        title: t("admin.inbox.notifySuccessTitle"),
-        body: `${selectedConversation.displayName} · ${selectedConversation.latestBody || selectedConversation.subject || selectedConversation.entityLabel}`,
-        module: "communications",
-        entityType: selectedConversation.entityType,
-        entityId: selectedConversation.entityId,
-        actionUrl: "/admin/communication",
-        recipientProfileId: selectedConversation.assignedUserId || null,
-        recipientRole: selectedConversation.assignedUserId ? null : "owner",
-      });
-      pushNotice(t("admin.inbox.notifySuccess"), "success");
-    } catch (nextError) {
-      setError(nextError.message || t("admin.inbox.notifyError"));
-    } finally {
-      setIsActionSaving(false);
-    }
-  };
-
   const saveAssignment = async () => {
     if (!selectedConversation?.id || selectedConversation.source !== "social") {
       pushNotice(t("admin.inbox.assignUnavailable"), "error");
@@ -1688,8 +1922,28 @@ function AdminCommunication() {
 
   const openActionPanel = (actionKey) => {
     setNotice("");
+    setIsInfoPanelOpen(true);
     setActiveAction((current) => current === actionKey ? "" : actionKey);
     setIsMoreMenuOpen(false);
+  };
+
+  const toggleConversationPin = (conversationId) => {
+    if (!conversationId) return;
+
+    setPinnedConversationIds((current) => {
+      if (current.includes(conversationId)) {
+        pushNotice(t("admin.inbox.unpinnedSuccess"), "success");
+        return current.filter((value) => value !== conversationId);
+      }
+
+      if (current.length >= 5) {
+        pushNotice(t("admin.inbox.pinLimitReached"), "error");
+        return current;
+      }
+
+      pushNotice(t("admin.inbox.pinnedSuccess"), "success");
+      return [conversationId, ...current];
+    });
   };
 
   const sendReply = async (event) => {
@@ -1698,6 +1952,7 @@ function AdminCommunication() {
     if (!reply.trim() && !composerAttachments.length) return;
 
     setError("");
+    setComposerError("");
     setIsSaving(true);
 
     try {
@@ -1707,7 +1962,10 @@ function AdminCommunication() {
       setIsEmojiPickerOpen(false);
       await loadCommunications();
     } catch (nextError) {
-      setError(nextError.message || t("admin.inbox.sendError"));
+      if (String(nextError?.code || "").toUpperCase() === "META_AUTH_INVALID" || isMetaAuthErrorMessage(nextError?.message)) {
+        await loadCommunications({ silent: true }).catch(() => null);
+      }
+      setComposerError(normalizeInboxErrorMessage(nextError, t, "admin.inbox.sendError"));
     } finally {
       setIsSaving(false);
     }
@@ -1748,13 +2006,7 @@ function AdminCommunication() {
     const label = getAttachmentLabel(attachment, index);
     const displayLabel = getAttachmentDisplayLabel(attachment, index);
     const sizeLabel = formatAttachmentSize(attachment?.file_size || attachment?.size);
-    const previewUrl = getAttachmentUrl({
-      preview_url: attachment?.preview_url,
-      previewUrl: attachment?.previewUrl,
-      thumbnail_url: attachment?.thumbnail_url,
-      thumbnailUrl: attachment?.thumbnailUrl,
-      url,
-    });
+    const previewUrl = getAttachmentPreviewUrl(attachment);
     const isOutbound = direction === "outbound";
 
     if (kind === "image") {
@@ -1777,19 +2029,10 @@ function AdminCommunication() {
           key={`${label}-${index}`}
           className={`admin-inbox-attachment admin-inbox-attachment--audio${isOutbound ? " is-outbound" : ""}`}
         >
-          <div className="admin-inbox-attachment__file">
-            <FileText size={16} />
-            <div>
-              <strong>{displayLabel || t("admin.inbox.voiceMessageLabel")}</strong>
-              <span>{sizeLabel || t("admin.inbox.voiceMessageLabel")}</span>
-            </div>
-          </div>
           {url ? (
-            <audio controls preload="metadata" src={url}>
-              {t("admin.inbox.audioUnavailable")}
-            </audio>
+            <VoiceMessageAttachment attachment={attachment} direction={direction} t={t} />
           ) : (
-            <span className="admin-inbox-attachment__fallback">{t("admin.inbox.audioUnavailable")}</span>
+            <span className="admin-inbox-attachment__fallback">{displayLabel || sizeLabel || t("admin.inbox.audioUnavailable")}</span>
           )}
         </div>
       );
@@ -1838,7 +2081,7 @@ function AdminCommunication() {
       {isLoading ? (
         <p className="admin-message">{t("admin.inbox.loading")}</p>
       ) : (
-        <section className="admin-inbox-shell" aria-label={t("admin.inbox.title")}>
+        <section className={`admin-inbox-shell${isInfoPanelOpen ? "" : " is-info-collapsed"}`} aria-label={t("admin.inbox.title")}>
           <aside className="admin-inbox-sidebar">
             <div className="admin-inbox-search">
               <Search size={17} strokeWidth={1.9} />
@@ -1880,30 +2123,48 @@ function AdminCommunication() {
 
             <div className="admin-inbox-list">
               {filteredConversations.map((conversation, index) => (
-                <button
+                <div
                   key={conversation.id}
-                  type="button"
-                  className={`admin-inbox-thread${selectedConversation?.id === conversation.id ? " is-active" : ""}`}
+                  className={`admin-inbox-thread${selectedConversation?.id === conversation.id ? " is-active" : ""}${pinnedConversationIdSet.has(conversation.id) ? " is-pinned" : ""}`}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedConversationId(conversation.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedConversationId(conversation.id);
+                    }
+                  }}
                 >
+                  <button
+                    type="button"
+                    className={`admin-inbox-thread__pin${pinnedConversationIdSet.has(conversation.id) ? " is-active" : ""}`}
+                    aria-label={pinnedConversationIdSet.has(conversation.id) ? t("admin.inbox.unpinConversation") : t("admin.inbox.pinConversation")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleConversationPin(conversation.id);
+                    }}
+                  >
+                    <Pin size={13} />
+                  </button>
                   <Avatar
                     label={conversation.displayName}
                     tone={index % 3 === 0 ? "green" : index % 3 === 1 ? "orange" : "blue"}
                     imageUrl={conversation.avatarUrl}
                   />
-                  <span className="admin-inbox-thread__body">
-                    <span className="admin-inbox-thread__top">
-                      <strong>{conversation.displayName}</strong>
-                      <time>{formatTime(conversation.latestAt, { locale: i18n.language, t })}</time>
+                    <span className="admin-inbox-thread__body">
+                      <span className="admin-inbox-thread__top">
+                        <strong>{conversation.displayName}</strong>
+                        <time>{formatTime(conversation.latestAt, { locale: i18n.language, t })}</time>
+                      </span>
+                      <span className="admin-inbox-thread__preview">{conversation.latestBody}</span>
+                      <span className="admin-inbox-thread__meta">
+                        <ChannelPill channel={conversation.channel} label={channelLabels[conversation.channel]} />
+                        <span>{conversation.secondaryName || conversation.entityLabel}</span>
+                      </span>
                     </span>
-                    <span className="admin-inbox-thread__preview">{conversation.latestBody}</span>
-                    <span className="admin-inbox-thread__meta">
-                      <ChannelPill channel={conversation.channel} label={channelLabels[conversation.channel]} />
-                      <span>{conversation.entityLabel}</span>
-                    </span>
-                  </span>
                   {conversation.unreadCount > 0 ? <span className="admin-inbox-thread__count">{conversation.unreadCount}</span> : null}
-                </button>
+                </div>
               ))}
             </div>
           </aside>
@@ -1916,13 +2177,22 @@ function AdminCommunication() {
                     <Avatar label={selectedConversation.displayName} tone="orange" imageUrl={selectedConversation.avatarUrl} />
                     <div>
                       <h1>{selectedConversation.displayName}</h1>
-                      <p><Circle size={8} fill="currentColor" /> {t("admin.inbox.conversationType", { channel: channelLabels[selectedConversation.channel] })}</p>
+                      <p>
+                        <Circle size={8} fill="currentColor" />
+                        {selectedConversation.secondaryName
+                          ? `${selectedConversation.secondaryName} · ${t("admin.inbox.conversationType", { channel: channelLabels[selectedConversation.channel] })}`
+                          : t("admin.inbox.conversationType", { channel: channelLabels[selectedConversation.channel] })}
+                      </p>
                     </div>
                   </div>
                   <div className="admin-inbox-chat__actions">
-                    <button type="button" aria-label={t("admin.inbox.call")} onClick={handleCallAction}><Phone size={17} /></button>
-                    <button type="button" aria-label={t("admin.inbox.videoCall")} onClick={handleVideoAction}><Video size={17} /></button>
-                    <button type="button" aria-label={t("admin.inbox.archive")} onClick={() => void toggleArchiveConversation()}><Archive size={17} /></button>
+                    <button
+                      type="button"
+                      className="admin-inbox-chat__toggle-info"
+                      onClick={() => setIsInfoPanelOpen((current) => !current)}
+                    >
+                      {isInfoPanelOpen ? t("admin.inbox.closeDetails") : t("admin.inbox.openDetails")}
+                    </button>
                     <div className="admin-inbox-more">
                       <button type="button" aria-label={t("admin.inbox.moreOptions")} onClick={() => setIsMoreMenuOpen((current) => !current)}><MoreHorizontal size={18} /></button>
                       {isMoreMenuOpen ? (
@@ -2030,7 +2300,12 @@ function AdminCommunication() {
                   <div className="admin-inbox-composer__row">
                     <textarea
                       value={reply}
-                      onChange={(event) => setReply(event.target.value)}
+                      onChange={(event) => {
+                        setReply(event.target.value);
+                        if (composerError) {
+                          setComposerError("");
+                        }
+                      }}
                       placeholder={t("admin.inbox.replyPlaceholder", { name: selectedConversation.displayName })}
                       rows={1}
                     />
@@ -2057,7 +2332,10 @@ function AdminCommunication() {
                         type="button"
                         aria-label={t("admin.inbox.attachFile")}
                         disabled={!isSocialComposer || isUploadingAttachment || isRecordingVoice}
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={() => {
+                          setComposerError("");
+                          fileInputRef.current?.click();
+                        }}
                       >
                         <Paperclip size={17} />
                       </button>
@@ -2070,11 +2348,17 @@ function AdminCommunication() {
                       >
                         {isRecordingVoice ? <Square size={15} /> : <Mic size={17} />}
                       </button>
-                      <button className="is-primary" type="submit" disabled={!canSendReply} aria-label={t("admin.inbox.sendReply")}>
-                        <Send size={17} />
+                      <button className="is-primary admin-inbox-composer__send" type="submit" disabled={!canSendReply} aria-label={t("admin.inbox.sendReply")} aria-busy={isSaving}>
+                        {isSaving ? <span className="admin-inbox-composer__spinner" /> : <Send size={17} />}
                       </button>
                     </div>
                   </div>
+                  {composerConnectionWarning ? (
+                    <div className="admin-inbox-composer__status is-warning">{composerConnectionWarning}</div>
+                  ) : null}
+                  {composerError ? (
+                    <div className="admin-inbox-composer__status is-error">{composerError}</div>
+                  ) : null}
                   {isUploadingAttachment || isRecordingVoice ? (
                     <div className="admin-inbox-composer__status">
                       {isRecordingVoice
@@ -2105,20 +2389,15 @@ function AdminCommunication() {
             )}
           </main>
 
+          {isInfoPanelOpen ? (
           <aside className="admin-inbox-info">
             {selectedConversation ? (
               <>
                 <section className="admin-inbox-profile">
-                  <Avatar label={selectedConversation.displayName} tone="orange" status={false} imageUrl={selectedConversation.avatarUrl} />
+                  <Avatar label={selectedConversation.displayName} tone="orange" imageUrl={selectedConversation.avatarUrl} />
                   <h2>{selectedConversation.displayName}</h2>
+                  {selectedConversation.secondaryName ? <p className="admin-inbox-profile__handle">{selectedConversation.secondaryName}</p> : null}
                   <ChannelPill channel={selectedConversation.channel} label={channelLabels[selectedConversation.channel]} />
-                </section>
-
-                <section className="admin-inbox-quick-actions" aria-label={t("admin.inbox.conversationActions")}>
-                  <button type="button" onClick={() => void handleNotifyAction()}><Bell size={16} /><span>{t("admin.inbox.notify")}</span></button>
-                  <button type="button" onClick={() => openActionPanel("assign")}><Tag size={16} /><span>{t("admin.inbox.assign")}</span></button>
-                  <button type="button" onClick={() => openActionPanel("task")}><Plus size={16} /><span>{t("admin.inbox.task")}</span></button>
-                  <button type="button" onClick={() => openActionPanel("rules")}><Settings size={16} /><span>{t("admin.inbox.rules")}</span></button>
                 </section>
 
                 {activeAction ? (
@@ -2332,12 +2611,16 @@ function AdminCommunication() {
                     <Info size={15} />
                   </div>
                   <dl>
-                    <div><dt>{t("admin.inbox.emailLabel")}</dt><dd>{selectedConversation.customer?.email || "-"}</dd></div>
-                    <div><dt>{t("admin.inbox.phoneLabel")}</dt><dd>{selectedConversation.customer?.phone || "-"}</dd></div>
+                    {selectedConversation.secondaryName ? (
+                      <div><dt>{t("admin.inbox.usernameLabel", { defaultValue: "Username" })}</dt><dd>{selectedConversation.secondaryName}</dd></div>
+                    ) : null}
+                    {selectedConversation.customer?.email ? (
+                      <div><dt>{t("admin.inbox.emailLabel")}</dt><dd>{selectedConversation.customer.email}</dd></div>
+                    ) : null}
+                    {selectedConversation.customer?.phone ? (
+                      <div><dt>{t("admin.inbox.phoneLabel")}</dt><dd>{selectedConversation.customer.phone}</dd></div>
+                    ) : null}
                     <div><dt>{t("admin.inbox.entityLabel")}</dt><dd>{getEntityTypeLabel(selectedConversation.entityType)} · {selectedConversation.entityLabel}</dd></div>
-                    <div><dt>{t("admin.inbox.assignedToField")}</dt><dd>{selectedAssignee?.full_name || selectedAssignee?.email || t("admin.inbox.unassignedLabel")}</dd></div>
-                    <div><dt>{t("admin.inbox.statusField")}</dt><dd>{t(`admin.inbox.statuses.${selectedConversation.status || "open"}`, { defaultValue: selectedConversation.status || "open" })}</dd></div>
-                    <div><dt>{t("admin.inbox.priorityField")}</dt><dd>{t(`admin.inbox.priorities.${selectedConversation.priority || "normal"}`, { defaultValue: selectedConversation.priority || "normal" })}</dd></div>
                   </dl>
                 </section>
 
@@ -2356,7 +2639,7 @@ function AdminCommunication() {
                         <button
                           key={item.id}
                           type="button"
-                          className={`is-${item.kind}`}
+                          className={`admin-inbox-media-card is-${item.kind}`}
                           onClick={() => (
                             item.url
                               ? item.kind === "image"
@@ -2365,8 +2648,16 @@ function AdminCommunication() {
                               : pushNotice(t("admin.inbox.mediaUnavailable"), "error")
                           )}
                         >
-                          <Image size={18} />
-                          <span>{item.label || t(`admin.inbox.${item.kind}Attachment`, { defaultValue: t("admin.inbox.documentAttachment") })}</span>
+                          {item.kind === "image" && item.previewUrl ? (
+                            <img src={item.previewUrl} alt={item.label || t("admin.inbox.imageAttachment")} loading="lazy" />
+                          ) : item.kind === "video" && item.previewUrl ? (
+                            <video src={item.previewUrl} muted playsInline preload="metadata" />
+                          ) : (
+                            <span className="admin-inbox-media-card__fallback"><Image size={18} /></span>
+                          )}
+                          <span className="admin-inbox-media-card__label">
+                            {item.label || t(`admin.inbox.${item.kind}Attachment`, { defaultValue: t("admin.inbox.documentAttachment") })}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -2396,6 +2687,7 @@ function AdminCommunication() {
               </>
             ) : null}
           </aside>
+          ) : null}
         </section>
       )}
     </div>

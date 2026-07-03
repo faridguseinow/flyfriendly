@@ -82,23 +82,34 @@ async function invokeSocialInboxFunction(functionName, body) {
     body,
   });
 
+  const createFunctionError = (payload, fallbackMessage) => {
+    const message = payload?.error?.message || payload?.message || fallbackMessage || "Inbox request failed.";
+    const nextError = new Error(message);
+    if (payload?.error?.code) {
+      nextError.code = payload.error.code;
+    }
+    if (payload?.error?.details) {
+      nextError.details = payload.error.details;
+    }
+    return nextError;
+  };
+
   if (error) {
     const context = error.context;
     if (context && typeof context.json === "function") {
-      let message = "";
+      let payload = null;
       try {
-        const payload = await context.json();
-        message = payload?.error?.message || payload?.message || "";
+        payload = await context.json();
       } catch {}
-      if (message) {
-        throw new Error(message);
+      if (payload?.error?.message || payload?.message) {
+        throw createFunctionError(payload, error.message);
       }
     }
     throw error;
   }
 
   if (data?.error?.message) {
-    throw new Error(data.error.message);
+    throw createFunctionError(data, data.error.message);
   }
 
   return data;

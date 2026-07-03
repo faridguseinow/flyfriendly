@@ -59,6 +59,96 @@ function metaAccessToken() {
   return getEnv("META_PAGE_ACCESS_TOKEN") || getEnv("META_INSTAGRAM_ACCESS_TOKEN");
 }
 
+function isMetaAuthError(error: unknown) {
+  const message = errorMessage(error).toLowerCase();
+  return message.includes("invalid oauth access token")
+    || message.includes("cannot parse access token")
+    || message.includes("error validating access token")
+    || message.includes("session has expired")
+    || message.includes("access token has expired");
+}
+
+async function markAccountNeedsReauth(
+  serviceRoleClient: ReturnType<typeof createClient>,
+  accountId: string,
+  platform: string,
+  reason: string,
+) {
+  if (!accountId) return;
+
+  const accountResponse = await serviceRoleClient
+    .from("social_accounts")
+    .select("meta")
+    .eq("id", accountId)
+    .maybeSingle();
+
+  if (accountResponse.error) {
+    throw accountResponse.error;
+  }
+
+  const currentMeta = (accountResponse.data?.meta && typeof accountResponse.data.meta === "object")
+    ? accountResponse.data.meta as Record<string, unknown>
+    : {};
+
+  const { error } = await serviceRoleClient
+    .from("social_accounts")
+    .update({
+      status: "needs_reauth",
+      meta: {
+        ...currentMeta,
+        last_send_error: reason,
+        last_send_error_code: "META_AUTH_INVALID",
+        last_send_error_at: new Date().toISOString(),
+        last_send_error_platform: platform,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", accountId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function clearAccountSendError(
+  serviceRoleClient: ReturnType<typeof createClient>,
+  accountId: string,
+) {
+  if (!accountId) return;
+
+  const accountResponse = await serviceRoleClient
+    .from("social_accounts")
+    .select("meta")
+    .eq("id", accountId)
+    .maybeSingle();
+
+  if (accountResponse.error) {
+    throw accountResponse.error;
+  }
+
+  const currentMeta = (accountResponse.data?.meta && typeof accountResponse.data.meta === "object")
+    ? accountResponse.data.meta as Record<string, unknown>
+    : {};
+  const nextMeta = { ...currentMeta };
+  delete nextMeta.last_send_error;
+  delete nextMeta.last_send_error_code;
+  delete nextMeta.last_send_error_at;
+  delete nextMeta.last_send_error_platform;
+
+  const { error } = await serviceRoleClient
+    .from("social_accounts")
+    .update({
+      status: "active",
+      meta: nextMeta,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", accountId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 function normalizeAttachmentUrl(attachment: AttachmentInput) {
   return [
     attachment.url,
@@ -322,6 +412,7 @@ Deno.serve(async (req) => {
     }
 
     const account = conversation.social_accounts as Record<string, unknown> | null;
+    const accountId = String(conversation.account_id || account?.id || "").trim();
     const accountExternalId = String(account?.external_account_id || "").trim();
     const platform = String(account?.platform || "").trim().toLowerCase();
     const meta = (conversation.meta && typeof conversation.meta === "object") ? conversation.meta as Record<string, unknown> : {};
@@ -339,85 +430,102 @@ Deno.serve(async (req) => {
     const createdMessages: Array<Record<string, unknown>> = [];
     const nowIso = new Date().toISOString();
 
-    if (textBody) {
-      const metaResponse = await sendMetaTextMessage({
-        accountExternalId,
-        participantId,
-        text: textBody,
-        accessToken,
-      });
+    try {
+      if (textBody) {
+        const metaResponse = await sendMetaTextMessage({
+          accountExternalId,
+          participantId,
+          text: textBody,
+          accessToken,
+        });
 
-      const insertText = await serviceRoleClient
-        .from("social_messages")
-        .insert({
-          conversation_id: conversationId,
-          external_message_id: String(metaResponse?.message_id || crypto.randomUUID()),
-          direction: "outbound",
-          sender_type: "admin",
-          sender_name: senderName,
+        const insertText = await serviceRoleClient
+          .from("social_messages")
+          .insert({
+            conversation_id: conversationId,
+            external_message_id: String(metaResponse?.message_id || crypto.randomUUID()),
+            direction: "outbound",
+            sender_type: "admin",
+            sender_name: senderName,
+            body: textBody,
+            attachments: [],
+            sent_at: nowIso,
+            created_by: userId,
+            meta: {
+              source: "admin_inbox_send",
+              platform,
+              meta_response: metaResponse,
+            },
+          })
+          .select("id")
+          .single();
+
+        if (insertText.error) {
+          throw insertText.error;
+        }
+
+        createdMessages.push({
+          id: insertText.data?.id || "",
           body: textBody,
           attachments: [],
-          sent_at: nowIso,
-          created_by: userId,
-          meta: {
-            source: "admin_inbox_send",
-            platform,
-            meta_response: metaResponse,
-          },
-        })
-        .select("id")
-        .single();
-
-      if (insertText.error) {
-        throw insertText.error;
+        });
       }
 
-      createdMessages.push({
-        id: insertText.data?.id || "",
-        body: textBody,
-        attachments: [],
-      });
-    }
+      for (const attachment of attachments) {
+        const metaResponse = await sendMetaAttachmentMessage({
+          accountExternalId,
+          participantId,
+          attachment,
+          accessToken,
+        });
 
-    for (const attachment of attachments) {
-      const metaResponse = await sendMetaAttachmentMessage({
-        accountExternalId,
-        participantId,
-        attachment,
-        accessToken,
-      });
+        const insertAttachment = await serviceRoleClient
+          .from("social_messages")
+          .insert({
+            conversation_id: conversationId,
+            external_message_id: String(metaResponse?.message_id || crypto.randomUUID()),
+            direction: "outbound",
+            sender_type: "admin",
+            sender_name: senderName,
+            body: null,
+            attachments: [attachment],
+            sent_at: new Date().toISOString(),
+            created_by: userId,
+            meta: {
+              source: "admin_inbox_send",
+              platform,
+              meta_response: metaResponse,
+            },
+          })
+          .select("id")
+          .single();
 
-      const insertAttachment = await serviceRoleClient
-        .from("social_messages")
-        .insert({
-          conversation_id: conversationId,
-          external_message_id: String(metaResponse?.message_id || crypto.randomUUID()),
-          direction: "outbound",
-          sender_type: "admin",
-          sender_name: senderName,
+        if (insertAttachment.error) {
+          throw insertAttachment.error;
+        }
+
+        createdMessages.push({
+          id: insertAttachment.data?.id || "",
           body: null,
           attachments: [attachment],
-          sent_at: new Date().toISOString(),
-          created_by: userId,
-          meta: {
-            source: "admin_inbox_send",
-            platform,
-            meta_response: metaResponse,
+        });
+      }
+    } catch (sendError) {
+      if (isMetaAuthError(sendError)) {
+        await markAccountNeedsReauth(serviceRoleClient, accountId, platform, errorMessage(sendError));
+        return json({
+          error: {
+            code: "META_AUTH_INVALID",
+            message: "Instagram connection expired. Update META_PAGE_ACCESS_TOKEN or META_INSTAGRAM_ACCESS_TOKEN in Supabase secrets.",
+            details: errorMessage(sendError),
           },
-        })
-        .select("id")
-        .single();
-
-      if (insertAttachment.error) {
-        throw insertAttachment.error;
+        }, { status: 401 });
       }
 
-      createdMessages.push({
-        id: insertAttachment.data?.id || "",
-        body: null,
-        attachments: [attachment],
-      });
+      throw sendError;
     }
+
+    await clearAccountSendError(serviceRoleClient, accountId).catch(() => null);
 
     return json({
       ok: true,
