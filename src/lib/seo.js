@@ -6,6 +6,16 @@ import { getPublicSiteUrl } from "./siteUrl.js";
 export const SEO_LANGUAGES = ["az", "ru", "en"];
 export const DEFAULT_SEO_LANGUAGE = "en";
 export const BRAND_NAME = "Fly Friendly";
+const HREFLANG_MAP = {
+  az: ["az", "az-AZ"],
+  ru: ["ru", "ru-RU"],
+  en: ["en"],
+};
+const OG_LOCALE_MAP = {
+  az: "az_AZ",
+  ru: "ru_RU",
+  en: "en_US",
+};
 
 export function isSeoLanguage(language) {
   return SEO_LANGUAGES.includes(String(language || "").toLowerCase());
@@ -25,14 +35,25 @@ export function getDefaultOgImageUrl() {
   return `${getPublicSiteUrl()}${brandLogoUrl}`;
 }
 
+function buildAlternateEntries(language, pathname) {
+  const href = buildAbsoluteUrl(localizePath(pathname, language));
+  const hrefLangs = getHrefLangsForLanguage(language);
+
+  return hrefLangs.map((hrefLang) => ({
+    hrefLang,
+    href,
+  }));
+}
+
+export function getHrefLangsForLanguage(language) {
+  return HREFLANG_MAP[language] || [language];
+}
+
 export function buildAlternatesForPath(pathname, languages = SEO_LANGUAGES, xDefaultPath = null) {
   const resolvedXDefaultPath = xDefaultPath || localizePath(pathname, DEFAULT_SEO_LANGUAGE);
 
   return [
-    ...languages.map((language) => ({
-      hrefLang: language,
-      href: buildAbsoluteUrl(localizePath(pathname, language)),
-    })),
+    ...languages.flatMap((language) => buildAlternateEntries(language, pathname)),
     {
       hrefLang: "x-default",
       href: buildAbsoluteUrl(resolvedXDefaultPath),
@@ -42,10 +63,7 @@ export function buildAlternatesForPath(pathname, languages = SEO_LANGUAGES, xDef
 
 export function buildLocalizedAlternatesForSlug(pathTemplate, languages) {
   return [
-    ...languages.map((language) => ({
-      hrefLang: language,
-      href: buildAbsoluteUrl(localizePath(pathTemplate, language)),
-    })),
+    ...languages.flatMap((language) => buildAlternateEntries(language, pathTemplate)),
     ...(languages.includes(DEFAULT_SEO_LANGUAGE)
       ? [{ hrefLang: "x-default", href: buildAbsoluteUrl(localizePath(pathTemplate, DEFAULT_SEO_LANGUAGE)) }]
       : []),
@@ -90,6 +108,7 @@ export function buildSeoPayload({
       title,
       description,
       image: ogImage,
+      locale: OG_LOCALE_MAP[currentLanguage] || OG_LOCALE_MAP[DEFAULT_SEO_LANGUAGE],
     },
     twitter: {
       card: ogImage ? "summary_large_image" : "summary",

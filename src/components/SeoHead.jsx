@@ -89,6 +89,7 @@ export default function SeoHead({
     setMetaContent('meta[property="og:title"]', { property: "og:title" }, ogData.title);
     setMetaContent('meta[property="og:description"]', { property: "og:description" }, ogData.description);
     setMetaContent('meta[property="og:image"]', { property: "og:image" }, ogData.image);
+    setMetaContent('meta[property="og:locale"]', { property: "og:locale" }, ogData.locale);
 
     const twitterData = twitter || {};
     setMetaContent('meta[name="twitter:card"]', { name: "twitter:card" }, twitterData.card);

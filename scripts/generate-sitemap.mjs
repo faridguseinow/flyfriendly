@@ -9,6 +9,12 @@ import {
   localizePath,
 } from "./seo-routes.mjs";
 
+const HREFLANG_MAP = {
+  az: ["az", "az-AZ"],
+  ru: ["ru", "ru-RU"],
+  en: ["en"],
+};
+
 function absoluteUrl(pathname) {
   return `${SITE_URL}${pathname}`;
 }
@@ -23,8 +29,10 @@ function escapeXml(value) {
 }
 
 function buildAlternates(pathsByLanguage) {
-  const alternates = Object.entries(pathsByLanguage).map(([language, pathname]) => (
-    `<xhtml:link rel="alternate" hreflang="${language}" href="${escapeXml(absoluteUrl(pathname))}" />`
+  const alternates = Object.entries(pathsByLanguage).flatMap(([language, pathname]) => (
+    (HREFLANG_MAP[language] || [language]).map((hrefLang) => (
+      `<xhtml:link rel="alternate" hreflang="${hrefLang}" href="${escapeXml(absoluteUrl(pathname))}" />`
+    ))
   ));
 
   if (pathsByLanguage.en) {

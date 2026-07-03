@@ -17,6 +17,88 @@
   <meta name="twitter:title" content="Fly Friendly - Flight Compensation" />
   <meta name="twitter:description"
     content="Fly Friendly helps passengers claim compensation for delayed, canceled, overbooked, and missed connection flights." />
+  <script>
+    (function () {
+      var seoByLanguage = {
+        az: {
+          lang: "az",
+          path: "/az",
+          title: "Fly Friendly - Uçuş kompensasiyası",
+          description: "Fly Friendly sərnişinlərə gecikmiş, ləğv edilmiş, overbooking edilmiş və ya qaçırılmış bağlantılı uçuşlara görə kompensasiya tələb etməyə kömək edir."
+        },
+        ru: {
+          lang: "ru",
+          path: "/ru",
+          title: "Fly Friendly - Компенсация за рейс",
+          description: "Fly Friendly помогает пассажирам получить компенсацию за задержанные, отмененные, переполненные рейсы и пропущенные стыковки."
+        },
+        en: {
+          lang: "en",
+          path: "/en",
+          title: "Fly Friendly - Flight Compensation",
+          description: "Fly Friendly helps passengers claim compensation for delayed, canceled, overbooked, and missed connection flights."
+        }
+      };
+
+      function parseLocale(value) {
+        var normalized = String(value || "").trim().replace(/_/g, "-");
+        if (!normalized) return { language: "", region: "" };
+        var parts = normalized.split("-");
+        return {
+          language: String(parts[0] || "").toLowerCase(),
+          region: String(parts[1] || "").toUpperCase()
+        };
+      }
+
+      function detectLanguage() {
+        var locales = Array.isArray(navigator.languages) ? navigator.languages.slice() : [];
+        if (navigator.language) locales.push(navigator.language);
+
+        for (var i = 0; i < locales.length; i += 1) {
+          var region = parseLocale(locales[i]).region;
+          if (region === "AZ") return "az";
+          if (region === "RU") return "ru";
+        }
+
+        for (var j = 0; j < locales.length; j += 1) {
+          var language = parseLocale(locales[j]).language;
+          if (language === "az" || language === "ru" || language === "en") return language;
+        }
+
+        try {
+          var timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+          if (timeZone === "Asia/Baku") return "az";
+        } catch (_error) {
+          // Ignore locale bootstrap failures and keep English fallback.
+        }
+
+        return "en";
+      }
+
+      var seo = seoByLanguage[detectLanguage()] || seoByLanguage.en;
+      document.documentElement.lang = seo.lang;
+      document.title = seo.title;
+
+      var descriptionTag = document.querySelector('meta[name="description"]');
+      var canonicalTag = document.querySelector('link[rel="canonical"]');
+      var ogUrlTag = document.querySelector('meta[property="og:url"]');
+      var ogTitleTag = document.querySelector('meta[property="og:title"]');
+      var ogDescriptionTag = document.querySelector('meta[property="og:description"]');
+      var twitterUrlTag = document.querySelector('meta[name="twitter:url"]');
+      var twitterTitleTag = document.querySelector('meta[name="twitter:title"]');
+      var twitterDescriptionTag = document.querySelector('meta[name="twitter:description"]');
+      var absoluteUrl = "https://fly-friendly.com" + seo.path;
+
+      if (descriptionTag) descriptionTag.setAttribute("content", seo.description);
+      if (canonicalTag) canonicalTag.setAttribute("href", absoluteUrl);
+      if (ogUrlTag) ogUrlTag.setAttribute("content", absoluteUrl);
+      if (ogTitleTag) ogTitleTag.setAttribute("content", seo.title);
+      if (ogDescriptionTag) ogDescriptionTag.setAttribute("content", seo.description);
+      if (twitterUrlTag) twitterUrlTag.setAttribute("content", absoluteUrl);
+      if (twitterTitleTag) twitterTitleTag.setAttribute("content", seo.title);
+      if (twitterDescriptionTag) twitterDescriptionTag.setAttribute("content", seo.description);
+    }());
+  </script>
   <!-- Meta Pixel Code -->
   <script>
     !(function (f, b, e, v, n, t, s) {

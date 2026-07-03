@@ -1,4 +1,4 @@
-import { DEFAULT_LANGUAGE, getStoredLanguage, isSupportedLanguage } from "./languages.js";
+import { DEFAULT_LANGUAGE, detectBrowserLanguage, getStoredLanguage, isSupportedLanguage } from "./languages.js";
 
 export function getCurrentLanguageFromPath(pathname = "/") {
   const [firstSegment] = String(pathname || "/").split("/").filter(Boolean);
@@ -46,5 +46,5 @@ export function replaceLanguageInPath(pathname = "/", language = DEFAULT_LANGUAG
 }
 
 export function getPreferredLanguage() {
-  return getStoredLanguage() || DEFAULT_LANGUAGE;
+  return getStoredLanguage() || detectBrowserLanguage() || DEFAULT_LANGUAGE;
 }

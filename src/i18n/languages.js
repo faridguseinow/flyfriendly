@@ -1,5 +1,9 @@
 export const DEFAULT_LANGUAGE = "en";
 export const LANGUAGE_STORAGE_KEY = "fly-friendly-language";
+const REGION_LANGUAGE_MAP = {
+  AZ: "az",
+  RU: "ru",
+};
 
 export const languages = [
   { code: "az", label: "Azerbaijani", nativeLabel: "Azərbaycan", countryCode: "AZ", flag: "🇦🇿", group: "main" },
@@ -36,4 +40,68 @@ export function getStoredLanguage() {
 export function setStoredLanguage(code) {
   if (typeof window === "undefined" || !isSupportedLanguage(code)) return;
   window.localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
+}
+
+function parseLocale(value) {
+  const normalized = String(value || "").trim().replaceAll("_", "-");
+
+  if (!normalized) {
+    return { language: "", region: "" };
+  }
+
+  if (typeof Intl !== "undefined" && typeof Intl.Locale === "function") {
+    try {
+      const locale = new Intl.Locale(normalized);
+      return {
+        language: String(locale.language || "").toLowerCase(),
+        region: String(locale.region || "").toUpperCase(),
+      };
+    } catch {
+      // Fall back to lightweight parsing below.
+    }
+  }
+
+  const [language = "", region = ""] = normalized.split("-");
+  return {
+    language: language.toLowerCase(),
+    region: region.toUpperCase(),
+  };
+}
+
+function getBrowserLocaleCandidates() {
+  if (typeof navigator === "undefined") {
+    return [];
+  }
+
+  const candidates = Array.isArray(navigator.languages) ? navigator.languages : [];
+  const fallback = navigator.language ? [navigator.language] : [];
+  return [...candidates, ...fallback].filter(Boolean);
+}
+
+export function detectBrowserLanguage() {
+  const locales = getBrowserLocaleCandidates();
+
+  for (const locale of locales) {
+    const { region } = parseLocale(locale);
+    if (REGION_LANGUAGE_MAP[region]) {
+      return REGION_LANGUAGE_MAP[region];
+    }
+  }
+
+  for (const locale of locales) {
+    const { language } = parseLocale(locale);
+
+    if (language === "az" || language === "ru" || language === "en") {
+      return language;
+    }
+  }
+
+  if (typeof Intl !== "undefined" && typeof Intl.DateTimeFormat === "function") {
+    const timeZone = String(Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+    if (timeZone === "Asia/Baku") {
+      return "az";
+    }
+  }
+
+  return DEFAULT_LANGUAGE;
 }

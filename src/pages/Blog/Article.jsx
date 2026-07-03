@@ -12,6 +12,7 @@ import {
   buildAbsoluteUrl,
   buildArticleSchema,
   buildSeoPayload,
+  getHrefLangsForLanguage,
   isSeoLanguage,
 } from "../../lib/seo.js";
 import { hasRichTextMarkup, sanitizeRichTextHtml } from "../../lib/richText.js";
@@ -196,10 +197,12 @@ function BlogArticle() {
   const realArticleLocales = articleSource === "supabase"
     ? articleLocales.filter((item) => isSeoLanguage(item?.locale))
     : [{ locale: DEFAULT_LANGUAGE, slug }];
-  const alternates = realArticleLocales.map((item) => ({
-    hrefLang: item.locale,
-    href: buildAbsoluteUrl(localizePath(`/blog/${item.slug}`, item.locale)),
-  }));
+  const alternates = realArticleLocales.flatMap((item) => (
+    getHrefLangsForLanguage(item.locale).map((hrefLang) => ({
+      hrefLang,
+      href: buildAbsoluteUrl(localizePath(`/blog/${item.slug}`, item.locale)),
+    }))
+  ));
   if (realArticleLocales.some((item) => item.locale === "en")) {
     const enEntry = realArticleLocales.find((item) => item.locale === "en");
     alternates.push({
