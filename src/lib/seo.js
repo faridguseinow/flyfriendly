@@ -1,4 +1,5 @@
 import brandLogoUrl from "../assets/icons/logo-image.svg";
+import { contactEmail, socialLinks } from "../constants/site.js";
 import { DEFAULT_LANGUAGE } from "../i18n/languages.js";
 import { getCurrentLanguageFromPath, getPathWithoutLanguage, localizePath } from "../i18n/path.js";
 import { getPublicSiteUrl } from "./siteUrl.js";
@@ -6,6 +7,7 @@ import { getPublicSiteUrl } from "./siteUrl.js";
 export const SEO_LANGUAGES = ["az", "ru", "en"];
 export const DEFAULT_SEO_LANGUAGE = "en";
 export const BRAND_NAME = "Fly Friendly";
+export const SITE_ALTERNATE_NAME = "Fly Friendly AZ";
 const HREFLANG_MAP = {
   az: ["az", "az-AZ"],
   ru: ["ru", "ru-RU"],
@@ -105,6 +107,7 @@ export function buildSeoPayload({
     openGraph: {
       type: ogType,
       url: canonical || buildAbsoluteUrl(pathname),
+      siteName: BRAND_NAME,
       title,
       description,
       image: ogImage,
@@ -127,8 +130,11 @@ export function buildOrganizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: BRAND_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
     url: getPublicSiteUrl(),
+    email: contactEmail,
     logo: getDefaultOgImageUrl(),
+    sameAs: socialLinks.map((item) => item.href).filter(Boolean),
   };
 }
 
@@ -137,6 +143,7 @@ export function buildWebsiteSchema(language = DEFAULT_SEO_LANGUAGE) {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: BRAND_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
     url: buildAbsoluteUrl(localizePath("/", language)),
     inLanguage: language,
   };

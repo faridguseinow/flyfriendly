@@ -86,6 +86,7 @@ export default function SeoHead({
     const ogData = openGraph || {};
     setMetaContent('meta[property="og:type"]', { property: "og:type" }, ogData.type);
     setMetaContent('meta[property="og:url"]', { property: "og:url" }, ogData.url);
+    setMetaContent('meta[property="og:site_name"]', { property: "og:site_name" }, ogData.siteName);
     setMetaContent('meta[property="og:title"]', { property: "og:title" }, ogData.title);
     setMetaContent('meta[property="og:description"]', { property: "og:description" }, ogData.description);
     setMetaContent('meta[property="og:image"]', { property: "og:image" }, ogData.image);

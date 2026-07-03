@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, Clock3 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useLocation, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { LocalizedLink } from "../../components/LocalizedLink.jsx";
 import SeoHead from "../../components/SeoHead.jsx";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
@@ -15,6 +15,7 @@ import {
   getHrefLangsForLanguage,
   isSeoLanguage,
 } from "../../lib/seo.js";
+import { resolveArticleReadTime } from "../../lib/blogMetadata.js";
 import { hasRichTextMarkup, sanitizeRichTextHtml } from "../../lib/richText.js";
 import {
   fetchPublishedBlogPost,
@@ -60,12 +61,14 @@ function BlogArticle() {
   const { t } = useTranslation();
   const { lang, slug } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const locale = lang || DEFAULT_LANGUAGE;
   const [cmsArticle, setCmsArticle] = useState(null);
   const [cmsArticles, setCmsArticles] = useState([]);
   const [articleLocales, setArticleLocales] = useState([]);
   const [articleSource, setArticleSource] = useState("fallback");
   const [isLoading, setIsLoading] = useState(true);
+  const redirectedSlugRef = useRef("");
   const fallbackArticles = getArticles(
     t("home.articles", { returnObjects: true }),
     t("blog.articleDetails", { returnObjects: true }),
@@ -182,6 +185,27 @@ function BlogArticle() {
     };
   }, [locale, slug]);
 
+  useEffect(() => {
+    if (isLoading || articleSource !== "supabase" || !articleLocales.length || !slug) {
+      redirectedSlugRef.current = "";
+      return;
+    }
+
+    const localizedEntry = articleLocales.find((item) => item?.locale === locale && item?.slug);
+    if (!localizedEntry || localizedEntry.slug === slug) {
+      redirectedSlugRef.current = "";
+      return;
+    }
+
+    const redirectSignature = `${locale}:${slug}:${localizedEntry.slug}`;
+    if (redirectedSlugRef.current === redirectSignature) {
+      return;
+    }
+
+    redirectedSlugRef.current = redirectSignature;
+    navigate(localizePath(`/blog/${localizedEntry.slug}`, locale), { replace: true });
+  }, [articleLocales, articleSource, isLoading, locale, navigate, slug]);
+
   if (!isLoading && !article) {
     return <Navigate to="../blog" replace />;
   }
@@ -263,7 +287,7 @@ function BlogArticle() {
                 <h1>{article.title}</h1>
                 <div className="article-meta">
                   <span><CalendarDays size={18} strokeWidth={2} aria-hidden="true" /> {article.date}</span>
-                  <span><Clock3 size={18} strokeWidth={2} aria-hidden="true" /> {article.readTime}</span>
+                  <span><Clock3 size={18} strokeWidth={2} aria-hidden="true" /> {resolveArticleReadTime(article, locale)}</span>
                 </div>
                 <img className="article-cover" src={article.image} alt={article.cover_image_alt || article.title || ""} />
               </header>

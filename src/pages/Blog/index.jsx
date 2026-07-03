@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, Search } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock3, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useParams } from "react-router-dom";
@@ -7,6 +7,7 @@ import SeoHead from "../../components/SeoHead.jsx";
 import { DEFAULT_LANGUAGE } from "../../i18n/languages.js";
 import { localizePath } from "../../i18n/path.js";
 import { BRAND_NAME, buildSeoPayload } from "../../lib/seo.js";
+import { resolveArticleReadTime } from "../../lib/blogMetadata.js";
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
 import { getArticles, localizeArticles } from "./articles.js";
 import "./style.scss";
@@ -104,7 +105,10 @@ function Blog() {
             <LocalizedLink className="blog-card" to={`/blog/${article.slug}`} key={article.title}>
               <img src={article.image} alt="" />
               <div className="blog-card__content">
-                <time><CalendarDays size={18} strokeWidth={2} aria-hidden="true" /> {article.date}</time>
+                <div className="blog-card__meta">
+                  <time><CalendarDays size={16} strokeWidth={2} aria-hidden="true" /> {article.date}</time>
+                  <span><Clock3 size={16} strokeWidth={2} aria-hidden="true" /> {resolveArticleReadTime(article, locale)}</span>
+                </div>
                 <h2>{article.title}</h2>
                 <p>{article.text}</p>
                 <span className="blog-card__link">{t("blog.readArticle", { defaultValue: "Read article" })} <ArrowRight size={18} strokeWidth={2} aria-hidden="true" /></span>

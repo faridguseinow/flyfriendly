@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 import { DEFAULT_LANGUAGE } from "../i18n/languages.js";
+import { estimateReadTimeMinutes, formatBlogDate, formatReadTime, parseReadTimeMinutes } from "../lib/blogMetadata.js";
 
 export const GLOBAL_BLOG_LOCALE = "global";
 
@@ -48,6 +49,15 @@ function getTranslationKey(post) {
 }
 
 function normalizePost(row) {
+  const locale = row.locale || DEFAULT_LANGUAGE;
+  const estimatedReadTimeMinutes = parseReadTimeMinutes(row.read_time) || estimateReadTimeMinutes({
+    title: row.title,
+    excerpt: row.excerpt,
+    text: row.excerpt,
+    content: row.content,
+    sections: Array.isArray(row.content_sections) ? row.content_sections : [],
+  });
+
   return {
     id: row.id,
     title: row.title,
@@ -58,13 +68,14 @@ function normalizePost(row) {
     sections: Array.isArray(row.content_sections) ? row.content_sections : [],
     image: row.cover_image || "",
     cover_image_alt: row.cover_image_alt || "",
-    date: row.published_at ? new Date(row.published_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "",
+    date: formatBlogDate(row.published_at, locale),
     published_at: row.published_at,
-    readTime: row.read_time || "",
+    readTime: formatReadTime(estimatedReadTimeMinutes, locale),
+    readTimeMinutes: estimatedReadTimeMinutes,
     author_name: row.author_name || "",
     categories: row.categories || [],
     tags: row.tags || [],
-    locale: row.locale || DEFAULT_LANGUAGE,
+    locale,
     seo_title: row.seo_title || "",
     seo_description: row.seo_description || "",
     seo_keywords: row.seo_keywords || [],
