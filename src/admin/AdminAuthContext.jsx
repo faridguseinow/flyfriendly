@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, requireSupabase } from "../lib/supabase.js";
 import { ALL_PERMISSIONS, getAvailablePermissions, getRoleDefinition, hasPermission, isAdminRoleCode, normalizeRoleCode } from "./rbac.js";
+import { buildAdminPermissionsFromPageAccess } from "./adminPages.js";
 
 const AdminAuthContext = createContext(null);
 const ADMIN_PROFILE_SELECTS = [
@@ -193,6 +194,36 @@ async function fetchDynamicPermissions(client, dynamicRole) {
   return { permissions, loaded: true };
 }
 
+async function fetchEmployeePageAccess(client, teamMemberId) {
+  if (!teamMemberId) {
+    return { rows: [], loaded: false };
+  }
+
+  const response = await client
+    .from("admin_employee_page_access")
+    .select("menu_item_key, can_view, can_edit")
+    .eq("team_member_id", teamMemberId);
+
+  if (response.error) {
+    if (isMissingTableError(response.error) || isMissingColumnError(response.error)) {
+      return { rows: [], loaded: false };
+    }
+
+    throw response.error;
+  }
+
+  return {
+    rows: (response.data || [])
+      .filter((item) => item.menu_item_key && item.can_view !== false)
+      .map((item) => ({
+        pageKey: item.menu_item_key,
+        canView: item.can_view !== false,
+        canEdit: item.can_edit === true,
+      })),
+    loaded: true,
+  };
+}
+
 async function loadAdminAccessState(client, user) {
   const [profile, assignedRoles, teamMember] = await Promise.all([
     fetchProfile(client, user.id),
@@ -202,9 +233,13 @@ async function loadAdminAccessState(client, user) {
 
   const staticRoles = profile?.deleted_at
     ? []
-    : Array.from(new Set(assignedRoles.filter((role) => isAdminRoleCode(role))));
+    : Array.from(new Set([
+      ...(isAdminRoleCode(profile?.role) ? [normalizeRoleCode(profile.role)] : []),
+      ...assignedRoles.filter((role) => isAdminRoleCode(role)),
+    ]));
   const dynamicRole = await fetchDynamicRole(client, teamMember, staticRoles);
   const dynamicPermissions = await fetchDynamicPermissions(client, dynamicRole);
+  const employeePageAccess = await fetchEmployeePageAccess(client, teamMember?.id || null);
   const dynamicRoleCode = dynamicRole?.code
     ? (isAdminRoleCode(dynamicRole.code) ? normalizeRoleCode(dynamicRole.code) : dynamicRole.code)
     : null;
@@ -220,12 +255,18 @@ async function loadAdminAccessState(client, user) {
   const isOwner = roles.includes("owner") || roles.includes("super_admin") || !!dynamicRole?.is_owner_role;
   const teamStatus = teamMember?.status || null;
   const teamAccessBlocked = !!teamMember && teamStatus !== "active";
-  const permissionSource = dynamicPermissions.loaded ? "dynamic" : "static";
+  const permissionSource = isOwner
+    ? "owner"
+    : (employeePageAccess.loaded ? "page_access" : (dynamicPermissions.loaded ? "dynamic" : "static"));
   const permissions = teamAccessBlocked
     ? []
     : (isOwner
       ? ["*"]
-      : (dynamicPermissions.loaded ? dynamicPermissions.permissions : getAvailablePermissions(roles)));
+      : (
+        employeePageAccess.loaded
+          ? buildAdminPermissionsFromPageAccess(employeePageAccess.rows)
+          : (dynamicPermissions.loaded ? dynamicPermissions.permissions : getAvailablePermissions(roles))
+      ));
 
   return {
     profile,
@@ -237,6 +278,8 @@ async function loadAdminAccessState(client, user) {
     permissionSource,
     teamAccessBlocked,
     isOwner,
+    pageAccessRows: employeePageAccess.rows,
+    allowedAdminPageKeys: employeePageAccess.rows.filter((item) => item.canView).map((item) => item.pageKey),
   };
 }
 
@@ -251,6 +294,8 @@ export function AdminAuthProvider({ children }) {
     teamMember: null,
     dynamicRole: null,
     teamAccessBlocked: false,
+    pageAccessRows: [],
+    allowedAdminPageKeys: [],
   });
 
   useEffect(() => {
@@ -288,6 +333,8 @@ export function AdminAuthProvider({ children }) {
           teamMember: null,
           dynamicRole: null,
           teamAccessBlocked: false,
+          pageAccessRows: [],
+          allowedAdminPageKeys: [],
         });
         return;
       }
@@ -305,6 +352,8 @@ export function AdminAuthProvider({ children }) {
           teamMember: null,
           dynamicRole: null,
           teamAccessBlocked: false,
+          pageAccessRows: [],
+          allowedAdminPageKeys: [],
         });
         return;
       }
@@ -322,6 +371,8 @@ export function AdminAuthProvider({ children }) {
           teamMember: accessState.teamMember,
           dynamicRole: accessState.dynamicRole,
           teamAccessBlocked: accessState.teamAccessBlocked,
+          pageAccessRows: accessState.pageAccessRows,
+          allowedAdminPageKeys: accessState.allowedAdminPageKeys,
         });
       } catch {
         setState({
@@ -334,6 +385,8 @@ export function AdminAuthProvider({ children }) {
           teamMember: null,
           dynamicRole: null,
           teamAccessBlocked: false,
+          pageAccessRows: [],
+          allowedAdminPageKeys: [],
         });
       }
     };
@@ -359,7 +412,7 @@ export function AdminAuthProvider({ children }) {
 
     const checkPermission = (permission) => {
       if (!permission) {
-        return state.roles.length > 0 && !state.teamAccessBlocked;
+        return (state.isOwner || Boolean(state.teamMember?.id)) && !state.teamAccessBlocked;
       }
 
       if (state.teamAccessBlocked) {
@@ -370,7 +423,7 @@ export function AdminAuthProvider({ children }) {
         return true;
       }
 
-      if (state.permissionSource === "dynamic") {
+      if (state.permissionSource === "dynamic" || state.permissionSource === "page_access") {
         return false;
       }
 
@@ -386,11 +439,13 @@ export function AdminAuthProvider({ children }) {
       isSuperAdmin: state.roles.includes("super_admin"),
       isOwnerOrSuperAdmin: state.isOwner || state.roles.includes("owner") || state.roles.includes("super_admin"),
       permissions: permissionList,
+      pageAccessRows: state.pageAccessRows || [],
+      allowedAdminPageKeys: state.allowedAdminPageKeys || [],
       permissionSource: state.permissionSource || "static",
       hasPermission: checkPermission,
       hasAnyPermission: (keys = []) => !keys?.length || keys.some((key) => checkPermission(key)),
       hasAllPermissions: (keys = []) => !keys?.length || keys.every((key) => checkPermission(key)),
-      isAdminUser: state.roles.length > 0 && !state.teamAccessBlocked,
+      isAdminUser: (state.isOwner || Boolean(state.teamMember?.id)) && !state.teamAccessBlocked,
       refreshAuth: async () => {
         if (!isSupabaseConfigured) {
           setState({
@@ -403,6 +458,8 @@ export function AdminAuthProvider({ children }) {
             teamMember: null,
             dynamicRole: null,
             teamAccessBlocked: false,
+            pageAccessRows: [],
+            allowedAdminPageKeys: [],
           });
           return {
             isLoading: false,
@@ -414,6 +471,8 @@ export function AdminAuthProvider({ children }) {
             teamMember: null,
             dynamicRole: null,
             teamAccessBlocked: false,
+            pageAccessRows: [],
+            allowedAdminPageKeys: [],
             isAdminUser: false,
           };
         }
@@ -431,6 +490,8 @@ export function AdminAuthProvider({ children }) {
             teamMember: null,
             dynamicRole: null,
             teamAccessBlocked: false,
+            pageAccessRows: [],
+            allowedAdminPageKeys: [],
           });
           return {
             isLoading: false,
@@ -442,6 +503,8 @@ export function AdminAuthProvider({ children }) {
             teamMember: null,
             dynamicRole: null,
             teamAccessBlocked: false,
+            pageAccessRows: [],
+            allowedAdminPageKeys: [],
             isAdminUser: false,
           };
         }
@@ -460,13 +523,15 @@ export function AdminAuthProvider({ children }) {
           teamAccessBlocked: accessState.teamAccessBlocked,
           roleLabels: accessState.roleLabels,
           isOwner: accessState.isOwner,
+          pageAccessRows: accessState.pageAccessRows,
+          allowedAdminPageKeys: accessState.allowedAdminPageKeys,
         };
 
         setState(nextState);
 
         return {
           ...nextState,
-          isAdminUser: nextState.roles.length > 0 && !nextState.teamAccessBlocked,
+          isAdminUser: (nextState.isOwner || Boolean(nextState.teamMember?.id)) && !nextState.teamAccessBlocked,
         };
       },
     };

@@ -1,6 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser, resetPassword } from "./authService.js";
-import { assertCurrentAdminPermission, assertCurrentOwnerAdmin } from "./adminAccessService.js";
+import { assertCurrentAdminPageAccess, assertCurrentAdminPermission, assertCurrentOwnerAdmin } from "./adminAccessService.js";
 import { createAdminNotification } from "./adminNotificationService.js";
 import { ADMIN_ROLE_CODES, normalizeRoleCode } from "../admin/rbac.js";
 import { adminNavigation, adminNavigationByPath, adminNavigationGroupOrder, adminNavigationSections, buildAdminNavigationGroups } from "../admin/navigation.js";
@@ -25,79 +25,150 @@ function isMissingColumnError(error) {
 }
 
 const TRASH_MODULE_ACCESS_PERMISSIONS = ["trash.manage", "users.manage"];
+const TRASH_MODULE_PAGE_KEYS = ["settings.trash"];
 const REFERRAL_MODULE_READ_PERMISSIONS = ["partners.view", "partner_applications.view", "referrals.view"];
+const REFERRAL_MODULE_PAGE_KEYS = [
+  "partners.referral",
+  "partners.applications",
+  "partners.referralPartners",
+  "partners.referrals",
+];
 const REPORTS_MODULE_READ_PERMISSIONS = ["reports.view", "reports.export", "finance.view", "finance.edit"];
+const REPORTS_MODULE_PAGE_KEYS = ["dashboard.revenue", "dashboard.marketing"];
 
-async function assertAdminAnyPermission(anyPermissions, message) {
-  return assertCurrentAdminPermission(null, {
-    anyPermissions,
-    message,
+async function assertAdminPageAccess(pageKey, options = {}) {
+  return assertCurrentAdminPageAccess(pageKey, {
+    action: options.action,
+    anyPageKeys: options.anyPageKeys,
+    fallbackPermission: options.fallbackPermission,
+    anyPermissions: options.anyPermissions,
+    allPermissions: options.allPermissions,
+    message: options.message,
   });
 }
 
 async function assertLeadsModuleReadAccess(message = "You do not have access to leads.") {
-  return assertCurrentAdminPermission("leads.view", { message });
+  return assertAdminPageAccess("operations.leads", {
+    fallbackPermission: "leads.view",
+    message,
+  });
 }
 
 async function assertLeadsEditAccess(message = "You do not have access to update leads.") {
-  return assertCurrentAdminPermission("leads.edit", { message });
+  return assertAdminPageAccess("operations.leads", {
+    action: "edit",
+    fallbackPermission: "leads.edit",
+    message,
+  });
 }
 
 async function assertCasesModuleReadAccess(message = "You do not have access to cases.") {
-  return assertCurrentAdminPermission("cases.view", { message });
+  return assertAdminPageAccess("operations.cases", {
+    fallbackPermission: "cases.view",
+    message,
+  });
 }
 
 async function assertCasesEditAccess(message = "You do not have access to update cases.") {
-  return assertCurrentAdminPermission("cases.edit", { message });
+  return assertAdminPageAccess("operations.cases", {
+    action: "edit",
+    fallbackPermission: "cases.edit",
+    message,
+  });
 }
 
 async function assertCustomersModuleReadAccess(message = "You do not have access to customers.") {
-  return assertCurrentAdminPermission("customers.view", { message });
+  return assertAdminPageAccess("people.customers", {
+    fallbackPermission: "customers.view",
+    message,
+  });
 }
 
 async function assertCustomersEditAccess(message = "You do not have access to update customers.") {
-  return assertCurrentAdminPermission("customers.edit", { message });
+  return assertAdminPageAccess("people.customers", {
+    action: "edit",
+    fallbackPermission: "customers.edit",
+    message,
+  });
 }
 
 async function assertTasksModuleReadAccess(message = "You do not have access to tasks.") {
-  return assertCurrentAdminPermission("tasks.view", { message });
+  return assertAdminPageAccess("operations.tasks", {
+    fallbackPermission: "tasks.view",
+    message,
+  });
 }
 
 async function assertTasksEditAccess(message = "You do not have access to update tasks.") {
-  return assertCurrentAdminPermission("tasks.edit", { message });
+  return assertAdminPageAccess("operations.tasks", {
+    action: "edit",
+    fallbackPermission: "tasks.edit",
+    message,
+  });
 }
 
 async function assertCommunicationsModuleReadAccess(message = "You do not have access to communications.") {
-  return assertCurrentAdminPermission("communications.view", { message });
+  return assertAdminPageAccess("operations.inbox", {
+    fallbackPermission: "communications.view",
+    message,
+  });
 }
 
 async function assertCommunicationsEditAccess(message = "You do not have access to update communications.") {
-  return assertCurrentAdminPermission("communications.edit", { message });
+  return assertAdminPageAccess("operations.inbox", {
+    action: "edit",
+    fallbackPermission: "communications.edit",
+    message,
+  });
 }
 
 async function assertDocumentsModuleReadAccess(message = "You do not have access to documents.") {
-  return assertCurrentAdminPermission("documents.view", { message });
+  return assertAdminPageAccess("operations.documents", {
+    fallbackPermission: "documents.view",
+    message,
+  });
 }
 
 async function assertDocumentsManageAccess(message = "You do not have access to manage documents.") {
-  return assertCurrentAdminPermission("documents.manage", { message });
+  return assertAdminPageAccess("operations.documents", {
+    action: "edit",
+    fallbackPermission: "documents.manage",
+    message,
+  });
 }
 
 async function assertTrashModuleAccess(message = "You do not have access to the trash module.") {
-  return assertAdminAnyPermission(TRASH_MODULE_ACCESS_PERMISSIONS, message);
+  return assertAdminPageAccess("settings.trash", {
+    anyPageKeys: TRASH_MODULE_PAGE_KEYS,
+    fallbackPermission: "trash.manage",
+    anyPermissions: TRASH_MODULE_ACCESS_PERMISSIONS,
+    message,
+  });
 }
 
 async function assertReferralModuleReadAccess(message = "You do not have access to referral admin data.") {
-  return assertAdminAnyPermission(REFERRAL_MODULE_READ_PERMISSIONS, message);
+  return assertAdminPageAccess("partners.referral", {
+    anyPageKeys: REFERRAL_MODULE_PAGE_KEYS,
+    fallbackPermission: "partners.view",
+    anyPermissions: REFERRAL_MODULE_READ_PERMISSIONS,
+    message,
+  });
 }
 
 async function assertReportsModuleReadAccess(message = "You do not have access to reports.") {
-  return assertAdminAnyPermission(REPORTS_MODULE_READ_PERMISSIONS, message);
+  return assertAdminPageAccess("dashboard.revenue", {
+    anyPageKeys: REPORTS_MODULE_PAGE_KEYS,
+    fallbackPermission: "reports.view",
+    anyPermissions: REPORTS_MODULE_READ_PERMISSIONS,
+    message,
+  });
 }
 
 async function assertTrashItemMutationAccess(item, action = "manage") {
   if (item?.entity_type === "profile") {
-    return assertCurrentAdminPermission("users.manage", {
+    return assertAdminPageAccess("settings.trash", {
+      action: "edit",
+      fallbackPermission: "users.manage",
       message: action === "restore"
         ? "You do not have access to restore deleted users."
         : "You do not have access to manage deleted users.",
@@ -2946,7 +3017,16 @@ export async function fetchFinanceModuleData(options = {}) {
 }
 
 export async function updateCaseFinance(financeId, updates) {
-  await assertCurrentAdminPermission("finance.edit", {
+  await assertAdminPageAccess("finance.overview", {
+    action: "edit",
+    anyPageKeys: [
+      "dashboard.revenue",
+      "finance.payments",
+      "finance.partnerPayouts",
+      "finance.partnerCommissions",
+      "finance.caseFinance",
+    ],
+    fallbackPermission: "finance.edit",
     message: "You do not have access to update finance data.",
   });
 
@@ -3176,7 +3256,9 @@ export async function fetchPartnerApplicationsModuleData(options = {}) {
 }
 
 export async function reviewPartnerApplication(applicationId, input = {}) {
-  await assertCurrentAdminPermission("partner_applications.manage", {
+  await assertAdminPageAccess("partners.applications", {
+    action: "edit",
+    fallbackPermission: "partner_applications.manage",
     message: "You do not have access to review partner applications.",
   });
 
@@ -3287,6 +3369,12 @@ async function invokeAdminTeamFunction(functionName, body) {
 }
 
 export async function approvePartnerApplication(applicationId, input = {}) {
+  await assertAdminPageAccess("partners.applications", {
+    action: "edit",
+    fallbackPermission: "partner_applications.manage",
+    message: "You do not have access to approve partner applications.",
+  });
+
   const result = await invokePartnerApplicationReviewFunction("approve-partner-application", {
     application_id: applicationId,
     commission_rate: input.commission_rate,
@@ -3304,6 +3392,12 @@ export async function approvePartnerApplication(applicationId, input = {}) {
 }
 
 export async function rejectPartnerApplication(applicationId, rejectionReason) {
+  await assertAdminPageAccess("partners.applications", {
+    action: "edit",
+    fallbackPermission: "partner_applications.manage",
+    message: "You do not have access to reject partner applications.",
+  });
+
   const normalizedReason = String(rejectionReason || "").trim();
   if (!normalizedReason) {
     throw new Error("Rejection reason is required.");
@@ -3323,6 +3417,13 @@ export async function rejectPartnerApplication(applicationId, rejectionReason) {
 }
 
 export async function updatePartnerPortalStatus(partnerId, portalStatus, notes) {
+  await assertAdminPageAccess("partners.referralPartners", {
+    action: "edit",
+    anyPageKeys: ["partners.referral"],
+    fallbackPermission: "partners.edit",
+    message: "You do not have access to update partner portal status.",
+  });
+
   const normalizedStatus = String(portalStatus || "").trim().toLowerCase();
   if (!["pending", "approved", "rejected", "suspended"].includes(normalizedStatus)) {
     throw new Error("A valid portal status is required.");
@@ -3352,6 +3453,13 @@ export async function updatePartnerPortalStatus(partnerId, portalStatus, notes) 
 }
 
 export async function deletePartnerAccount(partnerId) {
+  await assertAdminPageAccess("partners.referralPartners", {
+    action: "edit",
+    anyPageKeys: ["partners.referral"],
+    fallbackPermission: "partners.edit",
+    message: "You do not have access to delete partner accounts.",
+  });
+
   const normalizedPartnerId = String(partnerId || "").trim();
   if (!normalizedPartnerId) {
     throw new Error("partner_id is required.");
@@ -3392,7 +3500,10 @@ async function generateUniqueReferralPartnerCode(client) {
 }
 
 export async function createReferralPartner(input) {
-  await assertCurrentAdminPermission("partners.edit", {
+  await assertAdminPageAccess("partners.referralPartners", {
+    action: "edit",
+    anyPageKeys: ["partners.referral"],
+    fallbackPermission: "partners.edit",
     message: "You do not have access to create referral partners.",
   });
 
@@ -3441,7 +3552,10 @@ export async function createReferralPartner(input) {
 }
 
 export async function updateReferralPartner(partnerId, updates) {
-  await assertCurrentAdminPermission("partners.edit", {
+  await assertAdminPageAccess("partners.referralPartners", {
+    action: "edit",
+    anyPageKeys: ["partners.referral"],
+    fallbackPermission: "partners.edit",
     message: "You do not have access to update referral partners.",
   });
 
@@ -3472,7 +3586,10 @@ export async function updateReferralPartner(partnerId, updates) {
 }
 
 export async function createReferralPartnerPayout(input) {
-  await assertCurrentAdminPermission("partners.edit", {
+  await assertAdminPageAccess("finance.partnerPayouts", {
+    action: "edit",
+    anyPageKeys: ["finance.overview", "partners.referralPartners", "partners.referral"],
+    fallbackPermission: "partners.edit",
     anyPermissions: ["partner_payouts.manage", "finance.edit"],
     message: "You do not have access to create partner payouts.",
   });
@@ -3518,7 +3635,8 @@ export async function createReferralPartnerPayout(input) {
 }
 
 export async function fetchActivityLogsData(options = {}) {
-  await assertCurrentAdminPermission("activity.view", {
+  await assertAdminPageAccess("dashboard.activity", {
+    fallbackPermission: "activity.view",
     message: "You do not have access to activity logs.",
   });
 
@@ -3645,6 +3763,8 @@ function slugifyText(value) {
 }
 
 export async function fetchSettingsModuleData() {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
 
   const response = await client
@@ -3665,6 +3785,8 @@ export async function fetchSettingsModuleData() {
 }
 
 export async function upsertSystemSetting(input) {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const now = new Date().toISOString();
@@ -3705,6 +3827,12 @@ export async function upsertSystemSetting(input) {
 }
 
 export async function fetchFaqModuleData() {
+  await assertAdminPageAccess("content.pages", {
+    fallbackPermission: "faq.view",
+    anyPermissions: ["cms.view", "blog.view"],
+    message: "You do not have access to FAQ content.",
+  });
+
   const client = requireSupabase();
   const response = await client
     .from("faq_items")
@@ -3724,6 +3852,13 @@ export async function fetchFaqModuleData() {
 }
 
 export async function createFaqItem(input) {
+  await assertAdminPageAccess("content.pages", {
+    action: "edit",
+    fallbackPermission: "faq.edit",
+    anyPermissions: ["cms.edit", "blog.edit"],
+    message: "You do not have access to create FAQ items.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const payload = {
@@ -3754,6 +3889,13 @@ export async function createFaqItem(input) {
 }
 
 export async function updateFaqItem(faqId, updates) {
+  await assertAdminPageAccess("content.pages", {
+    action: "edit",
+    fallbackPermission: "faq.edit",
+    anyPermissions: ["cms.edit", "blog.edit"],
+    message: "You do not have access to update FAQ items.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("faq_items").select("*").eq("id", faqId).maybeSingle();
@@ -3937,6 +4079,12 @@ function buildBlogPostPayload(input, user, translationMeta = {}, { includeCreate
 }
 
 export async function fetchBlogModuleData() {
+  await assertAdminPageAccess("content.blog", {
+    fallbackPermission: "blog.view",
+    anyPermissions: ["cms.view"],
+    message: "You do not have access to blog content.",
+  });
+
   const client = requireSupabase();
   const result = await runBlogAdminSelectWithFallback(client);
 
@@ -3948,6 +4096,13 @@ export async function fetchBlogModuleData() {
 }
 
 export async function createBlogPost(input) {
+  await assertAdminPageAccess("content.blog", {
+    action: "edit",
+    fallbackPermission: "blog.edit",
+    anyPermissions: ["cms.edit"],
+    message: "You do not have access to create blog posts.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const translationMeta = await resolveBlogTranslationData(client, user, input);
@@ -3970,6 +4125,13 @@ export async function createBlogPost(input) {
 }
 
 export async function updateBlogPost(postId, updates) {
+  await assertAdminPageAccess("content.blog", {
+    action: "edit",
+    fallbackPermission: "blog.edit",
+    anyPermissions: ["cms.edit"],
+    message: "You do not have access to update blog posts.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("blog_posts").select("*").eq("id", postId).maybeSingle();
@@ -3992,6 +4154,13 @@ export async function updateBlogPost(postId, updates) {
 }
 
 export async function deleteBlogPost(postId) {
+  await assertAdminPageAccess("content.blog", {
+    action: "edit",
+    fallbackPermission: "blog.edit",
+    anyPermissions: ["cms.edit"],
+    message: "You do not have access to delete blog posts.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("blog_posts").select("*").eq("id", postId).maybeSingle();
@@ -4022,6 +4191,13 @@ export async function deleteBlogPost(postId) {
 }
 
 export async function createBlogTranslationDraft(sourcePostId, targetLocale) {
+  await assertAdminPageAccess("content.blog", {
+    action: "edit",
+    fallbackPermission: "blog.edit",
+    anyPermissions: ["cms.edit"],
+    message: "You do not have access to create blog translation drafts.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const { data: sourcePost, error: sourceError } = await client
@@ -4090,8 +4266,10 @@ export async function createBlogTranslationDraft(sourcePostId, targetLocale) {
 }
 
 async function invokeBlogTranslationFunction(body) {
-  await assertCurrentAdminPermission(null, {
-    anyPermissions: ["blog.edit", "cms.edit"],
+  await assertAdminPageAccess("content.blog", {
+    action: "edit",
+    fallbackPermission: "blog.edit",
+    anyPermissions: ["cms.edit"],
     message: "You do not have access to translate blog posts.",
   });
 
@@ -4139,6 +4317,13 @@ export async function translateBlogPostWithSeo(input) {
 }
 
 export async function fetchCmsModuleData() {
+  await assertAdminPageAccess("content.pages", {
+    anyPageKeys: ["content.media", "content.website"],
+    fallbackPermission: "cms.view",
+    anyPermissions: ["blog.view", "faq.view"],
+    message: "You do not have access to CMS pages.",
+  });
+
   const client = requireSupabase();
 
   const [pages, blocks] = await Promise.all([
@@ -4170,6 +4355,14 @@ export async function fetchCmsModuleData() {
 }
 
 export async function refreshAviationCatalog() {
+  await assertAdminPageAccess("content.website", {
+    action: "edit",
+    anyPageKeys: ["content.pages", "content.media"],
+    fallbackPermission: "cms.edit",
+    anyPermissions: ["blog.edit", "faq.edit"],
+    message: "You do not have access to refresh the aviation catalog.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const [airportsRaw, airlinesRaw] = await Promise.all([
@@ -4215,6 +4408,8 @@ export async function refreshAviationCatalog() {
 }
 
 export async function fetchAccessModuleData() {
+  await assertCurrentOwnerAdmin();
+
   const client = requireSupabase();
 
   const [profiles, roles, permissions, userRoles, rolePermissions] = await Promise.all([
@@ -5318,6 +5513,23 @@ export async function fetchAdminTeamModuleData(options = {}) {
   const activityLogs = activityResponse.error ? [] : (activityResponse.data || []);
   const adminActivityLogs = adminActivityResponse.error ? [] : (adminActivityResponse.data || []);
   const sessions = sessionsResponse.error ? [] : (sessionsResponse.data || []);
+  const employeePageAccess = await fetchAdminEmployeePageAccessRows(
+    client,
+    teamMembers.map((item) => item.id).filter(Boolean),
+  );
+  const pageAccessByTeamMemberId = employeePageAccess.rows.reduce((acc, item) => {
+    acc[item.team_member_id] ||= [];
+    acc[item.team_member_id].push({
+      id: item.id,
+      pageKey: item.menu_item_key,
+      canView: item.can_view !== false,
+      canEdit: item.can_edit === true,
+      grantedBy: item.granted_by || null,
+      createdAt: item.created_at || null,
+      updatedAt: item.updated_at || null,
+    });
+    return acc;
+  }, {});
   const combinedActivityLogs = [
     ...activityLogs.map((item) => ({
       id: item.id,
@@ -5397,6 +5609,7 @@ export async function fetchAdminTeamModuleData(options = {}) {
     const status = teamMember
       ? normalizeTeamStatus(teamMember.status)
       : profile?.deleted_at ? "archived" : legacyRoleCodes.length ? "active" : "inactive";
+    const memberPageAccess = teamMember ? (pageAccessByTeamMemberId[teamMember.id] || []) : [];
 
     return {
       id: teamMember?.id || `legacy:${profileId}`,
@@ -5425,6 +5638,8 @@ export async function fetchAdminTeamModuleData(options = {}) {
       recentSessions: workSummary.rows,
       isOwner: !!role?.isOwnerRole,
       isSystemRole: !!role?.isSystemRole,
+      pageAccess: memberPageAccess,
+      allowedPagesCount: memberPageAccess.filter((item) => item.canView).length,
       source: teamMember ? "team_member" : "legacy",
     };
   }).sort((left, right) => {
@@ -5439,6 +5654,16 @@ export async function fetchAdminTeamModuleData(options = {}) {
       rolePermissions: rolesModule.rolePermissions || [],
       menuItems: rolesModule.menuItems || [],
       roleMenuVisibility: rolesModule.roleMenuVisibility || [],
+      employeePageAccess: employeePageAccess.rows.map((item) => ({
+        id: item.id,
+        teamMemberId: item.team_member_id,
+        pageKey: item.menu_item_key,
+        canView: item.can_view !== false,
+        canEdit: item.can_edit === true,
+        grantedBy: item.granted_by || null,
+        createdAt: item.created_at || null,
+        updatedAt: item.updated_at || null,
+      })),
       activityTimeline: combinedActivityLogs
         .filter((item) => item.admin_profile_id)
         .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime()),
@@ -5448,6 +5673,7 @@ export async function fetchAdminTeamModuleData(options = {}) {
       supportsCoreActivityLogsV1: !activityResponse.error,
       supportsWorkSessionsV1: !sessionsResponse.error,
       supportsMenuAccessV1: rolesModule.supportsMenuAccessV1,
+      supportsEmployeePageAccessV1: employeePageAccess.loaded,
       supportsInviteEmailFlow: false,
     };
   }, options);
@@ -5483,6 +5709,30 @@ async function getAdminTeamMemberByProfileId(client, profileId) {
   }
 
   return response.error ? null : response.data;
+}
+
+async function fetchAdminEmployeePageAccessRows(client, teamMemberIds = []) {
+  if (!teamMemberIds.length) {
+    return { rows: [], loaded: false };
+  }
+
+  const response = await client
+    .from("admin_employee_page_access")
+    .select("id, team_member_id, menu_item_key, can_view, can_edit, granted_by, created_at, updated_at")
+    .in("team_member_id", teamMemberIds);
+
+  if (response.error) {
+    if (isMissingOptionalTable(response.error) || isMissingColumnError(response.error)) {
+      return { rows: [], loaded: false };
+    }
+
+    throw response.error;
+  }
+
+  return {
+    rows: response.data || [],
+    loaded: true,
+  };
 }
 
 async function fetchAssignedAdminRoleCodesForUser(client, profileId) {
@@ -5862,6 +6112,115 @@ export async function updateAdminTeamMemberRole(profileId, roleId) {
   });
 
   return updateResponse.data;
+}
+
+export async function updateAdminEmployeePageAccess(teamMemberId, accessRows = []) {
+  await assertCurrentOwnerAdmin();
+
+  const client = requireSupabase();
+  const actor = await getCurrentUser().catch(() => null);
+  const normalizedRows = Array.from(
+    new Map(
+      (accessRows || [])
+        .filter((item) => item?.pageKey && item.canView)
+        .map((item) => [item.pageKey, {
+          pageKey: item.pageKey,
+          canView: true,
+          canEdit: item.canEdit === true,
+        }]),
+    ).values(),
+  );
+
+  const [teamMemberResponse, existingResponse] = await Promise.all([
+    client
+      .from("admin_team_members")
+      .select("id, profile_id, role_id, status")
+      .eq("id", teamMemberId)
+      .maybeSingle(),
+    client
+      .from("admin_employee_page_access")
+      .select("id, menu_item_key, can_view, can_edit")
+      .eq("team_member_id", teamMemberId),
+  ]);
+
+  if (teamMemberResponse.error) {
+    throw teamMemberResponse.error;
+  }
+
+  if (!teamMemberResponse.data?.id) {
+    throw new Error("Team member not found.");
+  }
+
+  if (existingResponse.error && !isMissingOptionalTable(existingResponse.error) && !isMissingColumnError(existingResponse.error)) {
+    throw existingResponse.error;
+  }
+
+  const existingRows = existingResponse.error ? [] : (existingResponse.data || []);
+  const existingByKey = new Map(existingRows.map((item) => [item.menu_item_key, item]));
+  const nextKeys = new Set(normalizedRows.map((item) => item.pageKey));
+  const deleteIds = existingRows
+    .filter((item) => item.id && !nextKeys.has(item.menu_item_key))
+    .map((item) => item.id);
+
+  if (deleteIds.length) {
+    const deleteResponse = await client
+      .from("admin_employee_page_access")
+      .delete()
+      .in("id", deleteIds);
+
+    if (deleteResponse.error) {
+      throw deleteResponse.error;
+    }
+  }
+
+  if (normalizedRows.length) {
+    const upsertResponse = await client
+      .from("admin_employee_page_access")
+      .upsert(
+        normalizedRows.map((item) => ({
+          id: existingByKey.get(item.pageKey)?.id || generateClientUuid(),
+          team_member_id: teamMemberId,
+          menu_item_key: item.pageKey,
+          can_view: true,
+          can_edit: item.canEdit,
+          granted_by: actor?.id || null,
+          updated_at: new Date().toISOString(),
+        })),
+        { onConflict: "team_member_id,menu_item_key" },
+      );
+
+    if (upsertResponse.error) {
+      throw upsertResponse.error;
+    }
+  }
+
+  clearAdminModuleCache(["admin-team-module"]);
+
+  await recordActivity(client, {
+    userId: actor?.id,
+    action: "update_employee_page_access",
+    module: "team",
+    targetEntityType: "admin_team_member",
+    targetEntityId: teamMemberId,
+    previousValue: existingRows.map((item) => ({
+      page_key: item.menu_item_key,
+      can_view: item.can_view !== false,
+      can_edit: item.can_edit === true,
+    })),
+    newValue: normalizedRows.map((item) => ({
+      page_key: item.pageKey,
+      can_view: true,
+      can_edit: item.canEdit,
+    })),
+  });
+
+  void logAdminActivity("update_employee_page_access", "admin_team_member", teamMemberId, {
+    module: "team",
+    access_count: normalizedRows.length,
+    profile_id: teamMemberResponse.data.profile_id,
+  });
+
+  return normalizedRows;
 }
 
 export async function updateAdminTeamMemberStatus(profileId, nextStatus) {
@@ -6767,6 +7126,14 @@ export function preloadAdminWorkspaceData({ force = false } = {}) {
 }
 
 export async function createCmsPage(input) {
+  await assertAdminPageAccess("content.pages", {
+    action: "edit",
+    anyPageKeys: ["content.website"],
+    fallbackPermission: "cms.edit",
+    anyPermissions: ["faq.edit", "blog.edit"],
+    message: "You do not have access to create CMS pages.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const payload = {
@@ -6798,6 +7165,14 @@ export async function createCmsPage(input) {
 }
 
 export async function updateCmsPage(pageId, updates) {
+  await assertAdminPageAccess("content.pages", {
+    action: "edit",
+    anyPageKeys: ["content.website"],
+    fallbackPermission: "cms.edit",
+    anyPermissions: ["faq.edit", "blog.edit"],
+    message: "You do not have access to update CMS pages.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("cms_pages").select("*").eq("id", pageId).maybeSingle();
@@ -6822,6 +7197,14 @@ export async function updateCmsPage(pageId, updates) {
 }
 
 export async function createCmsBlock(input) {
+  await assertAdminPageAccess("content.pages", {
+    action: "edit",
+    anyPageKeys: ["content.media", "content.website"],
+    fallbackPermission: "cms.edit",
+    anyPermissions: ["faq.edit", "blog.edit"],
+    message: "You do not have access to create CMS blocks.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const payload = {
@@ -6858,6 +7241,14 @@ export async function createCmsBlock(input) {
 }
 
 export async function updateCmsBlock(blockId, updates) {
+  await assertAdminPageAccess("content.pages", {
+    action: "edit",
+    anyPageKeys: ["content.media", "content.website"],
+    fallbackPermission: "cms.edit",
+    anyPermissions: ["faq.edit", "blog.edit"],
+    message: "You do not have access to update CMS blocks.",
+  });
+
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
   const current = await client.from("cms_blocks").select("*").eq("id", blockId).maybeSingle();

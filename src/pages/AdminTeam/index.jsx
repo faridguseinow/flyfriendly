@@ -1,29 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
-  ArrowUpRight,
-  Clock3,
   FilterX,
-  PauseCircle,
-  Plus,
   RefreshCw,
   ShieldCheck,
   UserCog,
   UserPlus,
-  Users,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
-  createAdminRole,
   createAdminTeamMember,
-  deactivateAdminRole,
-  deleteAdminRole,
-  duplicateAdminRole,
-  fetchAdminRolesModuleData,
   fetchAdminTeamModuleData,
-  removeAdminTeamMember,
   sendAdminEmployeeSetupLink,
-  updateAdminRoleDefinition,
-  updateAdminTeamMemberProfile,
+  updateAdminEmployeePageAccess,
   updateAdminTeamMemberRole,
   updateAdminTeamMemberStatus,
 } from "../../services/adminService.js";
@@ -36,15 +24,20 @@ import {
   AdminStatusBadge,
 } from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
-import { adminNavigationSections } from "../../admin/navigation.js";
+import {
+  ADMIN_ACCESS_TEMPLATES,
+  ADMIN_ACCESS_TEMPLATES_BY_KEY,
+  ADMIN_NAVIGATION_PAGE_DEFINITIONS,
+  ADMIN_PAGE_SECTIONS,
+  detectAccessTemplate,
+} from "../../admin/adminPages.js";
 import { ProfileAvatar } from "../../components/profile/ProfileAvatarUploader.jsx";
 import PasswordField from "../../components/forms/PasswordField.jsx";
 import "./style.scss";
 
 const TAB_OPTIONS = [
   { key: "employees", label: "Employees" },
-  { key: "roles", label: "Roles" },
-  { key: "access", label: "Permissions / Menu Access" },
+  { key: "access", label: "Employee Access" },
   { key: "activity", label: "Activity" },
 ];
 
@@ -57,92 +50,25 @@ const EMPLOYEE_STATUS_OPTIONS = [
   { value: "archived", label: "Removed" },
 ];
 
-const ROLE_STATUS_OPTIONS = [
-  { value: "all", label: "All role states" },
-  { value: "active", label: "Active roles" },
-  { value: "inactive", label: "Inactive roles" },
-];
-
-const ROLE_TYPE_OPTIONS = [
-  { value: "all", label: "All role types" },
-  { value: "owner", label: "Owner roles" },
-  { value: "system", label: "System roles" },
-  { value: "custom", label: "Custom roles" },
-];
-
-const ACTIVITY_DATE_FILTERS = [
-  { value: "all", label: "All dates" },
-  { value: "today", label: "Today" },
-  { value: "week", label: "This week" },
-  { value: "month", label: "This month" },
-];
-
-const CRITICAL_OWNER_PERMISSIONS = new Set([
-  "dashboard.view",
-  "team.manage",
-  "roles.manage",
-  "menu.manage",
-  "settings.manage",
-]);
-
-const CRITICAL_OWNER_ROUTES = new Set([
-  "/admin",
-  "/admin/people/users-roles",
-  "/admin/settings",
-]);
-
 function createEmployeeForm() {
   return {
     fullName: "",
     email: "",
     phone: "",
     password: "",
-    roleId: "",
     status: "active",
+    templateKey: "read_only",
     sendSetupLink: false,
   };
 }
 
-function createRoleForm() {
-  return {
-    name: "",
-    slug: "",
-    description: "",
-    isActive: true,
-    permissionCodes: [],
-    menuVisibility: {},
-  };
-}
-
-function formatDateTime(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString();
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString();
-}
-
-function formatDuration(seconds) {
-  const total = Number(seconds || 0);
-  if (!total) return "0m";
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  if (hours) return `${hours}h ${Math.max(0, minutes)}m`;
-  return `${Math.max(1, minutes)}m`;
-}
-
-function formatActionLabel(action) {
-  return String(action || "unknown")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (match) => match.toUpperCase());
-}
-
-function formatPermissionLabel(permissionCode) {
-  const [module, action] = String(permissionCode || "").split(".");
-  if (!module) return "—";
-  return `${formatActionLabel(module)} • ${formatActionLabel(action)}`;
+function createAccessRowsMap(rows = []) {
+  return rows.reduce((acc, row) => {
+    if (row?.pageKey && row.canView) {
+      acc[row.pageKey] = { pageKey: row.pageKey, canView: true, canEdit: row.canEdit === true };
+    }
+    return acc;
+  }, {});
 }
 
 function getEmployeeStatusTone(status) {
@@ -154,184 +80,180 @@ function getEmployeeStatusTone(status) {
   return "neutral";
 }
 
-function getRoleTypeTone(role) {
-  if (role?.isOwnerRole) return "warning";
-  if (role?.isSystemRole) return "info";
-  return "neutral";
-}
-
-function getActivityTone(action) {
+function getEmployeeActivityTone(action) {
   const normalized = String(action || "").toLowerCase();
-  if (normalized.includes("approve") || normalized.includes("reactivate") || normalized.includes("create")) return "success";
-  if (normalized.includes("suspend") || normalized.includes("reject") || normalized.includes("deactivate")) return "warning";
-  if (normalized.includes("remove") || normalized.includes("delete")) return "danger";
-  return "neutral";
+  if (normalized.includes("approve") || normalized.includes("reactivate") || normalized.includes("login")) return "success";
+  if (normalized.includes("suspend") || normalized.includes("reject")) return "warning";
+  if (normalized.includes("delete") || normalized.includes("remove")) return "danger";
+  return "info";
 }
 
-function summarizeMetadata(metadata) {
-  if (!metadata || typeof metadata !== "object") return "—";
-  const pairs = Object.entries(metadata)
-    .filter(([, value]) => value !== null && value !== undefined && value !== "")
-    .slice(0, 3)
-    .map(([key, value]) => `${formatActionLabel(key)}: ${String(value)}`);
-  return pairs.length ? pairs.join(" • ") : "—";
+function formatDateTime(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
 }
 
-function getRoleType(role) {
-  if (role?.isOwnerRole) return "owner";
-  if (role?.isSystemRole) return "system";
-  return "custom";
-}
+function formatDuration(seconds) {
+  const value = Number(seconds || 0);
+  if (!value) return "0m";
 
-function createMenuCatalog(items = []) {
-  const staticByRoute = new Map(
-    adminNavigationSections.flatMap((section) =>
-      section.pages.map((page, index) => [
-        page.path,
-        {
-          id: page.key,
-          key: page.key,
-          label: page.label,
-          route: page.path,
-          groupKey: section.key,
-          groupLabel: section.label,
-          sortOrder: index,
-          requiredPermissions: page.permission ? [page.permission] : (page.anyPermissions || []),
-          isCritical: CRITICAL_OWNER_ROUTES.has(page.path),
-        },
-      ]),
-    ),
-  );
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
 
-  const merged = new Map(staticByRoute);
-
-  items.forEach((item) => {
-    if (!item?.route || !staticByRoute.has(item.route)) return;
-    const base = staticByRoute.get(item.route);
-    merged.set(item.route, {
-      ...base,
-      ...item,
-      route: item.route,
-      label: item.label || base.label,
-      groupKey: item.groupKey || base.groupKey,
-      groupLabel: item.groupLabel || base.groupLabel,
-      sortOrder: item.sortOrder ?? base.sortOrder ?? 0,
-      requiredPermissions: Array.isArray(item.requiredPermissions) ? item.requiredPermissions : base.requiredPermissions,
-      isCritical: item.isCritical ?? base.isCritical,
-    });
-  });
-
-  return Array.from(merged.values()).sort((left, right) => {
-    const sectionLeft = adminNavigationSections.findIndex((section) => section.key === left.groupKey);
-    const sectionRight = adminNavigationSections.findIndex((section) => section.key === right.groupKey);
-    if (sectionLeft !== sectionRight) return sectionLeft - sectionRight;
-    return Number(left.sortOrder || 0) - Number(right.sortOrder || 0);
-  });
-}
-
-function buildRoleMenuVisibility(role, roleMenuVisibility = [], menuCatalog = []) {
-  const visibilityByMenuId = new Map(
-    (roleMenuVisibility || [])
-      .filter((item) => item.role_id === role?.id)
-      .map((item) => [item.menu_item_id, item.is_visible !== false]),
-  );
-
-  return Object.fromEntries(
-    menuCatalog.map((item) => {
-      const explicit = visibilityByMenuId.has(item.id) ? visibilityByMenuId.get(item.id) : null;
-      const forcedVisible = role?.isOwnerRole && (item.isCritical || CRITICAL_OWNER_ROUTES.has(item.route));
-      return [item.route, forcedVisible ? true : (explicit ?? true)];
-    }),
-  );
-}
-
-function groupPermissions(permissions = []) {
-  return permissions.reduce((acc, permission) => {
-    const key = permission.module || String(permission.code || permission.key || "general").split(".")[0] || "general";
-    acc[key] ||= [];
-    acc[key].push(permission);
-    return acc;
-  }, {});
-}
-
-function isWithinRange(value, range) {
-  if (!value) return false;
-  const timestamp = new Date(value).getTime();
-  if (Number.isNaN(timestamp)) return false;
-  if (range?.from) {
-    const from = new Date(range.from).getTime();
-    if (!Number.isNaN(from) && timestamp < from) return false;
+  if (hours) {
+    return `${hours}h ${minutes}m`;
   }
-  if (range?.to) {
-    const to = new Date(range.to).getTime() + (24 * 60 * 60 * 1000) - 1;
-    if (!Number.isNaN(to) && timestamp > to) return false;
-  }
-  return true;
+
+  return `${Math.max(1, minutes)}m`;
 }
 
-function getDateBucket(value) {
-  if (!value) return "all";
-  const timestamp = new Date(value).getTime();
-  if (Number.isNaN(timestamp)) return "all";
-  const now = Date.now();
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const today = startOfToday.getTime();
-  const week = now - (7 * 24 * 60 * 60 * 1000);
-  const month = now - (30 * 24 * 60 * 60 * 1000);
-  if (timestamp >= today) return "today";
-  if (timestamp >= week) return "week";
-  if (timestamp >= month) return "month";
-  return "all";
+function formatActionLabel(action) {
+  return String(action || "unknown")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function resolveTemplateRoleId(templateKey, roles = []) {
+  const template = ADMIN_ACCESS_TEMPLATES_BY_KEY.get(templateKey) || ADMIN_ACCESS_TEMPLATES_BY_KEY.get("read_only");
+  const requestedRoleCode = template?.roleCode || "read_only";
+  return roles.find((role) => role.code === requestedRoleCode)?.id
+    || roles.find((role) => role.code === "read_only")?.id
+    || roles.find((role) => !role.isOwnerRole)?.id
+    || "";
+}
+
+function normalizeAccessRows(rowsMap = {}) {
+  return Object.values(rowsMap)
+    .filter((row) => row?.pageKey && row.canView)
+    .sort((left, right) => left.pageKey.localeCompare(right.pageKey));
+}
+
+function buildAccessGroups() {
+  const pagesBySection = ADMIN_PAGE_SECTIONS.map((section) => ({
+    ...section,
+    pages: ADMIN_NAVIGATION_PAGE_DEFINITIONS
+      .filter((page) => page.sectionKey === section.key && !page.ownerOnly)
+      .map((page) => ({
+        key: page.key,
+        label: page.defaultLabel,
+        route: page.route,
+        supportsEdit: page.supportsEdit,
+        sensitive: Boolean(page.sensitive),
+      })),
+  })).filter((section) => section.pages.length);
+
+  return pagesBySection;
+}
+
+function EmployeeIdentity({ employee }) {
+  return (
+    <div className="admin-employees-page__employee-head">
+      <div className="admin-employees-page__avatar is-large">
+        <ProfileAvatar avatarUrl={employee.avatarUrl} fallbackName={employee.fullName || employee.email} size="lg" />
+      </div>
+      <div className="admin-employees-page__employee-meta">
+        <strong>{employee.fullName || "No name"}</strong>
+        <span>{employee.email || "—"}</span>
+        <span>{employee.roleLabel || "No role"}</span>
+      </div>
+    </div>
+  );
+}
+
+function getEmployeeTemplateLabel(employee) {
+  const template = detectAccessTemplate(employee.pageAccess || []);
+  return employee.isOwner ? "Owner" : template?.label || "Custom";
+}
+
+function getActivityRowKey(row) {
+  return `${row.source}:${row.id}`;
+}
+
+function getAccessSectionsLabel(employee, accessGroups) {
+  if (employee.isOwner) {
+    return "All sections";
+  }
+
+  const sections = accessGroups
+    .filter((section) => section.pages.some((page) => (employee.pageAccess || []).some((entry) => entry.pageKey === page.key && entry.canView)))
+    .map((section) => section.defaultLabel);
+
+  if (!sections.length) {
+    return "No sections";
+  }
+
+  if (sections.length === 1) {
+    return sections[0];
+  }
+
+  if (sections.length === 2) {
+    return sections.join(" • ");
+  }
+
+  return `${sections.slice(0, 2).join(" • ")} +${sections.length - 2}`;
+}
+
+function getEditablePagesCount(employee) {
+  if (employee.isOwner) {
+    return "All";
+  }
+
+  return (employee.pageAccess || []).filter((entry) => entry.canView && entry.canEdit).length;
+}
+
+function getAccessUpdatedAt(employee) {
+  const timestamps = (employee.pageAccess || [])
+    .map((entry) => entry.updatedAt || entry.createdAt)
+    .filter(Boolean)
+    .map((value) => new Date(value).getTime())
+    .filter(Number.isFinite);
+
+  if (!timestamps.length) {
+    return employee.updatedAt || employee.createdAt || employee.lastLoginAt || null;
+  }
+
+  return new Date(Math.max(...timestamps)).toISOString();
+}
+
+function stopTableAction(event, callback) {
+  event.stopPropagation();
+  callback();
 }
 
 export default function AdminTeam() {
-  const { user, isOwnerOrSuperAdmin, hasAnyPermission, hasPermission } = useAdminAuth();
-  const [teamModule, setTeamModule] = useState(null);
-  const [rolesModule, setRolesModule] = useState(null);
+  const { isOwnerOrSuperAdmin } = useAdminAuth();
+  const [moduleData, setModuleData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [activeTab, setActiveTab] = useState("employees");
-  const [panel, setPanel] = useState(null);
-  const [employeeForm, setEmployeeForm] = useState(createEmployeeForm());
-  const [roleForm, setRoleForm] = useState(createRoleForm());
-  const [isSaving, setIsSaving] = useState(false);
-
   const [employeeFilters, setEmployeeFilters] = useState({
     search: "",
     status: "all",
-    roleId: "all",
-    dateRange: { from: "", to: "" },
   });
-  const [roleFilters, setRoleFilters] = useState({
-    search: "",
-    status: "all",
-    type: "all",
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
+  const [selectedActivityKey, setSelectedActivityKey] = useState("");
+  const [employeePreviewMode, setEmployeePreviewMode] = useState("employees");
+  const [employeePreviewOpen, setEmployeePreviewOpen] = useState(false);
+  const [createPanelOpen, setCreatePanelOpen] = useState(false);
+  const [accessPanelOpen, setAccessPanelOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [employeeForm, setEmployeeForm] = useState(createEmployeeForm());
+  const [accessForm, setAccessForm] = useState({
+    employeeId: "",
+    templateKey: "custom",
+    rowsMap: {},
   });
-  const [activityFilters, setActivityFilters] = useState({
-    employeeId: "all",
-    actionType: "all",
-    module: "all",
-    dateBucket: "all",
-    dateRange: { from: "", to: "" },
-  });
-  const [accessRoleId, setAccessRoleId] = useState("");
 
-  const canManageEmployees = isOwnerOrSuperAdmin || hasAnyPermission(["team.manage", "users.manage"]);
-  const canManageRoles = isOwnerOrSuperAdmin || hasPermission("roles.manage");
+  const accessGroups = useMemo(() => buildAccessGroups(), []);
 
   const loadModule = async (options = {}) => {
     setIsLoading(true);
     setError("");
     try {
-      const [nextTeamModule, nextRolesModule] = await Promise.all([
-        fetchAdminTeamModuleData({ force: options.force }),
-        fetchAdminRolesModuleData({ force: options.force }),
-      ]);
-      setTeamModule(nextTeamModule);
-      setRolesModule(nextRolesModule);
-      setAccessRoleId((current) => current || nextRolesModule?.roles?.[0]?.id || "");
+      const next = await fetchAdminTeamModuleData({ force: options.force });
+      setModuleData(next);
+      setSelectedEmployeeId((current) => current || next?.members?.[0]?.id || "");
     } catch (nextError) {
       setError(nextError.message || "Could not load employees.");
     } finally {
@@ -343,212 +265,114 @@ export default function AdminTeam() {
     void loadModule();
   }, []);
 
-  const menuCatalog = useMemo(
-    () => createMenuCatalog(rolesModule?.menuItems || teamModule?.menuItems || []),
-    [rolesModule?.menuItems, teamModule?.menuItems],
-  );
+  useEffect(() => {
+    setEmployeePreviewOpen(false);
+    setSelectedActivityKey("");
+  }, [activeTab]);
 
-  const permissionGroups = useMemo(
-    () => groupPermissions(rolesModule?.permissions || teamModule?.permissions || []),
-    [rolesModule?.permissions, teamModule?.permissions],
-  );
-
-  const employees = useMemo(() => {
-    const activityTimeline = teamModule?.activityTimeline || [];
-    return (teamModule?.members || []).map((member) => {
-      const logs = activityTimeline.filter((item) => item.admin_profile_id === member.profileId);
-      const thisWeekActions = logs.filter((item) => {
-        const timestamp = new Date(item.created_at || 0).getTime();
-        return timestamp >= Date.now() - (7 * 24 * 60 * 60 * 1000);
-      }).length;
-      return {
-        ...member,
-        lastActivityAt: logs[0]?.created_at || member.lastLoginAt || member.updatedAt || null,
-        actionsThisWeek: thisWeekActions,
-      };
-    });
-  }, [teamModule?.activityTimeline, teamModule?.members]);
-
-  const roles = rolesModule?.roles || [];
-  const ownerMemberCount = employees.filter((item) => item.isOwner && item.status === "active").length;
-  const openWorkSessions = (teamModule?.workSessions || []).filter((item) => !item.ended_at).length;
-  const employeesActiveToday = employees.filter((item) => Number(item.activeTimeTodaySeconds || 0) > 0).length;
-
-  const kpis = useMemo(() => {
-    const suspendedEmployees = employees.filter((item) => item.status === "suspended").length;
-    const activeEmployees = employees.filter((item) => item.status === "active").length;
-    return [
-      { label: "Total employees", value: employees.length, icon: Users },
-      { label: "Active employees", value: activeEmployees, icon: UserCog },
-      { label: "Suspended employees", value: suspendedEmployees, icon: PauseCircle },
-      { label: "Roles", value: roles.length, icon: ShieldCheck },
-      { label: "Active today", value: employeesActiveToday, icon: Activity },
-      { label: "Open work sessions", value: teamModule?.supportsWorkSessionsV1 ? openWorkSessions : "—", icon: Clock3 },
-    ];
-  }, [employees, roles.length, teamModule?.supportsWorkSessionsV1, openWorkSessions, employeesActiveToday]);
-
+  const employees = moduleData?.members || [];
+  const roles = moduleData?.roles || [];
   const filteredEmployees = useMemo(() => {
     const query = employeeFilters.search.trim().toLowerCase();
-    return employees.filter((member) => {
+
+    return employees.filter((employee) => {
       const matchesSearch = !query || [
-        member.fullName,
-        member.email,
-        member.phone,
-        member.roleLabel,
+        employee.fullName,
+        employee.email,
+        employee.roleLabel,
+        getEmployeeTemplateLabel(employee),
       ].some((value) => String(value || "").toLowerCase().includes(query));
-      const matchesStatus = employeeFilters.status === "all" || member.status === employeeFilters.status;
-      const matchesRole = employeeFilters.roleId === "all" || member.roleId === employeeFilters.roleId;
-      const matchesDate = !employeeFilters.dateRange.from && !employeeFilters.dateRange.to
-        ? true
-        : isWithinRange(member.createdAt || member.lastActivityAt, employeeFilters.dateRange);
-      return matchesSearch && matchesStatus && matchesRole && matchesDate;
+      const matchesStatus = employeeFilters.status === "all" || employee.status === employeeFilters.status;
+      return matchesSearch && matchesStatus;
     });
-  }, [employees, employeeFilters]);
-
-  const filteredRoles = useMemo(() => {
-    const query = roleFilters.search.trim().toLowerCase();
-    return roles.filter((role) => {
-      const matchesSearch = !query || [role.name, role.slug, role.description, role.code]
-        .some((value) => String(value || "").toLowerCase().includes(query));
-      const matchesStatus = roleFilters.status === "all"
-        || (roleFilters.status === "active" && role.isActive)
-        || (roleFilters.status === "inactive" && !role.isActive);
-      const matchesType = roleFilters.type === "all" || getRoleType(role) === roleFilters.type;
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [roles, roleFilters]);
-
-  const activityRows = useMemo(() => {
-    const membersById = new Map(employees.map((item) => [item.profileId, item]));
-    return (teamModule?.activityTimeline || []).filter((item) => {
-      const matchesEmployee = activityFilters.employeeId === "all" || item.admin_profile_id === activityFilters.employeeId;
-      const matchesAction = activityFilters.actionType === "all" || item.action === activityFilters.actionType;
-      const matchesModule = activityFilters.module === "all" || item.module === activityFilters.module;
-      const matchesBucket = activityFilters.dateBucket === "all" || getDateBucket(item.created_at) === activityFilters.dateBucket;
-      const matchesRange = !activityFilters.dateRange.from && !activityFilters.dateRange.to
-        ? true
-        : isWithinRange(item.created_at, activityFilters.dateRange);
-      return matchesEmployee && matchesAction && matchesModule && matchesBucket && matchesRange;
-    }).map((item) => ({
-      ...item,
-      member: membersById.get(item.admin_profile_id) || null,
-    }));
-  }, [teamModule?.activityTimeline, employees, activityFilters]);
+  }, [employeeFilters.search, employeeFilters.status, employees]);
 
   const selectedEmployee = useMemo(
-    () => employees.find((item) => item.profileId === panel?.profileId) || null,
-    [employees, panel?.profileId],
+    () => filteredEmployees.find((employee) => employee.id === selectedEmployeeId)
+      || employees.find((employee) => employee.id === selectedEmployeeId)
+      || filteredEmployees[0]
+      || employees[0]
+      || null,
+    [employees, filteredEmployees, selectedEmployeeId],
   );
 
-  const selectedRole = useMemo(
-    () => roles.find((item) => item.id === panel?.roleId) || roles.find((item) => item.id === accessRoleId) || null,
-    [roles, panel?.roleId, accessRoleId],
-  );
+  useEffect(() => {
+    if (selectedEmployee?.id && selectedEmployee.id !== selectedEmployeeId) {
+      setSelectedEmployeeId(selectedEmployee.id);
+    }
+  }, [selectedEmployee?.id, selectedEmployeeId]);
 
-  const selectedRoleMenuPreview = useMemo(
-    () => selectedRole ? buildRoleMenuVisibility(selectedRole, rolesModule?.roleMenuVisibility || [], menuCatalog) : {},
-    [selectedRole, rolesModule?.roleMenuVisibility, menuCatalog],
-  );
+  const metrics = useMemo(() => ([
+    { label: "Total employees", value: employees.length },
+    { label: "Active employees", value: employees.filter((employee) => employee.status === "active").length },
+    { label: "Suspended employees", value: employees.filter((employee) => employee.status === "suspended").length },
+    { label: "With page access", value: employees.filter((employee) => employee.allowedPagesCount > 0).length },
+    { label: "No access assigned", value: employees.filter((employee) => employee.allowedPagesCount < 1 && !employee.isOwner).length },
+  ]), [employees]);
 
-  const employeeActivityOptions = useMemo(
-    () => [{ value: "all", label: "All employees" }].concat(
-      employees.map((member) => ({
-        value: member.profileId,
-        label: member.fullName || member.email,
-      })),
-    ),
-    [employees],
-  );
+  const openEmployeePreview = (employee, mode = "employees") => {
+    setSelectedEmployeeId(employee.id);
+    setEmployeePreviewMode(mode);
+    setEmployeePreviewOpen(true);
+  };
 
-  const activityActionOptions = useMemo(
-    () => [{ value: "all", label: "All actions" }].concat(
-      Array.from(new Set((teamModule?.activityTimeline || []).map((item) => item.action).filter(Boolean))).map((value) => ({
-        value,
-        label: formatActionLabel(value),
-      })),
-    ),
-    [teamModule?.activityTimeline],
-  );
-
-  const activityModuleOptions = useMemo(
-    () => [{ value: "all", label: "All modules" }].concat(
-      Array.from(new Set((teamModule?.activityTimeline || []).map((item) => item.module).filter(Boolean))).map((value) => ({
-        value,
-        label: formatActionLabel(value),
-      })),
-    ),
-    [teamModule?.activityTimeline],
-  );
-
-  const openEmployeeCreate = () => {
-    if (!canManageEmployees) {
+  const openAccessEditor = (employee) => {
+    if (!employee?.id || employee.source !== "team_member") {
+      setError("Employee access can only be managed for team members in the team registry.");
       return;
     }
 
+    const detectedTemplate = detectAccessTemplate(employee.pageAccess || []);
     setNotice("");
-    setPanel({ type: "employee-create" });
-    setEmployeeForm({
-      ...createEmployeeForm(),
-      roleId: roles.find((role) => role.isActive)?.id || "",
+    setAccessForm({
+      employeeId: employee.id,
+      templateKey: detectedTemplate?.key || "custom",
+      rowsMap: createAccessRowsMap(employee.pageAccess || []),
     });
+    setAccessPanelOpen(true);
   };
 
-  const openEmployeeView = (employee) => {
+  const openCreateEmployeePanel = () => {
     setNotice("");
-    setPanel({ type: "employee-view", profileId: employee.profileId });
+    setEmployeeForm(createEmployeeForm());
+    setCreatePanelOpen(true);
   };
 
-  const openEmployeeEdit = (employee) => {
+  const handleCreateEmployee = async () => {
+    setIsSaving(true);
+    setError("");
     setNotice("");
-    setPanel({ type: "employee-edit", profileId: employee.profileId });
-    setEmployeeForm({
-      fullName: employee.fullName || "",
-      email: employee.email || "",
-      phone: employee.phone || "",
-      password: "",
-      roleId: employee.roleId || "",
-      status: employee.status || "active",
-      sendSetupLink: false,
-    });
-  };
 
-  const openRoleCreate = () => {
-    if (!canManageRoles) {
-      return;
+    try {
+      const roleId = resolveTemplateRoleId(employeeForm.templateKey, roles);
+      const template = ADMIN_ACCESS_TEMPLATES_BY_KEY.get(employeeForm.templateKey) || ADMIN_ACCESS_TEMPLATES_BY_KEY.get("read_only");
+      const createdEmployee = await createAdminTeamMember({
+        fullName: employeeForm.fullName,
+        email: employeeForm.email,
+        phone: employeeForm.phone,
+        password: employeeForm.password,
+        status: employeeForm.status,
+        sendSetupLink: employeeForm.sendSetupLink,
+        roleId,
+      });
+
+      if (createdEmployee?.id) {
+        await updateAdminEmployeePageAccess(createdEmployee.id, template?.access || []);
+      }
+
+      setNotice("Employee created.");
+      setCreatePanelOpen(false);
+      await loadModule({ force: true });
+    } catch (nextError) {
+      setError(nextError.message || "Could not create employee.");
+    } finally {
+      setIsSaving(false);
     }
-
-    setNotice("");
-    setPanel({ type: "role-create" });
-    setRoleForm(createRoleForm());
   };
 
-  const openRoleEdit = (role) => {
-    if (!canManageRoles) {
-      return;
-    }
-
-    const assignedPermissionCodes = (rolesModule?.rolePermissions || [])
-      .filter((item) => item.roleCode === role.code)
-      .map((item) => item.permissionCode);
-    setNotice("");
-    setPanel({ type: "role-edit", roleId: role.id });
-    setRoleForm({
-      name: role.name || role.label || "",
-      slug: role.slug || role.code || "",
-      description: role.description || "",
-      isActive: role.isActive,
-      permissionCodes: assignedPermissionCodes,
-      menuVisibility: buildRoleMenuVisibility(role, rolesModule?.roleMenuVisibility || [], menuCatalog),
-    });
-  };
-
-  const closePanel = () => {
-    setPanel(null);
-    setIsSaving(false);
-  };
-
-  const persistEmployee = async () => {
-    if (!canManageEmployees) {
+  const handleSaveAccess = async () => {
+    const employee = employees.find((item) => item.id === accessForm.employeeId);
+    if (!employee?.id) {
       return;
     }
 
@@ -557,216 +381,107 @@ export default function AdminTeam() {
     setNotice("");
 
     try {
-      if (panel?.type === "employee-create") {
-        const createdEmployee = await createAdminTeamMember(employeeForm);
-        if (employeeForm.sendSetupLink) {
-          await sendAdminEmployeeSetupLink({
-            email: employeeForm.email,
-            profileId: createdEmployee?.profile_id || null,
-          });
-        }
-        setNotice(employeeForm.sendSetupLink ? "Employee access created, password assigned, and setup link sent." : "Employee access created and password assigned.");
-      } else if (selectedEmployee) {
-        const previous = selectedEmployee;
-        if (
-          employeeForm.fullName !== (previous.fullName || "")
-          || employeeForm.phone !== (previous.phone || "")
-          || employeeForm.email.toLowerCase() !== String(previous.email || "").toLowerCase()
-        ) {
-          await updateAdminTeamMemberProfile(previous.profileId, employeeForm);
-        }
-        if (employeeForm.roleId && employeeForm.roleId !== previous.roleId) {
-          await updateAdminTeamMemberRole(previous.profileId, employeeForm.roleId);
-        }
-        if (employeeForm.status !== previous.status) {
-          await updateAdminTeamMemberStatus(previous.profileId, employeeForm.status);
-        }
-        setNotice("Employee updated.");
+      const nextRows = normalizeAccessRows(accessForm.rowsMap);
+      await updateAdminEmployeePageAccess(employee.id, nextRows);
+
+      const template = ADMIN_ACCESS_TEMPLATES_BY_KEY.get(accessForm.templateKey);
+      const compatibilityRoleId = resolveTemplateRoleId(accessForm.templateKey, roles);
+      if (!employee.isOwner && template?.key && template.key !== "custom" && compatibilityRoleId && compatibilityRoleId !== employee.roleId) {
+        await updateAdminTeamMemberRole(employee.profileId, compatibilityRoleId);
       }
 
-      closePanel();
+      setNotice("Employee access updated.");
+      setAccessPanelOpen(false);
       await loadModule({ force: true });
     } catch (nextError) {
-      setError(nextError.message || "Could not save employee.");
+      setError(nextError.message || "Could not save employee access.");
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const persistRole = async () => {
-    if (!canManageRoles) {
-      return;
-    }
-
-    setIsSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const payload = {
-        role: {
-          name: roleForm.name,
-          slug: roleForm.slug,
-          description: roleForm.description,
-          isActive: roleForm.isActive,
-          isSystemRole: selectedRole?.isSystemRole || false,
-          isOwnerRole: selectedRole?.isOwnerRole || false,
-          rank: selectedRole?.rank || 0,
-        },
-        permissionCodes: roleForm.permissionCodes,
-        menuVisibility: roleForm.menuVisibility,
-      };
-
-      if (panel?.type === "role-create") {
-        await createAdminRole(payload);
-        setNotice("Role created.");
-      } else if (selectedRole) {
-        await updateAdminRoleDefinition(selectedRole.id, payload);
-        setNotice("Role updated.");
-      }
-
-      closePanel();
-      await loadModule({ force: true });
-    } catch (nextError) {
-      setError(nextError.message || "Could not save role.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSetupLink = async (employee) => {
-    setError("");
-    setNotice("");
-    try {
-      await sendAdminEmployeeSetupLink({ email: employee.email, profileId: employee.profileId });
-      setNotice(`Setup link sent to ${employee.email}.`);
-      await loadModule({ force: true });
-    } catch (nextError) {
-      setError(nextError.message || "Could not send setup link.");
     }
   };
 
   const handleStatusChange = async (employee, nextStatus) => {
-    const confirmed = window.confirm(
-      nextStatus === "active"
-        ? `Reactivate ${employee.fullName || employee.email}?`
-        : `Change ${employee.fullName || employee.email} to ${nextStatus}?`,
-    );
-    if (!confirmed) return;
-
     setError("");
     setNotice("");
+
     try {
       await updateAdminTeamMemberStatus(employee.profileId, nextStatus);
       setNotice(nextStatus === "active" ? "Employee reactivated." : "Employee status updated.");
       await loadModule({ force: true });
-      if (selectedEmployee?.profileId === employee.profileId && panel?.type === "employee-view") {
-        setPanel({ ...panel });
-      }
     } catch (nextError) {
       setError(nextError.message || "Could not update employee status.");
     }
   };
 
-  const handleRemoveEmployee = async (employee) => {
-    const confirmed = window.confirm(`Remove ${employee.fullName || employee.email} from employee access?`);
-    if (!confirmed) return;
-
+  const handleSendSetupLink = async (employee) => {
     setError("");
     setNotice("");
+
     try {
-      await removeAdminTeamMember(employee.profileId);
-      setNotice("Employee removed.");
-      closePanel();
-      await loadModule({ force: true });
+      await sendAdminEmployeeSetupLink(employee.email);
+      setNotice("Password setup link sent.");
     } catch (nextError) {
-      setError(nextError.message || "Could not remove employee.");
+      setError(nextError.message || "Could not send setup link.");
     }
   };
 
-  const handleDuplicateRole = async (role) => {
-    setError("");
-    setNotice("");
-    try {
-      await duplicateAdminRole(role.id);
-      setNotice(`Role "${role.name}" duplicated.`);
-      await loadModule({ force: true });
-    } catch (nextError) {
-      setError(nextError.message || "Could not duplicate role.");
+  const selectedAccessEmployee = useMemo(
+    () => employees.find((employee) => employee.id === accessForm.employeeId) || null,
+    [accessForm.employeeId, employees],
+  );
+
+  const selectedAccessRows = useMemo(
+    () => normalizeAccessRows(accessForm.rowsMap),
+    [accessForm.rowsMap],
+  );
+
+  const activityRows = useMemo(
+    () => (moduleData?.activityTimeline || []).slice(0, 150),
+    [moduleData?.activityTimeline],
+  );
+
+  const selectedActivity = useMemo(
+    () => activityRows.find((row) => getActivityRowKey(row) === selectedActivityKey) || null,
+    [activityRows, selectedActivityKey],
+  );
+
+  const selectedActivityEmployee = useMemo(
+    () => employees.find((employee) => employee.profileId === selectedActivity?.admin_profile_id) || null,
+    [employees, selectedActivity?.admin_profile_id],
+  );
+
+  const employeeVisibleAccessGroups = useMemo(() => {
+    if (!selectedEmployee) {
+      return [];
     }
-  };
 
-  const handleRoleStatusToggle = async (role) => {
-    const nextIsActive = !role.isActive;
-    const confirmed = window.confirm(nextIsActive ? `Activate ${role.name}?` : `Deactivate ${role.name}?`);
-    if (!confirmed) return;
-
-    setError("");
-    setNotice("");
-    try {
-      await deactivateAdminRole(role.id, nextIsActive);
-      setNotice(nextIsActive ? "Role activated." : "Role deactivated.");
-      closePanel();
-      await loadModule({ force: true });
-    } catch (nextError) {
-      setError(nextError.message || "Could not update role state.");
+    if (selectedEmployee.isOwner) {
+      return accessGroups;
     }
-  };
 
-  const handleDeleteRole = async (role) => {
-    const confirmed = window.confirm(`Delete ${role.name}? This only works for custom roles without assigned employees.`);
-    if (!confirmed) return;
+    return accessGroups
+      .map((section) => ({
+        ...section,
+        pages: section.pages.filter((page) => (selectedEmployee.pageAccess || []).some((entry) => entry.pageKey === page.key && entry.canView)),
+      }))
+      .filter((section) => section.pages.length);
+  }, [accessGroups, selectedEmployee]);
 
-    setError("");
-    setNotice("");
-    try {
-      await deleteAdminRole(role.id);
-      setNotice("Role deleted.");
-      closePanel();
-      await loadModule({ force: true });
-    } catch (nextError) {
-      setError(nextError.message || "Could not delete role.");
-    }
-  };
-
-  const selectedActivityMetrics = useMemo(() => {
-    const focusedEmployee = activityFilters.employeeId === "all"
-      ? null
-      : employees.find((item) => item.profileId === activityFilters.employeeId) || null;
-    const todayActions = activityRows.filter((item) => getDateBucket(item.created_at) === "today").length;
-    const weekActions = activityRows.filter((item) => {
-      const timestamp = new Date(item.created_at || 0).getTime();
-      return timestamp >= Date.now() - (7 * 24 * 60 * 60 * 1000);
-    }).length;
-    return {
-      todayActions,
-      weekActions,
-      activeTimeToday: focusedEmployee ? focusedEmployee.activeTimeTodaySeconds : null,
-      activeTimeThisWeek: focusedEmployee ? focusedEmployee.activeTimeThisWeekSeconds : null,
-      lastLoginAt: focusedEmployee?.lastLoginAt || null,
-      lastLogoutAt: focusedEmployee?.lastLogoutAt || null,
-    };
-  }, [activityRows, employees, activityFilters.employeeId]);
-
-  const employeeTableColumns = useMemo(() => ([
+  const employeeColumns = useMemo(() => ([
     {
       key: "employee",
       label: "Employee",
-      width: 220,
-      minWidth: 160,
+      width: 240,
+      minWidth: 200,
       maxWidth: 360,
       wrap: true,
       resizable: true,
       reorderable: true,
       renderCell: (employee) => (
         <div className="admin-crm-table__identity">
-          <ProfileAvatar
-            avatarUrl={employee.avatarUrl}
-            fallbackName={employee.fullName || employee.email}
-            size="sm"
-            className="admin-employees-page__profile-avatar"
-          />
+          <ProfileAvatar avatarUrl={employee.avatarUrl} fallbackName={employee.fullName || employee.email} size="md" />
           <div className="admin-crm-table__stack">
-            <span className="admin-crm-table__cell-main">{employee.fullName || "Unnamed employee"}</span>
+            <span className="admin-crm-table__cell-main">{employee.fullName || "No name"}</span>
             <span className="admin-crm-table__cell-sub">{employee.email || "—"}</span>
           </div>
         </div>
@@ -774,897 +489,845 @@ export default function AdminTeam() {
       getCellTitle: (employee) => employee.fullName || employee.email || "Employee",
     },
     {
-      key: "role",
-      label: "Role",
-      width: 140,
-      minWidth: 110,
-      maxWidth: 220,
-      wrap: false,
-      resizable: true,
-      reorderable: true,
-      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.roleLabel || "No role"}</span>,
-      getCellTitle: (employee) => employee.roleLabel || "No role",
-    },
-    {
       key: "status",
       label: "Status",
       width: 130,
       minWidth: 110,
-      maxWidth: 200,
-      wrap: false,
-      resizable: true,
-      reorderable: true,
-      renderCell: (employee) => <AdminStatusBadge tone={getEmployeeStatusTone(employee.status)}>{formatActionLabel(employee.status)}</AdminStatusBadge>,
-      getCellTitle: (employee) => formatActionLabel(employee.status),
-    },
-    {
-      key: "lastLogin",
-      label: "Last login",
-      width: 150,
-      minWidth: 120,
-      maxWidth: 220,
-      wrap: true,
-      resizable: true,
-      reorderable: true,
-      renderCell: (employee) => (
-        <div className="admin-crm-table__stack">
-          <span className="admin-crm-table__cell-main">{formatDateTime(employee.lastLoginAt)}</span>
-        </div>
-      ),
-      getCellTitle: (employee) => formatDateTime(employee.lastLoginAt),
-    },
-    {
-      key: "lastActivity",
-      label: "Last activity",
-      width: 150,
-      minWidth: 120,
-      maxWidth: 220,
-      wrap: true,
-      resizable: true,
-      reorderable: true,
-      renderCell: (employee) => (
-        <div className="admin-crm-table__stack">
-          <span className="admin-crm-table__cell-main">{formatDateTime(employee.lastActivityAt)}</span>
-        </div>
-      ),
-      getCellTitle: (employee) => formatDateTime(employee.lastActivityAt),
-    },
-    {
-      key: "actionsWeek",
-      label: "Actions this week",
-      width: 150,
-      minWidth: 120,
-      maxWidth: 220,
-      wrap: false,
-      resizable: true,
-      reorderable: true,
-      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.actionsThisWeek || 0}</span>,
-    },
-    {
-      key: "sessions",
-      label: "Sessions",
-      width: 120,
-      minWidth: 100,
       maxWidth: 180,
       wrap: false,
       resizable: true,
       reorderable: true,
-      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.totalSessionCount || 0}</span>,
+      renderCell: (employee) => <AdminStatusBadge tone={getEmployeeStatusTone(employee.status)}>{employee.status}</AdminStatusBadge>,
+      getCellTitle: (employee) => employee.status,
     },
-  ]), []);
-
-  const renderEmployeesTab = () => (
-    <>
-      <section className="admin-card admin-card-compact admin-employees-page__toolbar-card">
-        <AdminFilterBar
-          searchValue={employeeFilters.search}
-          onSearchChange={(value) => setEmployeeFilters((current) => ({ ...current, search: value }))}
-          searchPlaceholder="Search name, email, phone, role"
-          statusFilter={employeeFilters.status}
-          onStatusFilterChange={(value) => setEmployeeFilters((current) => ({ ...current, status: value }))}
-          statusOptions={EMPLOYEE_STATUS_OPTIONS}
-          ownerFilter={employeeFilters.roleId}
-          onOwnerFilterChange={(value) => setEmployeeFilters((current) => ({ ...current, roleId: value }))}
-          ownerOptions={[{ value: "all", label: "All roles" }].concat(
-            roles.map((role) => ({ value: role.id, label: role.name })),
-          )}
-          dateRange={employeeFilters.dateRange}
-          onDateRangeChange={(value) => setEmployeeFilters((current) => ({ ...current, dateRange: value }))}
-        >
-          <button
-            type="button"
-            className="admin-btn admin-btn-secondary admin-btn-sm"
-            onClick={() => setEmployeeFilters({
-              search: "",
-              status: "all",
-              roleId: "all",
-              dateRange: { from: "", to: "" },
-            })}
-          >
-            <FilterX size={14} />
-            Clear filters
-          </button>
-        </AdminFilterBar>
-      </section>
-
-      {!teamModule?.supportsTeamMembersV1 && !isLoading ? (
-        <p className="admin-message">
-          Team registry is not configured yet. Apply the dynamic admin team migration before managing employees.
-        </p>
-      ) : null}
-
-      <AdminColumnTable
-        storageKey="ff-admin-table-layout-employees"
-        title="Employees"
-        countLabel={`${filteredEmployees.length} employee${filteredEmployees.length === 1 ? "" : "s"}`}
-        columns={employeeTableColumns}
-        rows={filteredEmployees}
-        loading={false}
-        error=""
-        emptyTitle="No employees found"
-        emptyDetail="Try adjusting the current filters."
-        selectedRowId={selectedEmployee?.profileId || ""}
-        getRowKey={(employee) => employee.profileId}
-        onRowClick={(employee) => openEmployeeView(employee)}
-      />
-    </>
-  );
-
-  const renderRolesTab = () => (
-    <>
-      <section className="admin-card admin-card-compact admin-employees-page__toolbar-card">
-        <AdminFilterBar
-          searchValue={roleFilters.search}
-          onSearchChange={(value) => setRoleFilters((current) => ({ ...current, search: value }))}
-          searchPlaceholder="Search role name, slug, description"
-          statusFilter={roleFilters.status}
-          onStatusFilterChange={(value) => setRoleFilters((current) => ({ ...current, status: value }))}
-          statusOptions={ROLE_STATUS_OPTIONS}
-          ownerFilter={roleFilters.type}
-          onOwnerFilterChange={(value) => setRoleFilters((current) => ({ ...current, type: value }))}
-          ownerOptions={ROLE_TYPE_OPTIONS}
-        >
-          <button
-            type="button"
-            className="admin-btn admin-btn-secondary admin-btn-sm"
-            onClick={() => setRoleFilters({ search: "", status: "all", type: "all" })}
-          >
-            Clear filters
-          </button>
-        </AdminFilterBar>
-      </section>
-
-      <section className="admin-employees-page__role-grid">
-        {filteredRoles.length ? filteredRoles.map((role) => (
-          <button
-            key={role.id}
-            type="button"
-            className={`admin-card admin-employees-page__role-card${selectedRole?.id === role.id ? " is-active" : ""}`}
-            onClick={() => openRoleEdit(role)}
-          >
-            <div className="admin-employees-page__role-card-head">
-              <div>
-                <strong>{role.name}</strong>
-                <span>{role.slug || role.code}</span>
-              </div>
-              <div className="admin-employees-page__role-badges">
-                <AdminStatusBadge tone={role.isActive ? "success" : "neutral"}>
-                  {role.isActive ? "Active" : "Inactive"}
-                </AdminStatusBadge>
-                <AdminStatusBadge tone={getRoleTypeTone(role)}>{formatActionLabel(getRoleType(role))}</AdminStatusBadge>
-              </div>
-            </div>
-            <p>{role.description || "No role description yet."}</p>
-            <div className="admin-employees-page__role-card-meta">
-              <div>
-                <span>Employees</span>
-                <strong>{role.memberCount || 0}</strong>
-              </div>
-              <div>
-                <span>Permissions</span>
-                <strong>{(rolesModule?.rolePermissions || []).filter((item) => item.roleCode === role.code).length}</strong>
-              </div>
-              <div>
-                <span>Visible pages</span>
-                <strong>{menuCatalog.filter((item) => buildRoleMenuVisibility(role, rolesModule?.roleMenuVisibility || [], menuCatalog)[item.route] !== false).length}</strong>
-              </div>
-            </div>
-          </button>
-        )) : (
-          <section className="admin-card admin-card-compact">
-            <p className="admin-message">No roles found for the current filters.</p>
-          </section>
-        )}
-      </section>
-    </>
-  );
-
-  const renderAccessTab = () => {
-    const focusRole = roles.find((role) => role.id === accessRoleId) || roles[0] || null;
-    const visibility = focusRole ? buildRoleMenuVisibility(focusRole, rolesModule?.roleMenuVisibility || [], menuCatalog) : {};
-    const rolePermissionCodes = new Set(
-      (rolesModule?.rolePermissions || [])
-        .filter((item) => item.roleCode === focusRole?.code)
-        .map((item) => item.permissionCode),
-    );
-
-    return (
-      <section className="admin-employees-page__access-layout">
-        <article className="admin-card admin-card-compact">
-          <div className="admin-employees-page__section-head">
-            <div>
-              <span>Role access</span>
-              <h3>Sidebar preview and permissions</h3>
-            </div>
-            <div className="admin-employees-page__section-head-actions">
-              <select
-                className="admin-select admin-filter-control"
-                value={focusRole?.id || ""}
-                onChange={(event) => setAccessRoleId(event.target.value)}
-              >
-                {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-              </select>
-              {focusRole ? (
-                <button type="button" className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => openRoleEdit(focusRole)}>
-                  Edit role
-                </button>
-              ) : null}
-            </div>
+    {
+      key: "template",
+      label: "Access template",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{getEmployeeTemplateLabel(employee)}</span>
+          <span className="admin-crm-table__cell-sub">{employee.roleLabel || "No role"}</span>
+        </div>
+      ),
+      getCellTitle: (employee) => `${getEmployeeTemplateLabel(employee)} • ${employee.roleLabel || "No role"}`,
+    },
+    {
+      key: "pages",
+      label: "Allowed pages",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.isOwner ? "All pages" : employee.allowedPagesCount}</span>,
+      getCellTitle: (employee) => employee.isOwner ? "All pages" : String(employee.allowedPagesCount || 0),
+    },
+    {
+      key: "recentActivity",
+      label: "Recent activity",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{employee.recentActivityCount} actions</span>
+          <span className="admin-crm-table__cell-sub">{formatDuration(employee.activeTimeThisWeekSeconds)} this week</span>
+        </div>
+      ),
+      getCellTitle: (employee) => `${employee.recentActivityCount} actions • ${formatDuration(employee.activeTimeThisWeekSeconds)} this week`,
+    },
+    {
+      key: "lastActive",
+      label: "Last active",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => {
+        const lastSeen = employee.lastLoginAt || employee.currentSession?.last_seen_at;
+        return (
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{formatDateTime(lastSeen)}</span>
+            <span className="admin-crm-table__cell-sub">{employee.currentSession ? "Session active" : "Offline"}</span>
           </div>
-
-          {focusRole ? (
-            <div className="admin-employees-page__access-summary">
-              <div className="admin-employees-page__access-tree">
-                {adminNavigationSections.map((section) => {
-                  const pages = section.pages.filter((page) => visibility[page.path] !== false);
-                  if (!pages.length) return null;
-                  return (
-                    <article key={section.key} className="admin-panel-card">
-                      <header>
-                        <strong>{section.label}</strong>
-                        <small>{pages.length} visible</small>
-                      </header>
-                      <div className="admin-employees-page__access-list">
-                        {pages.map((page) => (
-                          <div key={page.key} className="admin-employees-page__access-item">
-                            <div>
-                              <span>{page.label}</span>
-                              <small>{page.permission || (page.anyPermissions || []).join(" / ") || "No explicit permission"}</small>
-                            </div>
-                            <AdminStatusBadge tone="success">Visible</AdminStatusBadge>
-                          </div>
-                        ))}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-
-              <article className="admin-panel-card">
-                <header>
-                  <strong>Permission summary</strong>
-                  <small>{rolePermissionCodes.size} allowed permissions</small>
-                </header>
-                <div className="admin-employees-page__permission-preview">
-                  {Object.entries(permissionGroups).map(([moduleKey, items]) => (
-                    <div key={moduleKey} className="admin-employees-page__permission-preview-group">
-                      <strong>{formatActionLabel(moduleKey)}</strong>
-                      <div className="admin-employees-page__badge-list">
-                        {items.map((permission) => (
-                          <AdminStatusBadge
-                            key={permission.code}
-                            tone={rolePermissionCodes.has(permission.code) ? "success" : "neutral"}
-                          >
-                            {permission.label || formatPermissionLabel(permission.code)}
-                          </AdminStatusBadge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            </div>
-          ) : (
-            <p className="admin-message">No roles configured yet.</p>
-          )}
-        </article>
-      </section>
-    );
-  };
-
-  const renderActivityTab = () => (
-    <>
-      <section className="admin-card admin-card-compact admin-employees-page__toolbar-card">
-        <AdminFilterBar
-          statusFilter={activityFilters.actionType}
-          onStatusFilterChange={(value) => setActivityFilters((current) => ({ ...current, actionType: value }))}
-          statusOptions={activityActionOptions}
-          ownerFilter={activityFilters.employeeId}
-          onOwnerFilterChange={(value) => setActivityFilters((current) => ({ ...current, employeeId: value }))}
-          ownerOptions={employeeActivityOptions}
-          dateRange={activityFilters.dateRange}
-          onDateRangeChange={(value) => setActivityFilters((current) => ({ ...current, dateRange: value }))}
-        >
-          <select
-            className="admin-select admin-filter-control"
-            value={activityFilters.module}
-            onChange={(event) => setActivityFilters((current) => ({ ...current, module: event.target.value }))}
-          >
-            {activityModuleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-          <select
-            className="admin-select admin-filter-control"
-            value={activityFilters.dateBucket}
-            onChange={(event) => setActivityFilters((current) => ({ ...current, dateBucket: event.target.value }))}
-          >
-            {ACTIVITY_DATE_FILTERS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+        );
+      },
+      getCellTitle: (employee) => formatDateTime(employee.lastLoginAt || employee.currentSession?.last_seen_at),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: 260,
+      minWidth: 220,
+      maxWidth: 340,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-employees-page__badge-list">
           <button
             type="button"
-            className="admin-btn admin-btn-secondary admin-btn-sm"
-            onClick={() => setActivityFilters({
-              employeeId: "all",
-              actionType: "all",
-              module: "all",
-              dateBucket: "all",
-              dateRange: { from: "", to: "" },
-            })}
+            className="admin-btn admin-btn-secondary"
+            onClick={(event) => stopTableAction(event, () => openEmployeePreview(employee))}
           >
-            Clear filters
+            Open
           </button>
-        </AdminFilterBar>
-      </section>
+          <button
+            type="button"
+            className="admin-btn admin-btn-secondary"
+            onClick={(event) => stopTableAction(event, () => openAccessEditor(employee))}
+            disabled={employee.isOwner || employee.source !== "team_member"}
+          >
+            Edit access
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-secondary"
+            onClick={(event) => stopTableAction(event, () => handleSendSetupLink(employee))}
+          >
+            Setup link
+          </button>
+        </div>
+      ),
+      hideable: false,
+    },
+  ]), [accessGroups, employeeFilters.search, employeeFilters.status]);
 
-      <AdminMetricsStrip
-        items={[
-          { label: "Actions today", value: selectedActivityMetrics.todayActions },
-          { label: "Actions this week", value: selectedActivityMetrics.weekActions },
-          { label: "Active today", value: selectedActivityMetrics.activeTimeToday !== null ? formatDuration(selectedActivityMetrics.activeTimeToday) : "—" },
-          { label: "Active this week", value: selectedActivityMetrics.activeTimeThisWeek !== null ? formatDuration(selectedActivityMetrics.activeTimeThisWeek) : "—" },
-          { label: "Last login", value: selectedActivityMetrics.lastLoginAt ? formatDateTime(selectedActivityMetrics.lastLoginAt) : "—" },
-          { label: "Last logout", value: selectedActivityMetrics.lastLogoutAt ? formatDateTime(selectedActivityMetrics.lastLogoutAt) : "—" },
-        ]}
-      />
-
-      <section className="admin-card admin-card-compact admin-employees-page__activity-table">
-        <div className="admin-employees-page__section-head">
-          <div>
-            <span>Activity timeline</span>
-            <h3>Employee actions and work-session trail</h3>
+  const accessColumns = useMemo(() => ([
+    {
+      key: "employee",
+      label: "Employee",
+      width: 230,
+      minWidth: 190,
+      maxWidth: 340,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-crm-table__identity">
+          <ProfileAvatar avatarUrl={employee.avatarUrl} fallbackName={employee.fullName || employee.email} size="md" />
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{employee.fullName || "No name"}</span>
+            <span className="admin-crm-table__cell-sub">{employee.email || "—"}</span>
           </div>
         </div>
-
-        {activityRows.length ? (
-          <div className="admin-employees-page__activity-list">
-            {activityRows.map((item) => (
-              <article key={`${item.source}-${item.id}`} className="admin-employees-page__activity-row">
-                <div>
-                  <strong>{item.member?.fullName || item.member?.email || "Employee"}</strong>
-                  <span>{item.member?.roleLabel || "—"}</span>
-                </div>
-                <div>
-                  <AdminStatusBadge tone={getActivityTone(item.action)}>{formatActionLabel(item.action)}</AdminStatusBadge>
-                </div>
-                <div>
-                  <strong>{formatActionLabel(item.module || "general")}</strong>
-                  <span>{formatActionLabel(item.entity_type || "entity")}</span>
-                </div>
-                <div>
-                  <strong>{item.entity_id || "—"}</strong>
-                  <span>{summarizeMetadata(item.metadata)}</span>
-                </div>
-                <time>{formatDateTime(item.created_at)}</time>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="admin-message">No activity found for the selected filters.</p>
-        )}
-      </section>
-    </>
-  );
-
-  const renderEmployeePanel = () => {
-    if (panel?.type === "employee-create" || panel?.type === "employee-edit") {
-      const isEdit = panel.type === "employee-edit";
-      return (
-        <AdminSidePanel
-          open
-          title={isEdit ? "Edit employee" : "Add employee"}
-          subtitle={isEdit ? "Update internal worker access, role, and status." : "Create or connect an employee account, assign a role, and set the starting password."}
-          onClose={closePanel}
-          className="admin-employees-page__drawer"
-          withOverlay
-          overlayClassName="admin-employees-page__overlay"
-          overlayLabel="Close employee drawer"
-        >
-          <div className="admin-employees-page__panel-grid">
-            <article className="admin-panel-card">
-              <header>
-                <strong>Account details</strong>
-                <small>Password is sent to secure backend auth tooling and is not stored in app logs.</small>
-              </header>
-              <div className="admin-employees-page__form-grid">
-                <label>
-                  <span>Full name</span>
-                  <input className="admin-input" value={employeeForm.fullName} onChange={(event) => setEmployeeForm((current) => ({ ...current, fullName: event.target.value }))} />
-                </label>
-                <label>
-                  <span>Email</span>
-                  <input className="admin-input" type="email" value={employeeForm.email} onChange={(event) => setEmployeeForm((current) => ({ ...current, email: event.target.value }))} />
-                </label>
-                <label>
-                  <span>Phone</span>
-                  <input className="admin-input" value={employeeForm.phone} onChange={(event) => setEmployeeForm((current) => ({ ...current, phone: event.target.value }))} />
-                </label>
-                {!isEdit ? (
-                  <label>
-                    <span>Password</span>
-                    <PasswordField
-                      className="admin-input"
-                      autoComplete="new-password"
-                      placeholder="At least 8 characters"
-                      value={employeeForm.password}
-                      onChange={(event) => setEmployeeForm((current) => ({ ...current, password: event.target.value }))}
-                    />
-                  </label>
-                ) : null}
-                <label>
-                  <span>Role</span>
-                  <select className="admin-select" value={employeeForm.roleId} onChange={(event) => setEmployeeForm((current) => ({ ...current, roleId: event.target.value }))}>
-                    <option value="">Select role</option>
-                    {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span>Status</span>
-                  <select className="admin-select" value={employeeForm.status} onChange={(event) => setEmployeeForm((current) => ({ ...current, status: event.target.value }))}>
-                    {EMPLOYEE_STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </article>
-
-            <article className="admin-panel-card">
-              <header>
-                <strong>Secure setup flow</strong>
-                <small>Optional: also send a password-reset/setup email after the employee account is created.</small>
-              </header>
-              <p className="admin-employees-page__panel-note">
-                New employees can now be created directly from this panel. The password you enter is applied in Supabase Auth, while admin access is assigned separately through the admin role registry.
-              </p>
-              <label className="admin-employees-page__checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={employeeForm.sendSetupLink}
-                  onChange={(event) => setEmployeeForm((current) => ({ ...current, sendSetupLink: event.target.checked }))}
-                />
-                <span>Send setup link after save</span>
-              </label>
-            </article>
-
-            <div className="admin-employees-page__panel-actions">
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={closePanel}>Cancel</button>
-              <button
-                type="button"
-                className="admin-btn admin-btn-primary"
-                onClick={persistEmployee}
-                disabled={isSaving || (!isEdit && employeeForm.password.trim().length < 8)}
-              >
-                {isSaving ? "Saving..." : isEdit ? "Save employee" : "Add employee"}
-              </button>
-            </div>
-          </div>
-        </AdminSidePanel>
-      );
-    }
-
-    if (!selectedEmployee) return null;
-
-    const canChangeProtectedEmployee = !(selectedEmployee.isOwner && (ownerMemberCount <= 1 || selectedEmployee.profileId === user?.id));
-
-    return (
-      <AdminSidePanel
-        open
-        eyebrow="Employee"
-        title={selectedEmployee.fullName || selectedEmployee.email}
-        subtitle={selectedEmployee.email}
-        onClose={closePanel}
-        className="admin-employees-page__drawer"
-        withOverlay
-        overlayClassName="admin-employees-page__overlay"
-        overlayLabel="Close employee drawer"
-      >
-        <div className="admin-employees-page__panel-grid">
-          <article className="admin-panel-card">
-            <header>
-              <strong>Profile</strong>
-              <small>{selectedEmployee.roleLabel || "No role"}</small>
-            </header>
-            <div className="admin-employees-page__identity">
-              <ProfileAvatar
-                avatarUrl={selectedEmployee.avatarUrl}
-                fallbackName={selectedEmployee.fullName || selectedEmployee.email}
-                size="md"
-                className="admin-employees-page__profile-avatar admin-employees-page__profile-avatar--large"
-              />
-              <div>
-                <strong>{selectedEmployee.fullName || "Unnamed employee"}</strong>
-                <span>{selectedEmployee.email || "—"}</span>
-              </div>
-            </div>
-            <div className="admin-employees-page__summary-grid">
-              <div><span>Status</span><strong><AdminStatusBadge tone={getEmployeeStatusTone(selectedEmployee.status)}>{formatActionLabel(selectedEmployee.status)}</AdminStatusBadge></strong></div>
-              <div><span>Phone</span><strong>{selectedEmployee.phone || "—"}</strong></div>
-              <div><span>Created</span><strong>{formatDate(selectedEmployee.createdAt)}</strong></div>
-              <div><span>Source</span><strong>{formatActionLabel(selectedEmployee.source)}</strong></div>
-            </div>
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Access</strong>
-              <small>Role permissions and menu visibility summary</small>
-            </header>
-            <div className="admin-employees-page__summary-grid">
-              <div><span>Assigned role</span><strong>{selectedEmployee.roleLabel || "No role"}</strong></div>
-              <div><span>Visible pages</span><strong>{selectedEmployee.roleId ? menuCatalog.filter((item) => buildRoleMenuVisibility(roles.find((role) => role.id === selectedEmployee.roleId), rolesModule?.roleMenuVisibility || [], menuCatalog)[item.route] !== false).length : "—"}</strong></div>
-              <div><span>Permissions</span><strong>{selectedEmployee.roleCode ? (rolesModule?.rolePermissions || []).filter((item) => item.roleCode === selectedEmployee.roleCode).length : "—"}</strong></div>
-              <div><span>Owner protected</span><strong>{selectedEmployee.isOwner ? "Yes" : "No"}</strong></div>
-            </div>
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Work activity</strong>
-              <small>Sessions and last known access</small>
-            </header>
-            <div className="admin-employees-page__summary-grid">
-              <div><span>Last login</span><strong>{formatDateTime(selectedEmployee.lastLoginAt)}</strong></div>
-              <div><span>Last logout</span><strong>{formatDateTime(selectedEmployee.lastLogoutAt)}</strong></div>
-              <div><span>Active today</span><strong>{formatDuration(selectedEmployee.activeTimeTodaySeconds)}</strong></div>
-              <div><span>Active this week</span><strong>{formatDuration(selectedEmployee.activeTimeThisWeekSeconds)}</strong></div>
-              <div><span>Total sessions</span><strong>{selectedEmployee.totalSessionCount || 0}</strong></div>
-              <div><span>Actions this week</span><strong>{selectedEmployee.actionsThisWeek || 0}</strong></div>
-            </div>
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Recent actions</strong>
-              <small>Linked to activity log and admin work tracking</small>
-            </header>
-            <div className="admin-employees-page__mini-activity">
-              {selectedEmployee.recentActivity?.length ? selectedEmployee.recentActivity.slice(0, 6).map((item) => (
-                <div key={`${item.id}-${item.createdAt}`} className="admin-employees-page__mini-activity-row">
-                  <div>
-                    <strong>{formatActionLabel(item.action)}</strong>
-                    <span>{formatActionLabel(item.module || item.entityType || "team")}</span>
-                  </div>
-                  <time>{formatDateTime(item.createdAt)}</time>
-                </div>
-              )) : (
-                <p className="admin-message">No recent actions recorded yet.</p>
-              )}
-            </div>
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Controls</strong>
-              <small>Manage employee access carefully</small>
-            </header>
-            <div className="admin-employees-page__panel-actions is-wrap">
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => openEmployeeEdit(selectedEmployee)}>
-                Edit employee
-              </button>
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleSetupLink(selectedEmployee)}>
-                Send setup link
-              </button>
-              <a className="admin-btn admin-btn-ghost" href={`/admin/team/${selectedEmployee.profileId}/activity`}>
-                Open activity
-              </a>
-              {selectedEmployee.status === "active" ? (
-                <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleStatusChange(selectedEmployee, "suspended")} disabled={!canChangeProtectedEmployee}>
-                  Suspend
-                </button>
-              ) : (
-                <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleStatusChange(selectedEmployee, "active")}>
-                  Reactivate
-                </button>
-              )}
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => handleRemoveEmployee(selectedEmployee)} disabled={!canChangeProtectedEmployee}>
-                Remove employee
-              </button>
-            </div>
-          </article>
+      ),
+      getCellTitle: (employee) => employee.fullName || employee.email || "Employee",
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 120,
+      minWidth: 110,
+      maxWidth: 170,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <AdminStatusBadge tone={getEmployeeStatusTone(employee.status)}>{employee.status}</AdminStatusBadge>,
+      getCellTitle: (employee) => employee.status,
+    },
+    {
+      key: "template",
+      label: "Template",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{getEmployeeTemplateLabel(employee)}</span>,
+      getCellTitle: (employee) => getEmployeeTemplateLabel(employee),
+    },
+    {
+      key: "pages",
+      label: "Visible pages",
+      width: 120,
+      minWidth: 110,
+      maxWidth: 160,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{employee.isOwner ? "All" : employee.allowedPagesCount}</span>,
+      getCellTitle: (employee) => employee.isOwner ? "All visible pages" : `${employee.allowedPagesCount || 0} pages`,
+    },
+    {
+      key: "editPages",
+      label: "Edit-enabled",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{getEditablePagesCount(employee)}</span>,
+      getCellTitle: (employee) => String(getEditablePagesCount(employee)),
+    },
+    {
+      key: "sections",
+      label: "Sections",
+      width: 240,
+      minWidth: 180,
+      maxWidth: 360,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => <span className="admin-crm-table__cell-main">{getAccessSectionsLabel(employee, accessGroups)}</span>,
+      getCellTitle: (employee) => getAccessSectionsLabel(employee, accessGroups),
+    },
+    {
+      key: "updated",
+      label: "Last access update",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (employee) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatDateTime(getAccessUpdatedAt(employee))}</span>
+          <span className="admin-crm-table__cell-sub">{employee.isOwner ? "Protected access" : "Page map"}</span>
         </div>
-      </AdminSidePanel>
-    );
-  };
+      ),
+      getCellTitle: (employee) => formatDateTime(getAccessUpdatedAt(employee)),
+    },
+  ]), [accessGroups]);
 
-  const renderRolePanel = () => {
-    const isCreate = panel?.type === "role-create";
-    const role = isCreate ? null : selectedRole;
-    if (!isCreate && !role) return null;
-
-    const assignedEmployees = employees.filter((member) => member.roleId === role?.id);
-    const deleteDisabled = !role || role.isSystemRole || role.isOwnerRole || (role.memberCount || 0) > 0;
-    const isOwnerRole = Boolean(role?.isOwnerRole);
-
-    return (
-      <AdminSidePanel
-        open
-        eyebrow="Role"
-        title={isCreate ? "Create role" : role.name}
-        subtitle={isCreate ? "Create a custom employee role with scoped permissions and menu access." : "Edit permissions and menu visibility for this role."}
-        onClose={closePanel}
-        className="admin-employees-page__drawer"
-        withOverlay
-        overlayClassName="admin-employees-page__overlay"
-        overlayLabel="Close role drawer"
-      >
-        <div className="admin-employees-page__panel-grid">
-          <article className="admin-panel-card">
-            <header>
-              <strong>Role details</strong>
-              <small>{role?.isSystemRole ? "System role" : "Custom role"}</small>
-            </header>
-            <div className="admin-employees-page__form-grid">
-              <label>
-                <span>Name</span>
-                <input className="admin-input" value={roleForm.name} onChange={(event) => setRoleForm((current) => ({ ...current, name: event.target.value }))} />
-              </label>
-              <label>
-                <span>Slug</span>
-                <input className="admin-input" value={roleForm.slug} onChange={(event) => setRoleForm((current) => ({ ...current, slug: event.target.value }))} readOnly={!isCreate} />
-              </label>
-              <label className="admin-employees-page__form-span">
-                <span>Description</span>
-                <textarea className="admin-input admin-employees-page__textarea" value={roleForm.description} onChange={(event) => setRoleForm((current) => ({ ...current, description: event.target.value }))} />
-              </label>
-              <label className="admin-employees-page__checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={roleForm.isActive}
-                  disabled={isOwnerRole}
-                  onChange={(event) => setRoleForm((current) => ({ ...current, isActive: event.target.checked }))}
-                />
-                <span>Role is active</span>
-              </label>
-            </div>
-            {role ? (
-              <div className="admin-employees-page__badge-list">
-                <AdminStatusBadge tone={role.isActive ? "success" : "neutral"}>{role.isActive ? "Active" : "Inactive"}</AdminStatusBadge>
-                <AdminStatusBadge tone={getRoleTypeTone(role)}>{formatActionLabel(getRoleType(role))}</AdminStatusBadge>
-              </div>
-            ) : null}
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Assigned employees</strong>
-              <small>{assignedEmployees.length} linked employees</small>
-            </header>
-            <div className="admin-employees-page__drawer-list">
-              {assignedEmployees.length ? assignedEmployees.map((member) => (
-                <div key={member.profileId} className="admin-employees-page__drawer-list-row">
-                  <div>
-                    <strong>{member.fullName || member.email}</strong>
-                    <span>{member.email}</span>
-                  </div>
-                  <AdminStatusBadge tone={getEmployeeStatusTone(member.status)}>{formatActionLabel(member.status)}</AdminStatusBadge>
-                </div>
-              )) : (
-                <p className="admin-message">No employees assigned yet.</p>
-              )}
-            </div>
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Permissions</strong>
-              <small>Permissions are the security boundary.</small>
-            </header>
-            <div className="admin-employees-page__permission-groups">
-              {Object.entries(permissionGroups).map(([moduleKey, items]) => (
-                <div key={moduleKey} className="admin-employees-page__permission-group">
-                  <strong>{formatActionLabel(moduleKey)}</strong>
-                  <div className="admin-employees-page__toggle-list">
-                    {items.map((permission) => {
-                      const checked = roleForm.permissionCodes.includes(permission.code);
-                      const isCritical = isOwnerRole && CRITICAL_OWNER_PERMISSIONS.has(permission.code);
-                      return (
-                        <label key={permission.code} className="admin-employees-page__toggle-row">
-                          <div>
-                            <span>{permission.label || formatPermissionLabel(permission.code)}</span>
-                            <small>{permission.code}</small>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            disabled={isCritical}
-                            onChange={(event) => {
-                              const nextChecked = event.target.checked;
-                              setRoleForm((current) => ({
-                                ...current,
-                                permissionCodes: nextChecked
-                                  ? Array.from(new Set([...current.permissionCodes, permission.code]))
-                                  : current.permissionCodes.filter((code) => code !== permission.code),
-                              }));
-                            }}
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Menu visibility</strong>
-              <small>Sidebar visibility is UX only. Permissions still control access.</small>
-            </header>
-            <div className="admin-employees-page__permission-groups">
-              {adminNavigationSections.map((section) => (
-                <div key={section.key} className="admin-employees-page__permission-group">
-                  <strong>{section.label}</strong>
-                  <div className="admin-employees-page__toggle-list">
-                    {section.pages.map((page) => {
-                      const isForcedVisible = isOwnerRole && CRITICAL_OWNER_ROUTES.has(page.path);
-                      const checked = roleForm.menuVisibility[page.path] !== false;
-                      const permissionLabel = page.permission || (page.anyPermissions || []).join(" / ") || "No explicit permission";
-                      return (
-                        <label key={page.key} className="admin-employees-page__toggle-row">
-                          <div>
-                            <span>{page.label}</span>
-                            <small>{permissionLabel}</small>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            disabled={isForcedVisible}
-                            onChange={(event) => setRoleForm((current) => ({
-                              ...current,
-                              menuVisibility: {
-                                ...current.menuVisibility,
-                                [page.path]: event.target.checked,
-                              },
-                            }))}
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="admin-panel-card">
-            <header>
-              <strong>Live sidebar preview</strong>
-              <small>Visible pages for this role</small>
-            </header>
-            <div className="admin-employees-page__access-tree">
-              {adminNavigationSections.map((section) => {
-                const visiblePages = section.pages.filter((page) => roleForm.menuVisibility[page.path] !== false);
-                if (!visiblePages.length) return null;
-                return (
-                  <div key={section.key} className="admin-employees-page__preview-block">
-                    <strong>{section.label}</strong>
-                    <div className="admin-employees-page__badge-list">
-                      {visiblePages.map((page) => (
-                        <AdminStatusBadge key={page.key} tone="info">{page.label}</AdminStatusBadge>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </article>
-
-          <div className="admin-employees-page__panel-actions is-wrap">
-            <button type="button" className="admin-btn admin-btn-secondary" onClick={closePanel}>Cancel</button>
-            {!isCreate ? (
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleDuplicateRole(role)}>
-                Duplicate role
-              </button>
-            ) : null}
-            {!isCreate ? (
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleRoleStatusToggle(role)} disabled={isOwnerRole}>
-                {role.isActive ? "Deactivate role" : "Activate role"}
-              </button>
-            ) : null}
-            {!isCreate ? (
-              <button type="button" className="admin-btn admin-btn-danger" onClick={() => handleDeleteRole(role)} disabled={deleteDisabled}>
-                Delete role
-              </button>
-            ) : null}
-            <button type="button" className="admin-btn admin-btn-primary" onClick={persistRole} disabled={isSaving}>
-              {isSaving ? "Saving..." : isCreate ? "Create role" : "Save role"}
-            </button>
-          </div>
+  const activityColumns = useMemo(() => ([
+    {
+      key: "time",
+      label: "Time",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatDateTime(row.created_at)}</span>
+          <span className="admin-crm-table__cell-sub">{row.source === "admin_activity_logs" ? "Admin log" : "Core log"}</span>
         </div>
-      </AdminSidePanel>
-    );
-  };
-
-  const renderPanel = () => {
-    if (!panel) return null;
-    if (panel.type?.startsWith("role")) return renderRolePanel();
-    return renderEmployeePanel();
-  };
+      ),
+      getCellTitle: (row) => formatDateTime(row.created_at),
+    },
+    {
+      key: "employee",
+      label: "Employee",
+      width: 220,
+      minWidth: 180,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => {
+        const employee = employees.find((employeeItem) => employeeItem.profileId === row.admin_profile_id);
+        return (
+          <div className="admin-crm-table__stack">
+            <span className="admin-crm-table__cell-main">{employee?.fullName || employee?.email || "Unknown employee"}</span>
+            <span className="admin-crm-table__cell-sub">{employee?.roleLabel || "No role"}</span>
+          </div>
+        );
+      },
+      getCellTitle: (row) => {
+        const employee = employees.find((employeeItem) => employeeItem.profileId === row.admin_profile_id);
+        return employee?.fullName || employee?.email || "Unknown employee";
+      },
+    },
+    {
+      key: "action",
+      label: "Action",
+      width: 160,
+      minWidth: 130,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <AdminStatusBadge tone={getEmployeeActivityTone(row.action)}>{formatActionLabel(row.action)}</AdminStatusBadge>,
+      getCellTitle: (row) => formatActionLabel(row.action),
+    },
+    {
+      key: "module",
+      label: "Module",
+      width: 140,
+      minWidth: 120,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{formatActionLabel(row.module)}</span>,
+      getCellTitle: (row) => formatActionLabel(row.module),
+    },
+    {
+      key: "reference",
+      label: "Reference",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 260,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{row.entityReference || row.entity_id || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{formatActionLabel(row.entity_type)}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.entityReference || row.entity_id || "—",
+    },
+    {
+      key: "summary",
+      label: "Summary",
+      width: 320,
+      minWidth: 240,
+      maxWidth: 520,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{row.metadataSummary || "No metadata summary"}</span>,
+      getCellTitle: (row) => row.metadataSummary || "No metadata summary",
+    },
+  ]), [employees]);
 
   return (
     <div className="admin-page admin-employees-page">
       <AdminPageHeader
+        eyebrow={<><ShieldCheck size={16} /> People</>}
         title="Employees"
-        primaryAction={canManageEmployees ? {
+        subtitle="Simplified employee access control. Assign visible admin pages directly to each employee."
+        breadcrumbs={[
+          { label: "Admin", path: "/admin" },
+          { label: "Employees" },
+        ]}
+        primaryAction={isOwnerOrSuperAdmin ? {
           label: "Add employee",
           icon: UserPlus,
-          onClick: openEmployeeCreate,
+          onClick: openCreateEmployeePanel,
         } : null}
-        secondaryActions={canManageEmployees ? [
+        secondaryActions={[
           {
             label: "Refresh",
             icon: RefreshCw,
-            onClick: () => void loadModule({ force: true }),
-            disabled: isLoading,
+            onClick: () => loadModule({ force: true }),
           },
-          ...(canManageRoles ? [{
-            label: "Create role",
-            icon: Plus,
-            onClick: openRoleCreate,
-          }] : []),
-        ] : []}
+          {
+            label: "Legacy roles",
+            icon: UserCog,
+            path: "/admin/roles",
+          },
+        ]}
       />
 
       {notice ? <p className="admin-message">{notice}</p> : null}
       {error ? <p className="admin-message is-error">{error}</p> : null}
+      {!moduleData?.supportsEmployeePageAccessV1 && !isLoading ? (
+        <p className="admin-message is-error">
+          Employee page access table is not available yet. Apply the latest employee access migration in Supabase.
+        </p>
+      ) : null}
 
-      {!canManageEmployees ? (
-        <section className="admin-card admin-card-compact">
-          <div className="admin-employees-page__access-required">
-            <ShieldCheck size={20} />
-            <div>
-              <h2>Admin access required</h2>
-              <p>Admin access required. Only admins can manage employees, roles, and access settings.</p>
+      <AdminMetricsStrip items={metrics} />
+
+      <section className="admin-panel admin-employees-page__tabs">
+        {TAB_OPTIONS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`admin-employees-page__tab${activeTab === tab.key ? " is-active" : ""}`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </section>
+
+      <section className="admin-panel admin-employees-page__toolbar-card">
+        <AdminFilterBar
+          searchValue={employeeFilters.search}
+          onSearchChange={(search) => setEmployeeFilters((current) => ({ ...current, search }))}
+          searchPlaceholder="Search employee, email, template"
+          statusFilter={employeeFilters.status}
+          onStatusFilterChange={(status) => setEmployeeFilters((current) => ({ ...current, status }))}
+          statusOptions={EMPLOYEE_STATUS_OPTIONS}
+        >
+          <button
+            type="button"
+            className="admin-btn admin-btn-secondary"
+            onClick={() => setEmployeeFilters({ search: "", status: "all" })}
+          >
+            <FilterX size={14} />
+            <span>Clear filters</span>
+          </button>
+        </AdminFilterBar>
+      </section>
+
+      {activeTab === "employees" ? (
+        <AdminColumnTable
+          storageKey="ff-admin-table-layout-employees"
+          title="Employees"
+          countLabel={`${filteredEmployees.length} employee${filteredEmployees.length === 1 ? "" : "s"}`}
+          columns={employeeColumns}
+          rows={filteredEmployees}
+          loading={isLoading}
+          error={error}
+          emptyTitle="No employees found"
+          emptyDetail="Try adjusting the current filters."
+          selectedRowId={employeePreviewOpen ? selectedEmployee?.id || "" : ""}
+          getRowKey={(employee) => employee.id}
+          onRowClick={(employee) => openEmployeePreview(employee, "employees")}
+        />
+      ) : null}
+
+      {activeTab === "access" ? (
+        <AdminColumnTable
+          storageKey="ff-admin-table-layout-employee-access"
+          title="Employee access"
+          countLabel={`${filteredEmployees.length} access record${filteredEmployees.length === 1 ? "" : "s"}`}
+          columns={accessColumns}
+          rows={filteredEmployees}
+          loading={isLoading}
+          error={error}
+          emptyTitle="No access records found"
+          emptyDetail="Try adjusting the current filters."
+          selectedRowId={employeePreviewOpen ? selectedEmployee?.id || "" : ""}
+          getRowKey={(employee) => employee.id}
+          onRowClick={(employee) => openEmployeePreview(employee, "access")}
+        />
+      ) : null}
+
+      {activeTab === "activity" ? (
+        <AdminColumnTable
+          storageKey="ff-admin-table-layout-employee-activity"
+          title="Activity"
+          countLabel={`${activityRows.length} event${activityRows.length === 1 ? "" : "s"}`}
+          columns={activityColumns}
+          rows={activityRows}
+          loading={isLoading}
+          error={error}
+          emptyTitle="No activity yet"
+          emptyDetail="Employee actions will appear here once activity logs are available."
+          selectedRowId={selectedActivityKey}
+          getRowKey={(row) => getActivityRowKey(row)}
+          onRowClick={(row) => setSelectedActivityKey(getActivityRowKey(row))}
+        />
+      ) : null}
+
+      <AdminSidePanel
+        open={employeePreviewOpen && Boolean(selectedEmployee)}
+        onClose={() => setEmployeePreviewOpen(false)}
+        eyebrow={employeePreviewMode === "access" ? "Employee access" : "Employee"}
+        title={selectedEmployee?.fullName || selectedEmployee?.email || "Employee detail"}
+        subtitle={selectedEmployee ? `${selectedEmployee.roleLabel || "No role"} • ${selectedEmployee.email || "—"}` : ""}
+        className="admin-employees-page__drawer"
+        withOverlay
+      >
+        {selectedEmployee ? (
+          <div className="admin-employees-page__permission-preview">
+            <EmployeeIdentity employee={selectedEmployee} />
+
+            <div className="admin-employees-page__summary-grid">
+              <div>
+                <span>Status</span>
+                <strong>{selectedEmployee.status}</strong>
+              </div>
+              <div>
+                <span>Template</span>
+                <strong>{getEmployeeTemplateLabel(selectedEmployee)}</strong>
+              </div>
+              <div>
+                <span>Allowed pages</span>
+                <strong>{selectedEmployee.isOwner ? "All pages" : selectedEmployee.allowedPagesCount}</strong>
+              </div>
+              <div>
+                <span>Edit-enabled pages</span>
+                <strong>{getEditablePagesCount(selectedEmployee)}</strong>
+              </div>
+              <div>
+                <span>Last login</span>
+                <strong>{formatDateTime(selectedEmployee.lastLoginAt || selectedEmployee.currentSession?.last_seen_at)}</strong>
+              </div>
+              <div>
+                <span>Active this week</span>
+                <strong>{formatDuration(selectedEmployee.activeTimeThisWeekSeconds)}</strong>
+              </div>
             </div>
-          </div>
-        </section>
-      ) : (
-        <>
-          <AdminMetricsStrip items={kpis.map((item) => ({ label: item.label, value: item.value }))} />
 
-          <section className="admin-card admin-card-compact admin-employees-page__tabs">
-            {TAB_OPTIONS.map((tab) => (
+            <div className="admin-employees-page__panel-actions is-wrap">
               <button
-                key={tab.key}
                 type="button"
-                className={`admin-employees-page__tab${activeTab === tab.key ? " is-active" : ""}`}
-                onClick={() => setActiveTab(tab.key)}
+                className="admin-btn admin-btn-primary"
+                onClick={() => openAccessEditor(selectedEmployee)}
+                disabled={selectedEmployee.isOwner || selectedEmployee.source !== "team_member"}
               >
-                {tab.label}
+                Edit access
               </button>
-            ))}
-          </section>
+              {selectedEmployee.status === "active" ? (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  onClick={() => handleStatusChange(selectedEmployee, "suspended")}
+                  disabled={selectedEmployee.isOwner}
+                >
+                  Suspend
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  onClick={() => handleStatusChange(selectedEmployee, "active")}
+                >
+                  Reactivate
+                </button>
+              )}
+              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => handleSendSetupLink(selectedEmployee)}>
+                Setup link
+              </button>
+              <Link to={`/admin/team/${selectedEmployee.profileId}/activity`} className="admin-btn admin-btn-secondary">
+                Full activity
+              </Link>
+            </div>
 
-          {isLoading ? <p className="admin-message">Loading employees...</p> : null}
+            <section className="admin-panel admin-panel--nested">
+              <div className="admin-panel__head">
+                <div>
+                  <h2>Visible pages</h2>
+                  <p>{selectedEmployee.isOwner ? "Owner access always includes the full admin workspace." : "Current page-level access for this employee."}</p>
+                </div>
+              </div>
 
-          {!isLoading && activeTab === "employees" ? renderEmployeesTab() : null}
-          {!isLoading && activeTab === "roles" ? renderRolesTab() : null}
-          {!isLoading && activeTab === "access" ? renderAccessTab() : null}
-          {!isLoading && activeTab === "activity" ? renderActivityTab() : null}
-        </>
-      )}
+              {selectedEmployee.isOwner ? (
+                <p className="admin-panel__hint">Owner access is protected and cannot be limited from this screen.</p>
+              ) : employeeVisibleAccessGroups.length ? (
+                <div className="admin-employees-page__drawer-list">
+                  {employeeVisibleAccessGroups.map((section) => (
+                    <div key={section.key} className="admin-employees-page__drawer-list-row">
+                      <div>
+                        <strong>{section.defaultLabel}</strong>
+                        <small>{section.pages.map((page) => page.label).join(", ")}</small>
+                      </div>
+                      <div className="admin-employees-page__badge-list">
+                        <AdminStatusBadge tone="info">{section.pages.length} pages</AdminStatusBadge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="admin-panel__hint">No pages are currently visible for this employee.</p>
+              )}
+            </section>
 
-      {renderPanel()}
+            <section className="admin-panel admin-panel--nested">
+              <div className="admin-panel__head">
+                <div>
+                  <h2>Recent activity</h2>
+                  <p>Latest admin actions attributed to this employee.</p>
+                </div>
+              </div>
+
+              {selectedEmployee.recentActivity?.length ? (
+                <div className="admin-employees-page__mini-activity">
+                  {selectedEmployee.recentActivity.map((row) => (
+                    <div key={getActivityRowKey(row)} className="admin-employees-page__mini-activity-row">
+                      <div>
+                        <strong>{formatActionLabel(row.action)}</strong>
+                        <small>{formatActionLabel(row.module)} • {row.entity_id || row.target_entity_id || "No reference"}</small>
+                      </div>
+                      <time>{formatDateTime(row.created_at)}</time>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="admin-panel__hint">No recent activity is available for this employee yet.</p>
+              )}
+            </section>
+          </div>
+        ) : null}
+      </AdminSidePanel>
+
+      <AdminSidePanel
+        open={Boolean(selectedActivity)}
+        onClose={() => setSelectedActivityKey("")}
+        eyebrow={selectedActivity ? formatActionLabel(selectedActivity.module) : "Activity"}
+        title={selectedActivity ? formatActionLabel(selectedActivity.action) : "Activity detail"}
+        subtitle={selectedActivity ? formatDateTime(selectedActivity.created_at) : ""}
+        className="admin-employees-page__drawer"
+        withOverlay
+      >
+        {selectedActivity ? (
+          <div className="admin-employees-page__permission-preview">
+            <div className="admin-employees-page__summary-grid">
+              <div>
+                <span>Employee</span>
+                <strong>{selectedActivityEmployee?.fullName || selectedActivityEmployee?.email || "Unknown employee"}</strong>
+              </div>
+              <div>
+                <span>Role</span>
+                <strong>{selectedActivityEmployee?.roleLabel || "No role"}</strong>
+              </div>
+              <div>
+                <span>Module</span>
+                <strong>{formatActionLabel(selectedActivity.module)}</strong>
+              </div>
+              <div>
+                <span>Action</span>
+                <strong>{formatActionLabel(selectedActivity.action)}</strong>
+              </div>
+              <div>
+                <span>Entity type</span>
+                <strong>{formatActionLabel(selectedActivity.entity_type)}</strong>
+              </div>
+              <div>
+                <span>Reference</span>
+                <strong>{selectedActivity.entityReference || selectedActivity.entity_id || "—"}</strong>
+              </div>
+            </div>
+
+            <section className="admin-panel admin-panel--nested">
+              <div className="admin-panel__head">
+                <div>
+                  <h2>Summary</h2>
+                  <p>Quick description generated from the activity metadata.</p>
+                </div>
+              </div>
+              <p className="admin-panel__hint">{selectedActivity.metadataSummary || "No metadata summary is available for this entry."}</p>
+            </section>
+
+            <section className="admin-panel admin-panel--nested">
+              <div className="admin-panel__head">
+                <div>
+                  <h2>Metadata</h2>
+                  <p>Top-level metadata fields captured for this action.</p>
+                </div>
+              </div>
+              {Object.entries(selectedActivity.metadata || {}).length ? (
+                <div className="admin-employees-page__drawer-list">
+                  {Object.entries(selectedActivity.metadata || {}).map(([key, value]) => (
+                    <div key={key} className="admin-employees-page__drawer-list-row">
+                      <div>
+                        <strong>{formatActionLabel(key)}</strong>
+                        <small>{typeof value === "object" ? JSON.stringify(value) : String(value || "—")}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="admin-panel__hint">This activity entry does not include extra metadata.</p>
+              )}
+            </section>
+          </div>
+        ) : null}
+      </AdminSidePanel>
+
+      <AdminSidePanel
+        open={createPanelOpen}
+        onClose={() => setCreatePanelOpen(false)}
+        eyebrow="Employee"
+        title="Add employee"
+        subtitle="Create a team member and assign a simple page access template."
+        withOverlay
+      >
+        <div className="admin-form-grid">
+          <label className="admin-form-field">
+            <span>Full name</span>
+            <input className="admin-input" value={employeeForm.fullName} onChange={(event) => setEmployeeForm((current) => ({ ...current, fullName: event.target.value }))} />
+          </label>
+          <label className="admin-form-field">
+            <span>Email</span>
+            <input className="admin-input" type="email" value={employeeForm.email} onChange={(event) => setEmployeeForm((current) => ({ ...current, email: event.target.value }))} />
+          </label>
+          <label className="admin-form-field">
+            <span>Phone</span>
+            <input className="admin-input" value={employeeForm.phone} onChange={(event) => setEmployeeForm((current) => ({ ...current, phone: event.target.value }))} />
+          </label>
+          <label className="admin-form-field">
+            <span>Password</span>
+            <PasswordField className="admin-input" value={employeeForm.password} onChange={(event) => setEmployeeForm((current) => ({ ...current, password: event.target.value }))} />
+          </label>
+          <label className="admin-form-field">
+            <span>Status</span>
+            <select className="admin-select" value={employeeForm.status} onChange={(event) => setEmployeeForm((current) => ({ ...current, status: event.target.value }))}>
+              {EMPLOYEE_STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-form-field">
+            <span>Access template</span>
+            <select className="admin-select" value={employeeForm.templateKey} onChange={(event) => setEmployeeForm((current) => ({ ...current, templateKey: event.target.value }))}>
+              {ADMIN_ACCESS_TEMPLATES.filter((template) => template.key !== "custom").map((template) => (
+                <option key={template.key} value={template.key}>{template.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-checkbox">
+            <input type="checkbox" checked={employeeForm.sendSetupLink} onChange={(event) => setEmployeeForm((current) => ({ ...current, sendSetupLink: event.target.checked }))} />
+            <span>Send password setup link after creating employee</span>
+          </label>
+        </div>
+
+        <div className="admin-employees-page__panel-actions is-wrap">
+          <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setCreatePanelOpen(false)}>Cancel</button>
+          <button type="button" className="admin-btn admin-btn-primary" onClick={handleCreateEmployee} disabled={isSaving}>Create employee</button>
+        </div>
+      </AdminSidePanel>
+
+      <AdminSidePanel
+        open={accessPanelOpen}
+        onClose={() => setAccessPanelOpen(false)}
+        eyebrow="Employee access"
+        title={selectedAccessEmployee?.fullName || selectedAccessEmployee?.email || "Edit access"}
+        subtitle="Assign visible admin pages directly. Owner-only pages remain protected and are not assignable here."
+        withOverlay
+      >
+        {selectedAccessEmployee ? <EmployeeIdentity employee={selectedAccessEmployee} /> : null}
+
+        <div className="admin-form-grid">
+          <label className="admin-form-field">
+            <span>Template</span>
+            <select
+              className="admin-select"
+              value={accessForm.templateKey}
+              onChange={(event) => {
+                const templateKey = event.target.value;
+                const template = ADMIN_ACCESS_TEMPLATES_BY_KEY.get(templateKey);
+                setAccessForm((current) => ({
+                  ...current,
+                  templateKey,
+                  rowsMap: template?.key === "custom" ? current.rowsMap : createAccessRowsMap(template?.access || []),
+                }));
+              }}
+            >
+              {ADMIN_ACCESS_TEMPLATES.map((template) => (
+                <option key={template.key} value={template.key}>{template.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="admin-employees-page__panel-actions is-wrap">
+          <button
+            type="button"
+            className="admin-btn admin-btn-secondary"
+            onClick={() => {
+              const template = ADMIN_ACCESS_TEMPLATES_BY_KEY.get(accessForm.templateKey) || ADMIN_ACCESS_TEMPLATES_BY_KEY.get("read_only");
+              setAccessForm((current) => ({ ...current, rowsMap: createAccessRowsMap(template?.access || []) }));
+            }}
+          >
+            Reset to template
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-secondary"
+            onClick={() => setAccessForm((current) => ({ ...current, templateKey: "custom", rowsMap: {} }))}
+          >
+            Clear access
+          </button>
+        </div>
+
+        <div className="admin-employees-page__access-tree">
+          {accessGroups.map((section) => (
+            <article key={section.key} className="admin-panel admin-panel--nested">
+              <div className="admin-panel__head">
+                <div>
+                  <h2>{section.defaultLabel}</h2>
+                  <p>Choose visible pages for this employee.</p>
+                </div>
+              </div>
+              <div className="admin-employees-page__toggle-list">
+                {section.pages.map((page) => {
+                  const entry = accessForm.rowsMap[page.key];
+
+                  return (
+                    <label key={page.key} className="admin-checkbox admin-checkbox--row">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(entry?.canView)}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setAccessForm((current) => {
+                            const nextRowsMap = { ...current.rowsMap };
+                            if (checked) {
+                              nextRowsMap[page.key] = { pageKey: page.key, canView: true, canEdit: Boolean(nextRowsMap[page.key]?.canEdit) };
+                            } else {
+                              delete nextRowsMap[page.key];
+                            }
+                            return { ...current, rowsMap: nextRowsMap };
+                          });
+                        }}
+                      />
+                      <span>
+                        <strong>{page.label}</strong>
+                        <small>{page.route}</small>
+                      </span>
+                      <div className="admin-employees-page__badge-list">
+                        {page.sensitive ? <AdminStatusBadge tone="warning">Sensitive</AdminStatusBadge> : null}
+                        {page.supportsEdit ? (
+                          <label className="admin-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(entry?.canEdit)}
+                              disabled={!entry?.canView}
+                              onChange={(event) => {
+                                const checked = event.target.checked;
+                                setAccessForm((current) => ({
+                                  ...current,
+                                  rowsMap: {
+                                    ...current.rowsMap,
+                                    [page.key]: {
+                                      pageKey: page.key,
+                                      canView: true,
+                                      canEdit: checked,
+                                    },
+                                  },
+                                }));
+                              }}
+                            />
+                            <span>Edit</span>
+                          </label>
+                        ) : (
+                          <AdminStatusBadge tone="neutral">View only</AdminStatusBadge>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="admin-employees-page__summary-grid">
+          <div>
+            <span>Selected pages</span>
+            <strong>{selectedAccessRows.length}</strong>
+          </div>
+          <div>
+            <span>Edit-enabled pages</span>
+            <strong>{selectedAccessRows.filter((row) => row.canEdit).length}</strong>
+          </div>
+        </div>
+
+        <p className="admin-panel__hint">
+          Owner access is not controlled here. Non-owner employees see only the pages checked above, and direct URL access is blocked by the same page-access map.
+        </p>
+
+        <div className="admin-employees-page__panel-actions is-wrap">
+          <button type="button" className="admin-btn admin-btn-secondary" onClick={() => setAccessPanelOpen(false)}>Cancel</button>
+          <button type="button" className="admin-btn admin-btn-primary" onClick={handleSaveAccess} disabled={isSaving}>Save access</button>
+        </div>
+      </AdminSidePanel>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { canAdminPermission, isOwnerAdmin } from "../admin/accessControl.js";
+import { buildAdminPermissionsFromPageAccess } from "../admin/adminPages.js";
 import { getAvailablePermissions, isAdminRoleCode, normalizeRoleCode } from "../admin/rbac.js";
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser } from "./authService.js";
@@ -158,6 +159,59 @@ async function fetchDynamicPermissions(client, dynamicRole) {
   };
 }
 
+async function fetchAdminPageAccessRows(client, teamMemberId) {
+  if (!teamMemberId) {
+    return { loaded: false, rows: [] };
+  }
+
+  const response = await client
+    .from("admin_employee_page_access")
+    .select("id, menu_item_key, can_view, can_edit, granted_by, created_at, updated_at")
+    .eq("team_member_id", teamMemberId);
+
+  if (response.error) {
+    if (isMissingTableError(response.error) || isMissingColumnError(response.error)) {
+      return { loaded: false, rows: [] };
+    }
+
+    throw response.error;
+  }
+
+  return {
+    loaded: true,
+    rows: (response.data || []).map((item) => ({
+      id: item.id,
+      pageKey: item.menu_item_key,
+      canView: item.can_view !== false,
+      canEdit: item.can_edit === true,
+      grantedBy: item.granted_by || null,
+      createdAt: item.created_at || null,
+      updatedAt: item.updated_at || null,
+    })),
+  };
+}
+
+function canActorAccessPage(actor, pageKey, action = "view") {
+  if (!pageKey) {
+    return false;
+  }
+
+  if (actor?.isOwnerOrSuperAdmin) {
+    return true;
+  }
+
+  if (!actor?.isAdminUser || actor?.teamAccessBlocked || !actor?.pageAccessLoaded) {
+    return false;
+  }
+
+  const row = (actor.pageAccessRows || []).find((item) => item?.pageKey === pageKey);
+  if (!row?.canView) {
+    return false;
+  }
+
+  return action === "edit" ? row.canEdit === true : true;
+}
+
 export async function getCurrentAdminActor() {
   const client = requireSupabase();
   const user = await getCurrentUser().catch(() => null);
@@ -176,6 +230,9 @@ export async function getCurrentAdminActor() {
       isOwner: false,
       isSuperAdmin: false,
       isOwnerOrSuperAdmin: false,
+      pageAccessRows: [],
+      allowedAdminPageKeys: [],
+      pageAccessLoaded: false,
     };
   }
 
@@ -196,26 +253,86 @@ export async function getCurrentAdminActor() {
   ]));
   const isOwner = roles.includes("owner") || roles.includes("super_admin") || Boolean(dynamicRole?.is_owner_role);
   const teamAccessBlocked = Boolean(teamMember) && teamMember.status !== "active";
+  const pageAccess = (!isOwner && !teamAccessBlocked && teamMember?.id)
+    ? await fetchAdminPageAccessRows(client, teamMember.id)
+    : { loaded: false, rows: [] };
+  const allowedAdminPageKeys = pageAccess.rows
+    .filter((item) => item?.canView && item?.pageKey)
+    .map((item) => item.pageKey);
   const permissions = teamAccessBlocked
     ? []
     : (isOwner
       ? ["*"]
-      : (dynamicPermissions.loaded ? dynamicPermissions.permissions : getAvailablePermissions(roles)));
+      : (
+        pageAccess.loaded
+          ? buildAdminPermissionsFromPageAccess(pageAccess.rows)
+          : (dynamicPermissions.loaded ? dynamicPermissions.permissions : getAvailablePermissions(roles))
+      ));
 
   return {
     user,
-    isAdminUser: roles.length > 0 && !teamAccessBlocked,
+    isAdminUser: (isOwner || Boolean(teamMember?.id) || roles.length > 0) && !teamAccessBlocked,
     roles,
     assignedRoles: roles,
     permissions,
-    permissionSource: dynamicPermissions.loaded ? "dynamic" : "static",
+    permissionSource: isOwner
+      ? "owner"
+      : (pageAccess.loaded ? "page_access" : (dynamicPermissions.loaded ? "dynamic" : "static")),
     dynamicRole,
     teamMember,
     teamAccessBlocked,
     isOwner,
     isSuperAdmin: roles.includes("super_admin"),
     isOwnerOrSuperAdmin: isOwner,
+    pageAccessRows: pageAccess.rows,
+    allowedAdminPageKeys,
+    pageAccessLoaded: pageAccess.loaded,
   };
+}
+
+export async function assertCurrentAdminPageAccess(pageKey, options = {}) {
+  const actor = await getCurrentAdminActor();
+  const action = options.action === "edit" ? "edit" : "view";
+  const message = options.message || "You do not have access to this admin page.";
+  const anyPageKeys = Array.isArray(options.anyPageKeys) ? options.anyPageKeys : [];
+  const fallbackPermission = options.fallbackPermission || null;
+  const anyPermissions = Array.isArray(options.anyPermissions) ? options.anyPermissions : [];
+  const allPermissions = Array.isArray(options.allPermissions) ? options.allPermissions : [];
+  const pageKeys = Array.from(new Set([
+    ...(pageKey ? [pageKey] : []),
+    ...anyPageKeys,
+  ]));
+
+  if (!actor?.isAdminUser) {
+    throw new Error(message);
+  }
+
+  if (actor.isOwnerOrSuperAdmin) {
+    return actor;
+  }
+
+  if (actor.pageAccessLoaded) {
+    const allowed = pageKeys.some((candidate) => canActorAccessPage(actor, candidate, action));
+    if (!allowed) {
+      throw new Error(message);
+    }
+    return actor;
+  }
+
+  const anyPermissionCandidates = Array.from(new Set([
+    ...(fallbackPermission ? [fallbackPermission] : []),
+    ...anyPermissions,
+  ]));
+  const allowed = (
+    (!anyPermissionCandidates.length || anyPermissionCandidates.some((candidate) => canAdminPermission(actor, candidate)))
+    && (!allPermissions.length || allPermissions.every((candidate) => canAdminPermission(actor, candidate)))
+  );
+
+  if (!allowed) {
+    throw new Error(message);
+  }
+
+  return actor;
 }
 
 export async function assertCurrentAdminPermission(permissionCode, options = {}) {

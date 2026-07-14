@@ -9,14 +9,22 @@ import {
   updateAdminRoleDefinition,
 } from "../../services/adminService.js";
 import {
-  AdminDataTable,
-  AdminDetailDrawer,
+  AdminColumnTable,
   AdminFilterBar,
   AdminPageHeader,
+  AdminSidePanel,
   AdminStatusBadge,
 } from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
 import "./style.scss";
+
+const OWNER_LOCKED_PERMISSION_CODES = new Set([
+  "dashboard.view",
+  "team.manage",
+  "roles.manage",
+  "menu.manage",
+  "settings.manage",
+]);
 
 function getStatusTone(isActive) {
   return isActive ? "success" : "neutral";
@@ -28,6 +36,12 @@ function getRoleTypeTone(role) {
   return "neutral";
 }
 
+function formatRoleType(role) {
+  if (role.isOwnerRole) return "Owner";
+  if (role.isSystemRole) return "System";
+  return "Custom";
+}
+
 function createEmptyRoleForm() {
   return {
     name: "",
@@ -35,6 +49,20 @@ function createEmptyRoleForm() {
     description: "",
     isActive: true,
     permissionCodes: [],
+  };
+}
+
+function buildRoleForm(role, rolePermissions) {
+  const assignedPermissionCodes = rolePermissions
+    .filter((item) => item.roleCode === role.code)
+    .map((item) => item.permissionCode);
+
+  return {
+    name: role.name || role.label || role.code,
+    slug: role.slug || role.code,
+    description: role.description || "",
+    isActive: role.isActive,
+    permissionCodes: assignedPermissionCodes,
   };
 }
 
@@ -66,7 +94,7 @@ export default function AdminRoles() {
   };
 
   useEffect(() => {
-    loadModule();
+    void loadModule();
   }, []);
 
   const roles = moduleData?.roles || [];
@@ -83,10 +111,10 @@ export default function AdminRoles() {
   }, [permissions]);
 
   const filteredRoles = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const query = search.trim().toLowerCase();
     return roles.filter((role) => {
-      const matchesSearch = !q || [role.name, role.code, role.description].some((value) =>
-        String(value || "").toLowerCase().includes(q),
+      const matchesSearch = !query || [role.name, role.code, role.description].some((value) =>
+        String(value || "").toLowerCase().includes(query),
       );
       const matchesStatus = statusFilter === "all"
         || (statusFilter === "active" && role.isActive)
@@ -110,19 +138,9 @@ export default function AdminRoles() {
   };
 
   const openEdit = (role) => {
-    const assignedPermissionCodes = rolePermissions
-      .filter((item) => item.roleCode === role.code)
-      .map((item) => item.permissionCode);
-
     setNotice("");
     setEditingRoleId(role.id);
-    setForm({
-      name: role.name || role.label || role.code,
-      slug: role.slug || role.code,
-      description: role.description || "",
-      isActive: role.isActive,
-      permissionCodes: assignedPermissionCodes,
-    });
+    setForm(buildRoleForm(role, rolePermissions));
     setDrawerOpen(true);
   };
 
@@ -158,9 +176,9 @@ export default function AdminRoles() {
         : await createAdminRole(payload);
 
       setNotice(editingRole ? "Role updated." : "Role created.");
-      setDrawerOpen(false);
-      await loadModule();
       setEditingRoleId(nextRole.id);
+      await loadModule();
+      setDrawerOpen(true);
     } catch (nextError) {
       setError(nextError.message || "Could not save the role.");
     } finally {
@@ -174,8 +192,9 @@ export default function AdminRoles() {
     try {
       const nextRole = await duplicateAdminRole(role.id);
       setNotice(`Role "${role.name}" duplicated.`);
-      await loadModule();
       setEditingRoleId(nextRole.id);
+      await loadModule();
+      setDrawerOpen(true);
     } catch (nextError) {
       setError(nextError.message || "Could not duplicate the role.");
     }
@@ -220,6 +239,133 @@ export default function AdminRoles() {
       setError(nextError.message || "Could not delete the role.");
     }
   };
+
+  const roleColumns = useMemo(() => ([
+    {
+      key: "role",
+      label: "Role",
+      width: 220,
+      minWidth: 180,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (role) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{role.name}</span>
+          <span className="admin-crm-table__cell-sub">{role.code}</span>
+        </div>
+      ),
+      getCellTitle: (role) => role.name,
+    },
+    {
+      key: "description",
+      label: "Description",
+      width: 360,
+      minWidth: 240,
+      maxWidth: 520,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (role) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{role.description || "No description provided."}</span>
+          <span className="admin-crm-table__cell-sub">
+            {role.isOwnerRole ? "Protected owner access" : role.isSystemRole ? "System baseline role" : "Custom editable role"}
+          </span>
+        </div>
+      ),
+      getCellTitle: (role) => role.description || "No description provided.",
+    },
+    {
+      key: "members",
+      label: "Team members",
+      width: 130,
+      minWidth: 120,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      align: "right",
+      renderCell: (role) => <span className="admin-crm-table__cell-main">{role.memberCount}</span>,
+      getCellTitle: (role) => String(role.memberCount),
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (role) => <AdminStatusBadge tone={getStatusTone(role.isActive)}>{role.isActive ? "Active" : "Inactive"}</AdminStatusBadge>,
+      getCellTitle: (role) => role.isActive ? "Active" : "Inactive",
+    },
+    {
+      key: "type",
+      label: "Type",
+      width: 120,
+      minWidth: 110,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (role) => <AdminStatusBadge tone={getRoleTypeTone(role)}>{formatRoleType(role)}</AdminStatusBadge>,
+      getCellTitle: (role) => formatRoleType(role),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: 250,
+      minWidth: 190,
+      maxWidth: 320,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      hideable: false,
+      renderCell: (role) => (
+        <div className="admin-roles-page__row-actions">
+          <button
+            type="button"
+            className="admin-btn admin-btn-secondary"
+            onClick={(event) => {
+              event.stopPropagation();
+              openEdit(role);
+            }}
+          >
+            {isOwnerOrSuperAdmin ? "Edit" : "Open"}
+          </button>
+          {isOwnerOrSuperAdmin ? (
+            <>
+              <button
+                type="button"
+                className="admin-link-button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void duplicateRole(role);
+                }}
+              >
+                <Copy size={14} />
+                <span>Duplicate</span>
+              </button>
+              <button
+                type="button"
+                className="admin-link-button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void toggleRoleStatus(role);
+                }}
+              >
+                <PauseCircle size={14} />
+                <span>{role.isActive ? "Deactivate" : "Activate"}</span>
+              </button>
+            </>
+          ) : null}
+        </div>
+      ),
+    },
+  ]), [isOwnerOrSuperAdmin, rolePermissions]);
 
   const canDeleteEditingRole = editingRole && !editingRole.isSystemRole && !editingRole.isOwnerRole && editingRole.memberCount < 1;
 
@@ -280,61 +426,56 @@ export default function AdminRoles() {
         </select>
       </AdminFilterBar>
 
-      <AdminDataTable
+      <AdminColumnTable
+        storageKey="ff-admin-table-layout-roles"
         title="Roles list"
-        description="System roles stay protected. Custom roles can be duplicated, deactivated, and deleted when not assigned."
-        columns={[
-          { key: "name", label: "Role" },
-          { key: "description", label: "Description" },
-          { key: "members", label: "Team members" },
-          { key: "status", label: "Status" },
-          { key: "type", label: "Type" },
-          { key: "actions", label: "Actions" },
-        ]}
+        countLabel={isLoading ? "" : `${filteredRoles.length} role${filteredRoles.length === 1 ? "" : "s"}`}
+        columns={roleColumns}
         rows={filteredRoles}
         loading={isLoading}
-        error=""
-        emptyLabel="No roles match the current filters."
-        renderRow={(role) => (
-          <tr key={role.id}>
-            <td className="admin-cell-wrap">
-              <strong>{role.name}</strong>
-              <div>{role.code}</div>
-            </td>
-            <td className="admin-cell-wrap">{role.description || "No description provided."}</td>
-            <td>{role.memberCount}</td>
-            <td><AdminStatusBadge tone={getStatusTone(role.isActive)}>{role.isActive ? "Active" : "Inactive"}</AdminStatusBadge></td>
-            <td>
-              <div className="admin-roles-page__badges">
-                <AdminStatusBadge tone={getRoleTypeTone(role)}>
-                  {role.isOwnerRole ? "Owner" : role.isSystemRole ? "System" : "Custom"}
-                </AdminStatusBadge>
-              </div>
-            </td>
-            <td>
-              <div className="admin-roles-page__row-actions">
-                <button type="button" className="admin-link-button" onClick={() => openEdit(role)}>Edit</button>
-                <button type="button" className="admin-link-button" onClick={() => duplicateRole(role)}>
-                  <Copy size={14} />
-                  <span>Duplicate</span>
-                </button>
-                <button type="button" className="admin-link-button" onClick={() => toggleRoleStatus(role)}>
-                  <PauseCircle size={14} />
-                  <span>{role.isActive ? "Deactivate" : "Activate"}</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        )}
+        error={!isLoading ? error : ""}
+        emptyTitle="No roles match the current filters."
+        emptyDetail="Try adjusting the current filters."
+        selectedRowId={drawerOpen ? editingRole?.id || "" : ""}
+        getRowKey={(role) => role.id}
+        onRowClick={(role) => openEdit(role)}
       />
 
-      <AdminDetailDrawer
+      <AdminSidePanel
         open={drawerOpen}
         title={editingRole ? editingRole.name : "Create role"}
         subtitle={editingRole ? editingRole.code : "Define a custom role, then assign module permissions."}
+        eyebrow="Role"
         onClose={() => setDrawerOpen(false)}
+        className="admin-roles-page__drawer-panel"
+        withOverlay
       >
         <div className="admin-roles-page__drawer">
+          {editingRole ? (
+            <section className="admin-roles-page__summary-grid">
+              <article>
+                <span>Status</span>
+                <div className="admin-roles-page__summary-slot">
+                  <AdminStatusBadge tone={getStatusTone(editingRole.isActive)}>{editingRole.isActive ? "Active" : "Inactive"}</AdminStatusBadge>
+                </div>
+              </article>
+              <article>
+                <span>Type</span>
+                <div className="admin-roles-page__summary-slot">
+                  <AdminStatusBadge tone={getRoleTypeTone(editingRole)}>{formatRoleType(editingRole)}</AdminStatusBadge>
+                </div>
+              </article>
+              <article>
+                <span>Assigned team members</span>
+                <strong>{editingRole.memberCount}</strong>
+              </article>
+              <article>
+                <span>Enabled permissions</span>
+                <strong>{form.permissionCodes.length}</strong>
+              </article>
+            </section>
+          ) : null}
+
           <label>
             <span>Role name</span>
             <input
@@ -342,6 +483,7 @@ export default function AdminRoles() {
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
               placeholder="Role name"
+              disabled={!isOwnerOrSuperAdmin || isSaving}
             />
           </label>
 
@@ -352,7 +494,7 @@ export default function AdminRoles() {
               value={form.slug}
               onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
               placeholder="role-slug"
-              disabled={Boolean(editingRole?.isSystemRole)}
+              disabled={!isOwnerOrSuperAdmin || isSaving || Boolean(editingRole?.isSystemRole)}
             />
           </label>
 
@@ -363,6 +505,7 @@ export default function AdminRoles() {
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               placeholder="Describe what this role is responsible for."
+              disabled={!isOwnerOrSuperAdmin || isSaving}
             />
           </label>
 
@@ -371,7 +514,7 @@ export default function AdminRoles() {
               type="checkbox"
               checked={form.isActive}
               onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))}
-              disabled={Boolean(editingRole?.isOwnerRole)}
+              disabled={!isOwnerOrSuperAdmin || isSaving || Boolean(editingRole?.isOwnerRole)}
             />
             <div>
               <strong>Active role</strong>
@@ -393,8 +536,10 @@ export default function AdminRoles() {
                 <div className="admin-roles-page__permission-options">
                   {items.map((permission) => {
                     const checked = form.permissionCodes.includes(permission.code);
-                    const disabled = Boolean(editingRole?.isOwnerRole)
-                      && ["dashboard.view", "team.manage", "roles.manage", "menu.manage", "settings.manage"].includes(permission.code);
+                    const disabled = !isOwnerOrSuperAdmin
+                      || isSaving
+                      || (Boolean(editingRole?.isOwnerRole) && OWNER_LOCKED_PERMISSION_CODES.has(permission.code));
+
                     return (
                       <label key={permission.code} className={`admin-roles-page__permission-option${checked ? " is-active" : ""}`}>
                         <input
@@ -415,31 +560,33 @@ export default function AdminRoles() {
             ))}
           </section>
 
-          <div className="admin-roles-page__drawer-actions">
-            <button type="button" className="btn btn--primary" onClick={saveRole} disabled={isSaving}>
-              {editingRole ? "Save role" : "Create role"}
-            </button>
-            {editingRole ? (
-              <>
-                <button type="button" className="admin-link-button" onClick={() => duplicateRole(editingRole)} disabled={isSaving}>
-                  <Copy size={14} />
-                  <span>Duplicate</span>
-                </button>
-                <button type="button" className="admin-link-button" onClick={() => toggleRoleStatus(editingRole)} disabled={isSaving}>
-                  <PauseCircle size={14} />
-                  <span>{editingRole.isActive ? "Deactivate" : "Activate"}</span>
-                </button>
-                {canDeleteEditingRole ? (
-                  <button type="button" className="admin-link-button is-danger" onClick={() => removeRole(editingRole)} disabled={isSaving}>
-                    <Trash2 size={14} />
-                    <span>Delete role</span>
+          {isOwnerOrSuperAdmin ? (
+            <div className="admin-roles-page__drawer-actions">
+              <button type="button" className="btn btn--primary" onClick={saveRole} disabled={isSaving}>
+                {editingRole ? "Save role" : "Create role"}
+              </button>
+              {editingRole ? (
+                <>
+                  <button type="button" className="admin-link-button" onClick={() => void duplicateRole(editingRole)} disabled={isSaving}>
+                    <Copy size={14} />
+                    <span>Duplicate</span>
                   </button>
-                ) : null}
-              </>
-            ) : null}
-          </div>
+                  <button type="button" className="admin-link-button" onClick={() => void toggleRoleStatus(editingRole)} disabled={isSaving}>
+                    <PauseCircle size={14} />
+                    <span>{editingRole.isActive ? "Deactivate" : "Activate"}</span>
+                  </button>
+                  {canDeleteEditingRole ? (
+                    <button type="button" className="admin-link-button is-danger" onClick={() => void removeRole(editingRole)} disabled={isSaving}>
+                      <Trash2 size={14} />
+                      <span>Delete role</span>
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      </AdminDetailDrawer>
+      </AdminSidePanel>
     </div>
   );
 }

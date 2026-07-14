@@ -1,6 +1,6 @@
 import { requireSupabase } from "../lib/supabase.js";
 import { getCurrentUser } from "./authService.js";
-import { assertCurrentAdminPermission } from "./adminAccessService.js";
+import { assertCurrentAdminPageAccess } from "./adminAccessService.js";
 
 function isMissingOptionalTable(error) {
   return error?.code === "42P01" || error?.code === "PGRST205" || error?.message?.includes("schema cache");
@@ -11,11 +11,18 @@ function isMissingColumnError(error) {
 }
 
 async function assertSocialInboxReadAccess(message = "You do not have access to the inbox.") {
-  return assertCurrentAdminPermission("communications.view", { message });
+  return assertCurrentAdminPageAccess("operations.inbox", {
+    fallbackPermission: "communications.view",
+    message,
+  });
 }
 
 async function assertSocialInboxEditAccess(message = "You do not have access to update the inbox.") {
-  return assertCurrentAdminPermission("communications.edit", { message });
+  return assertCurrentAdminPageAccess("operations.inbox", {
+    action: "edit",
+    fallbackPermission: "communications.edit",
+    message,
+  });
 }
 
 const ADMIN_INBOX_MEDIA_BUCKET = "admin-inbox-media";

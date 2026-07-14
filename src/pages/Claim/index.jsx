@@ -252,6 +252,13 @@ function hasSameAirportSelection(data) {
   return Boolean(departureValue && destinationValue && departureValue === destinationValue);
 }
 
+function hasSelectedAirlineOption(data) {
+  return Boolean(
+    data?.airlineId
+    || (String(data?.airline || "").trim() && String(data?.airlineSource || "").trim()),
+  );
+}
+
 function clearStoredClaimDraft() {
   if (typeof window === "undefined") return;
 
@@ -1756,7 +1763,7 @@ function ClaimFlow() {
         nextErrors.destination = selectOptionError;
       }
 
-      if (!currentData.airlineId) {
+      if (!hasSelectedAirlineOption(currentData)) {
         nextErrors.airline = selectOptionError;
       }
 

@@ -6,11 +6,11 @@ import {
   updateReferralPartner,
 } from "../../services/adminService.js";
 import {
-  AdminDataTable,
-  AdminDetailDrawer,
+  AdminColumnTable,
   AdminFilterBar,
   AdminKpiCard,
   AdminPageHeader,
+  AdminSidePanel,
   AdminStatusBadge,
 } from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
@@ -215,6 +215,132 @@ export default function AdminReferralPartners() {
     }
   };
 
+  const columns = useMemo(() => ([
+    {
+      key: "partner",
+      label: "Partner",
+      width: 220,
+      minWidth: 180,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.public_name || item.name || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{item.contact_name || item.contact_email || "No contact"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.public_name || item.name || "Partner",
+    },
+    {
+      key: "code",
+      label: "Referral code",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{item.referral_code || "—"}</span>,
+      getCellTitle: (item) => item.referral_code || "—",
+    },
+    {
+      key: "portalStatus",
+      label: "Portal status",
+      width: 140,
+      minWidth: 120,
+      maxWidth: 200,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <AdminStatusBadge tone={toneForPortalStatus(item.portal_status || "approved")}>{item.portal_status || "approved"}</AdminStatusBadge>,
+      getCellTitle: (item) => item.portal_status || "approved",
+    },
+    {
+      key: "link",
+      label: "Referral link",
+      width: 280,
+      minWidth: 220,
+      maxWidth: 460,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{getPartnerReferralUrl(item) || "—"}</span>,
+      getCellTitle: (item) => getPartnerReferralUrl(item) || "—",
+    },
+    {
+      key: "commission",
+      label: "Commission",
+      width: 140,
+      minWidth: 120,
+      maxWidth: 200,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{item.commission_rate} {item.commission_type === "percentage" ? "%" : "fixed"}</span>,
+      getCellTitle: (item) => `${item.commission_rate} ${item.commission_type === "percentage" ? "%" : "fixed"}`,
+    },
+    {
+      key: "performance",
+      label: "Performance",
+      width: 180,
+      minWidth: 150,
+      maxWidth: 260,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.leadsGenerated} leads • {item.casesConverted} cases</span>
+          <span className="admin-crm-table__cell-sub">{formatCurrency(item.earnedCommission)} earned</span>
+        </div>
+      ),
+      getCellTitle: (item) => `${item.leadsGenerated} leads • ${item.casesConverted} cases`,
+    },
+    {
+      key: "approved",
+      label: "Approved",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatDate(item.approved_at)}</span>
+          <span className="admin-crm-table__cell-sub">{item.status || "active"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => formatDate(item.approved_at),
+    },
+    {
+      key: "action",
+      label: "Action",
+      width: 120,
+      minWidth: 100,
+      maxWidth: 160,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      hideable: false,
+      renderCell: (item) => (
+        <button
+          type="button"
+          className="admin-btn admin-btn-secondary"
+          onClick={(event) => {
+            event.stopPropagation();
+            setSelectedPartnerId(item.id);
+            setDrawerOpen(true);
+          }}
+        >
+          Open
+        </button>
+      ),
+    },
+  ]), []);
+
   return (
     <div className="admin-page admin-partner-program-page">
       <AdminPageHeader
@@ -261,51 +387,32 @@ export default function AdminReferralPartners() {
         ]}
       />
 
-      <AdminDataTable
+      <AdminColumnTable
+        storageKey="ff-admin-table-layout-referral-partners"
         title="Approved partner registry"
-        description={isLoading ? "" : `${filteredRows.length} partner records match the current filters.`}
-        columns={[
-          { key: "partner", label: "Partner" },
-          { key: "code", label: "Referral code" },
-          { key: "status", label: "Portal status" },
-          { key: "link", label: "Referral link" },
-          { key: "rate", label: "Commission rate" },
-          { key: "performance", label: "Performance" },
-          { key: "action", label: "Action" },
-        ]}
+        countLabel={isLoading ? "" : `${filteredRows.length} partner${filteredRows.length === 1 ? "" : "s"}`}
+        columns={columns}
         rows={filteredRows}
         loading={isLoading}
         error={!isLoading ? error : ""}
-        emptyLabel="No referral partners match the current filters."
-        renderRow={(item) => (
-          <tr key={item.id}>
-            <td>{item.public_name || item.name}</td>
-            <td>{item.referral_code}</td>
-            <td><AdminStatusBadge tone={toneForPortalStatus(item.portal_status || "approved")}>{item.portal_status || "approved"}</AdminStatusBadge></td>
-            <td className="admin-cell-wrap">{getPartnerReferralUrl(item) || "—"}</td>
-            <td>{item.commission_rate} {item.commission_type === "percentage" ? "%" : "fixed"}</td>
-            <td>{item.leadsGenerated} leads • {item.casesConverted} cases</td>
-            <td>
-              <button
-                type="button"
-                className="admin-link-button"
-                onClick={() => {
-                  setSelectedPartnerId(item.id);
-                  setDrawerOpen(true);
-                }}
-              >
-                Open
-              </button>
-            </td>
-          </tr>
-        )}
+        emptyTitle="No referral partners match the current filters."
+        emptyDetail="Try adjusting the current filters."
+        selectedRowId={drawerOpen ? selectedPartner?.id || "" : ""}
+        getRowKey={(item) => item.id}
+        onRowClick={(item) => {
+          setSelectedPartnerId(item.id);
+          setDrawerOpen(true);
+        }}
       />
 
-      <AdminDetailDrawer
+      <AdminSidePanel
         open={drawerOpen}
         title={selectedPartner?.public_name || selectedPartner?.name || "Partner detail"}
         subtitle={selectedPartner?.referral_code || ""}
+        eyebrow="Referral partner"
         onClose={() => setDrawerOpen(false)}
+        className="admin-partner-program__drawer-panel"
+        withOverlay
       >
         {selectedPartner ? (
           <div className="admin-partner-program__drawer">
@@ -374,7 +481,7 @@ export default function AdminReferralPartners() {
             </section>
           </div>
         ) : null}
-      </AdminDetailDrawer>
+      </AdminSidePanel>
     </div>
   );
 }

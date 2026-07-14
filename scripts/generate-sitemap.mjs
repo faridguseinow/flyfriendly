@@ -52,7 +52,7 @@ function buildUrlNode(pathname, { alternates = "", lastmod = "" } = {}) {
   ].filter(Boolean).join("\n");
 }
 
-function buildStaticEntries() {
+function buildStaticEntries(lastmod) {
   return SITEMAP_STATIC_PUBLIC_PATHS.flatMap((pathname) => {
     const localizedPaths = Object.fromEntries(
       SEO_LANGUAGES.map((language) => [language, localizePath(pathname, language)]),
@@ -60,6 +60,7 @@ function buildStaticEntries() {
 
     return SEO_LANGUAGES.map((language) => buildUrlNode(localizedPaths[language], {
       alternates: buildAlternates(localizedPaths),
+      lastmod,
     }));
   });
 }
@@ -146,7 +147,10 @@ function buildBlogEntries(rows) {
 }
 
 async function main() {
-  const staticEntries = buildStaticEntries();
+  // Static routes do not have row-level timestamps in the database, so use the
+  // sitemap generation timestamp to satisfy Search Console's lastmod requirement.
+  const generatedAt = new Date().toISOString();
+  const staticEntries = buildStaticEntries(generatedAt);
   const blogEntries = buildBlogEntries(await fetchBlogEntries());
   const sitemap = [
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",

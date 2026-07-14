@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Link2, Users } from "lucide-react";
 import { fetchReferralPartnersModuleData } from "../../services/adminService.js";
 import {
-  AdminDataTable,
-  AdminDetailDrawer,
+  AdminColumnTable,
   AdminFilterBar,
   AdminKpiCard,
   AdminPageHeader,
+  AdminSidePanel,
   AdminStatusBadge,
 } from "../../admin/components/AdminUi.jsx";
 import "../AdminReferralPartners/style.scss";
@@ -186,6 +186,120 @@ export default function AdminReferrals() {
     convertedCases: rows.filter((item) => item.linkedCaseCode !== "—").length,
   }), [rows]);
 
+  const columns = useMemo(() => ([
+    {
+      key: "lead",
+      label: "Lead / claim",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{row.leadCode}</span>
+          <span className="admin-crm-table__cell-sub">{row.linkedCaseCode !== "—" ? row.linkedCaseCode : "Lead only"}</span>
+        </div>
+      ),
+      getCellTitle: (row) => row.leadCode,
+    },
+    {
+      key: "partner",
+      label: "Partner",
+      width: 180,
+      minWidth: 150,
+      maxWidth: 260,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{row.partnerLabel}</span>
+          <span className="admin-crm-table__cell-sub">{row.partnerCode}</span>
+        </div>
+      ),
+      getCellTitle: (row) => `${row.partnerLabel} • ${row.partnerCode}`,
+    },
+    {
+      key: "status",
+      label: "Claim status",
+      width: 150,
+      minWidth: 120,
+      maxWidth: 220,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <AdminStatusBadge tone={toClaimStatusTone(row.claimStatus)}>{row.claimStatus}</AdminStatusBadge>,
+      getCellTitle: (row) => row.claimStatus,
+    },
+    {
+      key: "date",
+      label: "Attribution date",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatDate(row.attributionDate)}</span>
+          <span className="admin-crm-table__cell-sub">{row.partnerPortalStatus}</span>
+        </div>
+      ),
+      getCellTitle: (row) => formatDate(row.attributionDate),
+    },
+    {
+      key: "route",
+      label: "Route",
+      width: 320,
+      minWidth: 240,
+      maxWidth: 520,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{row.routeLabel}</span>,
+      getCellTitle: (row) => row.routeLabel,
+    },
+    {
+      key: "source",
+      label: "Source",
+      width: 180,
+      minWidth: 140,
+      maxWidth: 280,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (row) => <span className="admin-crm-table__cell-main">{row.sourceLabel}</span>,
+      getCellTitle: (row) => row.sourceLabel,
+    },
+    {
+      key: "action",
+      label: "Action",
+      width: 120,
+      minWidth: 100,
+      maxWidth: 160,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      hideable: false,
+      renderCell: (row) => (
+        <button
+          type="button"
+          className="admin-btn admin-btn-secondary"
+          onClick={(event) => {
+            event.stopPropagation();
+            setSelectedReferralId(row.id);
+            setDrawerOpen(true);
+          }}
+        >
+          Open
+        </button>
+      ),
+    },
+  ]), []);
+
   return (
     <div className="admin-page admin-partner-referrals-page">
       <AdminPageHeader
@@ -215,49 +329,32 @@ export default function AdminReferrals() {
         statusOptions={statusOptions}
       />
 
-      <AdminDataTable
+      <AdminColumnTable
+        storageKey="ff-admin-table-layout-referrals"
         title="Referred claims"
-        description={isLoading ? "" : `${rows.length} referrals match the current filters.`}
-        columns={[
-          { key: "lead", label: "Lead / claim" },
-          { key: "partner", label: "Partner" },
-          { key: "status", label: "Claim status" },
-          { key: "date", label: "Attribution date" },
-          { key: "route", label: "Route" },
-          { key: "action", label: "Action" },
-        ]}
+        countLabel={isLoading ? "" : `${rows.length} referral${rows.length === 1 ? "" : "s"}`}
+        columns={columns}
         rows={rows}
         loading={isLoading}
         error={!isLoading ? error : ""}
-        emptyLabel="No referrals found."
-        renderRow={(row) => (
-          <tr key={row.id}>
-            <td>{row.leadCode}</td>
-            <td>{row.partnerLabel}</td>
-            <td><AdminStatusBadge tone={toClaimStatusTone(row.claimStatus)}>{row.claimStatus}</AdminStatusBadge></td>
-            <td>{formatDate(row.attributionDate)}</td>
-            <td className="admin-cell-wrap">{row.routeLabel}</td>
-            <td>
-              <button
-                type="button"
-                className="admin-link-button"
-                onClick={() => {
-                  setSelectedReferralId(row.id);
-                  setDrawerOpen(true);
-                }}
-              >
-                Open
-              </button>
-            </td>
-          </tr>
-        )}
+        emptyTitle="No referrals found."
+        emptyDetail="Try adjusting the current filters."
+        selectedRowId={drawerOpen ? selectedReferral?.id || "" : ""}
+        getRowKey={(row) => row.id}
+        onRowClick={(row) => {
+          setSelectedReferralId(row.id);
+          setDrawerOpen(true);
+        }}
       />
 
-      <AdminDetailDrawer
+      <AdminSidePanel
         open={drawerOpen}
         title={selectedReferral?.leadCode || "Referral detail"}
         subtitle={selectedReferral ? `${selectedReferral.partnerLabel} • ${selectedReferral.partnerCode}` : ""}
+        eyebrow="Referral"
         onClose={() => setDrawerOpen(false)}
+        className="admin-partner-program__drawer-panel"
+        withOverlay
       >
         {selectedReferral ? (
           <div className="admin-partner-program__drawer">
@@ -281,7 +378,7 @@ export default function AdminReferrals() {
             </section>
           </div>
         ) : null}
-      </AdminDetailDrawer>
+      </AdminSidePanel>
     </div>
   );
 }

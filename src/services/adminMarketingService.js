@@ -1,5 +1,5 @@
 import { requireSupabase } from "../lib/supabase.js";
-import { assertCurrentAdminPermission } from "./adminAccessService.js";
+import { assertCurrentAdminPageAccess } from "./adminAccessService.js";
 
 const DEFAULT_LOOKBACK_DAYS = 30;
 const ANALYTICS_ROW_LIMIT = 10000;
@@ -374,7 +374,9 @@ async function loadPartnerMap(client, referralCodes = []) {
 }
 
 export async function getMarketingAnalyticsSummary({ from, to } = {}) {
-  await assertCurrentAdminPermission("reports.view", {
+  await assertCurrentAdminPageAccess("dashboard.marketing", {
+    anyPageKeys: ["dashboard.revenue"],
+    fallbackPermission: "reports.view",
     message: "You do not have access to marketing analytics.",
   });
 

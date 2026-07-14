@@ -6,11 +6,11 @@ import {
   rejectPartnerApplication,
 } from "../../services/adminService.js";
 import {
-  AdminDataTable,
-  AdminDetailDrawer,
+  AdminColumnTable,
   AdminFilterBar,
   AdminKpiCard,
   AdminPageHeader,
+  AdminSidePanel,
   AdminStatusBadge,
 } from "../../admin/components/AdminUi.jsx";
 import { useAdminAuth } from "../../admin/AdminAuthContext.jsx";
@@ -39,7 +39,7 @@ export default function AdminPartnerApplications() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeAction, setActiveAction] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -117,7 +117,7 @@ export default function AdminPartnerApplications() {
       await approvePartnerApplication(selectedApplication.id);
       await loadApplications({ force: true });
       setToast({ type: "success", message: "Partner application approved." });
-      setDrawerOpen(false);
+      setPanelOpen(false);
     } catch (nextError) {
       const message = nextError.message || "Could not approve partner application.";
       setError(message);
@@ -144,7 +144,7 @@ export default function AdminPartnerApplications() {
       await rejectPartnerApplication(selectedApplication.id, rejectionReason);
       await loadApplications({ force: true });
       setToast({ type: "success", message: "Partner application rejected." });
-      setDrawerOpen(false);
+      setPanelOpen(false);
     } catch (nextError) {
       const message = nextError.message || "Could not reject partner application.";
       setError(message);
@@ -154,6 +154,109 @@ export default function AdminPartnerApplications() {
       setActiveAction("");
     }
   };
+
+  const columns = useMemo(() => ([
+    {
+      key: "applicant",
+      label: "Applicant",
+      width: 220,
+      minWidth: 180,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.full_name || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{item.email || "—"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => item.full_name || item.email || "Applicant",
+    },
+    {
+      key: "profile",
+      label: "Profile",
+      width: 220,
+      minWidth: 170,
+      maxWidth: 320,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{item.primary_platform || "—"}</span>
+          <span className="admin-crm-table__cell-sub">{item.country || item.niche || "—"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => `${item.primary_platform || "—"} • ${item.country || item.niche || "—"}`,
+    },
+    {
+      key: "audience",
+      label: "Audience",
+      width: 120,
+      minWidth: 110,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      align: "right",
+      renderCell: (item) => <span className="admin-crm-table__cell-main">{item.audience_size || "—"}</span>,
+      getCellTitle: (item) => String(item.audience_size || "—"),
+    },
+    {
+      key: "created",
+      label: "Submitted",
+      width: 170,
+      minWidth: 140,
+      maxWidth: 240,
+      wrap: true,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => (
+        <div className="admin-crm-table__stack">
+          <span className="admin-crm-table__cell-main">{formatDate(item.created_at)}</span>
+          <span className="admin-crm-table__cell-sub">{item.reviewed_at ? `Reviewed ${formatDate(item.reviewed_at)}` : "Not reviewed"}</span>
+        </div>
+      ),
+      getCellTitle: (item) => formatDate(item.created_at),
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: 130,
+      minWidth: 110,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      renderCell: (item) => <AdminStatusBadge tone={toneForStatus(item.status)}>{item.status}</AdminStatusBadge>,
+      getCellTitle: (item) => item.status,
+    },
+    {
+      key: "action",
+      label: "Action",
+      width: 140,
+      minWidth: 120,
+      maxWidth: 180,
+      wrap: false,
+      resizable: true,
+      reorderable: true,
+      hideable: false,
+      renderCell: (item) => (
+        <button
+          type="button"
+          className="admin-btn admin-btn-secondary"
+          onClick={(event) => {
+            event.stopPropagation();
+            setSelectedApplicationId(item.id);
+            setPanelOpen(true);
+          }}
+        >
+          Review
+        </button>
+      ),
+    },
+  ]), []);
 
   return (
     <div className="admin-page admin-partner-applications-page">
@@ -197,53 +300,32 @@ export default function AdminPartnerApplications() {
         statusOptions={statusFilters.map((item) => ({ value: item, label: item[0].toUpperCase() + item.slice(1) }))}
       />
 
-      <AdminDataTable
+      <AdminColumnTable
+        storageKey="ff-admin-table-layout-partner-applications"
         title="Review queue"
-        description={isLoading ? "" : `${filteredRows.length} applications match the current filters.`}
-        columns={[
-          { key: "name", label: "Applicant" },
-          { key: "email", label: "Email" },
-          { key: "country", label: "Country" },
-          { key: "platform", label: "Primary platform" },
-          { key: "audience", label: "Audience size" },
-          { key: "created", label: "Created" },
-          { key: "status", label: "Status" },
-          { key: "action", label: "Action" },
-        ]}
+        countLabel={isLoading ? "" : `${filteredRows.length} application${filteredRows.length === 1 ? "" : "s"}`}
+        columns={columns}
         rows={filteredRows}
         loading={isLoading}
         error={!isLoading ? error : ""}
-        emptyLabel="No partner applications match the current filters."
-        renderRow={(item) => (
-          <tr key={item.id}>
-            <td>{item.full_name}</td>
-            <td>{item.email}</td>
-            <td>{item.country || "—"}</td>
-            <td>{item.primary_platform || "—"}</td>
-            <td>{item.audience_size || "—"}</td>
-            <td>{formatDate(item.created_at)}</td>
-            <td><AdminStatusBadge tone={toneForStatus(item.status)}>{item.status}</AdminStatusBadge></td>
-            <td>
-              <button
-                type="button"
-                className="admin-link-button"
-                onClick={() => {
-                  setSelectedApplicationId(item.id);
-                  setDrawerOpen(true);
-                }}
-              >
-                Review
-              </button>
-            </td>
-          </tr>
-        )}
+        emptyTitle="No partner applications match the current filters."
+        emptyDetail="Try adjusting the current filters."
+        selectedRowId={panelOpen ? selectedApplication?.id || "" : ""}
+        getRowKey={(item) => item.id}
+        onRowClick={(item) => {
+          setSelectedApplicationId(item.id);
+          setPanelOpen(true);
+        }}
       />
 
-      <AdminDetailDrawer
-        open={drawerOpen}
+      <AdminSidePanel
+        open={panelOpen}
         title={selectedApplication?.full_name || "Application detail"}
         subtitle={selectedApplication?.email || ""}
-        onClose={() => setDrawerOpen(false)}
+        eyebrow="Partner application"
+        onClose={() => setPanelOpen(false)}
+        className="admin-partner-program__drawer-panel"
+        withOverlay
       >
         {selectedApplication ? (
           <div className="admin-partner-program__drawer">
@@ -286,7 +368,7 @@ export default function AdminPartnerApplications() {
             </div>
           </div>
         ) : null}
-      </AdminDetailDrawer>
+      </AdminSidePanel>
     </div>
   );
 }

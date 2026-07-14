@@ -194,6 +194,27 @@ export function useAdminTableColumns({ storageKey, columns = [] }) {
     });
   };
 
+  const moveColumnTo = (columnKey, targetColumnKey) => {
+    if (!columnKey || !targetColumnKey || columnKey === targetColumnKey) {
+      return;
+    }
+
+    setOrder((current) => {
+      const sourceIndex = current.indexOf(columnKey);
+      const targetIndex = current.indexOf(targetColumnKey);
+
+      if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+        return current;
+      }
+
+      const next = [...current];
+      const [item] = next.splice(sourceIndex, 1);
+      const adjustedTargetIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+      next.splice(adjustedTargetIndex, 0, item);
+      return next;
+    });
+  };
+
   const resetLayout = () => {
     setOrder(buildDefaultOrder(columns));
     setWidths(buildWidths(columns, {}));
@@ -259,6 +280,7 @@ export function useAdminTableColumns({ storageKey, columns = [] }) {
     layoutColumns,
     orderedColumns,
     moveColumn,
+    moveColumnTo,
     resetLayout,
     startResize,
     toggleColumnVisibility,

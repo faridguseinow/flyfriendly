@@ -8,7 +8,7 @@ import {
   normalizeMoneyAmount,
   resolvePartnerRate,
 } from "../lib/financeCalculations.js";
-import { assertCurrentAdminPermission } from "./adminAccessService.js";
+import { assertCurrentAdminPageAccess } from "./adminAccessService.js";
 import { getCurrentUser } from "./authService.js";
 
 const DEFAULT_FETCH_LIMIT = 1000;
@@ -33,6 +33,22 @@ const EXISTING_PARTNER_PAYOUT_STATUSES = new Set([
 ]);
 const financeDatasetCache = new Map();
 const financeDatasetPending = new Map();
+const FINANCE_READ_PAGE_KEYS = [
+  "dashboard.revenue",
+  "finance.overview",
+  "finance.payments",
+  "finance.partnerPayouts",
+  "finance.partnerCommissions",
+  "finance.caseFinance",
+];
+const FINANCE_EDIT_PAGE_KEYS = [
+  "dashboard.revenue",
+  "finance.overview",
+  "finance.payments",
+  "finance.partnerPayouts",
+  "finance.partnerCommissions",
+  "finance.caseFinance",
+];
 const FINANCE_READ_FALLBACK_PERMISSIONS = [
   "finance.edit",
   "payments.view",
@@ -61,6 +77,15 @@ const PARTNER_FINANCE_EDIT_PERMISSIONS = [
   "partner_commissions.manage",
   "partner_payouts.manage",
   "partners.edit",
+];
+const PARTNER_FINANCE_PAGE_KEYS = [
+  "dashboard.revenue",
+  "finance.partnerPayouts",
+  "finance.partnerCommissions",
+  "partners.referral",
+  "partners.applications",
+  "partners.referralPartners",
+  "partners.referrals",
 ];
 
 function stableSerializeCacheValue(value) {
@@ -103,25 +128,37 @@ async function withFinanceCache(cacheKey, loader, { force = false } = {}) {
 }
 
 async function assertFinanceReadAccess(message = "You do not have access to finance data.") {
-  return assertCurrentAdminPermission("finance.view", {
+  return assertCurrentAdminPageAccess("finance.overview", {
+    anyPageKeys: FINANCE_READ_PAGE_KEYS,
+    fallbackPermission: "finance.view",
     anyPermissions: FINANCE_READ_FALLBACK_PERMISSIONS,
     message,
   });
 }
 
 async function assertFinanceEditAccess(message = "You do not have access to update finance data.") {
-  return assertCurrentAdminPermission("finance.edit", { message });
+  return assertCurrentAdminPageAccess("finance.overview", {
+    action: "edit",
+    anyPageKeys: FINANCE_EDIT_PAGE_KEYS,
+    fallbackPermission: "finance.edit",
+    message,
+  });
 }
 
 async function assertPartnerFinanceReadAccess(message = "You do not have access to partner finance data.") {
-  return assertCurrentAdminPermission("finance.view", {
+  return assertCurrentAdminPageAccess("finance.partnerCommissions", {
+    anyPageKeys: PARTNER_FINANCE_PAGE_KEYS,
+    fallbackPermission: "finance.view",
     anyPermissions: PARTNER_FINANCE_READ_PERMISSIONS,
     message,
   });
 }
 
 async function assertPartnerFinanceEditAccess(message = "You do not have access to update partner finance data.") {
-  return assertCurrentAdminPermission("finance.edit", {
+  return assertCurrentAdminPageAccess("finance.partnerCommissions", {
+    action: "edit",
+    anyPageKeys: PARTNER_FINANCE_PAGE_KEYS,
+    fallbackPermission: "finance.edit",
     anyPermissions: PARTNER_FINANCE_EDIT_PERMISSIONS,
     message,
   });

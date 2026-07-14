@@ -22,8 +22,8 @@
   padding: 0 14px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 999px;
-  background: #fff;
-  color: #516174;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -57,6 +57,8 @@
   width: 100%;
   padding: 16px;
   border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 18px;
+  background: var(--admin-surface);
   text-align: left;
   cursor: pointer;
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
@@ -68,7 +70,7 @@
 
   &.is-active {
     border-color: rgba(5, 132, 255, 0.28);
-    background: rgba(246, 250, 255, 0.96);
+    background: var(--admin-surface-soft);
   }
 }
 
@@ -122,7 +124,7 @@
   }
 
   span {
-    color: #708095;
+    color: var(--admin-text-secondary);
     font-size: 12px;
     line-height: 1.45;
   }
@@ -143,7 +145,7 @@
   }
 
   span {
-    color: #7b8794;
+    color: var(--admin-text-secondary);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -170,7 +172,7 @@
   font-size: 12px;
 
   small {
-    color: #8a97a7;
+    color: var(--admin-text-secondary);
     text-align: right;
   }
 }
@@ -178,7 +180,7 @@
 .admin-employees-page__role-card {
   p {
     margin: 12px 0 0;
-    color: #607287;
+    color: var(--admin-text-secondary);
     font-size: 13px;
     line-height: 1.55;
   }
@@ -196,7 +198,7 @@
   span {
     display: block;
     margin-top: 4px;
-    color: #708095;
+    color: var(--admin-text-secondary);
     font-size: 12px;
   }
 }
@@ -209,6 +211,67 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.admin-form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-form-field {
+  display: grid;
+  gap: 8px;
+
+  span {
+    color: var(--admin-text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+}
+
+.admin-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--admin-text-primary);
+  font-size: 13px;
+
+  input {
+    margin: 0;
+  }
+
+  span,
+  small,
+  strong {
+    display: block;
+  }
+
+  small {
+    color: #7b8794;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+}
+
+.admin-checkbox--row {
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 14px;
+  background: var(--admin-surface);
+}
+
+.admin-panel--nested {
+  padding: 14px;
+}
+
+.admin-panel__hint {
+  margin: 14px 0 0;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .admin-employees-page__access-layout,
@@ -260,7 +323,7 @@
 }
 
 .admin-employees-page__drawer {
-  width: min(560px, calc(100vw - 24px));
+  width: min(680px, calc(100vw - 24px));
 }
 
 .admin-employees-page__access-item,
@@ -279,7 +342,7 @@
   padding: 12px 13px;
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 14px;
-  background: rgba(248, 251, 255, 0.9);
+  background: var(--admin-surface-soft);
 }
 
 .admin-employees-page__permission-preview-group,

@@ -19,11 +19,14 @@ export function AdminColumnTable({
 }) {
   const { t } = useTranslation();
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const [draggedColumnKey, setDraggedColumnKey] = useState("");
+  const [dropTargetColumnKey, setDropTargetColumnKey] = useState("");
   const columnsMenuRef = useRef(null);
   const {
     layoutColumns,
     orderedColumns,
     moveColumn,
+    moveColumnTo,
     resetLayout,
     startResize,
     toggleColumnVisibility,
@@ -83,6 +86,11 @@ export function AdminColumnTable({
   };
 
   const state = renderState();
+
+  const resetDragState = () => {
+    setDraggedColumnKey("");
+    setDropTargetColumnKey("");
+  };
 
   return (
     <section className="admin-crm-page__table-card">
@@ -145,10 +153,46 @@ export function AdminColumnTable({
                 {orderedColumns.map((column, index) => (
                   <th
                     key={column.key}
-                    className={`admin-crm-table__header-cell${column.wrap ? " admin-crm-table__cell--wrap" : " admin-crm-table__cell--nowrap"}${column.align === "right" ? " is-right" : ""}`}
+                    className={`admin-crm-table__header-cell${column.wrap ? " admin-crm-table__cell--wrap" : " admin-crm-table__cell--nowrap"}${column.align === "right" ? " is-right" : ""}${draggedColumnKey === column.key ? " is-dragging" : ""}${dropTargetColumnKey === column.key ? " is-drop-target" : ""}`}
                     style={{ width: `${column.width}px`, minWidth: `${column.minWidth || column.width}px`, maxWidth: `${column.maxWidth || column.width}px` }}
+                    onDragOver={(event) => {
+                      if (!draggedColumnKey || draggedColumnKey === column.key || !column.reorderable) {
+                        return;
+                      }
+
+                      event.preventDefault();
+                      setDropTargetColumnKey(column.key);
+                    }}
+                    onDrop={(event) => {
+                      if (!draggedColumnKey || draggedColumnKey === column.key || !column.reorderable) {
+                        resetDragState();
+                        return;
+                      }
+
+                      event.preventDefault();
+                      moveColumnTo(draggedColumnKey, column.key);
+                      resetDragState();
+                    }}
+                    onDragEnd={resetDragState}
                   >
-                    <div className="admin-crm-table__header-inner">
+                    <div
+                      className="admin-crm-table__header-inner"
+                      draggable={column.reorderable}
+                      onDragStart={(event) => {
+                        if (!column.reorderable) {
+                          return;
+                        }
+
+                        if (typeof event.target?.closest === "function" && event.target.closest("button")) {
+                          event.preventDefault();
+                          return;
+                        }
+
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", column.key);
+                        setDraggedColumnKey(column.key);
+                      }}
+                    >
                       <span>{column.label}</span>
                       {column.reorderable ? (
                         <div className="admin-crm-table__move-controls">

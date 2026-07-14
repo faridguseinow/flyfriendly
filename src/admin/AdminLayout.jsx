@@ -12,7 +12,6 @@ import {
   endAdminWorkSession,
   fetchActiveAdminEmployees,
   fetchAdminSearchData,
-  fetchAdminSidebarMenu,
   heartbeatAdminWorkSession,
   logAdminActivity,
   preloadAdminWorkspaceData,
@@ -271,14 +270,13 @@ function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const adminAuth = useAdminAuth();
-  const { profile, primaryRoleLabel, roleLabels, roles, isAdminUser, user } = adminAuth;
+  const { profile, primaryRoleLabel, roleLabels, isAdminUser, user } = adminAuth;
   const preferencesState = useAdminPreferencesState(profile?.email, profile?.preferred_language);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchIndex, setSearchIndex] = useState(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
-  const [dynamicMenu, setDynamicMenu] = useState(null);
   const [notificationsState, setNotificationsState] = useState({
     notifications: [],
     unreadCount: 0,
@@ -298,39 +296,17 @@ function AdminLayout() {
   const refreshActiveEmployeePresenceRef = useRef(() => Promise.resolve());
   const sendAdminPresenceHeartbeatRef = useRef(() => {});
 
-  useEffect(() => {
-    let active = true;
-
-    fetchAdminSidebarMenu(profile?.id || null, roles || [])
-      .then((menu) => {
-        if (active) {
-          setDynamicMenu(menu);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setDynamicMenu(null);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [profile?.id, roles]);
-
   const translatedNavigation = useMemo(() => getAdminNavigation(t), [t]);
   const translatedNavigationSections = useMemo(() => getAdminNavigationSections(t), [t]);
   const navItems = useMemo(() => {
-    const sourceItems = getVisibleAdminNavigation(adminAuth, translatedNavigation, {
-      menuItems: dynamicMenu?.items || [],
-    });
+    const sourceItems = getVisibleAdminNavigation(adminAuth, translatedNavigation);
     const translatedByPath = new Map(translatedNavigation.map((item) => [item.path, item]));
 
     return sourceItems.map((item) => ({
       ...item,
       ...(translatedByPath.get(item.path) || {}),
     }));
-  }, [adminAuth, dynamicMenu?.items, translatedNavigation]);
+  }, [adminAuth, translatedNavigation]);
 
   const navSections = useMemo(
     () => buildAdminNavigationSections(navItems, translatedNavigationSections),
