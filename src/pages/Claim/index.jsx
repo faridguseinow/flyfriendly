@@ -430,6 +430,10 @@ function buildSafeApprovedClaimData(data = {}, override = {}) {
     date: data.date || "",
     fullName: data.fullName || "",
     email: data.email || "",
+    phone: data.phone || "",
+    phoneCountry: data.phoneCountry || "",
+    phoneDialCode: data.phoneDialCode || "",
+    phoneLocalNumber: data.phoneLocalNumber || "",
     preferredLanguage: data.preferredLanguage || data.language || "",
     ...override,
   };
@@ -1663,7 +1667,7 @@ function ApprovedResult({ data }) {
         ))}
       </section>
       <div className="claim-actions">
-        <LocalizedLink className="claim-back" to="/claim/finish">{t("common.back")}</LocalizedLink>
+        <LocalizedLink className="claim-back" to="/">{t("common.mainPage")}</LocalizedLink>
         <LocalizedLink className="btn btn-primary" to={isAuthenticated ? "/client/dashboard" : "/"}>
           {isAuthenticated
             ? t("claim.approved.accountCta", { defaultValue: "Open my account" })

@@ -71,6 +71,20 @@ type AirportRow = {
 };
 
 const DUPLICATE_LOOKBACK_DAYS = 180;
+const portalActionLabels = {
+  en: { createPassword: "Create password", accessPortal: "Access your portal" },
+  ru: { createPassword: "Создать пароль", accessPortal: "Открыть кабинет" },
+  az: { createPassword: "Parol yarat", accessPortal: "Kabinetə keç" },
+  es: { createPassword: "Crear contraseña", accessPortal: "Abrir portal" },
+  fr: { createPassword: "Créer un mot de passe", accessPortal: "Ouvrir le portail" },
+  pt: { createPassword: "Criar palavra-passe", accessPortal: "Abrir portal" },
+  de: { createPassword: "Passwort erstellen", accessPortal: "Portal öffnen" },
+  it: { createPassword: "Crea password", accessPortal: "Apri il portale" },
+  tr: { createPassword: "Şifre oluştur", accessPortal: "Portala git" },
+  ka: { createPassword: "პაროლის შექმნა", accessPortal: "პორტალის გახსნა" },
+  uk: { createPassword: "Створити пароль", accessPortal: "Відкрити кабінет" },
+  pl: { createPassword: "Utwórz hasło", accessPortal: "Otwórz portal" },
+} as const;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 const RESERVED_EMAIL_DOMAINS = new Set(["example.com", "example.org", "example.net"]);
 
@@ -765,10 +779,11 @@ async function sendConfirmationEmail(
   language: string,
   isNewUser: boolean,
 ) {
+  const labels = portalActionLabels[language as keyof typeof portalActionLabels] || portalActionLabels.en;
   const payload = {
     leadId,
     portalActionUrl: accessLink,
-    portalActionLabel: isNewUser ? "Create password" : "Access your portal",
+    portalActionLabel: isNewUser ? labels.createPassword : labels.accessPortal,
     portalLoginUrl: buildPublicAuthUrl("/auth/login"),
   };
 

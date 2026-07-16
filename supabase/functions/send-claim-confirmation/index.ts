@@ -605,12 +605,20 @@ function getPortalCopy(language: string) {
   return portalCopy[language as keyof typeof portalCopy] || portalCopy.en;
 }
 
-function buildBrandHeader() {
+function buildBrandHeader(siteUrl: string) {
+  const logoUrl = escapeHtml(`${siteUrl.replace(/\/$/, "")}/logo-image.png`);
+
   return `
-    <div style="display:inline-flex;align-items:center;gap:12px;padding:10px 18px;border-radius:999px;background:#ffffff;border:1px solid #d9e7ff;box-shadow:0 12px 30px rgba(31,122,224,0.10);">
-      <span style="display:inline-flex;width:34px;height:34px;border-radius:12px;background:linear-gradient(180deg,#2bb0ff 0%,#1187eb 100%);color:#ffffff;font-size:15px;font-weight:800;align-items:center;justify-content:center;letter-spacing:0.04em;">FF</span>
-      <span style="font-size:18px;font-weight:700;letter-spacing:0.01em;color:#1187eb;">Fly Friendly</span>
-    </div>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #d9e7ff;border-radius:999px;box-shadow:0 12px 30px rgba(31,122,224,0.10);">
+      <tr>
+        <td style="padding:9px 10px 9px 18px;vertical-align:middle;">
+          <img src="${logoUrl}" width="34" height="34" alt="" style="display:block;width:34px;height:34px;border:0;outline:none;text-decoration:none;border-radius:10px;" />
+        </td>
+        <td style="padding:9px 20px 9px 0;vertical-align:middle;font-family:Arial,sans-serif;font-size:22px;line-height:1;font-weight:700;color:#1187eb;white-space:nowrap;">
+          Fly Friendly
+        </td>
+      </tr>
+    </table>
   `.trim();
 }
 
@@ -674,7 +682,7 @@ function buildEmailHtml(
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:640px;margin:0 auto;">
         <tr>
           <td style="padding-bottom:16px;text-align:center;">
-            ${buildBrandHeader()}
+            ${buildBrandHeader(siteUrl)}
           </td>
         </tr>
         <tr>
