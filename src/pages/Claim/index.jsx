@@ -407,6 +407,32 @@ function getEmailError(value, t) {
   return "";
 }
 
+function getClaimSubmitErrorMessage(error, t) {
+  const message = String(error?.message || "").trim();
+  const normalized = message.toLowerCase();
+
+  const errorKeyByMessage = {
+    "full name is required.": "fullNameRequired",
+    "email is required.": "emailRequired",
+    "please enter a valid email address.": "emailInvalid",
+    "please enter a real email address that can receive mail.": "emailInvalid",
+    "please enter an email address with a valid receiving domain.": "emailInvalid",
+    "phone is required.": "phoneRequired",
+    "flight date is required.": "flightDateRequired",
+    "airline is required.": "airlineRequired",
+    "departure and destination are required.": "routeRequired",
+    "disruption type is required.": "delayDurationRequired",
+    "signature and accepted terms are required.": "signatureAndTermsRequired",
+  };
+
+  const key = errorKeyByMessage[normalized];
+  if (key) {
+    return t(`claim.serverValidation.${key}`);
+  }
+
+  return message || t("claim.status.saveClaimError");
+}
+
 function formatFileSize(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) {
     return "0 KB";
@@ -2324,7 +2350,7 @@ function ClaimFlow() {
       }
       go(nextStage, nextData, files);
     } catch (error) {
-      setSyncError(error.message || t("claim.status.saveClaimError"));
+      setSyncError(getClaimSubmitErrorMessage(error, t));
     } finally {
       setIsSaving(false);
     }

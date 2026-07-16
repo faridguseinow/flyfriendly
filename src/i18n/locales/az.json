@@ -633,6 +633,17 @@
       "signatureRequired": "Göndərmədən əvvəl imzanızı əlavə edin.",
       "termsRequired": "Davam etmək üçün şərtləri qəbul edin."
     },
+    "serverValidation": {
+      "fullNameRequired": "Əlaqə məlumatı bölməsinə qayıdın və tam adınızı daxil edin.",
+      "emailRequired": "Əlaqə məlumatı bölməsinə qayıdın və e-poçt ünvanınızı daxil edin.",
+      "emailInvalid": "Əlaqə məlumatı bölməsinə qayıdın və məktub qəbul edə bilən düzgün e-poçt ünvanı daxil edin.",
+      "phoneRequired": "Əlaqə məlumatı bölməsinə qayıdın və telefon nömrənizi daxil edin.",
+      "flightDateRequired": "Uyğunluq yoxlanışı bölməsinə qayıdın və uçuş tarixini seçin.",
+      "airlineRequired": "Uyğunluq yoxlanışı bölməsinə qayıdın və aviaşirkəti seçin.",
+      "routeRequired": "Uyğunluq yoxlanışı bölməsinə qayıdın və gediş/təyinat hava limanlarını seçin.",
+      "delayDurationRequired": "Uyğunluq yoxlanışı bölməsinə qayıdın və uçuşun gecikdiyini və ya ləğv edildiyini seçin.",
+      "signatureAndTermsRequired": "İddianı göndərmək üçün imzanızı əlavə edin və şərtləri qəbul edin."
+    },
     "datePicker": {
       "placeholder": "Tarixi seçin",
       "previousMonth": "Əvvəlki ay",

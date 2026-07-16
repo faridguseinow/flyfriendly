@@ -635,6 +635,17 @@
       "signatureRequired": "Please provide your signature before submitting.",
       "termsRequired": "Please accept the terms to continue."
     },
+    "serverValidation": {
+      "fullNameRequired": "Go back to Contact Information and enter your full name.",
+      "emailRequired": "Go back to Contact Information and enter your email address.",
+      "emailInvalid": "Go back to Contact Information and enter a valid email address that can receive mail.",
+      "phoneRequired": "Go back to Contact Information and enter your phone number.",
+      "flightDateRequired": "Go back to Eligibility Check and select your flight date.",
+      "airlineRequired": "Go back to Eligibility Check and select your airline.",
+      "routeRequired": "Go back to Eligibility Check and select your departure and arrival airports.",
+      "delayDurationRequired": "Go back to Eligibility Check and select whether the flight was delayed or cancelled.",
+      "signatureAndTermsRequired": "Add your signature and accept the terms before submitting the claim."
+    },
     "datePicker": {
       "placeholder": "Select date",
       "previousMonth": "Previous month",
