@@ -71,6 +71,85 @@ type AirportRow = {
 };
 
 const DUPLICATE_LOOKBACK_DAYS = 180;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+const RESERVED_EMAIL_DOMAINS = new Set(["example.com", "example.org", "example.net"]);
+
+function normalizeEmail(value: unknown) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getEmailDomain(email: string) {
+  return email.split("@").pop() || "";
+}
+
+function isReservedEmailDomain(domain: string) {
+  return RESERVED_EMAIL_DOMAINS.has(domain)
+    || domain.endsWith(".example")
+    || domain.endsWith(".invalid")
+    || domain.endsWith(".localhost")
+    || domain.endsWith(".test")
+    || domain.endsWith(".local");
+}
+
+function isValidEmailDomainSyntax(domain: string) {
+  if (!domain || domain.length > 253 || !domain.includes(".")) return false;
+
+  return domain.split(".").every((label) => (
+    label.length > 0
+    && label.length <= 63
+    && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)
+  ));
+}
+
+async function dnsHasRecords(domain: string, type: "MX" | "A" | "AAAA") {
+  const response = await fetch(
+    `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${type}`,
+    { headers: { accept: "application/dns-json" } },
+  );
+
+  if (!response.ok) {
+    throw new Error(`DNS lookup failed for ${domain}.`);
+  }
+
+  const payload = await response.json() as { Status?: number; Answer?: unknown[] };
+  if (payload.Status === 3) return false;
+  return payload.Status === 0 && Array.isArray(payload.Answer) && payload.Answer.length > 0;
+}
+
+async function assertEmailCanReceiveMail(emailValue: unknown) {
+  const email = normalizeEmail(emailValue);
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error("Please enter a valid email address.");
+  }
+
+  const domain = getEmailDomain(email);
+  if (!isValidEmailDomainSyntax(domain) || isReservedEmailDomain(domain)) {
+    throw new Error("Please enter a real email address that can receive mail.");
+  }
+
+  try {
+    const hasMx = await dnsHasRecords(domain, "MX");
+    if (hasMx) return;
+
+    const [hasA, hasAaaa] = await Promise.all([
+      dnsHasRecords(domain, "A"),
+      dnsHasRecords(domain, "AAAA"),
+    ]);
+
+    if (!hasA && !hasAaaa) {
+      throw new Error("Please enter an email address with a valid receiving domain.");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Please enter")) {
+      throw error;
+    }
+
+    console.warn("submit-claim email_dns_lookup_inconclusive", {
+      domain,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
 
 function normalizeRecoveryActionLink(actionLink: string | null | undefined, language: string) {
   const canonicalUrl = buildPublicAuthUrl("/auth/reset-password");
@@ -266,8 +345,13 @@ function validateClaimInput(data: ClaimPayload) {
     throw new Error("Full name is required.");
   }
 
-  if (!String(data.email || "").trim()) {
+  const email = normalizeEmail(data.email);
+  if (!email) {
     throw new Error("Email is required.");
+  }
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error("Please enter a valid email address.");
   }
 
   if (!String(data.phone || "").trim()) {
@@ -740,6 +824,7 @@ Deno.serve(async (request) => {
 
   try {
     validateClaimInput(data);
+    await assertEmailCanReceiveMail(data.email);
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Invalid claim payload." }, { status: 400 });
   }

@@ -51,6 +51,85 @@ const supportedLanguages = new Set([
   "uk",
   "pl",
 ]);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+const RESERVED_EMAIL_DOMAINS = new Set(["example.com", "example.org", "example.net"]);
+
+function normalizeEmail(value: unknown) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getEmailDomain(email: string) {
+  return email.split("@").pop() || "";
+}
+
+function isReservedEmailDomain(domain: string) {
+  return RESERVED_EMAIL_DOMAINS.has(domain)
+    || domain.endsWith(".example")
+    || domain.endsWith(".invalid")
+    || domain.endsWith(".localhost")
+    || domain.endsWith(".test")
+    || domain.endsWith(".local");
+}
+
+function isValidEmailDomainSyntax(domain: string) {
+  if (!domain || domain.length > 253 || !domain.includes(".")) return false;
+
+  return domain.split(".").every((label) => (
+    label.length > 0
+    && label.length <= 63
+    && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)
+  ));
+}
+
+async function dnsHasRecords(domain: string, type: "MX" | "A" | "AAAA") {
+  const response = await fetch(
+    `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${type}`,
+    { headers: { accept: "application/dns-json" } },
+  );
+
+  if (!response.ok) {
+    throw new Error(`DNS lookup failed for ${domain}.`);
+  }
+
+  const payload = await response.json() as { Status?: number; Answer?: unknown[] };
+  if (payload.Status === 3) return false;
+  return payload.Status === 0 && Array.isArray(payload.Answer) && payload.Answer.length > 0;
+}
+
+async function assertEmailCanReceiveMail(emailValue: unknown) {
+  const email = normalizeEmail(emailValue);
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error("Lead email is invalid.");
+  }
+
+  const domain = getEmailDomain(email);
+  if (!isValidEmailDomainSyntax(domain) || isReservedEmailDomain(domain)) {
+    throw new Error("Lead email uses a non-deliverable domain.");
+  }
+
+  try {
+    const hasMx = await dnsHasRecords(domain, "MX");
+    if (hasMx) return;
+
+    const [hasA, hasAaaa] = await Promise.all([
+      dnsHasRecords(domain, "A"),
+      dnsHasRecords(domain, "AAAA"),
+    ]);
+
+    if (!hasA && !hasAaaa) {
+      throw new Error("Lead email domain cannot receive mail.");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Lead email")) {
+      throw error;
+    }
+
+    console.warn("send-claim-confirmation email_dns_lookup_inconclusive", {
+      domain,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
 
 const emailCopy = {
   en: {
@@ -882,6 +961,19 @@ Deno.serve(async (request) => {
 
   if (!lead.email) {
     return json({ error: "Lead email is missing." }, { status: 400 });
+  }
+
+  try {
+    await assertEmailCanReceiveMail(lead.email);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Lead email is not deliverable.";
+    await supabase
+      .from("leads")
+      .update({
+        customer_confirmation_error: String(message).slice(0, 1000),
+      })
+      .eq("id", lead.id);
+    return json({ error: message }, { status: 400 });
   }
 
   const language = resolveLanguage(lead);
