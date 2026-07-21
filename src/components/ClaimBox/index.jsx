@@ -205,9 +205,9 @@ function ClaimBox() {
   return (
     <form className="claim-box" action="#" onSubmit={startLead}>
       <div className="claim-box__avatars" aria-hidden="true">
-        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="" />
-        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="" />
-        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80" alt="" />
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="" width={44} height={44} decoding="async" />
+        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="" width={44} height={44} decoding="async" />
+        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80" alt="" width={44} height={44} decoding="async" />
         <span><Infinity size={24} strokeWidth={2.4} aria-hidden="true" /></span>
       </div>
       <h2>{t("home.claimBoxTitle")}</h2>

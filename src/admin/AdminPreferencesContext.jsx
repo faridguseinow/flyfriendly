@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import i18n from "../i18n/index.js";
+import i18n, { loadLanguageResources } from "../i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage } from "../i18n/languages.js";
 
 const STORAGE_PREFIX = "ff-admin-preferences";
@@ -106,7 +106,9 @@ export function useAdminPreferencesState(email, defaultLanguage = DEFAULT_LANGUA
   useEffect(() => {
     const nextLanguage = normalizeLanguage(preferences.language, normalizedDefaultLanguage);
     if (i18n.language !== nextLanguage) {
-      void i18n.changeLanguage(nextLanguage).catch(() => null);
+      void loadLanguageResources(nextLanguage)
+        .then(() => i18n.changeLanguage(nextLanguage))
+        .catch(() => null);
     }
   }, [normalizedDefaultLanguage, preferences.language]);
 

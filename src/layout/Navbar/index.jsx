@@ -10,6 +10,7 @@ import logoImage from "../../assets/icons/logo-image.svg";
 import logoText from "../../assets/icons/fly-friendly.svg";
 import { socialLinks } from "../../constants/site.js";
 import { getLanguageByCode, languages, setStoredLanguage } from "../../i18n/languages.js";
+import { loadLanguageResources } from "../../i18n/index.js";
 import { replaceLanguageInPath } from "../../i18n/path.js";
 import { updatePreferredLanguage } from "../../services/authService.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
@@ -267,7 +268,9 @@ function Navbar() {
   const selectLanguage = (languageCode) => {
     if (languageCode !== currentLanguage) {
       setStoredLanguage(languageCode);
-      void i18n.changeLanguage(languageCode).catch(() => null);
+      void loadLanguageResources(languageCode)
+        .then(() => i18n.changeLanguage(languageCode))
+        .catch(() => null);
       navigate(replaceLanguageInPath(`${location.pathname}${location.search}${location.hash}`, languageCode));
     }
 
@@ -304,8 +307,8 @@ function Navbar() {
     <header className={`site-header${isMenuOpen ? " is-menu-open" : ""}`}>
       <nav className="navbar" aria-label={t("nav.mainNavigation")}>
         <LocalizedLink to="/" className="brand" aria-label={t("common.flyFriendlyHomeAria")} onClick={closeMenu}>
-          <img className="brand__icon" src={logoImage} alt="" />
-          <img className="brand__text" src={logoText} alt="Fly Friendly" />
+          <img className="brand__icon" src={logoImage} alt="" width={40} height={40} decoding="async" />
+          <img className="brand__text" src={logoText} alt="Fly Friendly" width={110} height={20} decoding="async" />
         </LocalizedLink>
         <div className="nav-links">
           {navLinks.map((item) => (
@@ -335,6 +338,9 @@ function Navbar() {
                   className="account-entry__photo"
                   src={avatarImageUrl}
                   alt=""
+                  width={44}
+                  height={44}
+                  decoding="async"
                   onError={() => setHasAvatarLoadError(true)}
                 />
               ) : shouldShowAvatarInitials ? (
@@ -356,7 +362,7 @@ function Navbar() {
                     >
                       <div className="account-dropdown__avatar" aria-hidden="true">
                         {avatarImageUrl ? (
-                          <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
+                          <img src={avatarImageUrl} alt="" width={64} height={64} loading="lazy" decoding="async" onError={() => setHasAvatarLoadError(true)} />
                         ) : (
                           <span className="account-dropdown__avatar-initials">{avatarInitials}</span>
                         )}
@@ -434,7 +440,7 @@ function Navbar() {
                 <LocalizedLink className="mobile-menu__account-card" to={profilePath} onClick={closeMenu}>
                   <div className="mobile-menu__account-avatar" aria-hidden="true">
                     {avatarImageUrl ? (
-                      <img src={avatarImageUrl} alt="" onError={() => setHasAvatarLoadError(true)} />
+                      <img src={avatarImageUrl} alt="" width={52} height={52} loading="lazy" decoding="async" onError={() => setHasAvatarLoadError(true)} />
                     ) : (
                       <span className="mobile-menu__account-initials">{avatarInitials}</span>
                     )}

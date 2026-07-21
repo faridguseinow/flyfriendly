@@ -1,78 +1,53 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router-dom";
-import Home from "../pages/Home/index.jsx";
-import About from "../pages/About/index.jsx";
-import Contact from "../pages/Contact/index.jsx";
-import Blog from "../pages/Blog/index.jsx";
-import BlogArticle from "../pages/Blog/Article.jsx";
-import Referral from "../pages/Referral/index.jsx";
-import Claim from "../pages/Claim/index.jsx";
-import PrivacyPolicy from "../pages/PrivacyPolicy/index.jsx";
-import TermsOfUse from "../pages/TermsOfUse/index.jsx";
-import Cookies from "../pages/Cookies/index.jsx";
-import AdminLayout, { AdminForbiddenPage, AdminLoginPage } from "../admin/AdminLayout.jsx";
-import AdminPlaceholderPage from "../admin/AdminPlaceholderPage.jsx";
-import { AdminRouteGuard } from "../admin/AdminGuards.jsx";
 import { GuestRoute, PartnerRoute, ProtectedRoute, RoleRoute } from "../auth/AuthGuards.jsx";
 import { useAuth } from "../auth/AuthContext.jsx";
-import i18n from "../i18n/index.js";
+import i18n, { loadLanguageResources } from "../i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "../i18n/languages.js";
 import { getPreferredLanguage, localizePath } from "../i18n/path.js";
 import { useLocalizedPath } from "../i18n/useLocalizedPath.js";
-import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from "../pages/Auth/index.jsx";
-import {
-  ClientAccountPage,
-  ClientClaimDetailsPage,
-  ClientClaimsPage,
-  ClientDashboardPage,
-  ClientDocumentsPage,
-  ClientPaymentsPage,
-  ClientPortalLayout,
-} from "../pages/ClientPortal/index.jsx";
-import PartnerApplyPage from "../pages/PartnerApply/index.jsx";
-import ReferralCapturePage from "../pages/ReferralCapture/index.jsx";
-import AdminLeads from "../pages/AdminLeads/index.jsx";
-import AdminCases from "../pages/AdminCases/index.jsx";
-import AdminTasks from "../pages/AdminTasks/index.jsx";
-import AdminDocuments from "../pages/AdminDocuments/index.jsx";
-import AdminCustomers from "../pages/AdminCustomers/index.jsx";
-import AdminActivity from "../pages/AdminActivity/index.jsx";
-import AdminCommunication from "../pages/AdminCommunication/index.jsx";
-import AdminFinance from "../pages/AdminFinance/index.jsx";
-import AdminMarketing from "../pages/AdminMarketing/index.jsx";
-import AdminPayments from "../pages/AdminPayments/index.jsx";
-import AdminReports from "../pages/AdminReports/index.jsx";
-import AdminCms from "../pages/AdminCms/index.jsx";
-import AdminSettings from "../pages/AdminSettings/index.jsx";
-import AdminSystemSettings from "../pages/AdminSystemSettings/index.jsx";
-import AdminTeam from "../pages/AdminTeam/index.jsx";
-import AdminTeamActivity from "../pages/AdminTeamActivity/index.jsx";
-import AdminRoles from "../pages/AdminRoles/index.jsx";
-import AdminAccess from "../pages/AdminAccess/index.jsx";
-import AdminPartnerApplications from "../pages/AdminPartnerApplications/index.jsx";
-import AdminReferralPartners from "../pages/AdminReferralPartners/index.jsx";
-import AdminReferrals from "../pages/AdminReferrals/index.jsx";
-import AdminPartnerCommissions from "../pages/AdminPartnerCommissions/index.jsx";
-import AdminPartnerPayouts from "../pages/AdminPartnerPayouts/index.jsx";
-import AdminReferral from "../pages/AdminReferral/index.jsx";
-import AdminDashboardMain from "../pages/AdminDashboardMain/index.jsx";
-import {
-  PartnerAssetsPage,
-  PartnerDashboardPage,
-  PartnerEarningsPage,
-  PartnerFinancePage,
-  PartnerLinkPage,
-  PartnerPendingPage,
-  PartnerPortalLayout,
-  PartnerProfilePage,
-  PartnerPayoutsPage,
-  PartnerRejectedPage,
-  PartnerReferralsPage,
-  PartnerSuspendedPage,
-} from "../pages/PartnerPortal/index.jsx";
 
 const GOOGLE_OAUTH_PENDING_KEY = "flyfriendly.googleOAuth.pending";
+
+const lazyNamed = (loader, exportName) => lazy(() => loader().then((module) => ({ default: module[exportName] })));
+
+const Home = lazy(() => import("../pages/Home/index.jsx"));
+const About = lazy(() => import("../pages/About/index.jsx"));
+const Contact = lazy(() => import("../pages/Contact/index.jsx"));
+const Blog = lazy(() => import("../pages/Blog/index.jsx"));
+const BlogArticle = lazy(() => import("../pages/Blog/Article.jsx"));
+const Referral = lazy(() => import("../pages/Referral/index.jsx"));
+const Claim = lazy(() => import("../pages/Claim/index.jsx"));
+const PrivacyPolicy = lazy(() => import("../pages/PrivacyPolicy/index.jsx"));
+const TermsOfUse = lazy(() => import("../pages/TermsOfUse/index.jsx"));
+const Cookies = lazy(() => import("../pages/Cookies/index.jsx"));
+const AdminRoutes = lazy(() => import("../admin/AdminRoutes.jsx"));
+const LoginPage = lazyNamed(() => import("../pages/Auth/index.jsx"), "LoginPage");
+const RegisterPage = lazyNamed(() => import("../pages/Auth/index.jsx"), "RegisterPage");
+const ForgotPasswordPage = lazyNamed(() => import("../pages/Auth/index.jsx"), "ForgotPasswordPage");
+const ResetPasswordPage = lazyNamed(() => import("../pages/Auth/index.jsx"), "ResetPasswordPage");
+const ClientPortalLayout = lazyNamed(() => import("../pages/ClientPortal/index.jsx"), "ClientPortalLayout");
+const ClientAccountPage = lazyNamed(() => import("../pages/ClientPortal/index.jsx"), "ClientAccountPage");
+const ClientClaimDetailsPage = lazyNamed(() => import("../pages/ClientPortal/index.jsx"), "ClientClaimDetailsPage");
+const ClientClaimsPage = lazyNamed(() => import("../pages/ClientPortal/index.jsx"), "ClientClaimsPage");
+const ClientDashboardPage = lazyNamed(() => import("../pages/ClientPortal/index.jsx"), "ClientDashboardPage");
+const ClientDocumentsPage = lazyNamed(() => import("../pages/ClientPortal/index.jsx"), "ClientDocumentsPage");
+const ClientPaymentsPage = lazyNamed(() => import("../pages/ClientPortal/index.jsx"), "ClientPaymentsPage");
+const PartnerApplyPage = lazy(() => import("../pages/PartnerApply/index.jsx"));
+const ReferralCapturePage = lazy(() => import("../pages/ReferralCapture/index.jsx"));
+const PartnerPortalLayout = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerPortalLayout");
+const PartnerAssetsPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerAssetsPage");
+const PartnerDashboardPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerDashboardPage");
+const PartnerEarningsPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerEarningsPage");
+const PartnerFinancePage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerFinancePage");
+const PartnerLinkPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerLinkPage");
+const PartnerPendingPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerPendingPage");
+const PartnerProfilePage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerProfilePage");
+const PartnerPayoutsPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerPayoutsPage");
+const PartnerRejectedPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerRejectedPage");
+const PartnerReferralsPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerReferralsPage");
+const PartnerSuspendedPage = lazyNamed(() => import("../pages/PartnerPortal/index.jsx"), "PartnerSuspendedPage");
 
 function hasPendingGoogleOAuthRedirect() {
   try {
@@ -115,6 +90,7 @@ function RedirectToPreferredLanguage() {
 function LanguageBoundary() {
   const location = useLocation();
   const { lang } = useParams();
+  const [isLanguageReady, setIsLanguageReady] = useState(() => i18n.hasResourceBundle(lang, "translation"));
 
   if (!isSupportedLanguage(lang)) {
     const segments = location.pathname.split("/").filter(Boolean);
@@ -124,12 +100,41 @@ function LanguageBoundary() {
   }
 
   useEffect(() => {
-    if (i18n.language !== lang) {
-      i18n.changeLanguage(lang);
-    }
+    let isActive = true;
+
+    setIsLanguageReady(i18n.hasResourceBundle(lang, "translation"));
+
+    loadLanguageResources(lang)
+      .then(() => {
+        if (!isActive) return;
+
+        if (i18n.language !== lang) {
+          return i18n.changeLanguage(lang);
+        }
+
+        return null;
+      })
+      .then(() => {
+        if (isActive) {
+          setIsLanguageReady(true);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setIsLanguageReady(true);
+        }
+      });
 
     setStoredLanguage(lang);
+
+    return () => {
+      isActive = false;
+    };
   }, [lang]);
+
+  if (!isLanguageReady) {
+    return <div className="route-loading" />;
+  }
 
   return <Outlet />;
 }
@@ -139,113 +144,13 @@ function RedirectLocalizedFallback() {
   return <Navigate to={localizePath("/", isSupportedLanguage(lang) ? lang : DEFAULT_LANGUAGE)} replace />;
 }
 
-function withAdminPermission(element, permission) {
-  return <AdminRouteGuard permission={permission}>{element}</AdminRouteGuard>;
-}
-
-function adminPlaceholder(title, options = {}) {
-  return <AdminPlaceholderPage title={title} {...options} />;
-}
-
 function AnimatedRoutes({ location }) {
   return (
-    <Routes location={location}>
+    <Suspense fallback={<div className="route-loading" />}>
+      <Routes location={location}>
       <Route path="/" element={<RedirectToPreferredLanguage />} />
       <Route path="/r/:referralCode" element={<ReferralCapturePage />} />
-      <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin/forbidden" element={<AdminForbiddenPage />} />
-      <Route element={<AdminRouteGuard />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={withAdminPermission(<AdminDashboardMain />, "dashboard.view")} />
-
-          <Route path="dashboard/marketing" element={withAdminPermission(<AdminMarketing />, "reports.view")} />
-          <Route
-            path="dashboard/revenue"
-            element={<AdminRouteGuard anyPermissions={["reports.view", "finance.view"]}><AdminReports /></AdminRouteGuard>}
-          />
-          <Route path="dashboard/activity" element={withAdminPermission(<AdminActivity />, "activity.view")} />
-
-          <Route path="operations/leads" element={withAdminPermission(<AdminLeads />, "leads.view")} />
-          <Route path="operations/cases" element={withAdminPermission(<AdminCases />, "cases.view")} />
-          <Route path="operations/tasks" element={withAdminPermission(<AdminTasks />, "tasks.view")} />
-          <Route path="operations/documents" element={withAdminPermission(<AdminDocuments />, "documents.view")} />
-
-          <Route path="people/customers" element={withAdminPermission(<AdminCustomers />, "customers.view")} />
-          <Route
-            path="people/users-roles"
-            element={<AdminRouteGuard anyPermissions={["team.view", "users.view", "roles.manage"]}><AdminTeam /></AdminRouteGuard>}
-          />
-          <Route
-            path="people/referral"
-            element={<AdminRouteGuard anyPermissions={["partners.view", "partner_applications.view"]}><AdminReferral /></AdminRouteGuard>}
-          />
-
-          <Route path="finances" element={<Navigate to="/admin/finances/finance" replace />} />
-          <Route path="finances/finance" element={withAdminPermission(<AdminFinance />, "finance.view")} />
-          <Route path="finances/payments" element={withAdminPermission(<AdminPayments />, "finance.view")} />
-          <Route path="finances/partner-payouts" element={<AdminRouteGuard anyPermissions={["partners.view", "finance.view"]}><AdminPartnerPayouts /></AdminRouteGuard>} />
-          <Route path="finances/partner-commissions" element={<AdminRouteGuard anyPermissions={["partners.view", "finance.view"]}><AdminPartnerCommissions /></AdminRouteGuard>} />
-          <Route path="finances/revenue" element={<Navigate to="/admin/dashboard/revenue" replace />} />
-
-          <Route
-            path="content/pages"
-            element={<AdminRouteGuard anyPermissions={["blog.view", "faq.view", "cms.view"]}>{adminPlaceholder("Pages")}</AdminRouteGuard>}
-          />
-          <Route path="content/media" element={withAdminPermission(adminPlaceholder("Media"), "cms.view")} />
-          <Route path="content/website" element={withAdminPermission(adminPlaceholder("Website"), "cms.view")} />
-          <Route
-            path="content/cms"
-            element={<AdminRouteGuard anyPermissions={["blog.view", "blog.edit", "cms.view"]}><AdminCms /></AdminRouteGuard>}
-          />
-
-          <Route path="settings" element={withAdminPermission(<AdminSettings />, "settings.view")} />
-          <Route path="settings/system" element={withAdminPermission(<AdminSystemSettings />, "settings.view")} />
-
-          <Route path="activity" element={<Navigate to="/admin/dashboard/activity" replace />} />
-          <Route path="marketing" element={<Navigate to="/admin/dashboard/marketing" replace />} />
-          <Route path="leads" element={<Navigate to="/admin/operations/leads" replace />} />
-          <Route path="cases" element={<Navigate to="/admin/operations/cases" replace />} />
-          <Route path="tasks" element={<Navigate to="/admin/operations/tasks" replace />} />
-          <Route path="documents" element={<Navigate to="/admin/operations/documents" replace />} />
-          <Route path="customers" element={<Navigate to="/admin/people/customers" replace />} />
-          <Route path="team" element={<Navigate to="/admin/people/users-roles" replace />} />
-          <Route path="referral" element={<Navigate to="/admin/people/referral" replace />} />
-          <Route path="finance" element={<Navigate to="/admin/finances/finance" replace />} />
-          <Route path="finance/payments" element={<Navigate to="/admin/finances/payments" replace />} />
-          <Route path="finance/revenue" element={<Navigate to="/admin/dashboard/revenue" replace />} />
-          <Route path="payments" element={<Navigate to="/admin/finances/payments" replace />} />
-          <Route path="revenue" element={<Navigate to="/admin/dashboard/revenue" replace />} />
-          <Route path="reports" element={<Navigate to="/admin/dashboard/revenue" replace />} />
-          <Route path="blog" element={<Navigate to="/admin/content/cms" replace />} />
-          <Route path="faq" element={<Navigate to="/admin/content/pages" replace />} />
-          <Route path="pages" element={<Navigate to="/admin/content/pages" replace />} />
-          <Route path="cms" element={<Navigate to="/admin/content/cms" replace />} />
-          <Route path="media" element={<Navigate to="/admin/content/media" replace />} />
-          <Route path="website" element={<Navigate to="/admin/content/website" replace />} />
-
-          <Route path="communication" element={withAdminPermission(<AdminCommunication />, "communications.view")} />
-          <Route
-            path="partner-applications"
-            element={<AdminRouteGuard anyPermissions={["partner_applications.view", "partners.view"]}><AdminPartnerApplications /></AdminRouteGuard>}
-          />
-          <Route path="referral-partners" element={withAdminPermission(<AdminReferralPartners />, "partners.view")} />
-          <Route path="referrals" element={withAdminPermission(<AdminReferrals />, "partners.view")} />
-          <Route path="partner-commissions" element={<Navigate to="/admin/finances/partner-commissions" replace />} />
-          <Route path="partner-payouts" element={<Navigate to="/admin/finances/partner-payouts" replace />} />
-          <Route path="case-finance" element={withAdminPermission(adminPlaceholder("Case Finance"), "finance.view")} />
-          <Route
-            path="team/:id/activity"
-            element={<AdminRouteGuard anyPermissions={["team.view", "users.view"]}><AdminTeamActivity /></AdminRouteGuard>}
-          />
-          <Route path="access" element={withAdminPermission(<AdminAccess />, "users.view")} />
-          <Route path="roles" element={withAdminPermission(<AdminRoles />, "roles.manage")} />
-          <Route path="menu-builder" element={withAdminPermission(adminPlaceholder("Menu Builder"), "menu.view")} />
-          <Route
-            path="trash"
-            element={<AdminRouteGuard anyPermissions={["trash.manage", "users.manage"]}>{adminPlaceholder("Trash")}</AdminRouteGuard>}
-          />
-        </Route>
-      </Route>
+      <Route path="/admin/*" element={<AdminRoutes />} />
       <Route path="/control-dashboard/*" element={<Navigate to="/admin" replace />} />
       <Route path="/:lang/admin/*" element={<Navigate to="/admin" replace />} />
       <Route path="/:lang/control-dashboard/*" element={<Navigate to="/admin" replace />} />
@@ -324,7 +229,8 @@ function AnimatedRoutes({ location }) {
         <Route path="*" element={<RedirectLocalizedFallback />} />
       </Route>
       <Route path="*" element={<RedirectToPreferredLanguage />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

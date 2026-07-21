@@ -45,6 +45,7 @@ import { BRAND_NAME, buildOrganizationSchema, buildSeoPayload, buildWebsiteSchem
 import { fetchPublishedBlogPosts } from "../../services/blogService.js";
 import { getArticles, localizeArticles } from "../Blog/articles.js";
 import { openMailClient } from "../../utils/mailto.js";
+import { scheduleNonCriticalWork } from "../../lib/nonCriticalWork.js";
 import deniedBoardingImage from "../../assets/media/Image-4.png";
 import missedConnectionPlane from "../../assets/media/hand-drawn-airplane-outline-illustration.png";
 import "./style.scss";
@@ -165,10 +166,11 @@ function Home() {
       }
     }
 
-    loadPosts();
+    const cancelScheduledLoad = scheduleNonCriticalWork(loadPosts);
 
     return () => {
       isActive = false;
+      cancelScheduledLoad();
     };
   }, [locale]);
 
@@ -282,13 +284,15 @@ function Home() {
           </article>
           <article className="issue-card issue-card-wide">
             <div className="disruption-avatars" aria-hidden="true">
-              {testimonials.slice(0, 3).map((item) => <img src={item.image} alt="" key={item.name} />)}
+              {testimonials.slice(0, 3).map((item) => (
+                <img src={item.image} alt="" key={item.name} width={44} height={44} loading="lazy" decoding="async" />
+              ))}
               <span><Infinity size={24} strokeWidth={2.4} aria-hidden="true" /></span>
             </div>
             <IconBadge icon={Route} />
             <h3>{disruptionCards.missedTitle}</h3>
             <p>{disruptionCards.missedText}</p>
-            <img className="missed-plane" src={missedConnectionPlane} alt="" aria-hidden="true" />
+            <img className="missed-plane" src={missedConnectionPlane} alt="" aria-hidden="true" width={415} height={308} loading="lazy" decoding="async" />
           </article>
           <article className="wide-cta">
             <SectionLabel icon={BadgeAlert}>{t("home.disruptionsLabel")}</SectionLabel>
@@ -297,7 +301,7 @@ function Home() {
             <LocalizedLink to="/claim/eligibility" className="btn btn-primary">{t("common.checkCompensation")}</LocalizedLink>
           </article>
           <article className="photo-cta">
-            <img src={deniedBoardingImage} alt="Traveler holding a passport and luggage" />
+            <img src={deniedBoardingImage} alt="Traveler holding a passport and luggage" width={488} height={522} loading="lazy" decoding="async" />
             <div>
               <IconBadge icon={BadgeAlert} />
               <h3>{disruptionCards.deniedTitle}</h3>
@@ -381,7 +385,7 @@ function Home() {
           {testimonials.map((item) => (
             <article className="testimonial-card" key={item.name}>
               <div className="person">
-                <img src={item.image} alt={`${item.name} portrait`} />
+                <img src={item.image} alt={`${item.name} portrait`} width={56} height={56} loading="lazy" decoding="async" />
                 <div><h3>{item.name}</h3><p>{item.role}</p></div>
               </div>
               <p>{item.quote}</p>
@@ -398,7 +402,7 @@ function Home() {
         <div className="article-grid">
           {articles.map((item) => (
             <LocalizedLink className="article-card" to={`/blog/${item.slug}`} key={item.title}>
-              <img src={item.image} alt="" />
+              <img src={item.image} alt="" width={312} height={218} loading="lazy" decoding="async" />
               <time>{item.date}</time>
               <h3>{item.title}</h3>
               <p>{item.text || item.excerpt}</p>
@@ -409,7 +413,7 @@ function Home() {
 
       <section className="newsletter band">
         <article className="newsletter-photo">
-          <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1100&q=80" alt="Person reading travel news" />
+          <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1100&q=80" alt="Person reading travel news" width={1100} height={733} loading="lazy" decoding="async" />
           <p>{t("home.newsletterPhoto")}</p>
           <span>{t("home.newsletterTag")}</span>
         </article>

@@ -161,6 +161,10 @@ input[type="checkbox"]:disabled {
   }
 }
 
+.route-loading {
+  min-height: 1200px;
+}
+
 .scroll-top-btn {
   position: fixed;
   right: 24px;
@@ -184,6 +188,10 @@ input[type="checkbox"]:disabled {
 }
 
 @media (max-width: 1140px) {
+  .route-loading {
+    min-height: 760px;
+  }
+
   .section {
     width: min(100% - 28px, 1140px);
     padding: 64px 0;

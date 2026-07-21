@@ -27,8 +27,8 @@ function AuthShell({ title, text, children }) {
     <main className="auth-page">
       <section className="auth-card">
         <LocalizedLink to="/" className="auth-brand" aria-label="Fly Friendly">
-          <img src={logoImage} alt="" />
-          <img src={logoText} alt="Fly Friendly" />
+          <img src={logoImage} alt="" width={44} height={44} decoding="async" />
+          <img src={logoText} alt="Fly Friendly" width={120} height={22} decoding="async" />
         </LocalizedLink>
         <h1>{title}</h1>
         <p>{text}</p>

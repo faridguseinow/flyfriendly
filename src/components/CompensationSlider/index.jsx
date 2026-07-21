@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import planeSvg from "../../assets/icons/plane.svg";
 import "./style.scss";
 
 const MIN_DISTANCE = 0;
@@ -8,8 +7,8 @@ const MAX_DISTANCE = 4500;
 const INITIAL_DISTANCE = 1500;
 const PLANE_START_DISTANCE = 500;
 
-const PLANE_WIDTH = 344.79;
-const PLANE_HEIGHT = 256.16;
+const PLANE_WIDTH = 132;
+const PLANE_HEIGHT = 84;
 
 const ROUTE_START = { x: 50, y: 360 };
 const ROUTE_CONTROL = { x: 545, y: 70 };
@@ -114,19 +113,24 @@ function CompensationSlider() {
             strokeLinecap="round"
             strokeWidth="4"
           />
-          <image
-            href={planeSvg}
-            x={slider.planeX}
-            y={slider.planeY}
-            width={PLANE_WIDTH}
-            height={PLANE_HEIGHT}
-            preserveAspectRatio="xMidYMid meet"
-            style={{
-              transformBox: "fill-box",
-              transformOrigin: "center",
-              transform: `rotate(${slider.planeRotation}deg)`,
-            }}
-          />
+          <g
+            aria-hidden="true"
+            className="compensation-slider__plane"
+            transform={`translate(${slider.planeX + PLANE_WIDTH / 2} ${slider.planeY + PLANE_HEIGHT / 2}) rotate(${slider.planeRotation})`}
+          >
+            <path
+              d="M -58 6 L 54 -34 C 62 -37 68 -31 62 -24 L 22 16 L 36 48 L 22 53 L 0 28 L -30 40 L -42 35 L -16 15 L -58 6 Z"
+              fill="#2563ff"
+            />
+            <path
+              d="M -45 3 L 46 -29 M 3 25 L 20 47"
+              fill="none"
+              stroke="#ffffff"
+              strokeLinecap="round"
+              strokeWidth="4"
+              opacity="0.85"
+            />
+          </g>
         </svg>
 
         <div className="compensation-slider__controls">

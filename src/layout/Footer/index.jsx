@@ -17,8 +17,8 @@ function Footer() {
       <div className="footer__content">
         <div className="footer__lead">
           <LocalizedLink to="/" className="footer__brand" aria-label={t("common.flyFriendlyHomeAria")}>
-            <img src={logoImage} alt="" />
-            <img src={logoText} alt="Fly Friendly" />
+            <img src={logoImage} alt="" width={40} height={40} loading="lazy" decoding="async" />
+            <img src={logoText} alt="Fly Friendly" width={110} height={20} loading="lazy" decoding="async" />
           </LocalizedLink>
           <h2>{t("footer.leadTitle")}</h2>
           <p>{t("footer.leadText")}</p>

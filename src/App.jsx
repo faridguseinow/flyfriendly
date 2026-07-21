@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,13 +6,15 @@ import SeoHead from "./components/SeoHead.jsx";
 import Navbar from "./layout/Navbar/index.jsx";
 import Footer from "./layout/Footer/index.jsx";
 import AnimatedRoutes from "./routes/index.jsx";
-import i18n from "./i18n/index.js";
+import i18n, { loadLanguageResources } from "./i18n/index.js";
 import { DEFAULT_LANGUAGE, isSupportedLanguage, setStoredLanguage } from "./i18n/languages.js";
 import { trackAnalyticsEvent } from "./lib/analyticsTracker.js";
 import { getCurrentLanguageFromPath, getPathWithoutLanguage, replaceLanguageInPath } from "./i18n/path.js";
 import { captureReferralFromQueryString } from "./services/referralService.js";
 import { useAuth } from "./auth/AuthContext.jsx";
 import { buildSeoPayload, resolveNoindexRouteMeta } from "./lib/seo.js";
+import { scheduleThirdPartyScripts } from "./lib/thirdPartyScripts.js";
+import { scheduleNonCriticalWork } from "./lib/nonCriticalWork.js";
 
 const PUBLIC_LANGUAGE_REDIRECT_PATHS = new Set([
   "/",
@@ -77,6 +78,10 @@ function App() {
   }, [currentLanguage]);
 
   useEffect(() => {
+    scheduleThirdPartyScripts();
+  }, []);
+
+  useEffect(() => {
     captureReferralFromQueryString(location.search, location.pathname).catch(() => null);
   }, [location.pathname, location.search]);
 
@@ -92,7 +97,9 @@ function App() {
     }
 
     trackedPageRef.current = pageKey;
-    void trackAnalyticsEvent("page_view");
+    return scheduleNonCriticalWork(() => {
+      void trackAnalyticsEvent("page_view");
+    });
   }, [isAdminPage, isPortalPage, location.pathname, location.search, normalizedPath]);
 
   useEffect(() => {
@@ -123,9 +130,15 @@ function App() {
     syncedPreferredLanguageRef.current = syncSignature;
     setStoredLanguage(preferredLanguage);
 
-    if (i18n.language !== preferredLanguage) {
-      void i18n.changeLanguage(preferredLanguage).catch(() => null);
-    }
+    void loadLanguageResources(preferredLanguage)
+      .then(() => {
+        if (i18n.language !== preferredLanguage) {
+          return i18n.changeLanguage(preferredLanguage);
+        }
+
+        return null;
+      })
+      .catch(() => null);
 
     const currentLanguage = getCurrentLanguageFromPath(location.pathname) || DEFAULT_LANGUAGE;
     if (currentLanguage !== preferredLanguage) {
@@ -173,35 +186,20 @@ function App() {
     <>
       {routeSeo ? <SeoHead {...routeSeo} /> : null}
       <Navbar />
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.main
-          key={location.pathname}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.28, ease: "easeOut" }}
-        >
-          <AnimatedRoutes location={location} />
-        </motion.main>
-      </AnimatePresence>
+      <main>
+        <AnimatedRoutes location={location} />
+      </main>
       {!normalizedPath.startsWith("/claim") && !isPortalPage && <Footer />}
-      <AnimatePresence>
-        {showScrollTop ? (
-          <motion.button
-            key="scroll-top"
-            type="button"
-            className="scroll-top-btn"
-            onClick={scrollToTop}
-            initial={{ opacity: 0, y: 18, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.92 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            aria-label={t("common.scrollToTop")}
-          >
-            <ChevronUp size={22} strokeWidth={2.4} />
-          </motion.button>
-        ) : null}
-      </AnimatePresence>
+      {showScrollTop ? (
+        <button
+          type="button"
+          className="scroll-top-btn"
+          onClick={scrollToTop}
+          aria-label={t("common.scrollToTop")}
+        >
+          <ChevronUp size={22} strokeWidth={2.4} />
+        </button>
+      ) : null}
     </>
   );
 }
