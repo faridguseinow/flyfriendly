@@ -1,0 +1,14 @@
+# Fly Friendly
+
+Fly Friendly helps airline passengers check eligibility and manage claims for delayed, canceled, overbooked, or missed-connection flights.
+
+## Key Pages
+
+- [Home](https://fly-friendly.com/en)
+- [Check compensation](https://fly-friendly.com/en/claim/eligibility)
+- [About Fly Friendly](https://fly-friendly.com/en/about)
+- [Blog](https://fly-friendly.com/en/blog)
+- [Contact](https://fly-friendly.com/en/contact)
+- [Privacy Policy](https://fly-friendly.com/en/privacyPolicy)
+- [Terms of Use](https://fly-friendly.com/en/terms)
+- [Sitemap](https://fly-friendly.com/sitemap.xml)
